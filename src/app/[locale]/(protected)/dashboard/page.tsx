@@ -1,11 +1,23 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useSignOut, useUser } from "@/hooks/useAuth";
+import { useBarberProfile } from "@/hooks/useBarberProfile";
+import { Calendar, ClipboardList, Scissors } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { data: user, isLoading } = useUser();
   const { mutate: signOut, isPending } = useSignOut();
+  const { data: barberProfile } = useBarberProfile();
+
+  const isBarber = !!barberProfile;
 
   if (isLoading) {
     return (
@@ -28,12 +40,64 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border bg-card p-6">
+      <div className="rounded-lg border bg-card p-6 mb-8">
         <h2 className="mb-4 text-xl font-semibold">Bem-vindo!</h2>
         <p className="text-muted-foreground">
           Você está logado como: <strong>{user?.email}</strong>
         </p>
       </div>
+
+      <h2 className="text-xl font-semibold mb-4">Agendamento</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link href="/agendar">
+          <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+            <CardHeader>
+              <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
+                <Calendar className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Agendar</CardTitle>
+              <CardDescription>
+                Marque um novo horário com seu barbeiro favorito
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link href="/meus-agendamentos">
+          <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+            <CardHeader>
+              <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
+                <ClipboardList className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Meus Agendamentos</CardTitle>
+              <CardDescription>
+                Veja e gerencie seus agendamentos futuros
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
+      {isBarber && (
+        <>
+          <h2 className="text-xl font-semibold mb-4 mt-8">Área Profissional</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link href="/barbeiro">
+              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
+                    <Scissors className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle>Minha Agenda</CardTitle>
+                  <CardDescription>
+                    Gerencie seus atendimentos e horários
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

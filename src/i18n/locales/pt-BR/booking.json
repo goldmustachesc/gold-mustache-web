@@ -1,0 +1,127 @@
+{
+  "page": {
+    "title": "Agendar",
+    "myAppointments": "Meus Agendamentos",
+    "barberDashboard": "Minha Agenda"
+  },
+  "steps": {
+    "barber": "Barbeiro",
+    "service": "Serviço",
+    "date": "Data",
+    "time": "Horário"
+  },
+  "barberSelector": {
+    "title": "Escolha o Barbeiro",
+    "description": "Selecione o profissional de sua preferência",
+    "empty": "Nenhum barbeiro disponível no momento."
+  },
+  "serviceSelector": {
+    "title": "Escolha o Serviço",
+    "description": "Selecione o serviço que deseja agendar",
+    "empty": "Nenhum serviço disponível no momento.",
+    "duration": "{duration} min"
+  },
+  "datePicker": {
+    "title": "Escolha a Data",
+    "weekdays": {
+      "sun": "Dom",
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb"
+    },
+    "months": {
+      "jan": "Janeiro",
+      "feb": "Fevereiro",
+      "mar": "Março",
+      "apr": "Abril",
+      "may": "Maio",
+      "jun": "Junho",
+      "jul": "Julho",
+      "aug": "Agosto",
+      "sep": "Setembro",
+      "oct": "Outubro",
+      "nov": "Novembro",
+      "dec": "Dezembro"
+    }
+  },
+  "timeSlots": {
+    "title": "Escolha o Horário",
+    "available": "Horários disponíveis",
+    "unavailable": "Horários ocupados",
+    "empty": "Nenhum horário disponível para esta data.",
+    "tryAnother": "Tente selecionar outro dia."
+  },
+  "confirmation": {
+    "title": "Agendamento Confirmado!",
+    "description": "Seu horário foi reservado com sucesso.",
+    "service": "Serviço",
+    "barber": "Barbeiro",
+    "date": "Data",
+    "time": "Horário",
+    "value": "Valor",
+    "cancelNote": "Você pode cancelar até 2 horas antes do horário agendado.",
+    "viewAppointments": "Ver Meus Agendamentos",
+    "newBooking": "Fazer Novo Agendamento"
+  },
+  "actions": {
+    "back": "Voltar",
+    "confirm": "Confirmar Agendamento",
+    "confirming": "Agendando...",
+    "cancel": "Cancelar Agendamento",
+    "cancelling": "Cancelando...",
+    "newAppointment": "Novo Agendamento"
+  },
+  "appointments": {
+    "title": "Meus Agendamentos",
+    "empty": "Você não tem agendamentos futuros.",
+    "emptyTitle": "Nenhum agendamento",
+    "emptyDescription": "Você ainda não tem nenhum agendamento marcado.",
+    "count": "{count} agendamento",
+    "countPlural": "{count} agendamentos",
+    "bookNow": "Agendar Agora"
+  },
+  "status": {
+    "confirmed": "Confirmado",
+    "cancelledByClient": "Cancelado",
+    "cancelledByBarber": "Cancelado pelo barbeiro",
+    "completed": "Concluído",
+    "noShow": "Não compareceu"
+  },
+  "cancelDialog": {
+    "title": "Cancelar Agendamento",
+    "description": "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.",
+    "reasonLabel": "Motivo do cancelamento",
+    "reasonPlaceholder": "Digite o motivo...",
+    "back": "Voltar",
+    "confirm": "Confirmar Cancelamento"
+  },
+  "barberDashboard": {
+    "title": "Minha Agenda",
+    "freeDay": "Dia livre!",
+    "noAppointments": "Nenhum agendamento para este dia"
+  },
+  "notifications": {
+    "title": "Notificações",
+    "empty": "Nenhuma notificação",
+    "appointmentConfirmed": "Agendamento confirmado",
+    "appointmentCancelled": "Agendamento cancelado",
+    "appointmentReminder": "Lembrete de agendamento"
+  },
+  "toast": {
+    "bookingSuccess": "Agendamento realizado com sucesso!",
+    "bookingError": "Erro ao agendar",
+    "cancelSuccess": "Agendamento cancelado com sucesso!",
+    "cancelError": "Erro ao cancelar",
+    "slotOccupied": "Este horário já foi reservado. Por favor, escolha outro.",
+    "cancellationTooLate": "Não é possível cancelar com menos de 2 horas de antecedência."
+  },
+  "errors": {
+    "loadServices": "Erro ao carregar serviços",
+    "loadSlots": "Erro ao carregar horários",
+    "loadAppointments": "Erro ao carregar agendamentos",
+    "loadBarbers": "Erro ao carregar barbeiros"
+  }
+}

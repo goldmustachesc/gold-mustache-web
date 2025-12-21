@@ -10,7 +10,7 @@ const intlMiddleware = createIntlMiddleware({
 });
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard", "/profile", "/settings"];
+const protectedRoutes = ["/dashboard", "/profile", "/settings", "/barbeiro"];
 
 // Routes that should redirect to dashboard if already authenticated
 const authRoutes = ["/login", "/signup", "/reset-password"];
@@ -22,6 +22,12 @@ function getPathnameWithoutLocale(pathname: string): string {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // Skip i18n middleware for API routes
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
 
   // Handle Supabase auth session refresh

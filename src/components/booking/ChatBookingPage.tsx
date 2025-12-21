@@ -1,0 +1,569 @@
+"use client";
+
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  BotMessage,
+  UserMessage,
+  TypingIndicator,
+  ChatContainer,
+} from "./chat";
+import { ChatBarberSelector } from "./chat/ChatBarberSelector";
+import { ChatServiceSelector } from "./chat/ChatServiceSelector";
+import { ChatDatePicker } from "./chat/ChatDatePicker";
+import { ChatTimeSlotSelector } from "./chat/ChatTimeSlotSelector";
+import { ChatGuestInfoForm } from "./chat/ChatGuestInfoForm";
+import { BookingConfirmation } from "./BookingConfirmation";
+import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
+import {
+  useBarbers,
+  useServices,
+  useSlots,
+  useCreateAppointment,
+  useCreateGuestAppointment,
+} from "@/hooks/useBooking";
+import { useUser } from "@/hooks/useAuth";
+import type {
+  ServiceData,
+  TimeSlot,
+  AppointmentWithDetails,
+  BarberData,
+} from "@/types/booking";
+import { formatDateToString } from "@/utils/time-slots";
+import { Calendar, RotateCcw } from "lucide-react";
+
+type BookingStep =
+  | "greeting"
+  | "barber"
+  | "service"
+  | "date"
+  | "time"
+  | "info"
+  | "confirming"
+  | "confirmation";
+
+// Message types for storing in state (data only, no JSX)
+type MessageData =
+  | { type: "bot"; text: string; step?: BookingStep }
+  | { type: "bot-jsx"; content: ReactNode; step?: BookingStep }
+  | { type: "user"; text: string }
+  | { type: "user-jsx"; content: ReactNode }
+  | { type: "selector"; selector: BookingStep };
+
+interface Message {
+  id: string;
+  data: MessageData;
+}
+
+interface ChatBookingPageProps {
+  onViewAppointments?: () => void;
+}
+
+function formatPhoneDisplay(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return phone;
+}
+
+export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
+  const { data: user } = useUser();
+  const router = useRouter();
+  const isGuest = !user;
+
+  const [step, setStep] = useState<BookingStep>("greeting");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [selectedBarber, setSelectedBarber] = useState<BarberData | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceData | null>(
+    null,
+  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [confirmedAppointment, setConfirmedAppointment] =
+    useState<AppointmentWithDetails | null>(null);
+  const [guestPhone, setGuestPhone] = useState<string | null>(null);
+  const [showSelector, setShowSelector] = useState<BookingStep | null>(null);
+
+  const { data: barbers = [], isLoading: barbersLoading } = useBarbers();
+  const { data: services = [], isLoading: servicesLoading } = useServices(
+    selectedBarber?.id,
+  );
+  const dateStr = selectedDate ? formatDateToString(selectedDate) : null;
+  const { data: slots = [], isLoading: slotsLoading } = useSlots(
+    dateStr,
+    selectedBarber?.id ?? null,
+    selectedService?.id ?? null,
+  );
+
+  const createAppointment = useCreateAppointment();
+  const createGuestAppointment = useCreateGuestAppointment();
+
+  const messageIdRef = useRef(0);
+  const processedStepsRef = useRef<Set<BookingStep>>(new Set());
+
+  const addMessage = useCallback((data: MessageData) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: `msg-${++messageIdRef.current}`, data },
+    ]);
+  }, []);
+
+  const showTypingThenMessage = useCallback(
+    (data: MessageData, delay = 400) => {
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        addMessage(data);
+      }, delay);
+    },
+    [addMessage],
+  );
+
+  // Handlers
+  const handleBarberSelect = useCallback(
+    (barber: BarberData) => {
+      setShowSelector(null);
+      setSelectedBarber(barber);
+      setSelectedService(null);
+      setSelectedDate(null);
+      setSelectedSlot(null);
+      addMessage({ type: "user", text: barber.name });
+      setTimeout(() => setStep("service"), 100);
+    },
+    [addMessage],
+  );
+
+  const handleServiceSelect = useCallback(
+    (service: ServiceData) => {
+      setShowSelector(null);
+      setSelectedService(service);
+      setSelectedDate(null);
+      setSelectedSlot(null);
+      addMessage({
+        type: "user",
+        text: `${service.name} • R$ ${service.price.toFixed(2).replace(".", ",")}`,
+      });
+      setTimeout(() => setStep("date"), 100);
+    },
+    [addMessage],
+  );
+
+  const handleDateSelect = useCallback(
+    (date: Date) => {
+      setShowSelector(null);
+      setSelectedDate(date);
+      setSelectedSlot(null);
+      addMessage({
+        type: "user",
+        text: date.toLocaleDateString("pt-BR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        }),
+      });
+      setTimeout(() => setStep("time"), 100);
+    },
+    [addMessage],
+  );
+
+  const handleSlotSelect = useCallback(
+    (slot: TimeSlot) => {
+      setShowSelector(null);
+      setSelectedSlot(slot);
+      addMessage({ type: "user", text: slot.time });
+
+      if (isGuest) {
+        setTimeout(() => setStep("info"), 100);
+      } else {
+        // Logged in user - confirm immediately
+        setTimeout(async () => {
+          if (!selectedBarber || !selectedService || !selectedDate) return;
+
+          setStep("confirming");
+          addMessage({
+            type: "bot",
+            text: "⏳ Confirmando seu agendamento...",
+          });
+
+          try {
+            const appointment = await createAppointment.mutateAsync({
+              serviceId: selectedService.id,
+              barberId: selectedBarber.id,
+              date: formatDateToString(selectedDate),
+              startTime: slot.time,
+            });
+
+            setConfirmedAppointment(appointment);
+            setStep("confirmation");
+            toast.success("Agendamento realizado com sucesso!");
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Erro ao agendar";
+            toast.error(errorMessage);
+
+            // If slot is occupied, go back to time selection
+            addMessage({
+              type: "bot",
+              text: "😔 Este horário já foi ocupado. Por favor, escolha outro.",
+            });
+            setSelectedSlot(null);
+            processedStepsRef.current.delete("time");
+            setStep("time");
+            setTimeout(() => setShowSelector("time"), 300);
+          }
+        }, 100);
+      }
+    },
+    [
+      addMessage,
+      isGuest,
+      selectedBarber,
+      selectedService,
+      selectedDate,
+      createAppointment,
+    ],
+  );
+
+  const handleGuestSubmit = useCallback(
+    async (guestData: { clientName: string; clientPhone: string }) => {
+      if (!selectedBarber || !selectedService || !selectedDate || !selectedSlot)
+        return;
+
+      setShowSelector(null);
+      setStep("confirming");
+      addMessage({
+        type: "user",
+        text: `${guestData.clientName} • ${formatPhoneDisplay(guestData.clientPhone)}`,
+      });
+      addMessage({ type: "bot", text: "⏳ Confirmando seu agendamento..." });
+
+      try {
+        const appointment = await createGuestAppointment.mutateAsync({
+          serviceId: selectedService.id,
+          barberId: selectedBarber.id,
+          date: formatDateToString(selectedDate),
+          startTime: selectedSlot.time,
+          clientName: guestData.clientName,
+          clientPhone: guestData.clientPhone,
+        });
+
+        setConfirmedAppointment(appointment);
+        setGuestPhone(guestData.clientPhone);
+        setStep("confirmation");
+        toast.success("Agendamento realizado com sucesso!");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Erro ao agendar";
+        toast.error(errorMessage);
+
+        // If slot is occupied, go back to time selection
+        if (
+          errorMessage.includes("horário") ||
+          errorMessage.includes("ocupado") ||
+          errorMessage.includes("reservado")
+        ) {
+          addMessage({
+            type: "bot",
+            text: "😔 Este horário já foi ocupado. Por favor, escolha outro horário.",
+          });
+          setSelectedSlot(null);
+          processedStepsRef.current.delete("time");
+          setStep("time");
+          setTimeout(() => setShowSelector("time"), 300);
+        } else {
+          addMessage({ type: "bot", text: `❌ ${errorMessage}` });
+          setShowSelector("info");
+          setStep("info");
+        }
+      }
+    },
+    [
+      selectedBarber,
+      selectedService,
+      selectedDate,
+      selectedSlot,
+      createGuestAppointment,
+      addMessage,
+    ],
+  );
+
+  const handleViewGuestAppointments = useCallback(() => {
+    if (guestPhone) {
+      router.push(`/meus-agendamentos?phone=${guestPhone}`);
+    }
+  }, [guestPhone, router]);
+
+  const handleNewBooking = useCallback(() => {
+    setStep("greeting");
+    setMessages([]);
+    setSelectedBarber(null);
+    setSelectedService(null);
+    setSelectedDate(null);
+    setSelectedSlot(null);
+    setConfirmedAppointment(null);
+    setGuestPhone(null);
+    setShowSelector(null);
+    messageIdRef.current = 0;
+    processedStepsRef.current = new Set();
+  }, []);
+
+  // Step flow effects
+  useEffect(() => {
+    if (step === "greeting" && !processedStepsRef.current.has("greeting")) {
+      processedStepsRef.current.add("greeting");
+      showTypingThenMessage({
+        type: "bot-jsx",
+        content: (
+          <span>
+            Olá! 👋 Eu sou o assistente da <strong>Gold Mustache</strong>. Vou
+            te ajudar a agendar seu horário de forma rápida e fácil.
+          </span>
+        ),
+      });
+      setTimeout(() => setStep("barber"), 800);
+    }
+  }, [step, showTypingThenMessage]);
+
+  useEffect(() => {
+    if (step === "barber" && !processedStepsRef.current.has("barber")) {
+      processedStepsRef.current.add("barber");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot",
+          text: "Qual barbeiro você prefere? ✂️",
+          step: "barber",
+        });
+        setTimeout(() => setShowSelector("barber"), 500);
+      }, 300);
+    }
+  }, [step, showTypingThenMessage]);
+
+  useEffect(() => {
+    if (
+      step === "service" &&
+      selectedBarber &&
+      !processedStepsRef.current.has("service")
+    ) {
+      processedStepsRef.current.add("service");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot-jsx",
+          content: (
+            <span>
+              Ótima escolha! 🎯 Qual serviço você deseja com{" "}
+              <strong>{selectedBarber.name}</strong>?
+            </span>
+          ),
+          step: "service",
+        });
+        setTimeout(() => setShowSelector("service"), 500);
+      }, 300);
+    }
+  }, [step, selectedBarber, showTypingThenMessage]);
+
+  useEffect(() => {
+    if (
+      step === "date" &&
+      selectedService &&
+      !processedStepsRef.current.has("date")
+    ) {
+      processedStepsRef.current.add("date");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot",
+          text: "Perfeito! 📅 Qual dia é melhor para você?",
+          step: "date",
+        });
+        setTimeout(() => setShowSelector("date"), 500);
+      }, 300);
+    }
+  }, [step, selectedService, showTypingThenMessage]);
+
+  useEffect(() => {
+    if (
+      step === "time" &&
+      selectedDate &&
+      !processedStepsRef.current.has("time")
+    ) {
+      processedStepsRef.current.add("time");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot",
+          text: "🕐 Que horário funciona melhor?",
+          step: "time",
+        });
+        setTimeout(() => setShowSelector("time"), 500);
+      }, 300);
+    }
+  }, [step, selectedDate, showTypingThenMessage]);
+
+  useEffect(() => {
+    if (
+      step === "info" &&
+      selectedSlot &&
+      !processedStepsRef.current.has("info")
+    ) {
+      processedStepsRef.current.add("info");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot",
+          text: "Quase lá! 📝 Para finalizar, preciso de alguns dados para confirmar seu agendamento.",
+          step: "info",
+        });
+        setTimeout(() => setShowSelector("info"), 500);
+      }, 300);
+    }
+  }, [step, selectedSlot, showTypingThenMessage]);
+
+  // Confirmation screen
+  if (step === "confirmation" && confirmedAppointment) {
+    return (
+      <div className="space-y-6">
+        <BookingConfirmation
+          appointment={confirmedAppointment}
+          onClose={handleNewBooking}
+          onViewAppointments={
+            isGuest ? handleViewGuestAppointments : onViewAppointments
+          }
+        />
+        {isGuest && <SignupIncentiveBanner />}
+      </div>
+    );
+  }
+
+  // Render selector based on current showSelector state
+  const renderSelector = () => {
+    if (!showSelector) return null;
+
+    switch (showSelector) {
+      case "barber":
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <ChatBarberSelector
+              barbers={barbers}
+              onSelect={handleBarberSelect}
+              isLoading={barbersLoading}
+            />
+          </div>
+        );
+      case "service":
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <ChatServiceSelector
+              services={services}
+              onSelect={handleServiceSelect}
+              isLoading={servicesLoading}
+            />
+          </div>
+        );
+      case "date":
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <ChatDatePicker onSelect={handleDateSelect} />
+          </div>
+        );
+      case "time":
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <ChatTimeSlotSelector
+              slots={slots}
+              onSelect={handleSlotSelect}
+              isLoading={slotsLoading}
+            />
+          </div>
+        );
+      case "info":
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <ChatGuestInfoForm
+              onSubmit={handleGuestSubmit}
+              isLoading={createGuestAppointment.isPending}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-160px)] max-h-[700px]">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">Novo Agendamento</h2>
+        </div>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewBooking}
+            className="text-muted-foreground"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Recomeçar
+          </Button>
+        )}
+      </div>
+
+      {/* Chat area */}
+      <ChatContainer className="flex-1 mt-4">
+        {messages.map((msg) => {
+          const { data } = msg;
+
+          if (data.type === "bot") {
+            return (
+              <BotMessage key={msg.id} animate>
+                {data.text}
+              </BotMessage>
+            );
+          }
+
+          if (data.type === "bot-jsx") {
+            return (
+              <BotMessage key={msg.id} animate>
+                {data.content}
+              </BotMessage>
+            );
+          }
+
+          if (data.type === "user") {
+            return (
+              <UserMessage key={msg.id} animate>
+                {data.text}
+              </UserMessage>
+            );
+          }
+
+          if (data.type === "user-jsx") {
+            return (
+              <UserMessage key={msg.id} animate>
+                {data.content}
+              </UserMessage>
+            );
+          }
+
+          return null;
+        })}
+
+        {isTyping && <TypingIndicator />}
+
+        {renderSelector()}
+      </ChatContainer>
+    </div>
+  );
+}

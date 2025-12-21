@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Reservar",
+    "myAppointments": "Mis Citas",
+    "barberDashboard": "Mi Agenda"
+  },
+  "steps": {
+    "barber": "Barbero",
+    "service": "Servicio",
+    "date": "Fecha",
+    "time": "Hora"
+  },
+  "barberSelector": {
+    "title": "Elige un Barbero",
+    "description": "Selecciona tu profesional preferido",
+    "empty": "No hay barberos disponibles en este momento."
+  },
+  "serviceSelector": {
+    "title": "Elige un Servicio",
+    "description": "Selecciona el servicio que deseas reservar",
+    "empty": "No hay servicios disponibles en este momento.",
+    "duration": "{duration} min"
+  },
+  "datePicker": {
+    "title": "Elige una Fecha"
+  },
+  "timeSlots": {
+    "title": "Elige un Horario",
+    "available": "Horarios disponibles",
+    "unavailable": "Horarios ocupados",
+    "empty": "No hay horarios disponibles para esta fecha.",
+    "tryAnother": "Intenta seleccionar otro día."
+  },
+  "confirmation": {
+    "title": "¡Reserva Confirmada!",
+    "description": "Tu cita ha sido reservada con éxito.",
+    "service": "Servicio",
+    "barber": "Barbero",
+    "date": "Fecha",
+    "time": "Hora",
+    "value": "Precio",
+    "cancelNote": "Puedes cancelar hasta 2 horas antes de la hora programada.",
+    "viewAppointments": "Ver Mis Citas",
+    "newBooking": "Hacer Nueva Reserva"
+  },
+  "actions": {
+    "back": "Volver",
+    "confirm": "Confirmar Reserva",
+    "confirming": "Reservando...",
+    "cancel": "Cancelar Cita",
+    "cancelling": "Cancelando...",
+    "newAppointment": "Nueva Cita"
+  },
+  "appointments": {
+    "title": "Mis Citas",
+    "empty": "No tienes citas próximas.",
+    "emptyTitle": "Sin citas",
+    "emptyDescription": "Aún no tienes ninguna cita programada.",
+    "count": "{count} cita",
+    "countPlural": "{count} citas",
+    "bookNow": "Reservar Ahora"
+  },
+  "status": {
+    "confirmed": "Confirmada",
+    "cancelledByClient": "Cancelada",
+    "cancelledByBarber": "Cancelada por el barbero",
+    "completed": "Completada",
+    "noShow": "No asistió"
+  },
+  "cancelDialog": {
+    "title": "Cancelar Cita",
+    "description": "¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer.",
+    "reasonLabel": "Motivo de cancelación",
+    "reasonPlaceholder": "Ingresa el motivo...",
+    "back": "Volver",
+    "confirm": "Confirmar Cancelación"
+  },
+  "barberDashboard": {
+    "title": "Mi Agenda",
+    "freeDay": "¡Día libre!",
+    "noAppointments": "Sin citas para este día"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "appointmentConfirmed": "Cita confirmada",
+    "appointmentCancelled": "Cita cancelada",
+    "appointmentReminder": "Recordatorio de cita"
+  },
+  "toast": {
+    "bookingSuccess": "¡Reserva exitosa!",
+    "bookingError": "Error al reservar",
+    "cancelSuccess": "¡Cita cancelada con éxito!",
+    "cancelError": "Error al cancelar",
+    "slotOccupied": "Este horario ya está reservado. Por favor, elige otro.",
+    "cancellationTooLate": "No se puede cancelar con menos de 2 horas de anticipación."
+  },
+  "errors": {
+    "loadServices": "Error al cargar servicios",
+    "loadSlots": "Error al cargar horarios",
+    "loadAppointments": "Error al cargar citas",
+    "loadBarbers": "Error al cargar barberos"
+  }
+}

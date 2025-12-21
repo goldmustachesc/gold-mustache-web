@@ -1,5 +1,6 @@
 import auth from "./auth.json";
 import blog from "./blog.json";
+import booking from "./booking.json";
 import brand from "./brand.json";
 import common from "./common.json";
 import contact from "./contact.json";
@@ -16,6 +17,7 @@ import testimonials from "./testimonials.json";
 export default {
   auth,
   blog,
+  booking,
   brand,
   common,
   contact,

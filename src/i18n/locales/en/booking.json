@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Book",
+    "myAppointments": "My Appointments",
+    "barberDashboard": "My Schedule"
+  },
+  "steps": {
+    "barber": "Barber",
+    "service": "Service",
+    "date": "Date",
+    "time": "Time"
+  },
+  "barberSelector": {
+    "title": "Choose a Barber",
+    "description": "Select your preferred professional",
+    "empty": "No barbers available at the moment."
+  },
+  "serviceSelector": {
+    "title": "Choose a Service",
+    "description": "Select the service you want to book",
+    "empty": "No services available at the moment.",
+    "duration": "{duration} min"
+  },
+  "datePicker": {
+    "title": "Choose a Date"
+  },
+  "timeSlots": {
+    "title": "Choose a Time",
+    "available": "Available times",
+    "unavailable": "Unavailable times",
+    "empty": "No times available for this date.",
+    "tryAnother": "Try selecting another day."
+  },
+  "confirmation": {
+    "title": "Booking Confirmed!",
+    "description": "Your appointment has been successfully booked.",
+    "service": "Service",
+    "barber": "Barber",
+    "date": "Date",
+    "time": "Time",
+    "value": "Price",
+    "cancelNote": "You can cancel up to 2 hours before the scheduled time.",
+    "viewAppointments": "View My Appointments",
+    "newBooking": "Make New Booking"
+  },
+  "actions": {
+    "back": "Back",
+    "confirm": "Confirm Booking",
+    "confirming": "Booking...",
+    "cancel": "Cancel Appointment",
+    "cancelling": "Cancelling...",
+    "newAppointment": "New Appointment"
+  },
+  "appointments": {
+    "title": "My Appointments",
+    "empty": "You have no upcoming appointments.",
+    "emptyTitle": "No appointments",
+    "emptyDescription": "You don't have any appointments scheduled yet.",
+    "count": "{count} appointment",
+    "countPlural": "{count} appointments",
+    "bookNow": "Book Now"
+  },
+  "status": {
+    "confirmed": "Confirmed",
+    "cancelledByClient": "Cancelled",
+    "cancelledByBarber": "Cancelled by barber",
+    "completed": "Completed",
+    "noShow": "No show"
+  },
+  "cancelDialog": {
+    "title": "Cancel Appointment",
+    "description": "Are you sure you want to cancel this appointment? This action cannot be undone.",
+    "reasonLabel": "Cancellation reason",
+    "reasonPlaceholder": "Enter the reason...",
+    "back": "Back",
+    "confirm": "Confirm Cancellation"
+  },
+  "barberDashboard": {
+    "title": "My Schedule",
+    "freeDay": "Free day!",
+    "noAppointments": "No appointments for this day"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "appointmentConfirmed": "Appointment confirmed",
+    "appointmentCancelled": "Appointment cancelled",
+    "appointmentReminder": "Appointment reminder"
+  },
+  "toast": {
+    "bookingSuccess": "Booking successful!",
+    "bookingError": "Error booking",
+    "cancelSuccess": "Appointment cancelled successfully!",
+    "cancelError": "Error cancelling",
+    "slotOccupied": "This time slot is already booked. Please choose another.",
+    "cancellationTooLate": "Cannot cancel less than 2 hours before the appointment."
+  },
+  "errors": {
+    "loadServices": "Error loading services",
+    "loadSlots": "Error loading time slots",
+    "loadAppointments": "Error loading appointments",
+    "loadBarbers": "Error loading barbers"
+  }
+}
