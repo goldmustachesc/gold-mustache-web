@@ -45,7 +45,9 @@ export function DailySchedule({
     {} as Record<string, AppointmentWithDetails[]>,
   );
 
-  const hours = Object.keys(appointmentsByHour).sort();
+  const hours = Object.keys(appointmentsByHour).sort(
+    (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
+  );
 
   return (
     <Card>

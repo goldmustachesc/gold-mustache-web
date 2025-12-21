@@ -1,8 +1,10 @@
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { Layout } from "@/components/layout/Layout";
+import { StagingBanner } from "@/components/layout/StagingBanner";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
+import { siteConfig } from "@/config/site";
 import { BRAND } from "@/constants/brand";
 import { locales } from "@/i18n/config";
 import { QueryProvider } from "@/providers/query-provider";
@@ -40,7 +42,9 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
 
-  const baseUrl = "https://www.goldmustachebarbearia.com.br";
+  const baseUrl = siteConfig.isProduction
+    ? siteConfig.productionUrl
+    : siteConfig.baseUrl;
 
   return {
     title: t("title"),
@@ -69,11 +73,11 @@ export async function generateMetadata({
       },
     },
     robots: {
-      index: true,
-      follow: true,
+      index: siteConfig.isProduction,
+      follow: siteConfig.isProduction,
       googleBot: {
-        index: true,
-        follow: true,
+        index: siteConfig.isProduction,
+        follow: siteConfig.isProduction,
         "max-video-preview": -1,
         "max-image-preview": "large",
         "max-snippet": -1,
@@ -191,7 +195,9 @@ export default async function LocaleLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
       >
-        <GoogleAnalytics trackingId={BRAND.analytics.googleAnalyticsId} />
+        {siteConfig.enableAnalytics && (
+          <GoogleAnalytics trackingId={BRAND.analytics.googleAnalyticsId} />
+        )}
         <LoadingElevatorWrapper />
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
@@ -201,6 +207,7 @@ export default async function LocaleLayout({
               enableSystem
               disableTransitionOnChange
             >
+              <StagingBanner />
               <Layout>{children}</Layout>
             </ThemeProvider>
           </QueryProvider>

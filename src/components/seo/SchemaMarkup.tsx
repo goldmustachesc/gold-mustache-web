@@ -1,6 +1,14 @@
+import { siteConfig } from "@/config/site";
 import { BRAND, SERVICES } from "@/constants/brand";
 
 export function SchemaMarkup() {
+  // Em ambientes não-produção, não renderizar schema markup para SEO
+  if (!siteConfig.isProduction) {
+    return null;
+  }
+
+  const baseUrl = siteConfig.productionUrl;
+
   // Review Schema - Top reviews for SEO
   const reviewSchema = {
     "@context": "https://schema.org",
@@ -8,7 +16,7 @@ export function SchemaMarkup() {
     itemReviewed: {
       "@type": "LocalBusiness",
       name: BRAND.name,
-      image: "https://www.goldmustachebarbearia.com.br/logo.png",
+      image: `${baseUrl}/logo.png`,
       address: {
         "@type": "PostalAddress",
         streetAddress: "R. 115, 79 - Centro",
@@ -35,11 +43,11 @@ export function SchemaMarkup() {
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": "https://www.goldmustachebarbearia.com.br/#organization",
+    "@id": `${baseUrl}/#organization`,
     name: BRAND.name,
     description:
       "Tradição e Estilo Masculino - Barbearia tradicional em Itapema-SC com mais de 6 anos de experiência oferecendo cortes masculinos clássicos e modernos, barba completa e degradê navalhado.",
-    url: "https://www.goldmustachebarbearia.com.br",
+    url: baseUrl,
     telephone: [
       BRAND.contact.phone,
       BRAND.contactVitor.phone,
@@ -141,18 +149,18 @@ export function SchemaMarkup() {
         datePublished: "2024-10-10",
       },
     ],
-    image: "https://www.goldmustachebarbearia.com.br/logo.png",
-    logo: "https://www.goldmustachebarbearia.com.br/logo.png",
+    image: `${baseUrl}/logo.png`,
+    logo: `${baseUrl}/logo.png`,
   };
 
   const servicesSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "@id": "https://www.goldmustachebarbearia.com.br/#services",
+    "@id": `${baseUrl}/#services`,
     name: "Serviços de Barbearia",
     description: "Serviços completos de barbearia masculina",
     provider: {
-      "@id": "https://www.goldmustachebarbearia.com.br/#organization",
+      "@id": `${baseUrl}/#organization`,
     },
     serviceType: "Barbearia",
     areaServed: {
@@ -181,7 +189,7 @@ export function SchemaMarkup() {
         priceCurrency: "BRL",
         availability: "https://schema.org/InStock",
         validFrom: new Date().toISOString().split("T")[0],
-        url: `https://www.goldmustachebarbearia.com.br/#service-${service.id}`,
+        url: `${baseUrl}/#service-${service.id}`,
         position: index + 1,
       })),
     },
@@ -190,11 +198,11 @@ export function SchemaMarkup() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": "https://www.goldmustachebarbearia.com.br/#organization",
+    "@id": `${baseUrl}/#organization`,
     name: BRAND.name,
     alternateName: "Gold Mustache",
-    url: "https://www.goldmustachebarbearia.com.br",
-    logo: "https://www.goldmustachebarbearia.com.br/logo.png",
+    url: baseUrl,
+    logo: `${baseUrl}/logo.png`,
     contactPoint: [
       {
         "@type": "ContactPoint",
@@ -218,7 +226,7 @@ export function SchemaMarkup() {
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://www.goldmustachebarbearia.com.br",
+        item: baseUrl,
       },
     ],
   };
@@ -226,12 +234,12 @@ export function SchemaMarkup() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": "https://www.goldmustachebarbearia.com.br/#website",
-    url: "https://www.goldmustachebarbearia.com.br",
+    "@id": `${baseUrl}/#website`,
+    url: baseUrl,
     name: BRAND.name,
     description: "Tradição e Estilo Masculino - Site oficial da barbearia",
     publisher: {
-      "@id": "https://www.goldmustachebarbearia.com.br/#organization",
+      "@id": `${baseUrl}/#organization`,
     },
     inLanguage: "pt-BR",
   };

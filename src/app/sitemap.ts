@@ -1,15 +1,21 @@
+import { siteConfig } from "@/config/site";
 import { SERVICES } from "@/constants/brand";
 import { locales } from "@/i18n/config";
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://www.goldmustachebarbearia.com.br";
+  // Em ambientes não-produção, retornar sitemap vazio
+  if (!siteConfig.isProduction) {
+    return [];
+  }
+
+  const baseUrl = siteConfig.productionUrl;
   const currentDate = new Date().toISOString();
 
   const routes: MetadataRoute.Sitemap = [];
 
   // Generate routes for each locale
-  locales.forEach((locale) => {
+  for (const locale of locales) {
     const localePrefix = `/${locale}`;
 
     // Homepage - highest priority
@@ -40,7 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       { id: "parceiros", priority: 0.5, frequency: "monthly" as const },
     ];
 
-    sections.forEach((section) => {
+    for (const section of sections) {
       routes.push({
         url: `${baseUrl}${localePrefix}#${section.id}`,
         lastModified: currentDate,
@@ -54,10 +60,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
           },
         },
       });
-    });
+    }
 
     // Service-specific pages (virtual pages for SEO)
-    SERVICES.forEach((service) => {
+    for (const service of SERVICES) {
       routes.push({
         url: `${baseUrl}${localePrefix}#servico-${service.id}`,
         lastModified: currentDate,
@@ -71,8 +77,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
           },
         },
       });
-    });
-  });
+    }
+  }
 
   return routes;
 }

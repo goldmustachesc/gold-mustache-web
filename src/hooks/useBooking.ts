@@ -161,6 +161,7 @@ export function useCreateGuestAppointment() {
   return useMutation({
     mutationFn: createGuestAppointment,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments", "guest"] });
       queryClient.invalidateQueries({ queryKey: ["slots"] });
     },
   });
