@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "prepare": "husky",
     "commit": "git-cz",
-    "optimize:images": "node scripts/optimize-images.js"
+    "optimize:images": "node scripts/optimize-images.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

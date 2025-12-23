@@ -4,7 +4,7 @@
  * Script de otimização de imagens
  * Converte imagens para WebP e gera versões otimizadas
  *
- * Uso: node scripts/optimize-images.js
+ * Uso: node scripts/optimize-images.cjs
  */
 
 const fs = require("node:fs");

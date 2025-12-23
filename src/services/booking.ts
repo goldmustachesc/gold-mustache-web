@@ -3,6 +3,7 @@ import {
   generateTimeSlots,
   filterAvailableSlots,
   parseDateString,
+  formatDateToString,
 } from "@/utils/time-slots";
 import type {
   ServiceData,
@@ -225,7 +226,7 @@ export async function createAppointment(
     guestClientId: appointment.guestClientId,
     barberId: appointment.barberId,
     serviceId: appointment.serviceId,
-    date: appointment.date.toISOString(),
+    date: formatDateToString(appointment.date),
     startTime: appointment.startTime,
     endTime: appointment.endTime,
     status: appointment.status,
@@ -358,7 +359,7 @@ export async function createGuestAppointment(
     guestClientId: appointment.guestClientId,
     barberId: appointment.barberId,
     serviceId: appointment.serviceId,
-    date: appointment.date.toISOString(),
+    date: formatDateToString(appointment.date),
     startTime: appointment.startTime,
     endTime: appointment.endTime,
     status: appointment.status,
@@ -431,7 +432,7 @@ export async function getClientAppointments(
     guestClientId: apt.guestClientId,
     barberId: apt.barberId,
     serviceId: apt.serviceId,
-    date: apt.date.toISOString(),
+    date: formatDateToString(apt.date),
     startTime: apt.startTime,
     endTime: apt.endTime,
     status: apt.status,
@@ -455,12 +456,17 @@ export async function getBarberAppointments(
   barberId: string,
   dateRange: DateRange,
 ): Promise<AppointmentWithDetails[]> {
+  // Calculate the day after endDate to use with `lt` instead of `lte`
+  // This ensures all appointments on the end date are included regardless of timezone
+  const endDatePlusOne = new Date(dateRange.end);
+  endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+
   const appointments = await prisma.appointment.findMany({
     where: {
       barberId,
       date: {
         gte: dateRange.start,
-        lte: dateRange.end,
+        lt: endDatePlusOne,
       },
     },
     include: {
@@ -503,7 +509,7 @@ export async function getBarberAppointments(
     guestClientId: apt.guestClientId,
     barberId: apt.barberId,
     serviceId: apt.serviceId,
-    date: apt.date.toISOString(),
+    date: formatDateToString(apt.date),
     startTime: apt.startTime,
     endTime: apt.endTime,
     status: apt.status,
@@ -619,7 +625,7 @@ export async function cancelAppointmentByClient(
     guestClientId: updated.guestClientId,
     barberId: updated.barberId,
     serviceId: updated.serviceId,
-    date: updated.date.toISOString(),
+    date: formatDateToString(updated.date),
     startTime: updated.startTime,
     endTime: updated.endTime,
     status: updated.status,
@@ -713,7 +719,7 @@ export async function cancelAppointmentByBarber(
     guestClientId: updated.guestClientId,
     barberId: updated.barberId,
     serviceId: updated.serviceId,
-    date: updated.date.toISOString(),
+    date: formatDateToString(updated.date),
     startTime: updated.startTime,
     endTime: updated.endTime,
     status: updated.status,
@@ -762,6 +768,13 @@ export async function getGuestAppointments(
       },
     },
     include: {
+      client: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
       guestClient: {
         select: {
           id: true,
@@ -790,18 +803,18 @@ export async function getGuestAppointments(
 
   return appointments.map((apt) => ({
     id: apt.id,
-    clientId: null,
+    clientId: apt.clientId,
     guestClientId: apt.guestClientId,
     barberId: apt.barberId,
     serviceId: apt.serviceId,
-    date: apt.date.toISOString(),
+    date: formatDateToString(apt.date),
     startTime: apt.startTime,
     endTime: apt.endTime,
     status: apt.status,
     cancelReason: apt.cancelReason,
     createdAt: apt.createdAt.toISOString(),
     updatedAt: apt.updatedAt.toISOString(),
-    client: null,
+    client: apt.client,
     guestClient: apt.guestClient,
     barber: apt.barber,
     service: {
@@ -897,7 +910,7 @@ export async function cancelAppointmentByGuest(
     guestClientId: updated.guestClientId,
     barberId: updated.barberId,
     serviceId: updated.serviceId,
-    date: updated.date.toISOString(),
+    date: formatDateToString(updated.date),
     startTime: updated.startTime,
     endTime: updated.endTime,
     status: updated.status,

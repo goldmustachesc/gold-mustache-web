@@ -149,8 +149,13 @@ export function useCreateAppointment() {
   return useMutation({
     mutationFn: createAppointment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["slots"] });
+      // Use exact: false to invalidate all appointment-related queries
+      // e.g., ["appointments", "client"], ["appointments", "barber", ...]
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
     },
   });
 }
@@ -161,8 +166,11 @@ export function useCreateGuestAppointment() {
   return useMutation({
     mutationFn: createGuestAppointment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments", "guest"] });
-      queryClient.invalidateQueries({ queryKey: ["slots"] });
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
     },
   });
 }
@@ -186,8 +194,11 @@ export function useCancelAppointment() {
       reason?: string;
     }) => cancelAppointment(appointmentId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["slots"] });
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
     },
   });
 }
@@ -259,7 +270,11 @@ export function useCancelAppointmentByBarber() {
       reason: string;
     }) => cancelAppointmentByBarber(appointmentId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
     },
   });
 }
@@ -328,8 +343,11 @@ export function useCancelGuestAppointment() {
       phone: string;
     }) => cancelGuestAppointment(appointmentId, phone),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments", "guest"] });
-      queryClient.invalidateQueries({ queryKey: ["slots"] });
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
     },
   });
 }

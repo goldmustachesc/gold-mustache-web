@@ -89,11 +89,20 @@ export interface ServiceData {
 // Barber Types
 // ============================================
 
+/**
+ * Barber data returned by public API (without sensitive fields)
+ */
 export interface BarberData {
   id: string;
-  userId: string;
   name: string;
   avatarUrl: string | null;
+}
+
+/**
+ * Full barber data (used internally/admin)
+ */
+export interface BarberFullData extends BarberData {
+  userId: string;
   active: boolean;
 }
 

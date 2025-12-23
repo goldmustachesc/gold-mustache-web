@@ -62,7 +62,7 @@ Branch: feature/image-optimization
 
 ---
 
-### 4. `scripts/optimize-images.js` ✅
+### 4. `scripts/optimize-images.cjs` ✅
 **Mudanças:**
 - Script Node.js para conversão automática
 - Instala sharp automaticamente se necessário
@@ -136,7 +136,7 @@ Branch: feature/image-optimization
 ```
 ✅ next.config.ts - No diagnostics
 ✅ optimized-image.tsx - No diagnostics
-✅ optimize-images.js - No diagnostics
+✅ optimize-images.cjs - No diagnostics
 ```
 
 ---
