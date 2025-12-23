@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   BotMessage,
@@ -81,6 +81,8 @@ function formatPhoneDisplay(phone: string): string {
 export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
   const { data: user } = useUser();
   const router = useRouter();
+  const params = useParams();
+  const locale = (params.locale as string) || "pt-BR";
   const isGuest = !user;
 
   const [step, setStep] = useState<BookingStep>("greeting");
@@ -215,14 +217,22 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
             toast.error(errorMessage);
 
             // If slot is occupied, go back to time selection
-            addMessage({
-              type: "bot",
-              text: "😔 Este horário já foi ocupado. Por favor, escolha outro.",
-            });
-            setSelectedSlot(null);
-            processedStepsRef.current.delete("time");
-            setStep("time");
-            setTimeout(() => setShowSelector("time"), 300);
+            if (
+              errorMessage.includes("horário") ||
+              errorMessage.includes("ocupado") ||
+              errorMessage.includes("reservado")
+            ) {
+              addMessage({
+                type: "bot",
+                text: "😔 Este horário já foi ocupado. Por favor, escolha outro.",
+              });
+              setSelectedSlot(null);
+              processedStepsRef.current.delete("time");
+              setStep("time");
+              setTimeout(() => setShowSelector("time"), 300);
+            } else {
+              addMessage({ type: "bot", text: `❌ ${errorMessage}` });
+            }
           }
         }, 100);
       }
@@ -302,9 +312,9 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
 
   const handleViewGuestAppointments = useCallback(() => {
     if (guestPhone) {
-      router.push(`/meus-agendamentos?phone=${guestPhone}`);
+      router.push(`/${locale}/meus-agendamentos?phone=${guestPhone}`);
     }
-  }, [guestPhone, router]);
+  }, [guestPhone, router, locale]);
 
   const handleNewBooking = useCallback(() => {
     setStep("greeting");
@@ -439,7 +449,7 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
             isGuest ? handleViewGuestAppointments : onViewAppointments
           }
         />
-        {isGuest && <SignupIncentiveBanner />}
+        {isGuest && <SignupIncentiveBanner locale={locale} />}
       </div>
     );
   }

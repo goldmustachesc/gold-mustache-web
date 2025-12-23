@@ -27,10 +27,12 @@ function getPhoneDigits(value: string): string {
 
 interface GuestAppointmentsLookupProps {
   initialPhone?: string;
+  locale: string;
 }
 
 export function GuestAppointmentsLookup({
   initialPhone,
+  locale,
 }: GuestAppointmentsLookupProps) {
   const [phoneInput, setPhoneInput] = useState(
     initialPhone ? formatPhone(initialPhone) : "",
@@ -140,7 +142,7 @@ export function GuestAppointmentsLookup({
                 </p>
               </div>
               <Button asChild variant="outline">
-                <Link href="/agendar">
+                <Link href={`/${locale}/agendar`}>
                   <Calendar className="h-4 w-4 mr-2" />
                   Fazer novo agendamento
                 </Link>
@@ -184,9 +186,9 @@ export function GuestAppointmentsLookup({
 
           {appointments && appointments.length > 0 && (
             <div className="pt-4 space-y-4">
-              <SignupIncentiveBanner />
+              <SignupIncentiveBanner locale={locale} />
               <Button asChild variant="outline" className="w-full">
-                <Link href="/agendar">
+                <Link href={`/${locale}/agendar`}>
                   <Calendar className="h-4 w-4 mr-2" />
                   Fazer novo agendamento
                 </Link>

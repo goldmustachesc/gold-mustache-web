@@ -10,13 +10,15 @@ import {
 import { AppointmentCard } from "@/components/booking/AppointmentCard";
 import { Calendar, LogOut, LogIn, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useParams } from "next/navigation";
 import { QueryProvider } from "@/providers/query-provider";
 import { Toaster, toast } from "sonner";
 import { useState, Suspense } from "react";
 
 function MeusAgendamentosContent() {
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = params.locale as string;
   const phoneFromQuery = searchParams.get("phone");
 
   const { data: user, isLoading: userLoading } = useUser();
@@ -50,7 +52,7 @@ function MeusAgendamentosContent() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/agendar" className="flex items-center gap-2">
+          <Link href={`/${locale}/agendar`} className="flex items-center gap-2">
             <ArrowLeft className="h-5 w-5" />
             <Calendar className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">Meus Agendamentos</h1>
@@ -75,7 +77,9 @@ function MeusAgendamentosContent() {
               </>
             ) : (
               <Button variant="outline" size="sm" asChild>
-                <Link href="/login?redirect=/meus-agendamentos">
+                <Link
+                  href={`/${locale}/login?redirect=/${locale}/meus-agendamentos`}
+                >
                   <LogIn className="h-4 w-4 mr-2" />
                   Entrar
                 </Link>
@@ -88,7 +92,10 @@ function MeusAgendamentosContent() {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Guest View - Phone lookup */}
         {isGuest && (
-          <GuestAppointmentsLookup initialPhone={phoneFromQuery || undefined} />
+          <GuestAppointmentsLookup
+            initialPhone={phoneFromQuery || undefined}
+            locale={locale}
+          />
         )}
 
         {/* Logged in user - Show their appointments directly */}
@@ -117,7 +124,7 @@ function MeusAgendamentosContent() {
                   </p>
                 </div>
                 <Button asChild>
-                  <Link href="/agendar">
+                  <Link href={`/${locale}/agendar`}>
                     <Calendar className="h-4 w-4 mr-2" />
                     Fazer agendamento
                   </Link>
@@ -162,7 +169,7 @@ function MeusAgendamentosContent() {
             {!isLoading && appointments && appointments.length > 0 && (
               <div className="pt-4">
                 <Button asChild variant="outline" className="w-full">
-                  <Link href="/agendar">
+                  <Link href={`/${locale}/agendar`}>
                     <Calendar className="h-4 w-4 mr-2" />
                     Fazer novo agendamento
                   </Link>

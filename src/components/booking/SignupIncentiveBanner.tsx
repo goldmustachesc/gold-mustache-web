@@ -6,10 +6,12 @@ import Link from "next/link";
 
 interface SignupIncentiveBannerProps {
   variant?: "compact" | "full";
+  locale: string;
 }
 
 export function SignupIncentiveBanner({
   variant = "full",
+  locale,
 }: SignupIncentiveBannerProps) {
   if (variant === "compact") {
     return (
@@ -22,7 +24,7 @@ export function SignupIncentiveBanner({
           para quem criar conta!
         </p>
         <Button variant="outline" size="sm" asChild className="ml-auto">
-          <Link href="/signup">Criar conta</Link>
+          <Link href={`/${locale}/signup`}>Criar conta</Link>
         </Button>
       </div>
     );
@@ -43,7 +45,7 @@ export function SignupIncentiveBanner({
             precisar e ganhar uma sobrancelha no seu próximo atendimento.
           </p>
           <Button size="sm" asChild className="mt-2">
-            <Link href="/signup">
+            <Link href={`/${locale}/signup`}>
               <UserPlus className="h-4 w-4 mr-2" />
               Criar conta grátis
             </Link>

@@ -4,7 +4,7 @@ import { ChatBookingPage } from "@/components/booking";
 import { Button } from "@/components/ui/button";
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { Scissors, LogOut, LogIn } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { QueryProvider } from "@/providers/query-provider";
 import { Toaster } from "sonner";
@@ -13,12 +13,14 @@ function AgendarContent() {
   const { data: user, isLoading } = useUser();
   const { mutate: signOut, isPending } = useSignOut();
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
 
   const handleViewAppointments = () => {
     if (user) {
-      router.push("/meus-agendamentos");
+      router.push(`/${locale}/meus-agendamentos`);
     } else {
-      router.push("/login?redirect=/meus-agendamentos");
+      router.push(`/${locale}/login?redirect=/${locale}/meus-agendamentos`);
     }
   };
 
@@ -51,7 +53,7 @@ function AgendarContent() {
               </>
             ) : (
               <Button variant="outline" size="sm" asChild>
-                <Link href="/login?redirect=/agendar">
+                <Link href={`/${locale}/login?redirect=/${locale}/agendar`}>
                   <LogIn className="h-4 w-4 mr-2" />
                   Entrar
                 </Link>

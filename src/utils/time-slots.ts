@@ -196,23 +196,128 @@ export function getAvailableSlots(slots: TimeSlot[]): TimeSlot[] {
 }
 
 /**
- * Checks if the given date is today in local timezone
+ * Brazil timezone for business hours calculations.
+ * All time comparisons should use this timezone since
+ * working hours are defined in Brazilian local time.
+ */
+const BRAZIL_TIMEZONE = "America/Sao_Paulo";
+
+/**
+ * Gets current time in Brazil timezone
+ */
+function getBrazilTime(): { hours: number; minutes: number } {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: BRAZIL_TIMEZONE,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(now);
+  const hours = Number.parseInt(
+    parts.find((p) => p.type === "hour")?.value || "0",
+    10,
+  );
+  const minutes = Number.parseInt(
+    parts.find((p) => p.type === "minute")?.value || "0",
+    10,
+  );
+
+  return { hours, minutes };
+}
+
+/**
+ * Gets current date components in Brazil timezone
+ */
+function getBrazilDate(): { year: number; month: number; day: number } {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: BRAZIL_TIMEZONE,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+
+  const parts = formatter.formatToParts(now);
+  const year = Number.parseInt(
+    parts.find((p) => p.type === "year")?.value || "0",
+    10,
+  );
+  const month = Number.parseInt(
+    parts.find((p) => p.type === "month")?.value || "0",
+    10,
+  );
+  const day = Number.parseInt(
+    parts.find((p) => p.type === "day")?.value || "0",
+    10,
+  );
+
+  return { year, month, day };
+}
+
+/**
+ * Gets current date in Brazil timezone as "YYYY-MM-DD" string.
+ * Useful for comparing with dates formatted using formatPrismaDateToString.
+ */
+export function getBrazilDateString(): string {
+  const { year, month, day } = getBrazilDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * Creates a UTC midnight Date object for today in Brazil timezone.
+ * This is essential for database queries against Prisma @db.Date fields,
+ * which store dates at UTC 00:00:00.
+ *
+ * Example: If it's Dec 23 at 22:00 BRT (Dec 24 01:00 UTC),
+ * we want to query for Dec 23 UTC midnight, not Dec 24 UTC midnight.
+ *
+ * @returns Date object representing today's date at UTC 00:00:00
+ */
+export function getTodayUTCMidnight(): Date {
+  const { year, month, day } = getBrazilDate();
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+}
+
+/**
+ * Parses a date string "YYYY-MM-DD" to a UTC midnight Date object.
+ * Use this when creating dates for database queries against Prisma @db.Date fields.
+ *
+ * Unlike parseDateString (which creates local dates), this ensures the Date
+ * object represents the exact UTC midnight for the given date, matching
+ * how Prisma stores @db.Date values.
+ */
+export function parseDateStringToUTC(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+}
+
+/**
+ * Checks if the given date is today in Brazil timezone.
+ * This is important because the server may run in UTC,
+ * but business hours are defined in Brazilian local time.
  */
 export function isToday(date: Date): boolean {
-  const today = new Date();
+  const brazilToday = getBrazilDate();
+
+  // The date parameter comes from parseDateString which creates a local date
+  // We need to compare the date's components with Brazil's current date
   return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
+    date.getFullYear() === brazilToday.year &&
+    date.getMonth() + 1 === brazilToday.month &&
+    date.getDate() === brazilToday.day
   );
 }
 
 /**
- * Gets current time in minutes since midnight
+ * Gets current time in minutes since midnight (Brazil timezone).
+ * This ensures slot filtering works correctly regardless of
+ * where the server is running (e.g., Vercel runs in UTC).
  */
 export function getCurrentTimeInMinutes(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+  const { hours, minutes } = getBrazilTime();
+  return hours * 60 + minutes;
 }
 
 /**
@@ -246,14 +351,34 @@ export function filterPastSlots(slots: TimeSlot[], date: Date): TimeSlot[] {
 }
 
 /**
- * Checks if a given date and time is in the past
+ * Checks if a given date and time is in the past (Brazil timezone).
+ * This function compares the appointment date/time with the current
+ * Brazilian time to ensure correct validation regardless of server timezone.
  */
 export function isDateTimeInPast(date: Date, time: string): boolean {
-  const now = new Date();
-  const [hours, minutes] = time.split(":").map(Number);
+  const brazilDate = getBrazilDate();
+  const brazilTime = getBrazilTime();
 
-  const appointmentDateTime = new Date(date);
-  appointmentDateTime.setHours(hours, minutes, 0, 0);
+  const [appointmentHours, appointmentMinutes] = time.split(":").map(Number);
+  const appointmentYear = date.getFullYear();
+  const appointmentMonth = date.getMonth() + 1;
+  const appointmentDay = date.getDate();
 
-  return appointmentDateTime <= now;
+  // Compare dates first
+  if (appointmentYear < brazilDate.year) return true;
+  if (appointmentYear > brazilDate.year) return false;
+
+  if (appointmentMonth < brazilDate.month) return true;
+  if (appointmentMonth > brazilDate.month) return false;
+
+  if (appointmentDay < brazilDate.day) return true;
+  if (appointmentDay > brazilDate.day) return false;
+
+  // Same day - compare times
+  const appointmentMinutesSinceMidnight =
+    appointmentHours * 60 + appointmentMinutes;
+  const currentMinutesSinceMidnight =
+    brazilTime.hours * 60 + brazilTime.minutes;
+
+  return appointmentMinutesSinceMidnight <= currentMinutesSinceMidnight;
 }

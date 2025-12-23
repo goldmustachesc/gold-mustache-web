@@ -11,11 +11,14 @@ import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { Calendar, ClipboardList, Scissors } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
   const { data: user, isLoading } = useUser();
   const { mutate: signOut, isPending } = useSignOut();
   const { data: barberProfile } = useBarberProfile();
+  const params = useParams();
+  const locale = params.locale as string;
 
   const isBarber = !!barberProfile;
 
@@ -49,7 +52,7 @@ export default function DashboardPage() {
 
       <h2 className="text-xl font-semibold mb-4">Agendamento</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link href="/agendar">
+        <Link href={`/${locale}/agendar`}>
           <Card className="hover:border-primary transition-colors cursor-pointer h-full">
             <CardHeader>
               <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
@@ -63,7 +66,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/meus-agendamentos">
+        <Link href={`/${locale}/meus-agendamentos`}>
           <Card className="hover:border-primary transition-colors cursor-pointer h-full">
             <CardHeader>
               <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
@@ -82,7 +85,7 @@ export default function DashboardPage() {
         <>
           <h2 className="text-xl font-semibold mb-4 mt-8">Área Profissional</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link href="/barbeiro">
+            <Link href={`/${locale}/barbeiro`}>
               <Card className="hover:border-primary transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">

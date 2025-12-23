@@ -11,7 +11,7 @@ import {
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { LogOut, Scissors } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { formatDateToString } from "@/utils/time-slots";
 
 // Helper to get start of week (Sunday)
@@ -34,6 +34,8 @@ function getWeekEnd(date: Date): Date {
 
 export default function BarberDashboardPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
   const { data: user, isLoading: userLoading } = useUser();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
@@ -50,9 +52,9 @@ export default function BarberDashboardPage() {
   useEffect(() => {
     if (!barberLoading && !barberProfile) {
       toast.error("Acesso restrito a barbeiros");
-      router.push("/dashboard");
+      router.push(`/${locale}/dashboard`);
     }
-  }, [barberProfile, barberLoading, router]);
+  }, [barberProfile, barberLoading, router, locale]);
 
   // Use barber's actual ID from profile
   const barberId = barberProfile?.id ?? null;
@@ -93,11 +95,15 @@ export default function BarberDashboardPage() {
   };
 
   // Filter appointments for selected date
-  // apt.date already comes as "YYYY-MM-DD" string from API
-  const dailyAppointments = appointments.filter((apt) => {
-    const selectedDateStr = formatDateToString(selectedDate);
-    return apt.date === selectedDateStr;
-  });
+  // Note: Both formatting methods produce the same "YYYY-MM-DD" format for the same calendar day:
+  // - apt.date comes from API formatted with formatPrismaDateToString (UTC methods)
+  // - selectedDate is local, formatted with formatDateToString (local methods)
+  // This works because both represent the same calendar date, just using different timezones
+  // for the underlying Date object interpretation.
+  const selectedDateStr = formatDateToString(selectedDate);
+  const dailyAppointments = appointments.filter(
+    (apt) => apt.date === selectedDateStr,
+  );
 
   const isLoading = userLoading || barberLoading || appointmentsLoading;
 

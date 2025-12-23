@@ -6,6 +6,10 @@ import {
   parseDateString,
   formatPrismaDateToString,
   isDateTimeInPast,
+  getCurrentTimeInMinutes,
+  parseTimeToMinutes,
+  getBrazilDateString,
+  getTodayUTCMidnight,
 } from "@/utils/time-slots";
 import type {
   ServiceData,
@@ -397,8 +401,9 @@ export async function createGuestAppointment(
 export async function getClientAppointments(
   clientId: string,
 ): Promise<AppointmentWithDetails[]> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use UTC midnight for today in Brazil timezone to correctly compare
+  // against Prisma @db.Date fields which store dates at UTC 00:00:00
+  const today = getTodayUTCMidnight();
 
   const appointments = await prisma.appointment.findMany({
     where: {
@@ -545,35 +550,45 @@ export async function getBarberAppointments(
 // Cancellation Functions
 // ============================================
 
-const CANCELLATION_WINDOW_HOURS = 2;
+const CANCELLATION_WINDOW_MINUTES = 2 * 60; // 2 hours in minutes
 
 /**
  * Checks if an appointment can be cancelled by client (at least 2 hours before)
  *
  * Note: appointmentDate comes from Prisma @db.Date field as UTC midnight.
- * We use UTC methods to extract year/month/day, then create a local datetime
- * with the appointment time to compare against current local time.
+ * We extract year/month/day using UTC methods and compare against Brazil timezone.
+ *
+ * The comparison uses formatPrismaDateToString to get the appointment's date string
+ * and compares it with getBrazilDateString (current Brazil date) for consistency.
  */
 export function canClientCancel(
   appointmentDate: Date,
   appointmentTime: string,
 ): boolean {
-  const [hours, minutes] = appointmentTime.split(":").map(Number);
+  // Get appointment date as "YYYY-MM-DD" string (using UTC since Prisma stores dates at UTC midnight)
+  const appointmentDateStr = formatPrismaDateToString(appointmentDate);
 
-  // Extract date components using UTC (since Prisma @db.Date returns UTC midnight)
-  const year = appointmentDate.getUTCFullYear();
-  const month = appointmentDate.getUTCMonth();
-  const day = appointmentDate.getUTCDate();
+  // Get current Brazil date as "YYYY-MM-DD" string
+  const brazilDateStr = getBrazilDateString();
 
-  // Create appointment datetime in local timezone
-  // This represents when the appointment actually occurs locally
-  const appointmentDateTime = new Date(year, month, day, hours, minutes, 0, 0);
+  const appointmentMinutes = parseTimeToMinutes(appointmentTime);
+  const currentMinutes = getCurrentTimeInMinutes();
 
-  const now = new Date();
-  const hoursUntilAppointment =
-    (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+  // Compare date strings to determine if appointment is today, past, or future
+  if (appointmentDateStr < brazilDateStr) {
+    // Appointment is in the past - cannot cancel
+    return false;
+  }
 
-  return hoursUntilAppointment >= CANCELLATION_WINDOW_HOURS;
+  if (appointmentDateStr > brazilDateStr) {
+    // Appointment is in the future (not today) - always cancellable
+    return true;
+  }
+
+  // Same day - check minutes until appointment
+  const minutesUntilAppointment = appointmentMinutes - currentMinutes;
+
+  return minutesUntilAppointment >= CANCELLATION_WINDOW_MINUTES;
 }
 
 /**
@@ -783,8 +798,9 @@ export async function getGuestAppointments(
     return []; // No guest client found with this phone
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use UTC midnight for today in Brazil timezone to correctly compare
+  // against Prisma @db.Date fields which store dates at UTC 00:00:00
+  const today = getTodayUTCMidnight();
 
   const appointments = await prisma.appointment.findMany({
     where: {

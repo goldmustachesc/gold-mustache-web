@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -72,6 +72,8 @@ const BASE_STEPS: {
 export function BookingPage({ onViewAppointments }: BookingPageProps) {
   const { data: user } = useUser();
   const router = useRouter();
+  const params = useParams();
+  const locale = (params.locale as string) || "pt-BR";
   const isGuest = !user;
 
   const [step, setStep] = useState<BookingStep>("barber");
@@ -182,7 +184,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
 
   const handleViewGuestAppointments = () => {
     if (guestPhone) {
-      router.push(`/meus-agendamentos?phone=${guestPhone}`);
+      router.push(`/${locale}/meus-agendamentos?phone=${guestPhone}`);
     }
   };
 
@@ -220,7 +222,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
             isGuest ? handleViewGuestAppointments : onViewAppointments
           }
         />
-        {isGuest && <SignupIncentiveBanner />}
+        {isGuest && <SignupIncentiveBanner locale={locale} />}
       </div>
     );
   }
@@ -373,7 +375,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
 
           {step === "info" && (
             <div className="space-y-6">
-              <SignupIncentiveBanner variant="compact" />
+              <SignupIncentiveBanner variant="compact" locale={locale} />
               <GuestInfoStep
                 onSubmit={handleConfirmGuest}
                 isLoading={createGuestAppointment.isPending}

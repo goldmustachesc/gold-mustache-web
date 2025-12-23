@@ -8,7 +8,11 @@ import {
 import { notifyAppointmentConfirmed } from "@/services/notification";
 import { createAppointmentSchema } from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
-import { parseDateString } from "@/utils/time-slots";
+import {
+  parseDateString,
+  parseDateStringToUTC,
+  getTodayUTCMidnight,
+} from "@/utils/time-slots";
 import { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -37,12 +41,15 @@ export async function GET(request: Request) {
 
     if (barber && barberId === barber.id) {
       // Barber viewing their own appointments
-      // Use parseDateString to ensure correct local timezone interpretation
+      // Use parseDateStringToUTC for database queries against @db.Date fields
+      // which store dates at UTC 00:00:00
       const dateRange = {
-        start: startDate ? parseDateString(startDate) : new Date(),
+        start: startDate
+          ? parseDateStringToUTC(startDate)
+          : getTodayUTCMidnight(),
         end: endDate
-          ? parseDateString(endDate)
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          ? parseDateStringToUTC(endDate)
+          : new Date(getTodayUTCMidnight().getTime() + 7 * 24 * 60 * 60 * 1000),
       };
 
       const appointments = await getBarberAppointments(barber.id, dateRange);
