@@ -2,8 +2,10 @@ import { prisma } from "@/lib/prisma";
 import {
   generateTimeSlots,
   filterAvailableSlots,
+  filterPastSlots,
   parseDateString,
-  formatDateToString,
+  formatPrismaDateToString,
+  isDateTimeInPast,
 } from "@/utils/time-slots";
 import type {
   ServiceData,
@@ -123,7 +125,10 @@ export async function getAvailableSlots(
     service.duration,
   );
 
-  return availableSlots.map((slot) => ({
+  // Filter out slots that have already passed (for today)
+  const validSlots = filterPastSlots(availableSlots, date);
+
+  return validSlots.map((slot) => ({
     ...slot,
     barberId,
   }));
@@ -161,6 +166,11 @@ export async function createAppointment(
 
   // Parse date string to local timezone to avoid UTC interpretation issues
   const appointmentDate = parseDateString(date);
+
+  // Validate that the appointment is not in the past
+  if (isDateTimeInPast(appointmentDate, startTime)) {
+    throw new Error("SLOT_IN_PAST");
+  }
 
   // Check if slot is available
   const existingAppointment = await prisma.appointment.findFirst({
@@ -226,7 +236,7 @@ export async function createAppointment(
     guestClientId: appointment.guestClientId,
     barberId: appointment.barberId,
     serviceId: appointment.serviceId,
-    date: formatDateToString(appointment.date),
+    date: formatPrismaDateToString(appointment.date),
     startTime: appointment.startTime,
     endTime: appointment.endTime,
     status: appointment.status,
@@ -271,6 +281,11 @@ export async function createGuestAppointment(
 
   // Parse date string to local timezone to avoid UTC interpretation issues
   const appointmentDate = parseDateString(date);
+
+  // Validate that the appointment is not in the past
+  if (isDateTimeInPast(appointmentDate, startTime)) {
+    throw new Error("SLOT_IN_PAST");
+  }
 
   // Check if slot is available
   const existingAppointment = await prisma.appointment.findFirst({
@@ -359,7 +374,7 @@ export async function createGuestAppointment(
     guestClientId: appointment.guestClientId,
     barberId: appointment.barberId,
     serviceId: appointment.serviceId,
-    date: formatDateToString(appointment.date),
+    date: formatPrismaDateToString(appointment.date),
     startTime: appointment.startTime,
     endTime: appointment.endTime,
     status: appointment.status,
@@ -432,7 +447,7 @@ export async function getClientAppointments(
     guestClientId: apt.guestClientId,
     barberId: apt.barberId,
     serviceId: apt.serviceId,
-    date: formatDateToString(apt.date),
+    date: formatPrismaDateToString(apt.date),
     startTime: apt.startTime,
     endTime: apt.endTime,
     status: apt.status,
@@ -509,7 +524,7 @@ export async function getBarberAppointments(
     guestClientId: apt.guestClientId,
     barberId: apt.barberId,
     serviceId: apt.serviceId,
-    date: formatDateToString(apt.date),
+    date: formatPrismaDateToString(apt.date),
     startTime: apt.startTime,
     endTime: apt.endTime,
     status: apt.status,
@@ -534,14 +549,25 @@ const CANCELLATION_WINDOW_HOURS = 2;
 
 /**
  * Checks if an appointment can be cancelled by client (at least 2 hours before)
+ *
+ * Note: appointmentDate comes from Prisma @db.Date field as UTC midnight.
+ * We use UTC methods to extract year/month/day, then create a local datetime
+ * with the appointment time to compare against current local time.
  */
 export function canClientCancel(
   appointmentDate: Date,
   appointmentTime: string,
 ): boolean {
   const [hours, minutes] = appointmentTime.split(":").map(Number);
-  const appointmentDateTime = new Date(appointmentDate);
-  appointmentDateTime.setHours(hours, minutes, 0, 0);
+
+  // Extract date components using UTC (since Prisma @db.Date returns UTC midnight)
+  const year = appointmentDate.getUTCFullYear();
+  const month = appointmentDate.getUTCMonth();
+  const day = appointmentDate.getUTCDate();
+
+  // Create appointment datetime in local timezone
+  // This represents when the appointment actually occurs locally
+  const appointmentDateTime = new Date(year, month, day, hours, minutes, 0, 0);
 
   const now = new Date();
   const hoursUntilAppointment =
@@ -625,7 +651,7 @@ export async function cancelAppointmentByClient(
     guestClientId: updated.guestClientId,
     barberId: updated.barberId,
     serviceId: updated.serviceId,
-    date: formatDateToString(updated.date),
+    date: formatPrismaDateToString(updated.date),
     startTime: updated.startTime,
     endTime: updated.endTime,
     status: updated.status,
@@ -719,7 +745,7 @@ export async function cancelAppointmentByBarber(
     guestClientId: updated.guestClientId,
     barberId: updated.barberId,
     serviceId: updated.serviceId,
-    date: formatDateToString(updated.date),
+    date: formatPrismaDateToString(updated.date),
     startTime: updated.startTime,
     endTime: updated.endTime,
     status: updated.status,
@@ -807,7 +833,7 @@ export async function getGuestAppointments(
     guestClientId: apt.guestClientId,
     barberId: apt.barberId,
     serviceId: apt.serviceId,
-    date: formatDateToString(apt.date),
+    date: formatPrismaDateToString(apt.date),
     startTime: apt.startTime,
     endTime: apt.endTime,
     status: apt.status,
@@ -910,7 +936,7 @@ export async function cancelAppointmentByGuest(
     guestClientId: updated.guestClientId,
     barberId: updated.barberId,
     serviceId: updated.serviceId,
-    date: formatDateToString(updated.date),
+    date: formatPrismaDateToString(updated.date),
     startTime: updated.startTime,
     endTime: updated.endTime,
     status: updated.status,

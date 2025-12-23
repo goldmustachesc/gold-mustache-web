@@ -47,15 +47,18 @@ export function useSignIn() {
 }
 
 export function useSignUp() {
+  const router = useRouter();
+
   return useMutation({
     mutationFn: (data: SignupInput) =>
       authService.signUp(data.email, data.password),
-    onSuccess: (response) => {
+    onSuccess: (response, variables) => {
       if (response.error) {
         toast.error(response.error.message || "Erro ao criar conta");
         return;
       }
       toast.success("Conta criada! Verifique seu email.");
+      router.push(`/verify-email?email=${encodeURIComponent(variables.email)}`);
     },
     onError: () => {
       toast.error("Erro ao criar conta");

@@ -129,19 +129,29 @@ export async function POST(request: Request) {
     // Create appointment
     const appointment = await createAppointment(validation.data, profile.id);
 
-    // Send confirmation notification - parse date correctly to avoid timezone issues
+    // Send confirmation notification
+    // appointment.date comes as "YYYY-MM-DD" string from service
     await notifyAppointmentConfirmed(profile.id, {
       serviceName: appointment.service.name,
       barberName: appointment.barber.name,
-      date: parseDateString(appointment.date.split("T")[0]).toLocaleDateString(
-        "pt-BR",
-      ),
+      date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
       time: appointment.startTime,
     });
 
     return NextResponse.json({ appointment }, { status: 201 });
   } catch (error) {
     console.error("Error creating appointment:", error);
+
+    // Handle slot in the past
+    if (error instanceof Error && error.message === "SLOT_IN_PAST") {
+      return NextResponse.json(
+        {
+          error: "SLOT_IN_PAST",
+          message: "Não é possível agendar em horários que já passaram",
+        },
+        { status: 400 },
+      );
+    }
 
     // Handle slot already occupied
     if (error instanceof Error && error.message === "SLOT_OCCUPIED") {

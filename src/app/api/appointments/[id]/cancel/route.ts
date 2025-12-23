@@ -61,15 +61,13 @@ export async function PATCH(
         reason,
       );
 
-      // Notify client - parse date correctly to avoid timezone issues
+      // Notify client (appointment.date comes as "YYYY-MM-DD" from service)
       // Only notify registered clients (not guests)
       if (appointment.clientId) {
         await notifyAppointmentCancelledByBarber(appointment.clientId, {
           serviceName: appointment.service.name,
           barberName: appointment.barber.name,
-          date: parseDateString(
-            appointment.date.split("T")[0],
-          ).toLocaleDateString("pt-BR"),
+          date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
           time: appointment.startTime,
           reason,
         });
@@ -101,7 +99,7 @@ export async function PATCH(
     });
 
     if (appointmentBarber) {
-      // Parse date correctly to avoid timezone issues
+      // appointment.date comes as "YYYY-MM-DD" from service
       const clientName =
         appointment.client?.fullName ??
         appointment.guestClient?.fullName ??
@@ -109,9 +107,7 @@ export async function PATCH(
       await notifyAppointmentCancelledByClient(appointmentBarber.userId, {
         clientName,
         serviceName: appointment.service.name,
-        date: parseDateString(
-          appointment.date.split("T")[0],
-        ).toLocaleDateString("pt-BR"),
+        date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
         time: appointment.startTime,
       });
     }

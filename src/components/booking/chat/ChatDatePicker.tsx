@@ -11,7 +11,15 @@ interface ChatDatePickerProps {
   maxDays?: number;
 }
 
-const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
+const WEEKDAYS = [
+  { key: "dom", label: "D" },
+  { key: "seg", label: "S" },
+  { key: "ter", label: "T" },
+  { key: "qua", label: "Q" },
+  { key: "qui", label: "Q" },
+  { key: "sex", label: "S" },
+  { key: "sab", label: "S" },
+];
 const MONTHS = [
   "Janeiro",
   "Fevereiro",
@@ -130,10 +138,10 @@ export function ChatDatePicker({
       <div className="grid grid-cols-7 gap-1 mb-1">
         {WEEKDAYS.map((day) => (
           <div
-            key={day}
+            key={day.key}
             className="text-center text-xs font-medium text-muted-foreground py-1"
           >
-            {day}
+            {day.label}
           </div>
         ))}
       </div>

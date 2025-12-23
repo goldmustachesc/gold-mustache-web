@@ -27,6 +27,17 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error creating guest appointment:", error);
 
+    // Handle slot in the past
+    if (error instanceof Error && error.message === "SLOT_IN_PAST") {
+      return NextResponse.json(
+        {
+          error: "SLOT_IN_PAST",
+          message: "Não é possível agendar em horários que já passaram",
+        },
+        { status: 400 },
+      );
+    }
+
     // Handle slot already occupied
     if (error instanceof Error && error.message === "SLOT_OCCUPIED") {
       return NextResponse.json(

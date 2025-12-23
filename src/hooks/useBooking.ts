@@ -50,6 +50,11 @@ async function createAppointment(
 
   if (!res.ok) {
     const error = await res.json();
+    if (error.error === "SLOT_IN_PAST") {
+      throw new Error(
+        "Este horário já passou. Por favor, escolha outro horário.",
+      );
+    }
     if (error.error === "SLOT_OCCUPIED") {
       throw new Error(
         "Este horário já foi reservado. Por favor, escolha outro.",
@@ -73,6 +78,11 @@ async function createGuestAppointment(
 
   if (!res.ok) {
     const error = await res.json();
+    if (error.error === "SLOT_IN_PAST") {
+      throw new Error(
+        "Este horário já passou. Por favor, escolha outro horário.",
+      );
+    }
     if (error.error === "SLOT_OCCUPIED") {
       throw new Error(
         "Este horário já foi reservado. Por favor, escolha outro.",

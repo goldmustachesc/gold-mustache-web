@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDateToString, parseDateString } from "@/utils/time-slots";
+import { formatDateToString } from "@/utils/time-slots";
 
 interface WeeklyCalendarProps {
   weekStart: Date;
@@ -32,17 +32,11 @@ export function WeeklyCalendar({
   });
 
   // Count appointments per day
-  // Use formatDateToString to ensure correct local timezone comparison
+  // apt.date already comes as "YYYY-MM-DD" string from API
   const appointmentCounts = weekDays.reduce(
     (acc, date) => {
       const dateStr = formatDateToString(date);
-      acc[dateStr] = appointments.filter((apt) => {
-        // apt.date comes as ISO string from API, parse it properly
-        const aptDate = formatDateToString(
-          parseDateString(apt.date.split("T")[0]),
-        );
-        return aptDate === dateStr;
-      }).length;
+      acc[dateStr] = appointments.filter((apt) => apt.date === dateStr).length;
       return acc;
     },
     {} as Record<string, number>,

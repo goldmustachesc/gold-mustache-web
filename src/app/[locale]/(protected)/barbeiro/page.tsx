@@ -12,7 +12,7 @@ import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { LogOut, Scissors } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { formatDateToString, parseDateString } from "@/utils/time-slots";
+import { formatDateToString } from "@/utils/time-slots";
 
 // Helper to get start of week (Sunday)
 function getWeekStart(date: Date): Date {
@@ -93,12 +93,10 @@ export default function BarberDashboardPage() {
   };
 
   // Filter appointments for selected date
-  // Use formatDateToString to ensure correct local timezone comparison
+  // apt.date already comes as "YYYY-MM-DD" string from API
   const dailyAppointments = appointments.filter((apt) => {
-    // apt.date comes as ISO string from API, parse it properly
-    const aptDate = formatDateToString(parseDateString(apt.date.split("T")[0]));
     const selectedDateStr = formatDateToString(selectedDate);
-    return aptDate === selectedDateStr;
+    return apt.date === selectedDateStr;
   });
 
   const isLoading = userLoading || barberLoading || appointmentsLoading;

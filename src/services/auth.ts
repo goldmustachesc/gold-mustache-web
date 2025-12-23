@@ -72,4 +72,12 @@ export const authService = {
     const { data } = await supabase.auth.getSession();
     return data.session;
   },
+
+  async resendConfirmationEmail(email: string): Promise<void> {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+    if (error) throw error;
+  },
 };
