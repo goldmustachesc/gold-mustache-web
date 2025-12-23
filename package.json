@@ -12,6 +12,7 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "prepare": "husky",
+    "postinstall": "prisma generate",
     "commit": "git-cz",
     "optimize:images": "node scripts/optimize-images.cjs"
   },
