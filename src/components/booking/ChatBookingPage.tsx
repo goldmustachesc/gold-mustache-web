@@ -181,6 +181,18 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
     [addMessage],
   );
 
+  const handleChooseAnotherDate = useCallback(() => {
+    setShowSelector(null);
+    setSelectedDate(null);
+    setSelectedSlot(null);
+    // Remove "time" from processed steps so the message shows again
+    processedStepsRef.current.delete("time");
+    // Also remove "date" so the prompt shows again
+    processedStepsRef.current.delete("date");
+    setStep("date");
+    setTimeout(() => setShowSelector("date"), 300);
+  }, []);
+
   const handleSlotSelect = useCallback(
     (slot: TimeSlot) => {
       setShowSelector(null);
@@ -216,12 +228,24 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
               error instanceof Error ? error.message : "Erro ao agendar";
             toast.error(errorMessage);
 
-            // If slot is occupied, go back to time selection
-            if (
-              errorMessage.includes("horário") ||
+            // Handle specific slot errors with appropriate messages
+            const isSlotPastError = errorMessage.includes("passou");
+            const isSlotOccupiedError =
               errorMessage.includes("ocupado") ||
-              errorMessage.includes("reservado")
-            ) {
+              errorMessage.includes("reservado");
+
+            if (isSlotPastError) {
+              // Slot time has passed - user needs to select a different time
+              addMessage({
+                type: "bot",
+                text: "⏰ Este horário já passou. Por favor, escolha outro horário.",
+              });
+              setSelectedSlot(null);
+              processedStepsRef.current.delete("time");
+              setStep("time");
+              setTimeout(() => setShowSelector("time"), 300);
+            } else if (isSlotOccupiedError) {
+              // Slot was taken by someone else
               addMessage({
                 type: "bot",
                 text: "😔 Este horário já foi ocupado. Por favor, escolha outro.",
@@ -231,7 +255,15 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
               setStep("time");
               setTimeout(() => setShowSelector("time"), 300);
             } else {
-              addMessage({ type: "bot", text: `❌ ${errorMessage}` });
+              // Other errors - recover state so user can retry
+              addMessage({
+                type: "bot",
+                text: `❌ ${errorMessage}. Por favor, tente novamente.`,
+              });
+              setSelectedSlot(null);
+              processedStepsRef.current.delete("time");
+              setStep("time");
+              setTimeout(() => setShowSelector("time"), 300);
             }
           }
         }, 100);
@@ -279,12 +311,24 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
           error instanceof Error ? error.message : "Erro ao agendar";
         toast.error(errorMessage);
 
-        // If slot is occupied, go back to time selection
-        if (
-          errorMessage.includes("horário") ||
+        // Handle specific slot errors with appropriate messages
+        const isSlotPastError = errorMessage.includes("passou");
+        const isSlotOccupiedError =
           errorMessage.includes("ocupado") ||
-          errorMessage.includes("reservado")
-        ) {
+          errorMessage.includes("reservado");
+
+        if (isSlotPastError) {
+          // Slot time has passed - user needs to select a different time
+          addMessage({
+            type: "bot",
+            text: "⏰ Este horário já passou. Por favor, escolha outro horário.",
+          });
+          setSelectedSlot(null);
+          processedStepsRef.current.delete("time");
+          setStep("time");
+          setTimeout(() => setShowSelector("time"), 300);
+        } else if (isSlotOccupiedError) {
+          // Slot was taken by someone else
           addMessage({
             type: "bot",
             text: "😔 Este horário já foi ocupado. Por favor, escolha outro horário.",
@@ -294,6 +338,7 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
           setStep("time");
           setTimeout(() => setShowSelector("time"), 300);
         } else {
+          // Other errors - let user retry submitting their info
           addMessage({ type: "bot", text: `❌ ${errorMessage}` });
           setShowSelector("info");
           setStep("info");
@@ -491,6 +536,7 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
             <ChatTimeSlotSelector
               slots={slots}
               onSelect={handleSlotSelect}
+              onChooseAnotherDate={handleChooseAnotherDate}
               isLoading={slotsLoading}
             />
           </div>

@@ -33,12 +33,28 @@ export async function PATCH(
     const body = await request.json();
     const { reason } = body;
 
-    // Check if user is a barber
+    // Fetch the appointment first to determine the correct cancellation path
+    const appointmentToCancel = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { barberId: true, clientId: true },
+    });
+
+    if (!appointmentToCancel) {
+      return NextResponse.json(
+        { error: "NOT_FOUND", message: "Agendamento não encontrado" },
+        { status: 404 },
+      );
+    }
+
+    // Check if user is a barber and is THE barber of this specific appointment
     const barber = await prisma.barber.findUnique({
       where: { userId: user.id },
     });
 
-    if (barber) {
+    const isBarberOfThisAppointment =
+      barber && appointmentToCancel.barberId === barber.id;
+
+    if (isBarberOfThisAppointment) {
       // Barber cancellation - requires reason
       const validation = cancelAppointmentByBarberSchema.safeParse({
         appointmentId,
@@ -63,20 +79,28 @@ export async function PATCH(
 
       // Notify client (appointment.date comes as "YYYY-MM-DD" from service)
       // Only notify registered clients (not guests)
+      // appointment.clientId is Profile.id, but notifications use Supabase user.id
       if (appointment.clientId) {
-        await notifyAppointmentCancelledByBarber(appointment.clientId, {
-          serviceName: appointment.service.name,
-          barberName: appointment.barber.name,
-          date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
-          time: appointment.startTime,
-          reason,
+        const clientProfile = await prisma.profile.findUnique({
+          where: { id: appointment.clientId },
+          select: { userId: true },
         });
+
+        if (clientProfile) {
+          await notifyAppointmentCancelledByBarber(clientProfile.userId, {
+            serviceName: appointment.service.name,
+            barberName: appointment.barber.name,
+            date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
+            time: appointment.startTime,
+            reason,
+          });
+        }
       }
 
       return NextResponse.json({ appointment });
     }
 
-    // Client cancellation
+    // Client cancellation (including barbers who are clients of other barbers)
     const profile = await prisma.profile.findUnique({
       where: { userId: user.id },
     });

@@ -4,12 +4,12 @@ import {
   filterAvailableSlots,
   filterPastSlots,
   parseDateString,
+  parseTimeToMinutes,
   formatPrismaDateToString,
   isDateTimeInPast,
-  getCurrentTimeInMinutes,
-  parseTimeToMinutes,
   getBrazilDateString,
   getTodayUTCMidnight,
+  getMinutesUntilAppointment,
 } from "@/utils/time-slots";
 import type {
   ServiceData,
@@ -20,6 +20,53 @@ import type {
   DateRange,
 } from "@/types/booking";
 import { AppointmentStatus } from "@prisma/client";
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Checks if a new appointment time range overlaps with any existing confirmed appointments.
+ * Two time ranges [A, B) and [C, D) overlap if: A < D AND C < B
+ *
+ * This prevents race conditions where two users booking different services
+ * (with different durations) could create overlapping appointments.
+ *
+ * @example
+ * // 45-min service at 09:45-10:30 vs 30-min service at 10:00-10:30
+ * // These would overlap because 09:45 < 10:30 AND 10:00 < 10:30
+ */
+async function hasOverlappingAppointment(
+  barberId: string,
+  appointmentDate: Date,
+  newStartTime: string,
+  newEndTime: string,
+): Promise<boolean> {
+  // Fetch all confirmed appointments for this barber on this date
+  const existingAppointments = await prisma.appointment.findMany({
+    where: {
+      barberId,
+      date: appointmentDate,
+      status: AppointmentStatus.CONFIRMED,
+    },
+    select: {
+      startTime: true,
+      endTime: true,
+    },
+  });
+
+  const newStartMinutes = parseTimeToMinutes(newStartTime);
+  const newEndMinutes = parseTimeToMinutes(newEndTime);
+
+  // Check for overlap with each existing appointment
+  return existingAppointments.some((apt) => {
+    const aptStartMinutes = parseTimeToMinutes(apt.startTime);
+    const aptEndMinutes = parseTimeToMinutes(apt.endTime);
+
+    // Two intervals [A, B) and [C, D) overlap if A < D AND C < B
+    return newStartMinutes < aptEndMinutes && aptStartMinutes < newEndMinutes;
+  });
+}
 
 // ============================================
 // Service Functions
@@ -176,17 +223,16 @@ export async function createAppointment(
     throw new Error("SLOT_IN_PAST");
   }
 
-  // Check if slot is available
-  const existingAppointment = await prisma.appointment.findFirst({
-    where: {
-      barberId,
-      date: appointmentDate,
-      startTime,
-      status: AppointmentStatus.CONFIRMED,
-    },
-  });
+  // Check if slot time range overlaps with any existing appointment
+  // This prevents race conditions with different service durations
+  const hasOverlap = await hasOverlappingAppointment(
+    barberId,
+    appointmentDate,
+    startTime,
+    endTime,
+  );
 
-  if (existingAppointment) {
+  if (hasOverlap) {
     throw new Error("SLOT_OCCUPIED");
   }
 
@@ -291,17 +337,16 @@ export async function createGuestAppointment(
     throw new Error("SLOT_IN_PAST");
   }
 
-  // Check if slot is available
-  const existingAppointment = await prisma.appointment.findFirst({
-    where: {
-      barberId,
-      date: appointmentDate,
-      startTime,
-      status: AppointmentStatus.CONFIRMED,
-    },
-  });
+  // Check if slot time range overlaps with any existing appointment
+  // This prevents race conditions with different service durations
+  const hasOverlap = await hasOverlappingAppointment(
+    barberId,
+    appointmentDate,
+    startTime,
+    endTime,
+  );
 
-  if (existingAppointment) {
+  if (hasOverlap) {
     throw new Error("SLOT_OCCUPIED");
   }
 
@@ -571,22 +616,17 @@ export function canClientCancel(
   // Get current Brazil date as "YYYY-MM-DD" string
   const brazilDateStr = getBrazilDateString();
 
-  const appointmentMinutes = parseTimeToMinutes(appointmentTime);
-  const currentMinutes = getCurrentTimeInMinutes();
-
-  // Compare date strings to determine if appointment is today, past, or future
+  // Check if appointment is in the past
   if (appointmentDateStr < brazilDateStr) {
-    // Appointment is in the past - cannot cancel
     return false;
   }
 
-  if (appointmentDateStr > brazilDateStr) {
-    // Appointment is in the future (not today) - always cancellable
-    return true;
-  }
-
-  // Same day - check minutes until appointment
-  const minutesUntilAppointment = appointmentMinutes - currentMinutes;
+  // Calculate actual minutes until the appointment (handles cross-day scenarios)
+  // e.g., 23:30 today to 00:30 tomorrow = 60 minutes, not "future day = always ok"
+  const minutesUntilAppointment = getMinutesUntilAppointment(
+    appointmentDateStr,
+    appointmentTime,
+  );
 
   return minutesUntilAppointment >= CANCELLATION_WINDOW_MINUTES;
 }

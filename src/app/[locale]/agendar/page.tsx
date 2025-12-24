@@ -6,10 +6,9 @@ import { useSignOut, useUser } from "@/hooks/useAuth";
 import { Scissors, LogOut, LogIn } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { QueryProvider } from "@/providers/query-provider";
 import { Toaster } from "sonner";
 
-function AgendarContent() {
+export default function AgendarPage() {
   const { data: user, isLoading } = useUser();
   const { mutate: signOut, isPending } = useSignOut();
   const router = useRouter();
@@ -70,13 +69,5 @@ function AgendarContent() {
 
       <Toaster position="top-center" richColors />
     </div>
-  );
-}
-
-export default function AgendarPage() {
-  return (
-    <QueryProvider>
-      <AgendarContent />
-    </QueryProvider>
   );
 }

@@ -42,8 +42,11 @@ export function GuestAppointmentsLookup({
 
   // Auto-search when initialPhone is provided
   useEffect(() => {
-    if (initialPhone && initialPhone.length >= 10) {
-      setSearchPhone(initialPhone);
+    if (initialPhone) {
+      const digits = getPhoneDigits(initialPhone);
+      if (digits.length >= 10) {
+        setSearchPhone(digits);
+      }
     }
   }, [initialPhone]);
 

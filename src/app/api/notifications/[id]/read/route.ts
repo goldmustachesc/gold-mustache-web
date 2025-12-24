@@ -20,7 +20,7 @@ export async function PATCH(
       );
     }
 
-    await markAsRead(notificationId);
+    await markAsRead(notificationId, user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -138,7 +138,8 @@ export async function POST(request: Request) {
 
     // Send confirmation notification
     // appointment.date comes as "YYYY-MM-DD" string from service
-    await notifyAppointmentConfirmed(profile.id, {
+    // Use user.id (Supabase auth ID) not profile.id for notifications
+    await notifyAppointmentConfirmed(user.id, {
       serviceName: appointment.service.name,
       barberName: appointment.barber.name,
       date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),

@@ -266,6 +266,54 @@ export function getBrazilDateString(): string {
 }
 
 /**
+ * Calculates the number of minutes until a future appointment.
+ * Handles cross-day and cross-month scenarios correctly.
+ *
+ * Uses UTC timestamps to ensure accurate calculations regardless of month length.
+ * Example: 22:00 on Jan 31 to 00:30 on Feb 1 = 150 minutes (2.5 hours).
+ *
+ * @param appointmentDateStr - Date string "YYYY-MM-DD" (from formatPrismaDateToString)
+ * @param appointmentTime - Time string "HH:MM"
+ * @returns Number of minutes until the appointment (negative if in the past)
+ */
+export function getMinutesUntilAppointment(
+  appointmentDateStr: string,
+  appointmentTime: string,
+): number {
+  const brazilDate = getBrazilDate();
+  const brazilTime = getBrazilTime();
+
+  // Parse appointment date and time
+  const [aptYear, aptMonth, aptDay] = appointmentDateStr.split("-").map(Number);
+  const { hours: aptHours, minutes: aptMinutes } = {
+    hours: Number.parseInt(appointmentTime.split(":")[0], 10),
+    minutes: Number.parseInt(appointmentTime.split(":")[1], 10),
+  };
+
+  // Create UTC timestamps for accurate comparison
+  // Using UTC ensures correct calculation across month boundaries
+  const currentTimestamp = Date.UTC(
+    brazilDate.year,
+    brazilDate.month - 1, // JavaScript months are 0-indexed
+    brazilDate.day,
+    brazilTime.hours,
+    brazilTime.minutes,
+  );
+
+  const appointmentTimestamp = Date.UTC(
+    aptYear,
+    aptMonth - 1, // JavaScript months are 0-indexed
+    aptDay,
+    aptHours,
+    aptMinutes,
+  );
+
+  // Calculate difference in milliseconds and convert to minutes
+  const diffMs = appointmentTimestamp - currentTimestamp;
+  return Math.floor(diffMs / (1000 * 60));
+}
+
+/**
  * Creates a UTC midnight Date object for today in Brazil timezone.
  * This is essential for database queries against Prisma @db.Date fields,
  * which store dates at UTC 00:00:00.
