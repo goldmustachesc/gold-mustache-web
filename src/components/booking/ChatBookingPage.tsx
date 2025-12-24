@@ -38,7 +38,7 @@ import type {
   BarberData,
 } from "@/types/booking";
 import { formatDateToString } from "@/utils/time-slots";
-import { Calendar, RotateCcw } from "lucide-react";
+import { ArrowLeft, Calendar, RotateCcw } from "lucide-react";
 
 type BookingStep =
   | "greeting"
@@ -132,6 +132,113 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
       }, delay);
     },
     [addMessage],
+  );
+
+  const getPreviousStep = useCallback((current: BookingStep) => {
+    switch (current) {
+      case "service":
+        return "barber";
+      case "date":
+        return "service";
+      case "time":
+        return "date";
+      case "info":
+        return "time";
+      default:
+        return null;
+    }
+  }, []);
+
+  const pruneMessagesForBackNavigation = useCallback(
+    (targetStep: BookingStep) => {
+      setMessages((prev) => {
+        const findLastPromptIndex = () => {
+          for (let i = prev.length - 1; i >= 0; i--) {
+            const data = prev[i]?.data;
+            if (data?.type === "bot" && data.step && data.step === targetStep) {
+              return i;
+            }
+            if (
+              data?.type === "bot-jsx" &&
+              data.step &&
+              data.step === targetStep
+            ) {
+              return i;
+            }
+          }
+          return -1;
+        };
+
+        const lastPromptIndex = findLastPromptIndex();
+        if (lastPromptIndex !== -1) return prev.slice(0, lastPromptIndex);
+
+        for (let i = prev.length - 1; i >= 0; i--) {
+          const data = prev[i]?.data;
+          if (data?.type === "user" || data?.type === "user-jsx") {
+            return prev.slice(0, i);
+          }
+        }
+
+        return prev;
+      });
+    },
+    [],
+  );
+
+  const clearProcessedStepsFrom = useCallback((targetStep: BookingStep) => {
+    const flowSteps: BookingStep[] = [
+      "barber",
+      "service",
+      "date",
+      "time",
+      "info",
+    ];
+    const startIndex = flowSteps.indexOf(targetStep);
+    if (startIndex === -1) return;
+    for (const s of flowSteps.slice(startIndex)) {
+      processedStepsRef.current.delete(s);
+    }
+  }, []);
+
+  const handleBack = useCallback(
+    (fromStep: BookingStep) => {
+      const targetStep = getPreviousStep(fromStep);
+      if (!targetStep) return;
+
+      setShowSelector(null);
+
+      // Remove messages related to the attempt so the transcript doesn't become inconsistent
+      pruneMessagesForBackNavigation(targetStep);
+
+      // Reset dependent selections
+      switch (fromStep) {
+        case "service":
+          setSelectedBarber(null);
+          setSelectedService(null);
+          setSelectedDate(null);
+          setSelectedSlot(null);
+          break;
+        case "date":
+          setSelectedService(null);
+          setSelectedDate(null);
+          setSelectedSlot(null);
+          break;
+        case "time":
+          setSelectedDate(null);
+          setSelectedSlot(null);
+          break;
+        case "info":
+          setSelectedSlot(null);
+          break;
+        default:
+          break;
+      }
+
+      clearProcessedStepsFrom(targetStep);
+      setStep(targetStep);
+      setTimeout(() => setShowSelector(targetStep), 300);
+    },
+    [clearProcessedStepsFrom, getPreviousStep, pruneMessagesForBackNavigation],
   );
 
   // Handlers
@@ -517,6 +624,16 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
       case "service":
         return (
           <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleBack("service")}
+              className="mb-2 text-muted-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
             <ChatServiceSelector
               services={services}
               onSelect={handleServiceSelect}
@@ -527,12 +644,32 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
       case "date":
         return (
           <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleBack("date")}
+              className="mb-2 text-muted-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
             <ChatDatePicker onSelect={handleDateSelect} />
           </div>
         );
       case "time":
         return (
           <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleBack("time")}
+              className="mb-2 text-muted-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
             <ChatTimeSlotSelector
               slots={slots}
               onSelect={handleSlotSelect}
@@ -544,6 +681,16 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
       case "info":
         return (
           <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleBack("info")}
+              className="mb-2 text-muted-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
             <ChatGuestInfoForm
               onSubmit={handleGuestSubmit}
               isLoading={createGuestAppointment.isPending}
