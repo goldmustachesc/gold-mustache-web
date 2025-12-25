@@ -53,6 +53,13 @@ O sistema de agendamento utiliza o **Inbarber App** já estabelecido:
 - Integração via redirect (preserva fluxo existente)
 - Tracking de conversão implementado
 
+## Administração (horários e ausências)
+
+- **Horário global da barbearia** e **fechamentos por data** (ADMIN)
+- **Ausências por barbeiro** (cada barbeiro)
+
+Guia: veja [`docs/admin-horarios-e-ausencias.md`](./docs/admin-horarios-e-ausencias.md).
+
 ## Instagram Integration
 
 - **@goldmustachebarbearia**: Trabalhos e ambiente da barbearia

@@ -13,6 +13,7 @@ import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { LogOut, Scissors } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { formatDateToString } from "@/utils/time-slots";
+import Link from "next/link";
 
 // Helper to get start of week (Sunday)
 function getWeekStart(date: Date): Date {
@@ -125,6 +126,11 @@ export default function BarberDashboardPage() {
             <h1 className="text-xl font-bold">Minha Agenda</h1>
           </div>
           <div className="flex items-center gap-4">
+            <Link href={`/${locale}/barbeiro/ausencias`}>
+              <Button variant="outline" size="sm">
+                Ausências
+              </Button>
+            </Link>
             <span className="text-sm text-muted-foreground hidden sm:inline">
               {user?.email}
             </span>

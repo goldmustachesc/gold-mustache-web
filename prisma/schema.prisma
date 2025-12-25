@@ -16,12 +16,19 @@ model Profile {
   fullName  String?  @map("full_name")
   avatarUrl String?  @map("avatar_url")
   phone     String?
+  role      UserRole @default(CLIENT)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   appointments Appointment[]
 
   @@map("profiles")
+}
+
+enum UserRole {
+  CLIENT
+  BARBER
+  ADMIN
 }
 
 // Guest clients who book without creating an account
@@ -69,6 +76,7 @@ model Barber {
   appointments Appointment[]
   services     BarberService[]
   workingHours WorkingHours[]
+  absences     BarberAbsence[]
 
   @@map("barbers")
 }
@@ -97,6 +105,59 @@ model WorkingHours {
 
   @@unique([barberId, dayOfWeek])
   @@map("working_hours")
+}
+
+// ============================================
+// Shop-wide hours and closures
+// ============================================
+
+model ShopHours {
+  id         String  @id @default(uuid())
+  dayOfWeek  Int     @unique @map("day_of_week") // 0=Sunday, 6=Saturday
+  isOpen     Boolean @default(true) @map("is_open")
+  startTime  String? @map("start_time") // "09:00" (nullable when closed)
+  endTime    String? @map("end_time") // "18:00" (nullable when closed)
+  breakStart String? @map("break_start")
+  breakEnd   String? @map("break_end")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("shop_hours")
+}
+
+// A closure for a specific date. If start/end are null => closed all day.
+model ShopClosure {
+  id        String   @id @default(uuid())
+  date      DateTime @db.Date
+  startTime String?  @map("start_time")
+  endTime   String?  @map("end_time")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([date])
+  @@map("shop_closures")
+}
+
+// ============================================
+// Barber absences
+// ============================================
+
+model BarberAbsence {
+  id        String   @id @default(uuid())
+  barberId  String   @map("barber_id")
+  date      DateTime @db.Date
+  startTime String?  @map("start_time")
+  endTime   String?  @map("end_time")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@index([barberId, date])
+  @@map("barber_absences")
 }
 
 model Appointment {

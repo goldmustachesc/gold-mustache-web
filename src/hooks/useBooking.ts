@@ -55,6 +55,21 @@ async function createAppointment(
         "Este horário já passou. Por favor, escolha outro horário.",
       );
     }
+    if (error.error === "SHOP_CLOSED") {
+      throw new Error(
+        "A barbearia não atende neste horário. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "BARBER_UNAVAILABLE") {
+      throw new Error(
+        "Este barbeiro não atende neste horário. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "SLOT_UNAVAILABLE") {
+      throw new Error(
+        "Este horário não está disponível. Por favor, escolha outro.",
+      );
+    }
     if (error.error === "SLOT_OCCUPIED") {
       throw new Error(
         "Este horário já foi reservado. Por favor, escolha outro.",
@@ -81,6 +96,21 @@ async function createGuestAppointment(
     if (error.error === "SLOT_IN_PAST") {
       throw new Error(
         "Este horário já passou. Por favor, escolha outro horário.",
+      );
+    }
+    if (error.error === "SHOP_CLOSED") {
+      throw new Error(
+        "A barbearia não atende neste horário. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "BARBER_UNAVAILABLE") {
+      throw new Error(
+        "Este barbeiro não atende neste horário. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "SLOT_UNAVAILABLE") {
+      throw new Error(
+        "Este horário não está disponível. Por favor, escolha outro.",
       );
     }
     if (error.error === "SLOT_OCCUPIED") {

@@ -47,6 +47,12 @@ https://your-project.supabase.co
 
 Chave anônima (public) do Supabase.
 
+### `SUPABASE_SERVICE_ROLE_KEY`
+
+Chave **service role** do Supabase (admin) usada apenas por scripts de seed/administração (ex.: `prisma/seed-barber.ts`, `prisma/seed-admin.ts`).
+
+**Atenção:** nunca exponha essa chave no client. Mantenha apenas no servidor/CI/local.
+
 ---
 
 ## Google Analytics
@@ -72,6 +78,18 @@ Token de acesso da API do Instagram (opcional).
 ### `INSTAGRAM_USER_ID`
 
 ID do usuário do Instagram (opcional).
+
+---
+
+## Prisma / Banco de Dados
+
+### `DATABASE_URL`
+
+String de conexão do Postgres usada pelo Prisma (migrações e queries).
+
+### `DIRECT_URL`
+
+String de conexão direta (sem pooler), recomendada pelo Supabase para operações administrativas/migrações.
 
 ---
 

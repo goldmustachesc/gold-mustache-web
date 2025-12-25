@@ -117,6 +117,47 @@ export interface WorkingHoursData {
 }
 
 // ============================================
+// Barber Absence Types
+// ============================================
+
+export interface BarberAbsenceData {
+  id: string;
+  barberId: string;
+  date: string; // "YYYY-MM-DD"
+  startTime: string | null; // null => all day
+  endTime: string | null; // null => all day
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// Shop Hours / Closures Types
+// ============================================
+
+export interface ShopHoursData {
+  id: string;
+  dayOfWeek: number;
+  isOpen: boolean;
+  startTime: string | null;
+  endTime: string | null;
+  breakStart: string | null;
+  breakEnd: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShopClosureData {
+  id: string;
+  date: string; // "YYYY-MM-DD"
+  startTime: string | null;
+  endTime: string | null;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
 // Notification Types
 // ============================================
 

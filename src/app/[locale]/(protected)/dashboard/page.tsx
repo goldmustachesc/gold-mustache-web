@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/card";
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
-import { Calendar, ClipboardList, Scissors } from "lucide-react";
+import { useProfileMe } from "@/hooks/useProfileMe";
+import { Calendar, ClipboardList, Scissors, Settings } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -17,10 +18,12 @@ export default function DashboardPage() {
   const { data: user, isLoading } = useUser();
   const { mutate: signOut, isPending } = useSignOut();
   const { data: barberProfile } = useBarberProfile();
+  const { data: profileMe } = useProfileMe();
   const params = useParams();
   const locale = params.locale as string;
 
   const isBarber = !!barberProfile;
+  const isAdmin = profileMe?.role === "ADMIN";
 
   if (isLoading) {
     return (
@@ -94,6 +97,27 @@ export default function DashboardPage() {
                   <CardTitle>Minha Agenda</CardTitle>
                   <CardDescription>
                     Gerencie seus atendimentos e horários
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </div>
+        </>
+      )}
+
+      {isAdmin && (
+        <>
+          <h2 className="text-xl font-semibold mb-4 mt-8">Administração</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link href={`/${locale}/admin/barbearia/horarios`}>
+              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
+                    <Settings className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle>Horários da Barbearia</CardTitle>
+                  <CardDescription>
+                    Configure horário global e fechamentos por data
                   </CardDescription>
                 </CardHeader>
               </Card>

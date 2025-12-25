@@ -4,7 +4,9 @@ import {
   filterAvailableSlots,
   filterPastSlots,
   parseDateString,
+  parseDateStringToUTC,
   parseTimeToMinutes,
+  formatDateToString,
   formatPrismaDateToString,
   isDateTimeInPast,
   getBrazilDateString,
@@ -24,6 +26,166 @@ import { AppointmentStatus } from "@prisma/client";
 // ============================================
 // Helper Functions
 // ============================================
+
+type TimeRangeMinutes = { start: number; end: number };
+
+function toTimeRangeMinutes(
+  startTime: string,
+  endTime: string,
+): TimeRangeMinutes {
+  return {
+    start: parseTimeToMinutes(startTime),
+    end: parseTimeToMinutes(endTime),
+  };
+}
+
+function rangesOverlap(a: TimeRangeMinutes, b: TimeRangeMinutes): boolean {
+  // Two intervals [A, B) and [C, D) overlap if A < D AND C < B
+  return a.start < b.end && b.start < a.end;
+}
+
+function isRangeWithin(
+  needle: TimeRangeMinutes,
+  haystack: TimeRangeMinutes,
+): boolean {
+  return needle.start >= haystack.start && needle.end <= haystack.end;
+}
+
+function slotToRangeMinutes(
+  slotStartTime: string,
+  durationMinutes: number,
+): TimeRangeMinutes {
+  const start = parseTimeToMinutes(slotStartTime);
+  return { start, end: start + durationMinutes };
+}
+
+async function getBookingPolicyError(params: {
+  barberId: string;
+  appointmentDateLocal: Date;
+  appointmentDateDb: Date;
+  startTime: string;
+  serviceDuration: number;
+}): Promise<null | "SHOP_CLOSED" | "BARBER_UNAVAILABLE" | "SLOT_UNAVAILABLE"> {
+  const {
+    barberId,
+    appointmentDateLocal,
+    appointmentDateDb,
+    startTime,
+    serviceDuration,
+  } = params;
+
+  const dayOfWeek = appointmentDateLocal.getDay();
+  const slotRange = slotToRangeMinutes(startTime, serviceDuration);
+
+  // Barber working hours gate (also validates slot boundary based on service duration)
+  const workingHours = await prisma.workingHours.findUnique({
+    where: {
+      barberId_dayOfWeek: {
+        barberId,
+        dayOfWeek,
+      },
+    },
+  });
+
+  if (!workingHours) {
+    return "BARBER_UNAVAILABLE";
+  }
+
+  const barberDayRange = toTimeRangeMinutes(
+    workingHours.startTime,
+    workingHours.endTime,
+  );
+  if (!isRangeWithin(slotRange, barberDayRange)) {
+    return "BARBER_UNAVAILABLE";
+  }
+
+  // If inside working hours, ensure it's a valid generated slot boundary
+  const barberSlots = generateTimeSlots({
+    startTime: workingHours.startTime,
+    endTime: workingHours.endTime,
+    duration: serviceDuration,
+    breakStart: workingHours.breakStart,
+    breakEnd: workingHours.breakEnd,
+  });
+  if (!barberSlots.some((s) => s.time === startTime)) {
+    return "SLOT_UNAVAILABLE";
+  }
+
+  // Shop-wide hours gate
+  const shopHours = await prisma.shopHours.findUnique({
+    where: { dayOfWeek },
+  });
+
+  if (
+    !shopHours ||
+    !shopHours.isOpen ||
+    !shopHours.startTime ||
+    !shopHours.endTime
+  ) {
+    return "SHOP_CLOSED";
+  }
+
+  const shopOpenRange = toTimeRangeMinutes(
+    shopHours.startTime,
+    shopHours.endTime,
+  );
+  if (!isRangeWithin(slotRange, shopOpenRange)) {
+    return "SHOP_CLOSED";
+  }
+
+  if (shopHours.breakStart && shopHours.breakEnd) {
+    const shopBreakRange = toTimeRangeMinutes(
+      shopHours.breakStart,
+      shopHours.breakEnd,
+    );
+    if (rangesOverlap(slotRange, shopBreakRange)) {
+      return "SHOP_CLOSED";
+    }
+  }
+
+  // Shop closures (date-specific)
+  const shopClosures = await prisma.shopClosure.findMany({
+    where: { date: appointmentDateDb },
+    select: { startTime: true, endTime: true },
+  });
+
+  // Any full-day closure blocks everything
+  if (shopClosures.some((c) => !c.startTime || !c.endTime)) {
+    return "SHOP_CLOSED";
+  }
+
+  for (const closure of shopClosures) {
+    const closureRange = toTimeRangeMinutes(
+      closure.startTime as string,
+      closure.endTime as string,
+    );
+    if (rangesOverlap(slotRange, closureRange)) {
+      return "SHOP_CLOSED";
+    }
+  }
+
+  // Barber absences (date-specific)
+  const absences = await prisma.barberAbsence.findMany({
+    where: { barberId, date: appointmentDateDb },
+    select: { startTime: true, endTime: true },
+  });
+
+  if (absences.some((a) => !a.startTime || !a.endTime)) {
+    return "BARBER_UNAVAILABLE";
+  }
+
+  for (const absence of absences) {
+    const absenceRange = toTimeRangeMinutes(
+      absence.startTime as string,
+      absence.endTime as string,
+    );
+    if (rangesOverlap(slotRange, absenceRange)) {
+      return "BARBER_UNAVAILABLE";
+    }
+  }
+
+  return null;
+}
 
 /**
  * Checks if a new appointment time range overlaps with any existing confirmed appointments.
@@ -117,6 +279,8 @@ export async function getAvailableSlots(
   serviceId: string,
 ): Promise<TimeSlot[]> {
   const dayOfWeek = date.getDay();
+  const dateStr = formatDateToString(date);
+  const dateForDb = parseDateStringToUTC(dateStr);
 
   // Get service duration
   const service = await prisma.service.findUnique({
@@ -126,6 +290,40 @@ export async function getAvailableSlots(
 
   if (!service) {
     return []; // Service not found
+  }
+
+  // Shop-wide hours gate
+  const shopHours = await prisma.shopHours.findUnique({
+    where: { dayOfWeek },
+  });
+
+  if (
+    !shopHours ||
+    !shopHours.isOpen ||
+    !shopHours.startTime ||
+    !shopHours.endTime
+  ) {
+    return []; // Shop closed on this day
+  }
+
+  // Shop closures (date-specific)
+  const shopClosures = await prisma.shopClosure.findMany({
+    where: { date: dateForDb },
+    select: { startTime: true, endTime: true },
+  });
+
+  if (shopClosures.some((c) => !c.startTime || !c.endTime)) {
+    return []; // Shop closed all day
+  }
+
+  // Barber absences (date-specific)
+  const absences = await prisma.barberAbsence.findMany({
+    where: { barberId, date: dateForDb },
+    select: { startTime: true, endTime: true },
+  });
+
+  if (absences.some((a) => !a.startTime || !a.endTime)) {
+    return []; // Barber absent all day
   }
 
   // Get barber's working hours for this day
@@ -146,7 +344,7 @@ export async function getAvailableSlots(
   const existingAppointments = await prisma.appointment.findMany({
     where: {
       barberId,
-      date,
+      date: dateForDb,
       status: AppointmentStatus.CONFIRMED,
     },
     select: {
@@ -165,9 +363,37 @@ export async function getAvailableSlots(
     breakEnd: workingHours.breakEnd,
   });
 
+  const shopOpenRange = toTimeRangeMinutes(
+    shopHours.startTime,
+    shopHours.endTime,
+  );
+  const shopBreakRange =
+    shopHours.breakStart && shopHours.breakEnd
+      ? toTimeRangeMinutes(shopHours.breakStart, shopHours.breakEnd)
+      : null;
+
+  const closureRanges = shopClosures.map((c) =>
+    toTimeRangeMinutes(c.startTime as string, c.endTime as string),
+  );
+  const absenceRanges = absences.map((a) =>
+    toTimeRangeMinutes(a.startTime as string, a.endTime as string),
+  );
+
+  const policySlots = allSlots.filter((slot) => {
+    const slotRange = slotToRangeMinutes(slot.time, service.duration);
+
+    if (!isRangeWithin(slotRange, shopOpenRange)) return false;
+    if (shopBreakRange && rangesOverlap(slotRange, shopBreakRange))
+      return false;
+    if (closureRanges.some((r) => rangesOverlap(slotRange, r))) return false;
+    if (absenceRanges.some((r) => rangesOverlap(slotRange, r))) return false;
+
+    return true;
+  });
+
   // Filter out slots that would conflict with existing appointments
   const availableSlots = filterAvailableSlots(
-    allSlots,
+    policySlots,
     existingAppointments.map((apt) => ({
       startTime: apt.startTime,
       endTime: apt.endTime,
@@ -215,19 +441,32 @@ export async function createAppointment(
   const endMins = endMinutes % 60;
   const endTime = `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}`;
 
-  // Parse date string to local timezone to avoid UTC interpretation issues
-  const appointmentDate = parseDateString(date);
+  // Parse date for local (business logic) and UTC (DB) usage
+  const appointmentDateLocal = parseDateString(date);
+  const appointmentDateDb = parseDateStringToUTC(date);
 
   // Validate that the appointment is not in the past
-  if (isDateTimeInPast(appointmentDate, startTime)) {
+  if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
+  }
+
+  const policyError = await getBookingPolicyError({
+    barberId,
+    appointmentDateLocal,
+    appointmentDateDb,
+    startTime,
+    serviceDuration: service.duration,
+  });
+
+  if (policyError) {
+    throw new Error(policyError);
   }
 
   // Check if slot time range overlaps with any existing appointment
   // This prevents race conditions with different service durations
   const hasOverlap = await hasOverlappingAppointment(
     barberId,
-    appointmentDate,
+    appointmentDateDb,
     startTime,
     endTime,
   );
@@ -242,7 +481,7 @@ export async function createAppointment(
       clientId,
       barberId,
       serviceId,
-      date: appointmentDate,
+      date: appointmentDateDb,
       startTime,
       endTime,
       status: AppointmentStatus.CONFIRMED,
@@ -329,19 +568,32 @@ export async function createGuestAppointment(
   const endMins = endMinutes % 60;
   const endTime = `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}`;
 
-  // Parse date string to local timezone to avoid UTC interpretation issues
-  const appointmentDate = parseDateString(date);
+  // Parse date for local (business logic) and UTC (DB) usage
+  const appointmentDateLocal = parseDateString(date);
+  const appointmentDateDb = parseDateStringToUTC(date);
 
   // Validate that the appointment is not in the past
-  if (isDateTimeInPast(appointmentDate, startTime)) {
+  if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
+  }
+
+  const policyError = await getBookingPolicyError({
+    barberId,
+    appointmentDateLocal,
+    appointmentDateDb,
+    startTime,
+    serviceDuration: service.duration,
+  });
+
+  if (policyError) {
+    throw new Error(policyError);
   }
 
   // Check if slot time range overlaps with any existing appointment
   // This prevents race conditions with different service durations
   const hasOverlap = await hasOverlappingAppointment(
     barberId,
-    appointmentDate,
+    appointmentDateDb,
     startTime,
     endTime,
   );
@@ -379,7 +631,7 @@ export async function createGuestAppointment(
       guestClientId: guestClient.id,
       barberId,
       serviceId,
-      date: appointmentDate,
+      date: appointmentDateDb,
       startTime,
       endTime,
       status: AppointmentStatus.CONFIRMED,

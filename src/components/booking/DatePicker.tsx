@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useBrazilToday } from "@/hooks/useBrazilToday";
 
 interface DatePickerProps {
   selectedDate: Date | null;
@@ -34,15 +35,16 @@ export function DatePicker({
   disabledDates = [],
   maxDays = 30,
 }: DatePickerProps) {
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  const today = useBrazilToday();
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+
+  useEffect(() => {
+    const minMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    setCurrentMonth((prev) => (prev < minMonth ? minMonth : prev));
+  }, [today]);
 
   const maxDate = useMemo(() => {
     const d = new Date(today);

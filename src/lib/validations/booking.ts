@@ -98,6 +98,113 @@ export const workingHoursSchema = z
 export type WorkingHoursInput = z.infer<typeof workingHoursSchema>;
 
 // ============================================
+// Barber Absence Schemas
+// ============================================
+
+export const barberAbsenceSchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
+    startTime: timeStringSchema.nullable().optional(),
+    endTime: timeStringSchema.nullable().optional(),
+    reason: z
+      .string()
+      .max(500, "Motivo deve ter no máximo 500 caracteres")
+      .nullable()
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // Allow full-day absence (no times)
+      if (!data.startTime && !data.endTime) return true;
+      // If one is present, both must be present
+      if (!data.startTime || !data.endTime) return false;
+      const start = data.startTime.split(":").map(Number);
+      const end = data.endTime.split(":").map(Number);
+      const startMinutes = start[0] * 60 + start[1];
+      const endMinutes = end[0] * 60 + end[1];
+      return endMinutes > startMinutes;
+    },
+    {
+      message:
+        "Para ausência parcial, informe início e fim (fim deve ser após o início).",
+    },
+  );
+
+export type BarberAbsenceInput = z.infer<typeof barberAbsenceSchema>;
+
+// ============================================
+// Shop Hours / Closures Schemas
+// ============================================
+
+export const shopHoursDaySchema = z
+  .object({
+    dayOfWeek: z
+      .number()
+      .int()
+      .min(0)
+      .max(6, "Dia da semana deve ser entre 0 (domingo) e 6 (sábado)"),
+    isOpen: z.boolean(),
+    startTime: timeStringSchema.nullable().optional(),
+    endTime: timeStringSchema.nullable().optional(),
+    breakStart: timeStringSchema.nullable().optional(),
+    breakEnd: timeStringSchema.nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.isOpen) return true;
+      if (!data.startTime || !data.endTime) return false;
+      const start = data.startTime.split(":").map(Number);
+      const end = data.endTime.split(":").map(Number);
+      const startMinutes = start[0] * 60 + start[1];
+      const endMinutes = end[0] * 60 + end[1];
+      return endMinutes > startMinutes;
+    },
+    {
+      message:
+        "Quando aberto, informe início e fim (fim deve ser após o início).",
+    },
+  );
+
+export const updateShopHoursSchema = z.object({
+  days: z.array(shopHoursDaySchema).min(1).max(7),
+});
+
+export type UpdateShopHoursInput = z.infer<typeof updateShopHoursSchema>;
+
+export const shopClosureSchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
+    startTime: timeStringSchema.nullable().optional(),
+    endTime: timeStringSchema.nullable().optional(),
+    reason: z
+      .string()
+      .max(500, "Motivo deve ter no máximo 500 caracteres")
+      .nullable()
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startTime && !data.endTime) return true;
+      if (!data.startTime || !data.endTime) return false;
+      const start = data.startTime.split(":").map(Number);
+      const end = data.endTime.split(":").map(Number);
+      const startMinutes = start[0] * 60 + start[1];
+      const endMinutes = end[0] * 60 + end[1];
+      return endMinutes > startMinutes;
+    },
+    {
+      message:
+        "Para fechamento parcial, informe início e fim (fim deve ser após o início).",
+    },
+  );
+
+export type ShopClosureInput = z.infer<typeof shopClosureSchema>;
+
+// ============================================
 // Query Schemas
 // ============================================
 

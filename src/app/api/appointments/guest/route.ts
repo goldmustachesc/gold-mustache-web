@@ -38,6 +38,36 @@ export async function POST(request: Request) {
       );
     }
 
+    if (error instanceof Error && error.message === "SHOP_CLOSED") {
+      return NextResponse.json(
+        {
+          error: "SHOP_CLOSED",
+          message: "A barbearia não atende neste horário",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "BARBER_UNAVAILABLE") {
+      return NextResponse.json(
+        {
+          error: "BARBER_UNAVAILABLE",
+          message: "Este barbeiro não atende neste horário",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "SLOT_UNAVAILABLE") {
+      return NextResponse.json(
+        {
+          error: "SLOT_UNAVAILABLE",
+          message: "Este horário não está disponível para agendamento",
+        },
+        { status: 400 },
+      );
+    }
+
     // Handle slot already occupied
     if (error instanceof Error && error.message === "SLOT_OCCUPIED") {
       return NextResponse.json(

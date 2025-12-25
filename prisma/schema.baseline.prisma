@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model appointments {
+  id              String            @id
+  client_id       String?
+  guest_client_id String?
+  barber_id       String
+  service_id      String
+  date            DateTime          @db.Date
+  start_time      String
+  end_time        String
+  status          AppointmentStatus @default(CONFIRMED)
+  cancel_reason   String?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  barbers         barbers           @relation(fields: [barber_id], references: [id])
+  profiles        profiles?         @relation(fields: [client_id], references: [id])
+  guest_clients   guest_clients?    @relation(fields: [guest_client_id], references: [id])
+  services        services          @relation(fields: [service_id], references: [id])
+
+  @@unique([barber_id, date, start_time])
+}
+
+model barber_services {
+  barber_id  String
+  service_id String
+  barbers    barbers  @relation(fields: [barber_id], references: [id], onDelete: Cascade)
+  services   services @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  @@id([barber_id, service_id])
+}
+
+model barbers {
+  id              String            @id
+  user_id         String            @unique
+  name            String
+  avatar_url      String?
+  active          Boolean           @default(true)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  appointments    appointments[]
+  barber_services barber_services[]
+  working_hours   working_hours[]
+}
+
+model guest_clients {
+  id           String         @id
+  full_name    String
+  phone        String         @unique
+  created_at   DateTime       @default(now())
+  appointments appointments[]
+}
+
+model notifications {
+  id         String           @id
+  user_id    String
+  type       NotificationType
+  title      String
+  message    String
+  data       Json?
+  read       Boolean          @default(false)
+  created_at DateTime         @default(now())
+}
+
+model profiles {
+  id           String         @id
+  user_id      String         @unique
+  full_name    String?
+  avatar_url   String?
+  phone        String?
+  created_at   DateTime       @default(now())
+  updated_at   DateTime
+  appointments appointments[]
+}
+
+model services {
+  id              String            @id
+  slug            String            @unique
+  name            String
+  description     String?
+  duration        Int
+  price           Decimal           @db.Decimal(10, 2)
+  active          Boolean           @default(true)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  appointments    appointments[]
+  barber_services barber_services[]
+}
+
+model working_hours {
+  id          String  @id
+  barber_id   String
+  day_of_week Int
+  start_time  String
+  end_time    String
+  break_start String?
+  break_end   String?
+  barbers     barbers @relation(fields: [barber_id], references: [id], onDelete: Cascade)
+
+  @@unique([barber_id, day_of_week])
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED_BY_CLIENT
+  CANCELLED_BY_BARBER
+  COMPLETED
+  NO_SHOW
+}
+
+enum NotificationType {
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_REMINDER
+}
