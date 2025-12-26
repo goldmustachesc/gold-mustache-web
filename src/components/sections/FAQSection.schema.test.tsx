@@ -17,7 +17,8 @@ vi.mock("next-intl", () => ({
       "items.1.answer": "We accept cash, credit cards, and PIX.",
       "items.2.id": "test-3",
       "items.2.question": "What is your cancellation policy?",
-      "items.2.answer": "Please cancel at least 2 hours in advance.",
+      "items.2.answer":
+        "You can cancel any time before the appointment. If it’s less than 2 hours away, we’ll only show a warning.",
     };
     return translations[key] || key;
   },

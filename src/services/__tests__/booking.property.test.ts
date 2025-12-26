@@ -397,38 +397,30 @@ describe("Appointment Persistence Properties", () => {
 
 describe("Cancellation Properties", () => {
   /**
-   * **Feature: booking-system, Property 5: Cancellation time window enforcement**
-   * *For any* appointment, cancellation by client SHALL succeed if and only if
-   * the appointment is more than 2 hours in the future.
-   * **Validates: Requirements 2.2, 2.3**
+   * **Feature: booking-system, Property 5: Late-cancellation warning (no hard block)**
+   * *For any* appointment, cancellation by client SHALL be allowed as long as the
+   * appointment hasn't started yet. If it's less than 2 hours away, the system
+   * SHALL only show a warning (UI), not reject the cancellation.
    */
-  it("client cancellation respects 2-hour window", () => {
-    // Pure function to test cancellation window logic
-    const canClientCancel = (appointmentDateTime: Date, now: Date): boolean => {
-      const hoursUntilAppointment =
-        (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-      return hoursUntilAppointment >= 2;
-    };
+  it("client cancellation is allowed before start time and warns under 2 hours", () => {
+    // Pure functions mirroring the updated business rule.
+    const canClientCancel = (minutesUntilAppointment: number): boolean =>
+      minutesUntilAppointment > 0;
+
+    const shouldWarnLateCancellation = (
+      minutesUntilAppointment: number,
+    ): boolean => minutesUntilAppointment > 0 && minutesUntilAppointment < 120;
 
     fc.assert(
       fc.property(
-        // Generate appointment time (0-24 hours from now)
-        fc.integer({ min: 0, max: 24 * 60 }), // minutes from now
-        (minutesFromNow) => {
-          const now = new Date();
-          const appointmentDateTime = new Date(
-            now.getTime() + minutesFromNow * 60 * 1000,
-          );
+        // Minutes until appointment can be in the past or future.
+        fc.integer({ min: -24 * 60, max: 24 * 60 }),
+        (minutesUntil) => {
+          const canCancel = canClientCancel(minutesUntil);
+          const shouldWarn = shouldWarnLateCancellation(minutesUntil);
 
-          const canCancel = canClientCancel(appointmentDateTime, now);
-          const hoursFromNow = minutesFromNow / 60;
-
-          // Should be able to cancel if >= 2 hours away
-          if (hoursFromNow >= 2) {
-            expect(canCancel).toBe(true);
-          } else {
-            expect(canCancel).toBe(false);
-          }
+          expect(canCancel).toBe(minutesUntil > 0);
+          expect(shouldWarn).toBe(minutesUntil > 0 && minutesUntil < 120);
 
           return true;
         },

@@ -87,7 +87,8 @@ export function BookingConfirmation({
         </div>
 
         <p className="text-xs text-center text-muted-foreground">
-          Você pode cancelar até 2 horas antes do horário agendado.
+          Você pode cancelar a qualquer momento antes do horário. Se faltar
+          menos de 2 horas, vamos apenas exibir um aviso.
         </p>
       </CardContent>
 

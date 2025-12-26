@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useSearchParams, useParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import { useState, Suspense } from "react";
+import { getMinutesUntilAppointment } from "@/utils/time-slots";
 
 function MeusAgendamentosContent() {
   const searchParams = useSearchParams();
@@ -31,6 +32,21 @@ function MeusAgendamentosContent() {
   const isLoading = userLoading || appointmentsLoading;
 
   const handleCancel = async (appointmentId: string) => {
+    const appointment = appointments?.find((apt) => apt.id === appointmentId);
+    if (appointment) {
+      const minutesUntil = getMinutesUntilAppointment(
+        appointment.date,
+        appointment.startTime,
+      );
+
+      if (minutesUntil > 0 && minutesUntil < 120) {
+        toast("Atenção", {
+          description:
+            "Você está cancelando com menos de 2 horas de antecedência. O horário será liberado, mas pode ser mais difícil de preencher.",
+        });
+      }
+    }
+
     setCancellingId(appointmentId);
     try {
       await cancelMutation.mutateAsync({ appointmentId });

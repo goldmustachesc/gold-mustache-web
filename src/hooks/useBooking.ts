@@ -151,10 +151,8 @@ async function cancelAppointment(
 
   if (!res.ok) {
     const error = await res.json();
-    if (error.error === "CANCELLATION_TOO_LATE") {
-      throw new Error(
-        "Não é possível cancelar com menos de 2 horas de antecedência.",
-      );
+    if (error.error === "APPOINTMENT_IN_PAST") {
+      throw new Error("Este agendamento já passou e não pode ser cancelado.");
     }
     throw new Error(error.message || "Erro ao cancelar agendamento");
   }
@@ -348,10 +346,8 @@ async function cancelGuestAppointment(
 
   if (!res.ok) {
     const error = await res.json();
-    if (error.error === "CANCELLATION_TOO_LATE") {
-      throw new Error(
-        "Não é possível cancelar com menos de 2 horas de antecedência.",
-      );
+    if (error.error === "APPOINTMENT_IN_PAST") {
+      throw new Error("Este agendamento já passou e não pode ser cancelado.");
     }
     if (error.error === "UNAUTHORIZED") {
       throw new Error("Você não tem permissão para cancelar este agendamento.");

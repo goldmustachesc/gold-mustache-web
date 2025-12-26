@@ -179,7 +179,12 @@ model Appointment {
   barber      Barber       @relation(fields: [barberId], references: [id])
   service     Service      @relation(fields: [serviceId], references: [id])
 
-  @@unique([barberId, date, startTime])
+  // IMPORTANT:
+  // We intentionally do NOT keep a global UNIQUE constraint here, because cancelled
+  // appointments must not permanently block the same slot from being rebooked.
+  // Uniqueness for active bookings is enforced via a PARTIAL unique index in SQL
+  // (status = 'CONFIRMED') plus an advisory-lock + overlap-check in `src/services/booking.ts`.
+  @@index([barberId, date, startTime])
   @@map("appointments")
 }
 

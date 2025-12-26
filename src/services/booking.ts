@@ -857,10 +857,15 @@ export async function getBarberAppointments(
 // Cancellation Functions
 // ============================================
 
-const CANCELLATION_WINDOW_MINUTES = 2 * 60; // 2 hours in minutes
+const CANCELLATION_WARNING_WINDOW_MINUTES = 2 * 60; // 2 hours in minutes
 
 /**
- * Checks if an appointment can be cancelled by client (at least 2 hours before)
+ * Checks if an appointment can be cancelled by a client.
+ *
+ * Business rule (updated):
+ * - Cancellation is allowed up to the appointment start time.
+ * - If cancelling with less than 2 hours of notice, it should be treated as a warning (UI),
+ *   not a hard block (backend).
  *
  * Note: appointmentDate comes from Prisma @db.Date field as UTC midnight.
  * We extract year/month/day using UTC methods and compare against Brazil timezone.
@@ -890,12 +895,30 @@ export function canClientCancel(
     appointmentTime,
   );
 
-  return minutesUntilAppointment >= CANCELLATION_WINDOW_MINUTES;
+  // Allowed if the appointment hasn't started yet.
+  return minutesUntilAppointment > 0;
+}
+
+export function shouldWarnLateCancellation(
+  appointmentDate: Date,
+  appointmentTime: string,
+): boolean {
+  const appointmentDateStr = formatPrismaDateToString(appointmentDate);
+  const minutesUntilAppointment = getMinutesUntilAppointment(
+    appointmentDateStr,
+    appointmentTime,
+  );
+
+  return (
+    minutesUntilAppointment > 0 &&
+    minutesUntilAppointment < CANCELLATION_WARNING_WINDOW_MINUTES
+  );
 }
 
 /**
  * Cancel an appointment by client
- * Requires at least 2 hours before the scheduled time
+ * Cancellation is allowed until the appointment start time.
+ * If within 2 hours, it's allowed (warning should be handled by UI).
  */
 export async function cancelAppointmentByClient(
   appointmentId: string,
@@ -918,9 +941,9 @@ export async function cancelAppointmentByClient(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check cancellation window
+  // Check cancellation is still possible (not in the past / already started)
   if (!canClientCancel(appointment.date, appointment.startTime)) {
-    throw new Error("CANCELLATION_TOO_LATE");
+    throw new Error("APPOINTMENT_IN_PAST");
   }
 
   // Update the appointment
@@ -1204,9 +1227,9 @@ export async function cancelAppointmentByGuest(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check cancellation window
+  // Check cancellation is still possible (not in the past / already started)
   if (!canClientCancel(appointment.date, appointment.startTime)) {
-    throw new Error("CANCELLATION_TOO_LATE");
+    throw new Error("APPOINTMENT_IN_PAST");
   }
 
   // Update the appointment

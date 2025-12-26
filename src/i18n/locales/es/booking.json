@@ -39,7 +39,7 @@
     "date": "Fecha",
     "time": "Hora",
     "value": "Precio",
-    "cancelNote": "Puedes cancelar hasta 2 horas antes de la hora programada.",
+    "cancelNote": "Puedes cancelar en cualquier momento antes de la cita. Si faltan menos de 2 horas, solo mostraremos un aviso.",
     "viewAppointments": "Ver Mis Citas",
     "newBooking": "Hacer Nueva Reserva"
   },
@@ -93,7 +93,7 @@
     "cancelSuccess": "¡Cita cancelada con éxito!",
     "cancelError": "Error al cancelar",
     "slotOccupied": "Este horario ya está reservado. Por favor, elige otro.",
-    "cancellationTooLate": "No se puede cancelar con menos de 2 horas de anticipación."
+    "cancellationTooLate": "Aviso: estás cancelando con menos de 2 horas de anticipación."
   },
   "errors": {
     "loadServices": "Error al cargar servicios",

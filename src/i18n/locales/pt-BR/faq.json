@@ -26,12 +26,12 @@
     {
       "id": "cancellation-1",
       "question": "Como faço para cancelar ou remarcar meu horário?",
-      "answer": "Para cancelar ou remarcar, entre em contato conosco pelo WhatsApp com pelo menos 2 horas de antecedência. Isso nos ajuda a disponibilizar o horário para outros clientes."
+      "answer": "Para cancelar ou remarcar, entre em contato conosco pelo WhatsApp. Se possível, avise com pelo menos 2 horas de antecedência — isso nos ajuda a liberar e preencher o horário para outros clientes."
     },
     {
       "id": "cancellation-2",
       "question": "Existe taxa de cancelamento?",
-      "answer": "Não cobramos taxa de cancelamento, desde que você avise com antecedência mínima de 2 horas. Cancelamentos sem aviso prévio podem afetar futuros agendamentos."
+      "answer": "Não cobramos taxa de cancelamento. Ainda assim, recomendamos avisar com antecedência (idealmente 2 horas). Cancelamentos em cima da hora ou não comparecimento podem afetar futuros agendamentos."
     },
     {
       "id": "services-1",

@@ -26,12 +26,12 @@
     {
       "id": "cancellation-1",
       "question": "¿Cómo cancelo o reprogramo mi cita?",
-      "answer": "Para cancelar o reprogramar, contáctanos por WhatsApp con al menos 2 horas de anticipación. Esto nos ayuda a poner el horario disponible para otros clientes."
+      "answer": "Para cancelar o reprogramar, contáctanos por WhatsApp. Si es posible, avisa con al menos 2 horas de anticipación — esto nos ayuda a liberar y completar el horario para otros clientes."
     },
     {
       "id": "cancellation-2",
       "question": "¿Hay tarifa de cancelación?",
-      "answer": "No cobramos tarifa de cancelación, siempre que avises con al menos 2 horas de anticipación. Cancelaciones sin aviso previo pueden afectar futuras reservas."
+      "answer": "No cobramos tarifa de cancelación. Aun así, recomendamos avisar con anticipación (idealmente 2 horas). Cancelaciones de último minuto o no presentarse pueden afectar futuras reservas."
     },
     {
       "id": "services-1",

@@ -13,6 +13,7 @@ import { AppointmentCard } from "./AppointmentCard";
 import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
 import { toast } from "sonner";
 import Link from "next/link";
+import { getMinutesUntilAppointment } from "@/utils/time-slots";
 
 function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -77,6 +78,21 @@ export function GuestAppointmentsLookup({
 
   const handleCancel = async (appointmentId: string) => {
     if (!searchPhone) return;
+
+    const appointment = appointments?.find((apt) => apt.id === appointmentId);
+    if (appointment) {
+      const minutesUntil = getMinutesUntilAppointment(
+        appointment.date,
+        appointment.startTime,
+      );
+
+      if (minutesUntil > 0 && minutesUntil < 120) {
+        toast("Atenção", {
+          description:
+            "Você está cancelando com menos de 2 horas de antecedência. O horário será liberado, mas pode ser mais difícil de preencher.",
+        });
+      }
+    }
 
     setCancellingId(appointmentId);
     try {

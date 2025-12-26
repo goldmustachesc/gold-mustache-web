@@ -68,12 +68,11 @@ export async function PATCH(
             },
             { status: 400 },
           );
-        case "CANCELLATION_TOO_LATE":
+        case "APPOINTMENT_IN_PAST":
           return NextResponse.json(
             {
-              error: "CANCELLATION_TOO_LATE",
-              message:
-                "Cancelamento deve ser feito com pelo menos 2 horas de antecedência",
+              error: "APPOINTMENT_IN_PAST",
+              message: "Este agendamento já passou e não pode ser cancelado",
             },
             { status: 400 },
           );

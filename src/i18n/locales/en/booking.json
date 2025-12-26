@@ -39,7 +39,7 @@
     "date": "Date",
     "time": "Time",
     "value": "Price",
-    "cancelNote": "You can cancel up to 2 hours before the scheduled time.",
+    "cancelNote": "You can cancel at any time before the appointment. If it’s less than 2 hours away, we’ll only show a warning.",
     "viewAppointments": "View My Appointments",
     "newBooking": "Make New Booking"
   },
@@ -93,7 +93,7 @@
     "cancelSuccess": "Appointment cancelled successfully!",
     "cancelError": "Error cancelling",
     "slotOccupied": "This time slot is already booked. Please choose another.",
-    "cancellationTooLate": "Cannot cancel less than 2 hours before the appointment."
+    "cancellationTooLate": "Warning: you are cancelling with less than 2 hours’ notice."
   },
   "errors": {
     "loadServices": "Error loading services",
