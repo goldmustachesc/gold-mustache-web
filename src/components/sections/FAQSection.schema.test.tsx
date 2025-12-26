@@ -4,23 +4,44 @@ import { FAQSection } from "./FAQSection";
 
 // Mock next-intl
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => {
+  useTranslations: () => {
+    type Translator = ((key: string) => string) & {
+      raw: (key: string) => unknown;
+    };
+
     const translations: Record<string, string> = {
       badge: "FAQ",
       title: "Questions? We Have Answers",
       description: "Find quick answers to common questions",
-      "items.0.id": "test-1",
-      "items.0.question": "How do I schedule an appointment?",
-      "items.0.answer": "You can schedule through our app or WhatsApp.",
-      "items.1.id": "test-2",
-      "items.1.question": "What payment methods do you accept?",
-      "items.1.answer": "We accept cash, credit cards, and PIX.",
-      "items.2.id": "test-3",
-      "items.2.question": "What is your cancellation policy?",
-      "items.2.answer":
-        "You can cancel any time before the appointment. If it’s less than 2 hours away, we’ll only show a warning.",
     };
-    return translations[key] || key;
+
+    const items = [
+      {
+        id: "test-1",
+        question: "How do I schedule an appointment?",
+        answer: "You can schedule through our app or WhatsApp.",
+      },
+      {
+        id: "test-2",
+        question: "What payment methods do you accept?",
+        answer: "We accept cash, credit cards, and PIX.",
+      },
+      {
+        id: "test-3",
+        question: "What is your cancellation policy?",
+        answer:
+          "You can cancel any time before the appointment. If it’s less than 2 hours away, we’ll only show a warning.",
+      },
+    ];
+
+    const t = (key: string) => translations[key] || key;
+    const translator = t as Translator;
+    translator.raw = (key: string) => {
+      if (key === "items") return items;
+      return undefined;
+    };
+
+    return translator;
   },
 }));
 

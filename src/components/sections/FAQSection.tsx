@@ -42,17 +42,23 @@ function FAQSectionComponent() {
 
   // Memoize FAQ items to prevent recalculation on every render
   const faqItems = useMemo(() => {
-    return Array.from({ length: 10 }, (_, i) => {
-      try {
+    // Use `raw` to avoid missing-message warnings when locales have fewer items.
+    // `items` is an array in our locale JSON files.
+    const raw = t.raw("items");
+    if (!Array.isArray(raw)) return [];
+
+    return raw
+      .map((item) => {
+        const maybe = item as Partial<FAQItem>;
+        if (!maybe.id || !maybe.question || !maybe.answer) return null;
+
         return {
-          id: t(`items.${i}.id`),
-          question: t(`items.${i}.question`),
-          answer: t(`items.${i}.answer`),
+          id: String(maybe.id),
+          question: String(maybe.question),
+          answer: String(maybe.answer),
         };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean) as FAQItem[];
+      })
+      .filter(Boolean) as FAQItem[];
   }, [t]);
 
   // Memoize FAQ schema generation

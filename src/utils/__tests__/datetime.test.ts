@@ -1,0 +1,72 @@
+import { describe, it, expect } from "vitest";
+import {
+  SAO_PAULO_TIMEZONE,
+  formatDateDdMmYyyyFromIsoDateLike,
+  formatDateDdMmYyyyInSaoPaulo,
+  formatTimeHHmmInSaoPaulo,
+  formatDateTimeDdMmYyyyHHmmInSaoPaulo,
+  formatIsoDateYyyyMmDdInSaoPaulo,
+  parseDateDdMmYyyyToIsoDate,
+  parseIsoDateYyyyMmDdAsSaoPauloDate,
+  formatLocalizedDateFromIsoDateLike,
+} from "../datetime";
+
+describe("utils/datetime", () => {
+  it("formatDateDdMmYyyyFromIsoDateLike formats date-only safely", () => {
+    expect(formatDateDdMmYyyyFromIsoDateLike("2025-01-02")).toBe("02-01-2025");
+    expect(formatDateDdMmYyyyFromIsoDateLike("2025-01-02T10:30:00.000Z")).toBe(
+      "02-01-2025",
+    );
+    expect(formatDateDdMmYyyyFromIsoDateLike("invalid")).toBe("invalid");
+  });
+
+  it("formats date/time in Sao Paulo timezone", () => {
+    // 2025-01-02T03:45Z == 2025-01-02 00:45 in America/Sao_Paulo (UTC-3)
+    const date = new Date(Date.UTC(2025, 0, 2, 3, 45, 0, 0));
+    expect(formatDateDdMmYyyyInSaoPaulo(date)).toBe("02-01-2025");
+    expect(formatTimeHHmmInSaoPaulo(date)).toBe("00:45");
+    expect(formatDateTimeDdMmYyyyHHmmInSaoPaulo(date)).toBe("02-01-2025 00:45");
+  });
+
+  it("formatIsoDateYyyyMmDdInSaoPaulo keeps the São Paulo calendar day", () => {
+    // 2025-01-02T01:00Z == 2025-01-01 22:00 in Sao Paulo -> previous day
+    const date = new Date(Date.UTC(2025, 0, 2, 1, 0, 0, 0));
+    expect(formatIsoDateYyyyMmDdInSaoPaulo(date)).toBe("2025-01-01");
+
+    const sameDay = new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0));
+    expect(formatIsoDateYyyyMmDdInSaoPaulo(sameDay)).toBe("2025-01-02");
+  });
+
+  it("parseDateDdMmYyyyToIsoDate parses the display format", () => {
+    expect(parseDateDdMmYyyyToIsoDate("02-01-2025")).toBe("2025-01-02");
+    expect(parseDateDdMmYyyyToIsoDate("2-1-2025")).toBe(null);
+  });
+
+  it("parseIsoDateYyyyMmDdAsSaoPauloDate returns a stable UTC-noon date", () => {
+    const date = parseIsoDateYyyyMmDdAsSaoPauloDate("2025-01-02");
+    expect(date.getUTCFullYear()).toBe(2025);
+    expect(date.getUTCMonth()).toBe(0);
+    expect(date.getUTCDate()).toBe(2);
+    expect(date.getUTCHours()).toBe(12);
+    expect(date.getUTCMinutes()).toBe(0);
+  });
+
+  it("formatLocalizedDateFromIsoDateLike matches Intl.DateTimeFormat with Sao Paulo timezone", () => {
+    const locale = "en-US";
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    };
+
+    const input = "2025-01-02T00:00:00.000Z";
+    const expected = new Intl.DateTimeFormat(locale, {
+      timeZone: SAO_PAULO_TIMEZONE,
+      ...options,
+    }).format(parseIsoDateYyyyMmDdAsSaoPauloDate("2025-01-02"));
+
+    expect(formatLocalizedDateFromIsoDateLike(input, locale, options)).toBe(
+      expected,
+    );
+  });
+});

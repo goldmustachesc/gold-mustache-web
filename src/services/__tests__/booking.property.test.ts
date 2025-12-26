@@ -2,6 +2,11 @@ import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
 import type { AppointmentWithDetails, ServiceData } from "@/types/booking";
 import { AppointmentStatus } from "@prisma/client";
+import {
+  canCancelBeforeStart,
+  CANCELLATION_WARNING_WINDOW_MINUTES,
+  shouldWarnLateCancellation,
+} from "@/lib/booking/cancellation";
 
 // ============================================
 // Pure function implementations for testing
@@ -403,24 +408,19 @@ describe("Cancellation Properties", () => {
    * SHALL only show a warning (UI), not reject the cancellation.
    */
   it("client cancellation is allowed before start time and warns under 2 hours", () => {
-    // Pure functions mirroring the updated business rule.
-    const canClientCancel = (minutesUntilAppointment: number): boolean =>
-      minutesUntilAppointment > 0;
-
-    const shouldWarnLateCancellation = (
-      minutesUntilAppointment: number,
-    ): boolean => minutesUntilAppointment > 0 && minutesUntilAppointment < 120;
-
     fc.assert(
       fc.property(
         // Minutes until appointment can be in the past or future.
         fc.integer({ min: -24 * 60, max: 24 * 60 }),
         (minutesUntil) => {
-          const canCancel = canClientCancel(minutesUntil);
+          const canCancel = canCancelBeforeStart(minutesUntil);
           const shouldWarn = shouldWarnLateCancellation(minutesUntil);
 
           expect(canCancel).toBe(minutesUntil > 0);
-          expect(shouldWarn).toBe(minutesUntil > 0 && minutesUntil < 120);
+          expect(shouldWarn).toBe(
+            minutesUntil > 0 &&
+              minutesUntil < CANCELLATION_WARNING_WINDOW_MINUTES,
+          );
 
           return true;
         },

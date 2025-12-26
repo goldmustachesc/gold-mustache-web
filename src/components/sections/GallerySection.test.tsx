@@ -31,10 +31,12 @@ vi.mock("next/image", () => ({
   default: ({
     src,
     alt,
+    fill,
     ...props
   }: {
     src: string;
     alt: string;
+    fill?: boolean;
     [key: string]: unknown;
     // biome-ignore lint/performance/noImgElement: Test mock requires img element
   }) => <img src={src} alt={alt} {...props} />,

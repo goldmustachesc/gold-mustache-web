@@ -49,11 +49,14 @@ function getZonedDateTimeParts(
   });
 
   const parts = formatter.formatToParts(date);
+  // Some environments may return "24" for midnight even with hourCycle "h23".
+  // Normalize to "00" to avoid displaying invalid "24:xx" times.
+  const hour = pickPart(parts, "hour");
   return {
     year: pickPart(parts, "year"),
     month: pickPart(parts, "month"),
     day: pickPart(parts, "day"),
-    hour: pickPart(parts, "hour"),
+    hour: hour === "24" ? "00" : hour,
     minute: pickPart(parts, "minute"),
     second: pickPart(parts, "second"),
   };

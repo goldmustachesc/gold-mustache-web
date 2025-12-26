@@ -5,19 +5,29 @@ import { FAQSection } from "./FAQSection";
 
 // Mock next-intl
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => {
+  useTranslations: () => {
+    type Translator = ((key: string) => string) & {
+      raw: (key: string) => unknown;
+    };
+
     const translations: Record<string, string> = {
       badge: "FAQ",
       title: "Questions? We Have Answers",
       description: "Find quick answers to common questions",
-      "items.0.id": "test-1",
-      "items.0.question": "Test Question 1?",
-      "items.0.answer": "Test Answer 1",
-      "items.1.id": "test-2",
-      "items.1.question": "Test Question 2?",
-      "items.1.answer": "Test Answer 2",
     };
-    return translations[key] || key;
+
+    const items = [
+      { id: "test-1", question: "Test Question 1?", answer: "Test Answer 1" },
+      { id: "test-2", question: "Test Question 2?", answer: "Test Answer 2" },
+    ];
+
+    const t = ((key: string) => translations[key] || key) as Translator;
+    t.raw = (key: string) => {
+      if (key === "items") return items;
+      return undefined;
+    };
+
+    return t;
   },
 }));
 
