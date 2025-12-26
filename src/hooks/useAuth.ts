@@ -4,6 +4,7 @@ import { authService } from "@/services/auth";
 import type { LoginInput, SignupInput } from "@/lib/validations/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 import { toast } from "sonner";
 
 export function useUser() {
@@ -25,6 +26,7 @@ export function useSession() {
 export function useSignIn() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const locale = useLocale();
 
   return useMutation({
     mutationFn: (data: LoginInput) =>
@@ -37,7 +39,7 @@ export function useSignIn() {
       queryClient.invalidateQueries({ queryKey: ["user"] });
       queryClient.invalidateQueries({ queryKey: ["session"] });
       toast.success("Login realizado com sucesso!");
-      router.push("/dashboard");
+      router.push(`/${locale}/dashboard`);
       router.refresh();
     },
     onError: () => {
@@ -48,6 +50,7 @@ export function useSignIn() {
 
 export function useSignUp() {
   const router = useRouter();
+  const locale = useLocale();
 
   return useMutation({
     mutationFn: (data: SignupInput) =>
@@ -58,7 +61,9 @@ export function useSignUp() {
         return;
       }
       toast.success("Conta criada! Verifique seu email.");
-      router.push(`/verify-email?email=${encodeURIComponent(variables.email)}`);
+      router.push(
+        `/${locale}/verify-email?email=${encodeURIComponent(variables.email)}`,
+      );
     },
     onError: () => {
       toast.error("Erro ao criar conta");
@@ -78,13 +83,14 @@ export function useSignInWithGoogle() {
 export function useSignOut() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const locale = useLocale();
 
   return useMutation({
     mutationFn: () => authService.signOut(),
     onSuccess: () => {
       queryClient.clear();
       toast.success("Logout realizado");
-      router.push("/");
+      router.push(`/${locale}`);
       router.refresh();
     },
     onError: () => {
@@ -107,12 +113,13 @@ export function useResetPassword() {
 
 export function useUpdatePassword() {
   const router = useRouter();
+  const locale = useLocale();
 
   return useMutation({
     mutationFn: (password: string) => authService.updatePassword(password),
     onSuccess: () => {
       toast.success("Senha atualizada com sucesso!");
-      router.push("/login");
+      router.push(`/${locale}/login`);
     },
     onError: () => {
       toast.error("Erro ao atualizar senha");

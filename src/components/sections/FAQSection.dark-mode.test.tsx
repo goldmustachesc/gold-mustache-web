@@ -5,7 +5,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { FAQSection } from "./FAQSection";
 
 const mockMessages = {
@@ -29,6 +29,17 @@ const mockMessages = {
 };
 
 describe("FAQSection - Dark Mode Support", () => {
+  const consoleErrorSpy = vi
+    .spyOn(console, "error")
+    // Se houver MISSING_MESSAGE do next-intl/use-intl, queremos que o teste falhe,
+    // mas sem poluir o output. A asserção no afterEach garante isso.
+    .mockImplementation(() => {});
+
+  afterEach(() => {
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    consoleErrorSpy.mockClear();
+  });
+
   it("should use theme-aware background classes", () => {
     const { container } = render(
       <NextIntlClientProvider locale="en" messages={mockMessages}>

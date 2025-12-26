@@ -28,7 +28,7 @@ export default function AgendarPage() {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={`/${locale}`} className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">Gold Mustache</h1>
           </Link>
