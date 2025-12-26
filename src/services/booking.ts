@@ -13,6 +13,7 @@ import {
   getTodayUTCMidnight,
   getMinutesUntilAppointment,
 } from "@/utils/time-slots";
+import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 import type {
   ServiceData,
   TimeSlot,
@@ -21,7 +22,7 @@ import type {
   AppointmentWithDetails,
   DateRange,
 } from "@/types/booking";
-import { AppointmentStatus } from "@prisma/client";
+import { AppointmentStatus, type Prisma } from "@prisma/client";
 
 // ============================================
 // Helper Functions
@@ -187,25 +188,41 @@ async function getBookingPolicyError(params: {
   return null;
 }
 
+async function lockBarberDateForBooking(
+  tx: Pick<Prisma.TransactionClient, "$executeRaw">,
+  barberId: string,
+  appointmentDateDb: Date,
+): Promise<void> {
+  // Advisory lock scoped to this transaction.
+  // Goal: serialize "overlap check + appointment create" for the same barber+date,
+  // preventing concurrent overlapping bookings without introducing a new table.
+  const dateKey = formatPrismaDateToString(appointmentDateDb);
+  await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(hashtext(${barberId}), hashtext(${dateKey}))
+  `;
+}
+
 /**
  * Checks if a new appointment time range overlaps with any existing confirmed appointments.
  * Two time ranges [A, B) and [C, D) overlap if: A < D AND C < B
  *
- * This prevents race conditions where two users booking different services
- * (with different durations) could create overlapping appointments.
+ * IMPORTANT: this function by itself is NOT atomic.
+ * To fully prevent concurrent overlaps, call it inside a DB transaction with a lock
+ * (see `lockBarberDateForBooking`) and create the appointment in the same transaction.
  *
  * @example
  * // 45-min service at 09:45-10:30 vs 30-min service at 10:00-10:30
  * // These would overlap because 09:45 < 10:30 AND 10:00 < 10:30
  */
 async function hasOverlappingAppointment(
+  db: Pick<Prisma.TransactionClient, "appointment">,
   barberId: string,
   appointmentDate: Date,
   newStartTime: string,
   newEndTime: string,
 ): Promise<boolean> {
   // Fetch all confirmed appointments for this barber on this date
-  const existingAppointments = await prisma.appointment.findMany({
+  const existingAppointments = await db.appointment.findMany({
     where: {
       barberId,
       date: appointmentDate,
@@ -278,8 +295,9 @@ export async function getAvailableSlots(
   barberId: string,
   serviceId: string,
 ): Promise<TimeSlot[]> {
-  const dayOfWeek = date.getDay();
   const dateStr = formatDateToString(date);
+  const businessDate = parseIsoDateYyyyMmDdAsSaoPauloDate(dateStr);
+  const dayOfWeek = businessDate.getUTCDay();
   const dateForDb = parseDateStringToUTC(dateStr);
 
   // Get service duration
@@ -403,7 +421,7 @@ export async function getAvailableSlots(
   );
 
   // Filter out slots that have already passed (for today)
-  const validSlots = filterPastSlots(availableSlots, date);
+  const validSlots = filterPastSlots(availableSlots, businessDate);
 
   return validSlots.map((slot) => ({
     ...slot,
@@ -462,61 +480,65 @@ export async function createAppointment(
     throw new Error(policyError);
   }
 
-  // Check if slot time range overlaps with any existing appointment
-  // This prevents race conditions with different service durations
-  const hasOverlap = await hasOverlappingAppointment(
-    barberId,
-    appointmentDateDb,
-    startTime,
-    endTime,
-  );
+  // Prevent concurrent overlaps:
+  // serialize overlap-check + create via an advisory lock (barber+date) in a transaction.
+  const appointment = await prisma.$transaction(async (tx) => {
+    await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
 
-  if (hasOverlap) {
-    throw new Error("SLOT_OCCUPIED");
-  }
-
-  // Create the appointment
-  const appointment = await prisma.appointment.create({
-    data: {
-      clientId,
+    const hasOverlap = await hasOverlappingAppointment(
+      tx,
       barberId,
-      serviceId,
-      date: appointmentDateDb,
+      appointmentDateDb,
       startTime,
       endTime,
-      status: AppointmentStatus.CONFIRMED,
-    },
-    include: {
-      client: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
+    );
+
+    if (hasOverlap) {
+      throw new Error("SLOT_OCCUPIED");
+    }
+
+    return tx.appointment.create({
+      data: {
+        clientId,
+        barberId,
+        serviceId,
+        date: appointmentDateDb,
+        startTime,
+        endTime,
+        status: AppointmentStatus.CONFIRMED,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+        guestClient: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+        barber: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            name: true,
+            duration: true,
+            price: true,
+          },
         },
       },
-      guestClient: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      barber: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          duration: true,
-          price: true,
-        },
-      },
-    },
+    });
   });
 
   return {
@@ -589,84 +611,72 @@ export async function createGuestAppointment(
     throw new Error(policyError);
   }
 
-  // Check if slot time range overlaps with any existing appointment
-  // This prevents race conditions with different service durations
-  const hasOverlap = await hasOverlappingAppointment(
-    barberId,
-    appointmentDateDb,
-    startTime,
-    endTime,
-  );
-
-  if (hasOverlap) {
-    throw new Error("SLOT_OCCUPIED");
-  }
-
-  // Find or create guest client by phone
   const normalizedPhone = clientPhone.replace(/\D/g, "");
-  let guestClient = await prisma.guestClient.findUnique({
-    where: { phone: normalizedPhone },
-  });
 
-  if (!guestClient) {
-    guestClient = await prisma.guestClient.create({
-      data: {
-        fullName: clientName,
-        phone: normalizedPhone,
-      },
-    });
-  } else {
-    // Update name if different (client may have provided different name)
-    if (guestClient.fullName !== clientName) {
-      guestClient = await prisma.guestClient.update({
-        where: { id: guestClient.id },
-        data: { fullName: clientName },
-      });
-    }
-  }
+  // Same concurrency protection for guest bookings.
+  const appointment = await prisma.$transaction(async (tx) => {
+    await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
 
-  // Create the appointment
-  const appointment = await prisma.appointment.create({
-    data: {
-      guestClientId: guestClient.id,
+    const hasOverlap = await hasOverlappingAppointment(
+      tx,
       barberId,
-      serviceId,
-      date: appointmentDateDb,
+      appointmentDateDb,
       startTime,
       endTime,
-      status: AppointmentStatus.CONFIRMED,
-    },
-    include: {
-      client: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
+    );
+
+    if (hasOverlap) {
+      throw new Error("SLOT_OCCUPIED");
+    }
+
+    const guestClient = await tx.guestClient.upsert({
+      where: { phone: normalizedPhone },
+      update: { fullName: clientName },
+      create: { fullName: clientName, phone: normalizedPhone },
+    });
+
+    return tx.appointment.create({
+      data: {
+        guestClientId: guestClient.id,
+        barberId,
+        serviceId,
+        date: appointmentDateDb,
+        startTime,
+        endTime,
+        status: AppointmentStatus.CONFIRMED,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+        guestClient: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+        barber: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            name: true,
+            duration: true,
+            price: true,
+          },
         },
       },
-      guestClient: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      barber: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          duration: true,
-          price: true,
-        },
-      },
-    },
+    });
   });
 
   return {

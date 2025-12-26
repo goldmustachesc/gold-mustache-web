@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAvailableSlots } from "@/services/booking";
 import { getSlotsQuerySchema } from "@/lib/validations/booking";
-import { parseDateString } from "@/utils/time-slots";
+import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 
 export async function GET(request: Request) {
   try {
@@ -27,10 +27,8 @@ export async function GET(request: Request) {
       );
     }
 
-    // Use parseDateString to ensure correct local timezone interpretation
-    // new Date("2025-12-15") interprets as UTC, causing wrong dayOfWeek
     const slots = await getAvailableSlots(
-      parseDateString(validation.data.date),
+      parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.date),
       validation.data.barberId,
       validation.data.serviceId,
     );

@@ -3,6 +3,7 @@
 import type { NotificationData } from "@/types/booking";
 import { Bell, Calendar, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 
 interface NotificationListProps {
   notifications: NotificationData[];
@@ -39,7 +40,7 @@ export function NotificationList({
     if (diffMins < 60) return `${diffMins}min`;
     if (diffHours < 24) return `${diffHours}h`;
     if (diffDays < 7) return `${diffDays}d`;
-    return date.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
+    return formatDateDdMmYyyyInSaoPaulo(date);
   };
 
   if (isLoading) {

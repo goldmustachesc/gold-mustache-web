@@ -14,7 +14,12 @@ import {
   useCreateBarberAbsence,
   useDeleteBarberAbsence,
 } from "@/hooks/useBarberAbsences";
-import { formatDateToString } from "@/utils/time-slots";
+import {
+  formatDateToString,
+  getBrazilDateString,
+  parseDateString,
+} from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
 import { CalendarOff, Trash2 } from "lucide-react";
 
@@ -45,17 +50,11 @@ export default function BarberAbsencesPage() {
     }
   }, [barberProfile, barberLoading, user, router, locale]);
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  const startDate = useMemo(() => formatDateToString(today), [today]);
-  const endDate = useMemo(
-    () => formatDateToString(addDays(today, 90)),
-    [today],
-  );
+  const startDate = useMemo(() => getBrazilDateString(), []);
+  const endDate = useMemo(() => {
+    const base = parseDateString(startDate);
+    return formatDateToString(addDays(base, 90));
+  }, [startDate]);
 
   const { data: absences = [], isLoading: absencesLoading } = useBarberAbsences(
     startDate,
@@ -207,7 +206,7 @@ export default function BarberAbsencesPage() {
                   >
                     <div className="min-w-0">
                       <div className="font-medium">
-                        {a.date}{" "}
+                        {formatDateDdMmYyyyFromIsoDateLike(a.date)}{" "}
                         {a.startTime && a.endTime
                           ? `• ${a.startTime}–${a.endTime}`
                           : "• Dia inteiro"}

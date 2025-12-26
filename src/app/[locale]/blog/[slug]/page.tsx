@@ -4,6 +4,7 @@ import { ShareButton } from "@/components/ui/share-button";
 import { BLOG_POSTS } from "@/constants/blog";
 import { locales } from "@/i18n/config";
 import { ArrowLeft, Calendar, Clock, Sparkles, User } from "lucide-react";
+import { formatLocalizedDateFromIsoDateLike } from "@/utils/datetime";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Image from "next/image";
@@ -73,11 +74,15 @@ export default async function BlogPostPage({
 
   const suggestedPosts = [...relatedPosts, ...otherPosts];
 
-  const formattedDate = new Date(post.publishedAt).toLocaleDateString(locale, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const formattedDate = formatLocalizedDateFromIsoDateLike(
+    post.publishedAt,
+    locale,
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
 
   // Article schema for SEO
   const articleSchema = {

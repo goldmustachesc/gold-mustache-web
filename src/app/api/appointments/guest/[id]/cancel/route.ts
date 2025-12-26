@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cancelAppointmentByGuest } from "@/services/booking";
 import { z } from "zod";
+import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
 
 const cancelSchema = z.object({
   phone: z.string().regex(/^\d{10,11}$/, "Telefone deve ter 10 ou 11 dígitos"),
@@ -29,6 +30,9 @@ export async function PATCH(
       id,
       validation.data.phone,
     );
+
+    await notifyBarberOfAppointmentCancelledByClient(appointment);
+
     return NextResponse.json({ appointment });
   } catch (error) {
     console.error("Error cancelling guest appointment:", error);

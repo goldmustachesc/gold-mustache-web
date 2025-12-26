@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { Calendar, Clock, Scissors, User, X } from "lucide-react";
-import { parseDateString } from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 
 // Status values matching Prisma enum
 const AppointmentStatus = {
@@ -56,14 +56,7 @@ export function AppointmentCard({
   showClientInfo = false,
 }: AppointmentCardProps) {
   const formatDate = (dateStr: string) => {
-    // Parse the date string correctly to avoid timezone issues
-    // API returns ISO string like "2025-12-15T00:00:00.000Z"
-    const date = parseDateString(dateStr.split("T")[0]);
-    return date.toLocaleDateString("pt-BR", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
+    return formatDateDdMmYyyyFromIsoDateLike(dateStr);
   };
 
   const canCancel = appointment.status === AppointmentStatus.CONFIRMED;
@@ -97,7 +90,7 @@ export function AppointmentCard({
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3 text-sm">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="capitalize">{formatDate(appointment.date)}</span>
+          <span>{formatDate(appointment.date)}</span>
         </div>
 
         <div className="flex items-center gap-3 text-sm">

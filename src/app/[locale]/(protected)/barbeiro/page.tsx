@@ -12,7 +12,11 @@ import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { LogOut, Scissors } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { formatDateToString } from "@/utils/time-slots";
+import {
+  formatDateToString,
+  getBrazilDateString,
+  parseDateString,
+} from "@/utils/time-slots";
 import Link from "next/link";
 
 // Helper to get start of week (Sunday)
@@ -20,7 +24,8 @@ function getWeekStart(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
   d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
+  // Use midday to reduce cross-timezone day shifts when formatting dates later.
+  d.setHours(12, 0, 0, 0);
   return d;
 }
 
@@ -29,7 +34,8 @@ function getWeekEnd(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
   d.setDate(d.getDate() + (6 - day));
-  d.setHours(23, 59, 59, 999);
+  // Use midday to reduce cross-timezone day shifts when formatting dates later.
+  d.setHours(12, 0, 0, 0);
   return d;
 }
 
@@ -41,21 +47,27 @@ export default function BarberDashboardPage() {
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>(() =>
+    parseDateString(getBrazilDateString()),
+  );
 
-  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+  const [weekStart, setWeekStart] = useState<Date>(() =>
+    getWeekStart(selectedDate),
+  );
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.push(`/${locale}/login`);
+    }
+  }, [user, userLoading, router, locale]);
 
   // Redirect non-barbers to dashboard
   useEffect(() => {
-    if (!barberLoading && !barberProfile) {
+    if (!barberLoading && user && !barberProfile) {
       toast.error("Acesso restrito a barbeiros");
       router.push(`/${locale}/dashboard`);
     }
-  }, [barberProfile, barberLoading, router, locale]);
+  }, [barberProfile, barberLoading, user, router, locale]);
 
   // Use barber's actual ID from profile
   const barberId = barberProfile?.id ?? null;
@@ -89,6 +101,18 @@ export default function BarberDashboardPage() {
       newWeekStart.getDate() + (direction === "next" ? 7 : -7),
     );
     setWeekStart(newWeekStart);
+
+    // Mantém o "dia selecionado" sincronizado com a semana navegada.
+    // Isso evita ficar com selectedDate apontando para uma data fora do range carregado.
+    setSelectedDate((prev) => {
+      const nextSelected = new Date(prev);
+      nextSelected.setDate(
+        nextSelected.getDate() + (direction === "next" ? 7 : -7),
+      );
+      // Use midday to reduce cross-timezone day shifts when formatting dates later.
+      nextSelected.setHours(12, 0, 0, 0);
+      return nextSelected;
+    });
   };
 
   const handleDateSelect = (date: Date) => {
@@ -108,7 +132,7 @@ export default function BarberDashboardPage() {
 
   const isLoading = userLoading || barberLoading || appointmentsLoading;
 
-  if (isLoading || !barberProfile) {
+  if (isLoading || !user || !barberProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Carregando...</div>

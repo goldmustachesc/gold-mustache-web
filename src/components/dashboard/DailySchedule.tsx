@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppointmentCard } from "@/components/booking/AppointmentCard";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { Calendar, Clock } from "lucide-react";
+import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 
 interface DailyScheduleProps {
   date: Date;
@@ -21,12 +22,7 @@ export function DailySchedule({
   cancellingId,
 }: DailyScheduleProps) {
   const formatDate = (d: Date) => {
-    return d.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return formatDateDdMmYyyyInSaoPaulo(d);
   };
 
   // Sort appointments by start time

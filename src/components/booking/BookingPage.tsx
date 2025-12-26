@@ -42,6 +42,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 import { formatDateToString } from "@/utils/time-slots";
 
 type BookingStep =
@@ -292,15 +293,11 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
             {step === "time" && selectedDate && (
               <>
                 {selectedService?.name} •{" "}
-                {selectedDate.toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
+                {formatDateDdMmYyyyInSaoPaulo(selectedDate)}
               </>
             )}
             {step === "info" &&
-              `${selectedSlot?.time} • ${selectedDate?.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}`}
+              `${selectedSlot?.time} • ${selectedDate ? formatDateDdMmYyyyInSaoPaulo(selectedDate) : ""}`}
           </CardDescription>
         </CardHeader>
         <CardContent>

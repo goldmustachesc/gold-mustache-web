@@ -18,7 +18,12 @@ import {
   useUpdateAdminShopHours,
 } from "@/hooks/useAdminShopConfig";
 import type { ShopHoursData } from "@/types/booking";
-import { formatDateToString } from "@/utils/time-slots";
+import {
+  formatDateToString,
+  getBrazilDateString,
+  parseDateString,
+} from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { CalendarOff, Save, Trash2 } from "lucide-react";
 
 const WEEKDAYS: Array<{ dayOfWeek: number; label: string }> = [
@@ -108,16 +113,11 @@ export default function AdminShopHoursPage() {
     setDraft(shopHours);
   }, [shopHours]);
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-  const startDate = useMemo(() => formatDateToString(today), [today]);
-  const endDate = useMemo(
-    () => formatDateToString(addDays(today, 90)),
-    [today],
-  );
+  const startDate = useMemo(() => getBrazilDateString(), []);
+  const endDate = useMemo(() => {
+    const base = parseDateString(startDate);
+    return formatDateToString(addDays(base, 90));
+  }, [startDate]);
 
   const { data: closures = [], isLoading: closuresLoading } =
     useAdminShopClosures(startDate, endDate);
@@ -425,7 +425,7 @@ export default function AdminShopHoursPage() {
                     >
                       <div className="min-w-0">
                         <div className="font-medium">
-                          {c.date}{" "}
+                          {formatDateDdMmYyyyFromIsoDateLike(c.date)}{" "}
                           {c.startTime && c.endTime
                             ? `• ${c.startTime}–${c.endTime}`
                             : "• Dia inteiro"}

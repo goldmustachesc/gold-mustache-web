@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { Calendar, CheckCircle, Clock, Scissors, User } from "lucide-react";
-import { parseDateString } from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 
 interface BookingConfirmationProps {
   appointment: AppointmentWithDetails;
@@ -25,15 +25,7 @@ export function BookingConfirmation({
   onViewAppointments,
 }: BookingConfirmationProps) {
   const formatDate = (dateStr: string) => {
-    // Parse the date string correctly to avoid timezone issues
-    // API returns ISO string like "2025-12-15T00:00:00.000Z"
-    const date = parseDateString(dateStr.split("T")[0]);
-    return date.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return formatDateDdMmYyyyFromIsoDateLike(dateStr);
   };
 
   return (
@@ -72,9 +64,7 @@ export function BookingConfirmation({
             <Calendar className="h-5 w-5 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">Data</p>
-              <p className="font-medium capitalize">
-                {formatDate(appointment.date)}
-              </p>
+              <p className="font-medium">{formatDate(appointment.date)}</p>
             </div>
           </div>
 

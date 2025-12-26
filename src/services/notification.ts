@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import type { NotificationData } from "@/types/booking";
+import type { AppointmentWithDetails, NotificationData } from "@/types/booking";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { NotificationType } from "@prisma/client";
 
 // ============================================
@@ -164,6 +165,40 @@ export async function notifyAppointmentCancelledByClient(
     title: "Agendamento Cancelado",
     message: `O cliente ${appointmentDetails.clientName} cancelou o agendamento de ${appointmentDetails.serviceName} para ${appointmentDetails.date} às ${appointmentDetails.time}.`,
     data: appointmentDetails,
+  });
+}
+
+/**
+ * Notify the barber when a client cancels an appointment (including guest clients).
+ *
+ * This centralizes the "barbers SHALL be notified on any client cancellation" requirement
+ * to avoid missing notifications in one of the cancellation routes.
+ *
+ * Intentionally fetches `barber.userId` server-side and does NOT expose it in API responses.
+ */
+export async function notifyBarberOfAppointmentCancelledByClient(
+  appointment: Pick<
+    AppointmentWithDetails,
+    "barberId" | "startTime" | "date" | "service" | "client" | "guestClient"
+  >,
+): Promise<void> {
+  const barber = await prisma.barber.findUnique({
+    where: { id: appointment.barberId },
+    select: { userId: true },
+  });
+
+  if (!barber) return;
+
+  const clientName =
+    appointment.client?.fullName ??
+    appointment.guestClient?.fullName ??
+    "Cliente";
+
+  await notifyAppointmentCancelledByClient(barber.userId, {
+    clientName,
+    serviceName: appointment.service.name,
+    date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
+    time: appointment.startTime,
   });
 }
 

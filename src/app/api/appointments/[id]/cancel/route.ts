@@ -6,11 +6,11 @@ import {
 } from "@/services/booking";
 import {
   notifyAppointmentCancelledByBarber,
-  notifyAppointmentCancelledByClient,
+  notifyBarberOfAppointmentCancelledByClient,
 } from "@/services/notification";
 import { cancelAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
-import { parseDateString } from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 
 export async function PATCH(
   request: Request,
@@ -90,7 +90,7 @@ export async function PATCH(
           await notifyAppointmentCancelledByBarber(clientProfile.userId, {
             serviceName: appointment.service.name,
             barberName: appointment.barber.name,
-            date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
+            date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
             time: appointment.startTime,
             reason,
           });
@@ -117,24 +117,7 @@ export async function PATCH(
       profile.id,
     );
 
-    // Get barber's userId for notification
-    const appointmentBarber = await prisma.barber.findUnique({
-      where: { id: appointment.barberId },
-    });
-
-    if (appointmentBarber) {
-      // appointment.date comes as "YYYY-MM-DD" from service
-      const clientName =
-        appointment.client?.fullName ??
-        appointment.guestClient?.fullName ??
-        "Cliente";
-      await notifyAppointmentCancelledByClient(appointmentBarber.userId, {
-        clientName,
-        serviceName: appointment.service.name,
-        date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
-        time: appointment.startTime,
-      });
-    }
+    await notifyBarberOfAppointmentCancelledByClient(appointment);
 
     return NextResponse.json({ appointment });
   } catch (error) {

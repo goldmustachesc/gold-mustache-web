@@ -1,4 +1,5 @@
 import type { TimeSlot } from "@/types/booking";
+import { formatIsoDateYyyyMmDdInSaoPaulo } from "@/utils/datetime";
 
 /**
  * Parses a date string "YYYY-MM-DD" to a Date object in local timezone.
@@ -19,10 +20,7 @@ export function parseDateString(dateStr: string): Date {
  * Use this for dates created locally (e.g., from DatePicker).
  */
 export function formatDateToString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return formatIsoDateYyyyMmDdInSaoPaulo(date);
 }
 
 /**
@@ -347,15 +345,7 @@ export function parseDateStringToUTC(dateStr: string): Date {
  * but business hours are defined in Brazilian local time.
  */
 export function isToday(date: Date): boolean {
-  const brazilToday = getBrazilDate();
-
-  // The date parameter comes from parseDateString which creates a local date
-  // We need to compare the date's components with Brazil's current date
-  return (
-    date.getFullYear() === brazilToday.year &&
-    date.getMonth() + 1 === brazilToday.month &&
-    date.getDate() === brazilToday.day
-  );
+  return formatDateToString(date) === getBrazilDateString();
 }
 
 /**

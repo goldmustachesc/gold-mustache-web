@@ -8,11 +8,8 @@ import {
 import { notifyAppointmentConfirmed } from "@/services/notification";
 import { createAppointmentSchema } from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
-import {
-  parseDateString,
-  parseDateStringToUTC,
-  getTodayUTCMidnight,
-} from "@/utils/time-slots";
+import { parseDateStringToUTC, getTodayUTCMidnight } from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -142,7 +139,7 @@ export async function POST(request: Request) {
     await notifyAppointmentConfirmed(user.id, {
       serviceName: appointment.service.name,
       barberName: appointment.barber.name,
-      date: parseDateString(appointment.date).toLocaleDateString("pt-BR"),
+      date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
       time: appointment.startTime,
     });
 

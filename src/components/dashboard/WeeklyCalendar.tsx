@@ -6,6 +6,7 @@ import type { AppointmentWithDetails } from "@/types/booking";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateToString } from "@/utils/time-slots";
+import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 
 interface WeeklyCalendarProps {
   weekStart: Date;
@@ -42,22 +43,13 @@ export function WeeklyCalendar({
     {} as Record<string, number>,
   );
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateToString(new Date());
+  const selectedDateStr = formatDateToString(selectedDate);
 
   const formatWeekRange = () => {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-
-    const startMonth = weekStart.toLocaleDateString("pt-BR", {
-      month: "short",
-    });
-    const endMonth = weekEnd.toLocaleDateString("pt-BR", { month: "short" });
-
-    if (startMonth === endMonth) {
-      return `${weekStart.getDate()} - ${weekEnd.getDate()} de ${startMonth}`;
-    }
-    return `${weekStart.getDate()} ${startMonth} - ${weekEnd.getDate()} ${endMonth}`;
+    return `${formatDateDdMmYyyyInSaoPaulo(weekStart)} - ${formatDateDdMmYyyyInSaoPaulo(weekEnd)}`;
   };
 
   return (
@@ -89,10 +81,9 @@ export function WeeklyCalendar({
           {weekDays.map((date, index) => {
             const dateStr = formatDateToString(date);
             const count = appointmentCounts[dateStr] || 0;
-            const isSelected =
-              date.toDateString() === selectedDate.toDateString();
-            const isToday = date.toDateString() === today.toDateString();
-            const isPast = date < today;
+            const isSelected = dateStr === selectedDateStr;
+            const isToday = dateStr === todayStr;
+            const isPast = dateStr < todayStr;
 
             return (
               <button

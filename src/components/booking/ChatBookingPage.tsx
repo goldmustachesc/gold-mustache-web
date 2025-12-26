@@ -38,6 +38,7 @@ import type {
   BarberData,
 } from "@/types/booking";
 import { formatDateToString } from "@/utils/time-slots";
+import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 import { ArrowLeft, Calendar, RotateCcw } from "lucide-react";
 
 type BookingStep =
@@ -277,11 +278,7 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
       setSelectedSlot(null);
       addMessage({
         type: "user",
-        text: date.toLocaleDateString("pt-BR", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        }),
+        text: formatDateDdMmYyyyInSaoPaulo(date),
       });
       setTimeout(() => setStep("time"), 100);
     },
