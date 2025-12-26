@@ -1,0 +1,3 @@
+echo "pre-push: executando checks (lint + testes + coverage >= 90%)..."
+pnpm test:gate:full
+
