@@ -144,6 +144,16 @@ export async function PATCH(
         );
       }
 
+      if (error.message === "APPOINTMENT_NOT_CANCELLABLE") {
+        return NextResponse.json(
+          {
+            error: "APPOINTMENT_NOT_CANCELLABLE",
+            message: "Este agendamento não pode ser cancelado",
+          },
+          { status: 400 },
+        );
+      }
+
       if (error.message === "APPOINTMENT_NOT_FOUND") {
         return NextResponse.json(
           { error: "NOT_FOUND", message: "Agendamento não encontrado" },
