@@ -10,7 +10,13 @@ import {
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useProfileMe } from "@/hooks/useProfileMe";
-import { Calendar, ClipboardList, Scissors, Settings } from "lucide-react";
+import {
+  Calendar,
+  CalendarOff,
+  ClipboardList,
+  Scissors,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -97,6 +103,19 @@ export default function DashboardPage() {
                   <CardTitle>Minha Agenda</CardTitle>
                   <CardDescription>
                     Gerencie seus atendimentos e horários
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+            <Link href={`/${locale}/barbeiro/ausencias`}>
+              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
+                    <CalendarOff className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle>Ausências</CardTitle>
+                  <CardDescription>
+                    Cadastre folgas e indisponibilidades por data/horário
                   </CardDescription>
                 </CardHeader>
               </Card>

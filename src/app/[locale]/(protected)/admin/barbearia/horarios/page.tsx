@@ -31,6 +31,9 @@ const WEEKDAYS: Array<{ dayOfWeek: number; label: string }> = [
   { dayOfWeek: 6, label: "Sábado" },
 ];
 
+const DEFAULT_OPEN_START_TIME = "09:00";
+const DEFAULT_OPEN_END_TIME = "18:00";
+
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
@@ -41,13 +44,23 @@ function normalizeShopHours(days: ShopHoursData[]): ShopHoursData[] {
   const byDow = new Map(days.map((d) => [d.dayOfWeek, d]));
   return WEEKDAYS.map(({ dayOfWeek }) => {
     const existing = byDow.get(dayOfWeek);
-    if (existing) return existing;
+    if (existing) {
+      // Defensive: if a day is marked open but times are null, align to UI defaults.
+      if (existing.isOpen && (!existing.startTime || !existing.endTime)) {
+        return {
+          ...existing,
+          startTime: existing.startTime ?? DEFAULT_OPEN_START_TIME,
+          endTime: existing.endTime ?? DEFAULT_OPEN_END_TIME,
+        };
+      }
+      return existing;
+    }
     return {
       id: `missing-${dayOfWeek}`,
       dayOfWeek,
       isOpen: false,
-      startTime: "09:00",
-      endTime: "18:00",
+      startTime: DEFAULT_OPEN_START_TIME,
+      endTime: DEFAULT_OPEN_END_TIME,
       breakStart: null,
       breakEnd: null,
       createdAt: new Date(0).toISOString(),
@@ -151,8 +164,9 @@ export default function AdminShopHoursPage() {
         days: draft.map((d) => ({
           dayOfWeek: d.dayOfWeek,
           isOpen: d.isOpen,
-          startTime: d.isOpen ? d.startTime : null,
-          endTime: d.isOpen ? d.endTime : null,
+          // Keep persisted values consistent with what the inputs display.
+          startTime: d.isOpen ? (d.startTime ?? DEFAULT_OPEN_START_TIME) : null,
+          endTime: d.isOpen ? (d.endTime ?? DEFAULT_OPEN_END_TIME) : null,
           breakStart: d.breakStart,
           breakEnd: d.breakEnd,
         })),
@@ -235,9 +249,20 @@ export default function AdminShopHoursPage() {
                           <input
                             type="checkbox"
                             checked={d.isOpen}
-                            onChange={(e) =>
-                              updateDay(dayOfWeek, { isOpen: e.target.checked })
-                            }
+                            onChange={(e) => {
+                              const isOpen = e.target.checked;
+                              updateDay(dayOfWeek, {
+                                isOpen,
+                                ...(isOpen
+                                  ? {
+                                      startTime:
+                                        d.startTime ?? DEFAULT_OPEN_START_TIME,
+                                      endTime:
+                                        d.endTime ?? DEFAULT_OPEN_END_TIME,
+                                    }
+                                  : {}),
+                              });
+                            }}
                           />
                           Aberto
                         </label>
@@ -253,7 +278,7 @@ export default function AdminShopHoursPage() {
                           <Label>Início</Label>
                           <Input
                             type="time"
-                            value={d.startTime ?? "09:00"}
+                            value={d.startTime ?? DEFAULT_OPEN_START_TIME}
                             disabled={!d.isOpen}
                             onChange={(e) =>
                               updateDay(dayOfWeek, {
@@ -266,7 +291,7 @@ export default function AdminShopHoursPage() {
                           <Label>Fim</Label>
                           <Input
                             type="time"
-                            value={d.endTime ?? "18:00"}
+                            value={d.endTime ?? DEFAULT_OPEN_END_TIME}
                             disabled={!d.isOpen}
                             onChange={(e) =>
                               updateDay(dayOfWeek, { endTime: e.target.value })
