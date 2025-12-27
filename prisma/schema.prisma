@@ -33,10 +33,11 @@ enum UserRole {
 
 // Guest clients who book without creating an account
 model GuestClient {
-  id        String   @id @default(uuid())
-  fullName  String   @map("full_name")
-  phone     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid())
+  fullName    String   @map("full_name")
+  phone       String   @unique
+  accessToken String?  @unique @map("access_token")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   appointments Appointment[]
 

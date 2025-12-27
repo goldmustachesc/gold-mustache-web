@@ -15,6 +15,7 @@ import { ServiceSelector } from "./ServiceSelector";
 import { DatePicker } from "./DatePicker";
 import { TimeSlotGrid } from "./TimeSlotGrid";
 import { BookingConfirmation } from "./BookingConfirmation";
+import { BookingReview } from "./BookingReview";
 import { BarberSelector } from "./BarberSelector";
 import { GuestInfoStep } from "./GuestInfoStep";
 import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
@@ -36,6 +37,7 @@ import {
   ArrowLeft,
   Calendar,
   Check,
+  CheckCircle,
   Clock,
   Scissors,
   User,
@@ -51,6 +53,7 @@ type BookingStep =
   | "date"
   | "time"
   | "info"
+  | "review"
   | "confirmation";
 
 interface BookingPageProps {
@@ -68,6 +71,7 @@ const BASE_STEPS: {
   { key: "date", label: "Data", icon: Calendar },
   { key: "time", label: "Horário", icon: Clock },
   { key: "info", label: "Dados", icon: UserCircle, guestOnly: true },
+  { key: "review", label: "Confirmar", icon: CheckCircle },
 ];
 
 export function BookingPage({ onViewAppointments }: BookingPageProps) {
@@ -86,7 +90,11 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [confirmedAppointment, setConfirmedAppointment] =
     useState<AppointmentWithDetails | null>(null);
-  const [guestPhone, setGuestPhone] = useState<string | null>(null);
+  const [_guestPhone, setGuestPhone] = useState<string | null>(null);
+  const [guestInfo, setGuestInfo] = useState<{
+    clientName: string;
+    clientPhone: string;
+  } | null>(null);
 
   const { data: barbers = [], isLoading: barbersLoading } = useBarbers();
   const { data: services = [], isLoading: servicesLoading } = useServices(
@@ -133,49 +141,50 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
     if (isGuest) {
       setStep("info");
     } else {
-      handleConfirmLoggedIn();
+      // Logged-in users go directly to review
+      setStep("review");
     }
   };
 
-  const handleConfirmLoggedIn = async () => {
-    if (!selectedBarber || !selectedService || !selectedDate || !selectedSlot)
-      return;
-
-    try {
-      const appointment = await createAppointment.mutateAsync({
-        serviceId: selectedService.id,
-        barberId: selectedBarber.id,
-        date: formatDateToString(selectedDate),
-        startTime: selectedSlot.time,
-      });
-
-      setConfirmedAppointment(appointment);
-      setStep("confirmation");
-      toast.success("Agendamento realizado com sucesso!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao agendar");
-    }
-  };
-
-  const handleConfirmGuest = async (guestData: {
+  const handleGuestInfoSubmit = (guestData: {
     clientName: string;
     clientPhone: string;
   }) => {
+    // Save guest info and go to review
+    setGuestInfo(guestData);
+    setStep("review");
+  };
+
+  const handleConfirmBooking = async () => {
     if (!selectedBarber || !selectedService || !selectedDate || !selectedSlot)
       return;
 
     try {
-      const appointment = await createGuestAppointment.mutateAsync({
-        serviceId: selectedService.id,
-        barberId: selectedBarber.id,
-        date: formatDateToString(selectedDate),
-        startTime: selectedSlot.time,
-        clientName: guestData.clientName,
-        clientPhone: guestData.clientPhone,
-      });
+      if (isGuest && guestInfo) {
+        // Guest booking
+        const result = await createGuestAppointment.mutateAsync({
+          serviceId: selectedService.id,
+          barberId: selectedBarber.id,
+          date: formatDateToString(selectedDate),
+          startTime: selectedSlot.time,
+          clientName: guestInfo.clientName,
+          clientPhone: guestInfo.clientPhone,
+        });
 
-      setConfirmedAppointment(appointment);
-      setGuestPhone(guestData.clientPhone);
+        setConfirmedAppointment(result.appointment);
+        setGuestPhone(guestInfo.clientPhone);
+      } else {
+        // Logged-in user booking
+        const appointment = await createAppointment.mutateAsync({
+          serviceId: selectedService.id,
+          barberId: selectedBarber.id,
+          date: formatDateToString(selectedDate),
+          startTime: selectedSlot.time,
+        });
+
+        setConfirmedAppointment(appointment);
+      }
+
       setStep("confirmation");
       toast.success("Agendamento realizado com sucesso!");
     } catch (error) {
@@ -184,9 +193,8 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
   };
 
   const handleViewGuestAppointments = () => {
-    if (guestPhone) {
-      router.push(`/${locale}/meus-agendamentos?phone=${guestPhone}`);
-    }
+    // Token is already saved in localStorage, just redirect
+    router.push(`/${locale}/meus-agendamentos`);
   };
 
   const handleBack = () => {
@@ -199,6 +207,12 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
       setSelectedSlot(null);
     } else if (step === "info") {
       setStep("time");
+    } else if (step === "review") {
+      if (isGuest) {
+        setStep("info");
+      } else {
+        setStep("time");
+      }
     }
   };
 
@@ -209,6 +223,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
     setSelectedDate(null);
     setSelectedSlot(null);
     setConfirmedAppointment(null);
+    setGuestInfo(null);
   };
 
   const currentStepIndex = STEPS.findIndex((s) => s.key === step);
@@ -284,6 +299,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
             {step === "date" && "Escolha a Data"}
             {step === "time" && "Escolha o Horário"}
             {step === "info" && "Seus Dados"}
+            {step === "review" && "Confirmar Agendamento"}
           </CardTitle>
           <CardDescription>
             {step === "barber" && "Selecione o profissional de sua preferência"}
@@ -298,6 +314,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
             )}
             {step === "info" &&
               `${selectedSlot?.time} • ${selectedDate ? formatDateDdMmYyyyInSaoPaulo(selectedDate) : ""}`}
+            {step === "review" && "Verifique os dados antes de confirmar"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -357,13 +374,8 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
                     onClick={handleProceedToConfirm}
                     className="w-full"
                     size="lg"
-                    disabled={createAppointment.isPending}
                   >
-                    {createAppointment.isPending
-                      ? "Agendando..."
-                      : isGuest
-                        ? "Continuar"
-                        : "Confirmar Agendamento"}
+                    {isGuest ? "Continuar" : "Revisar Agendamento"}
                   </Button>
                 </div>
               )}
@@ -374,11 +386,32 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
             <div className="space-y-6">
               <SignupIncentiveBanner variant="compact" locale={locale} />
               <GuestInfoStep
-                onSubmit={handleConfirmGuest}
-                isLoading={createGuestAppointment.isPending}
+                onSubmit={handleGuestInfoSubmit}
+                isLoading={false}
+                submitLabel="Revisar Agendamento"
               />
             </div>
           )}
+
+          {step === "review" &&
+            selectedBarber &&
+            selectedService &&
+            selectedDate &&
+            selectedSlot && (
+              <BookingReview
+                barber={selectedBarber}
+                service={selectedService}
+                date={selectedDate}
+                slot={selectedSlot}
+                guestInfo={guestInfo || undefined}
+                onConfirm={handleConfirmBooking}
+                onBack={handleBack}
+                isLoading={
+                  createAppointment.isPending ||
+                  createGuestAppointment.isPending
+                }
+              />
+            )}
         </CardContent>
       </Card>
     </div>

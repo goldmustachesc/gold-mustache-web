@@ -621,7 +621,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       return await callback(tx);
     });
 
-    const apt = await createGuestAppointment({
+    const result = await createGuestAppointment({
       serviceId: "service-1",
       barberId: "barber-1",
       date: "2025-01-02",
@@ -630,10 +630,13 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       clientPhone: "(11) 99999-8888",
     });
 
-    expect(apt.id).toBe("apt-1");
-    expect(apt.startTime).toBe("09:00");
-    expect(apt.endTime).toBe("09:30");
-    expect(apt.guestClient?.phone).toBe("11999998888");
+    // createGuestAppointment now returns { appointment, accessToken }
+    expect(result.appointment.id).toBe("apt-1");
+    expect(result.appointment.startTime).toBe("09:00");
+    expect(result.appointment.endTime).toBe("09:30");
+    expect(result.appointment.guestClient?.phone).toBe("11999998888");
+    expect(result.accessToken).toBeDefined();
+    expect(typeof result.accessToken).toBe("string");
   });
 
   it("createGuestAppointment rejects when service does not exist", async () => {

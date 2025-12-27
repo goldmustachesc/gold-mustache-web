@@ -3,6 +3,7 @@ export { ServiceSelector } from "./ServiceSelector";
 export { DatePicker } from "./DatePicker";
 export { TimeSlotGrid } from "./TimeSlotGrid";
 export { BookingConfirmation } from "./BookingConfirmation";
+export { BookingReview } from "./BookingReview";
 export { BookingPage } from "./BookingPage";
 export { ChatBookingPage } from "./ChatBookingPage";
 export { AppointmentCard } from "./AppointmentCard";

@@ -20,10 +20,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create appointment for guest
-    const appointment = await createGuestAppointment(validation.data);
+    // Create appointment for guest (returns appointment + accessToken)
+    const { appointment, accessToken } = await createGuestAppointment(
+      validation.data,
+    );
 
-    return NextResponse.json({ appointment }, { status: 201 });
+    // Return both the appointment and the access token for localStorage
+    return NextResponse.json({ appointment, accessToken }, { status: 201 });
   } catch (error) {
     console.error("Error creating guest appointment:", error);
 

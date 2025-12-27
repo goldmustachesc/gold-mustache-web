@@ -8,6 +8,7 @@ import { Send } from "lucide-react";
 interface ChatGuestInfoFormProps {
   onSubmit: (data: { clientName: string; clientPhone: string }) => void;
   isLoading?: boolean;
+  submitLabel?: string;
 }
 
 function formatPhone(value: string): string {
@@ -29,6 +30,7 @@ function getPhoneDigits(value: string): string {
 export function ChatGuestInfoForm({
   onSubmit,
   isLoading,
+  submitLabel = "Confirmar Agendamento",
 }: ChatGuestInfoFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -122,7 +124,7 @@ export function ChatGuestInfoForm({
         ) : (
           <>
             <Send className="h-4 w-4 mr-2" />
-            Confirmar Agendamento
+            {submitLabel}
           </>
         )}
       </Button>

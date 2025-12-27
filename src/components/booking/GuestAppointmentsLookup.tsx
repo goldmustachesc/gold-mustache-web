@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Phone, Search, Calendar } from "lucide-react";
+import { Calendar, Smartphone, AlertCircle } from "lucide-react";
 import {
   useGuestAppointments,
   useCancelGuestAppointment,
@@ -14,72 +12,28 @@ import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
 import { toast } from "sonner";
 import Link from "next/link";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
+import { hasGuestToken } from "@/lib/guest-session";
 import type { AppointmentWithDetails } from "@/types/booking";
 
-function formatPhone(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
-
-function getPhoneDigits(value: string): string {
-  return value.replace(/\D/g, "");
-}
-
 interface GuestAppointmentsLookupProps {
-  initialPhone?: string;
   locale: string;
 }
 
 export function GuestAppointmentsLookup({
-  initialPhone,
   locale,
 }: GuestAppointmentsLookupProps) {
-  const [phoneInput, setPhoneInput] = useState(
-    initialPhone ? formatPhone(initialPhone) : "",
-  );
-  const [searchPhone, setSearchPhone] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [hasToken, setHasToken] = useState<boolean | null>(null);
 
-  // Auto-search when initialPhone is provided
+  // Check for token on mount (client-side only)
   useEffect(() => {
-    if (initialPhone) {
-      const digits = getPhoneDigits(initialPhone);
-      if (digits.length >= 10) {
-        setSearchPhone(digits);
-      }
-    }
-  }, [initialPhone]);
+    setHasToken(hasGuestToken());
+  }, []);
 
-  const {
-    data: appointments,
-    isLoading,
-    error,
-  } = useGuestAppointments(searchPhone);
+  const { data: appointments, isLoading, error } = useGuestAppointments();
   const cancelMutation = useCancelGuestAppointment();
 
-  const handlePhoneChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const formatted = formatPhone(e.target.value);
-      setPhoneInput(formatted);
-    },
-    [],
-  );
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const digits = getPhoneDigits(phoneInput);
-    if (digits.length >= 10) {
-      setSearchPhone(digits);
-    } else {
-      toast.error("Informe um telefone válido com DDD");
-    }
-  };
-
   const handleCancel = async (appointmentId: string) => {
-    if (!searchPhone) return;
-
     const appointment = appointments?.find((apt) => apt.id === appointmentId);
     if (appointment) {
       const minutesUntil = getMinutesUntilAppointment(
@@ -97,7 +51,7 @@ export function GuestAppointmentsLookup({
 
     setCancellingId(appointmentId);
     try {
-      await cancelMutation.mutateAsync({ appointmentId, phone: searchPhone });
+      await cancelMutation.mutateAsync({ appointmentId });
       toast.success("Agendamento cancelado com sucesso!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao cancelar");
@@ -118,45 +72,72 @@ export function GuestAppointmentsLookup({
       (apt) => apt.status !== "CONFIRMED" || isPastOrStarted(apt),
     ) || [];
 
+  // Loading state while checking for token
+  if (hasToken === null) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // No token found - show message
+  if (!hasToken) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8 space-y-4">
+          <div className="p-4 bg-muted rounded-full w-fit mx-auto">
+            <Smartphone className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-semibold text-lg">
+              Nenhum agendamento neste dispositivo
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Seus agendamentos ficam vinculados ao dispositivo onde foram
+              criados. Se você agendou em outro aparelho ou navegador, acesse
+              por lá.
+            </p>
+          </div>
+          <div className="pt-4 space-y-3">
+            <Button asChild className="w-full sm:w-auto">
+              <Link href={`/${locale}/agendar`}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Fazer novo agendamento
+              </Link>
+            </Button>
+            <div className="flex items-start gap-2 p-3 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-sm max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <p>
+                Dica: Crie uma conta para acessar seus agendamentos de qualquer
+                dispositivo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Phone Input Form */}
-      <form onSubmit={handleSearch} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="phone" className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            Telefone (WhatsApp)
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="(11) 99999-9999"
-              value={phoneInput}
-              onChange={handlePhoneChange}
-              className="flex-1"
-              autoComplete="tel"
-            />
-            <Button type="submit" disabled={isLoading}>
-              <Search className="h-4 w-4 mr-2" />
-              {isLoading ? "Buscando..." : "Buscar"}
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Informe o telefone usado no agendamento
-          </p>
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
-      </form>
+      )}
+
+      {/* Error state */}
+      {error && !isLoading && (
+        <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-center">
+          Erro ao buscar agendamentos. Tente novamente.
+        </div>
+      )}
 
       {/* Results */}
-      {searchPhone && !isLoading && (
+      {!isLoading && !error && (
         <div className="space-y-6">
-          {error && (
-            <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-center">
-              Erro ao buscar agendamentos. Tente novamente.
-            </div>
-          )}
-
           {appointments && appointments.length === 0 && (
             <div className="text-center py-8 space-y-4">
               <div className="p-4 bg-muted rounded-full w-fit mx-auto">
@@ -165,7 +146,7 @@ export function GuestAppointmentsLookup({
               <div>
                 <h3 className="font-semibold">Nenhum agendamento encontrado</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Não encontramos agendamentos futuros para este telefone.
+                  Você ainda não tem agendamentos futuros neste dispositivo.
                 </p>
               </div>
               <Button asChild variant="outline">
@@ -223,21 +204,6 @@ export function GuestAppointmentsLookup({
               </Button>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Initial state - no search yet */}
-      {!searchPhone && (
-        <div className="text-center py-8 space-y-4">
-          <div className="p-4 bg-primary/10 rounded-full w-fit mx-auto">
-            <Search className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-semibold">Consulte seus agendamentos</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Informe seu telefone para ver e gerenciar seus agendamentos
-            </p>
-          </div>
         </div>
       )}
     </div>

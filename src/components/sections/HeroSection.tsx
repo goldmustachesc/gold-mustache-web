@@ -2,18 +2,16 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BRAND } from "@/constants/brand";
 import { Calendar, Clock, MapPin, Star } from "lucide-react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 export function HeroSection() {
   const t = useTranslations("hero");
   const tBrand = useTranslations("brand");
-
-  const handleBookingClick = () => {
-    window.open(BRAND.booking.inbarberUrl, "_blank", "noopener,noreferrer");
-  };
+  const locale = useLocale();
+  const bookingLink = `/${locale}/agendar`;
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/20">
@@ -71,11 +69,13 @@ export function HeroSection() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
             <Button
               size="lg"
-              onClick={handleBookingClick}
               className="text-lg px-8 py-6 h-auto min-w-[200px] font-semibold"
+              asChild
             >
-              <Calendar className="h-5 w-5" />
-              {t("cta.book")}
+              <Link href={bookingLink} className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                {t("cta.book")}
+              </Link>
             </Button>
             <Button
               variant="outline"

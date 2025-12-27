@@ -10,6 +10,7 @@ import type {
 } from "@/types/booking";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateToString } from "@/utils/time-slots";
+import { getGuestToken, setGuestToken } from "@/lib/guest-session";
 
 async function fetchBarbers(): Promise<BarberData[]> {
   const res = await fetch("/api/barbers");
@@ -82,9 +83,14 @@ async function createAppointment(
   return data.appointment;
 }
 
+interface GuestAppointmentResponse {
+  appointment: AppointmentWithDetails;
+  accessToken: string;
+}
+
 async function createGuestAppointment(
   input: CreateGuestAppointmentInput,
-): Promise<AppointmentWithDetails> {
+): Promise<GuestAppointmentResponse> {
   const res = await fetch("/api/appointments/guest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -122,7 +128,7 @@ async function createGuestAppointment(
   }
 
   const data = await res.json();
-  return data.appointment;
+  return { appointment: data.appointment, accessToken: data.accessToken };
 }
 
 async function fetchClientAppointments(): Promise<AppointmentWithDetails[]> {
@@ -203,7 +209,10 @@ export function useCreateGuestAppointment() {
 
   return useMutation({
     mutationFn: createGuestAppointment,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Save the access token to localStorage for future lookups/cancellations
+      setGuestToken(data.accessToken);
+
       queryClient.invalidateQueries({
         queryKey: ["appointments"],
         exact: false,
@@ -318,30 +327,40 @@ export function useCancelAppointmentByBarber() {
 }
 
 // ============================================
-// Guest Appointment Hooks
+// Guest Appointment Hooks (Token-based)
 // ============================================
 
-async function fetchGuestAppointments(
-  phone: string,
+async function fetchGuestAppointmentsByToken(
+  accessToken: string,
 ): Promise<AppointmentWithDetails[]> {
   const res = await fetch("/api/appointments/guest/lookup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone }),
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Guest-Token": accessToken,
+    },
   });
-  if (!res.ok) throw new Error("Erro ao buscar agendamentos");
+  if (!res.ok) {
+    if (res.status === 401) {
+      // Token not found or invalid
+      return [];
+    }
+    throw new Error("Erro ao buscar agendamentos");
+  }
   const data = await res.json();
   return data.appointments;
 }
 
-async function cancelGuestAppointment(
+async function cancelGuestAppointmentByToken(
   appointmentId: string,
-  phone: string,
+  accessToken: string,
 ): Promise<AppointmentWithDetails> {
   const res = await fetch(`/api/appointments/guest/${appointmentId}/cancel`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone }),
+    headers: {
+      "Content-Type": "application/json",
+      "X-Guest-Token": accessToken,
+    },
   });
 
   if (!res.ok) {
@@ -352,6 +371,9 @@ async function cancelGuestAppointment(
     if (error.error === "UNAUTHORIZED") {
       throw new Error("Você não tem permissão para cancelar este agendamento.");
     }
+    if (error.error === "MISSING_TOKEN") {
+      throw new Error("Sessão expirada. Por favor, faça um novo agendamento.");
+    }
     throw new Error(error.message || "Erro ao cancelar agendamento");
   }
 
@@ -359,25 +381,36 @@ async function cancelGuestAppointment(
   return data.appointment;
 }
 
-export function useGuestAppointments(phone: string | null) {
+/**
+ * Hook to fetch guest appointments using the token from localStorage
+ * Automatically reads the token - no need to pass phone number
+ */
+export function useGuestAppointments() {
+  const token = getGuestToken();
+
   return useQuery({
-    queryKey: ["appointments", "guest", phone],
-    queryFn: () => fetchGuestAppointments(phone as string),
-    enabled: !!phone && phone.replace(/\D/g, "").length >= 10,
+    queryKey: ["appointments", "guest", token],
+    queryFn: () => fetchGuestAppointmentsByToken(token as string),
+    enabled: !!token,
   });
 }
 
+/**
+ * Hook to cancel a guest appointment using the token from localStorage
+ */
 export function useCancelGuestAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      appointmentId,
-      phone,
-    }: {
-      appointmentId: string;
-      phone: string;
-    }) => cancelGuestAppointment(appointmentId, phone),
+    mutationFn: ({ appointmentId }: { appointmentId: string }) => {
+      const token = getGuestToken();
+      if (!token) {
+        throw new Error(
+          "Sessão expirada. Por favor, faça um novo agendamento.",
+        );
+      }
+      return cancelGuestAppointmentByToken(appointmentId, token);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["appointments"],

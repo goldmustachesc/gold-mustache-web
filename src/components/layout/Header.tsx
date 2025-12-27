@@ -12,7 +12,14 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { BRAND } from "@/constants/brand";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 
-import { Calendar, Instagram, LogIn, Menu, User } from "lucide-react";
+import {
+  Calendar,
+  CalendarCheck2,
+  Instagram,
+  LogIn,
+  Menu,
+  User,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,13 +40,11 @@ export function Header() {
   const locale = useLocale();
   const { data: user } = useUser();
 
-  const handleBookingClick = () => {
-    window.open(BRAND.booking.inbarberUrl, "_blank", "noopener,noreferrer");
-  };
-
   // Helper to create proper links that work from any page
   const homeLink = `/${locale}`;
   const sectionLink = (section: string) => `/${locale}#${section}`;
+  const bookingLink = `/${locale}/agendar`;
+  const myAppointmentsLink = `/${locale}/meus-agendamentos`;
 
   const navLinks: NavLink[] = [
     { href: homeLink, label: t("home") },
@@ -91,6 +96,22 @@ export function Header() {
           <div className="w-px h-4 bg-border mx-1" />
           <ThemeToggle />
           <Button
+            variant="outline"
+            size="sm"
+            className="ml-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+            asChild
+          >
+            <Link
+              href={myAppointmentsLink}
+              className="flex items-center gap-2"
+              aria-label={t("myAppointments")}
+            >
+              <CalendarCheck2 className="h-4 w-4" />
+              <span>{t("myAppointments")}</span>
+              <span className="ml-1 h-2 w-2 rounded-full bg-primary" />
+            </Link>
+          </Button>
+          <Button
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:text-foreground"
@@ -124,12 +145,14 @@ export function Header() {
           </Button>
           {!isScrolledPastThreshold && (
             <Button
-              onClick={handleBookingClick}
               size="sm"
               className="ml-2 flex items-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
+              asChild
             >
-              <Calendar className="h-4 w-4" />
-              <span>{tCommon("buttons.book")}</span>
+              <Link href={bookingLink} aria-label={tCommon("buttons.book")}>
+                <Calendar className="h-4 w-4" />
+                <span>{tCommon("buttons.book")}</span>
+              </Link>
             </Button>
           )}
         </div>
@@ -137,6 +160,25 @@ export function Header() {
         {/* Mobile Menu */}
         <div className="lg:hidden flex items-center gap-2">
           <ThemeToggle />
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+            asChild
+          >
+            <Link
+              href={myAppointmentsLink}
+              className="flex items-center gap-2"
+              aria-label={t("myAppointments")}
+            >
+              <CalendarCheck2 className="h-4 w-4" />
+              <span className="hidden sm:inline font-medium">
+                {t("myAppointments")}
+              </span>
+              <span className="sr-only">{t("myAppointments")}</span>
+              <span className="ml-0.5 h-2 w-2 rounded-full bg-primary" />
+            </Link>
+          </Button>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -179,6 +221,20 @@ export function Header() {
 
                 {/* Mobile Actions */}
                 <div className="flex flex-col space-y-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                  >
+                    <Link
+                      href={myAppointmentsLink}
+                      className="flex items-center justify-center space-x-2"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <CalendarCheck2 className="h-4 w-4" />
+                      <span>{t("myAppointments")}</span>
+                    </Link>
+                  </Button>
                   <Button variant="outline" asChild className="w-full">
                     <Link
                       href={user ? `/${locale}/dashboard` : `/${locale}/login`}
@@ -205,11 +261,17 @@ export function Header() {
                     </Link>
                   </Button>
                   <Button
-                    onClick={handleBookingClick}
                     className="w-full flex items-center justify-center space-x-2"
+                    asChild
                   >
-                    <Calendar className="h-4 w-4" />
-                    <span>{tCommon("buttons.bookAppointment")}</span>
+                    <Link
+                      href={bookingLink}
+                      className="flex items-center justify-center space-x-2"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      <span>{tCommon("buttons.bookAppointment")}</span>
+                    </Link>
                   </Button>
                 </div>
               </div>

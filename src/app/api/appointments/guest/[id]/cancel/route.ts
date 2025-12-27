@@ -1,35 +1,31 @@
 import { NextResponse } from "next/server";
-import { cancelAppointmentByGuest } from "@/services/booking";
-import { z } from "zod";
+import { cancelAppointmentByGuestToken } from "@/services/booking";
 import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
 
-const cancelSchema = z.object({
-  phone: z.string().regex(/^\d{10,11}$/, "Telefone deve ter 10 ou 11 dígitos"),
-});
-
+/**
+ * PATCH /api/appointments/guest/[id]/cancel
+ * Cancels a guest appointment using the X-Guest-Token header for authentication.
+ * This is more secure than the old phone-based cancellation.
+ */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const validation = cancelSchema.safeParse(body);
+    const accessToken = request.headers.get("X-Guest-Token");
 
-    if (!validation.success) {
+    if (!accessToken) {
       return NextResponse.json(
         {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
+          error: "MISSING_TOKEN",
+          message: "Token de acesso não fornecido",
         },
-        { status: 422 },
+        { status: 401 },
       );
     }
 
-    const appointment = await cancelAppointmentByGuest(
-      id,
-      validation.data.phone,
-    );
+    const appointment = await cancelAppointmentByGuestToken(id, accessToken);
 
     await notifyBarberOfAppointmentCancelledByClient(appointment);
 

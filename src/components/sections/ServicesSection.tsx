@@ -18,9 +18,10 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Separator } from "@/components/ui/separator";
-import { BRAND, SERVICES } from "@/constants/brand";
+import { SERVICES } from "@/constants/brand";
 import { Calendar, Clock, Scissors, Star } from "lucide-react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 const serviceIcons = {
   "corte-tradicional": Scissors,
@@ -42,10 +43,8 @@ const serviceIcons = {
 
 export function ServicesSection() {
   const t = useTranslations("services");
-
-  const handleBookingClick = () => {
-    window.open(BRAND.booking.inbarberUrl, "_blank", "noopener,noreferrer");
-  };
+  const locale = useLocale();
+  const bookingLink = `/${locale}/agendar`;
 
   return (
     <section id="servicos" className="py-20 bg-muted/30">
@@ -95,12 +94,14 @@ export function ServicesSection() {
 
             <CardFooter className="flex flex-col sm:flex-row gap-4">
               <Button
-                onClick={handleBookingClick}
                 size="default"
                 className="w-full max-w-xs mx-auto cursor-pointer"
+                asChild
               >
-                <Calendar className="h-5 w-5 mr-2" />
-                {t("featured.cta")}
+                <Link href={bookingLink} className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  {t("featured.cta")}
+                </Link>
               </Button>
             </CardFooter>
           </Card>
@@ -156,12 +157,17 @@ export function ServicesSection() {
 
                       <CardFooter>
                         <Button
-                          onClick={handleBookingClick}
                           className="w-full cursor-pointer"
                           variant="default"
+                          asChild
                         >
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {t("labels.book")} {t(`items.${service.id}.name`)}
+                          <Link
+                            href={bookingLink}
+                            className="flex items-center justify-center"
+                          >
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {t("labels.book")} {t(`items.${service.id}.name`)}
+                          </Link>
                         </Button>
                       </CardFooter>
                     </Card>
@@ -215,12 +221,17 @@ export function ServicesSection() {
 
                 <CardFooter>
                   <Button
-                    onClick={handleBookingClick}
                     className="w-full cursor-pointer"
                     variant="default"
+                    asChild
                   >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {t("labels.book")} {t(`items.${service.id}.name`)}
+                    <Link
+                      href={bookingLink}
+                      className="flex items-center justify-center"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {t("labels.book")} {t(`items.${service.id}.name`)}
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>

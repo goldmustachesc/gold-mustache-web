@@ -48,6 +48,7 @@ type BookingStep =
   | "date"
   | "time"
   | "info"
+  | "review"
   | "confirming"
   | "confirmation";
 
@@ -97,7 +98,11 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [confirmedAppointment, setConfirmedAppointment] =
     useState<AppointmentWithDetails | null>(null);
-  const [guestPhone, setGuestPhone] = useState<string | null>(null);
+  const [_guestPhone, setGuestPhone] = useState<string | null>(null);
+  const [guestInfo, setGuestInfo] = useState<{
+    clientName: string;
+    clientPhone: string;
+  } | null>(null);
   const [showSelector, setShowSelector] = useState<BookingStep | null>(null);
 
   const { data: barbers = [], isLoading: barbersLoading } = useBarbers();
@@ -306,164 +311,130 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
       if (isGuest) {
         setTimeout(() => setStep("info"), 100);
       } else {
-        // Logged in user - confirm immediately
-        setTimeout(async () => {
-          if (!selectedBarber || !selectedService || !selectedDate) return;
-
-          setStep("confirming");
-          addMessage({
-            type: "bot",
-            text: "⏳ Confirmando seu agendamento...",
-          });
-
-          try {
-            const appointment = await createAppointment.mutateAsync({
-              serviceId: selectedService.id,
-              barberId: selectedBarber.id,
-              date: formatDateToString(selectedDate),
-              startTime: slot.time,
-            });
-
-            setConfirmedAppointment(appointment);
-            setStep("confirmation");
-            toast.success("Agendamento realizado com sucesso!");
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : "Erro ao agendar";
-            toast.error(errorMessage);
-
-            // Handle specific slot errors with appropriate messages
-            const isSlotPastError = errorMessage.includes("passou");
-            const isSlotOccupiedError =
-              errorMessage.includes("ocupado") ||
-              errorMessage.includes("reservado");
-
-            if (isSlotPastError) {
-              // Slot time has passed - user needs to select a different time
-              addMessage({
-                type: "bot",
-                text: "⏰ Este horário já passou. Por favor, escolha outro horário.",
-              });
-              setSelectedSlot(null);
-              processedStepsRef.current.delete("time");
-              setStep("time");
-              setTimeout(() => setShowSelector("time"), 300);
-            } else if (isSlotOccupiedError) {
-              // Slot was taken by someone else
-              addMessage({
-                type: "bot",
-                text: "😔 Este horário já foi ocupado. Por favor, escolha outro.",
-              });
-              setSelectedSlot(null);
-              processedStepsRef.current.delete("time");
-              setStep("time");
-              setTimeout(() => setShowSelector("time"), 300);
-            } else {
-              // Other errors - recover state so user can retry
-              addMessage({
-                type: "bot",
-                text: `❌ ${errorMessage}. Por favor, tente novamente.`,
-              });
-              setSelectedSlot(null);
-              processedStepsRef.current.delete("time");
-              setStep("time");
-              setTimeout(() => setShowSelector("time"), 300);
-            }
-          }
-        }, 100);
+        // Logged in user - go to review step first
+        setTimeout(() => setStep("review"), 100);
       }
     },
-    [
-      addMessage,
-      isGuest,
-      selectedBarber,
-      selectedService,
-      selectedDate,
-      createAppointment,
-    ],
+    [addMessage, isGuest],
   );
 
   const handleGuestSubmit = useCallback(
-    async (guestData: { clientName: string; clientPhone: string }) => {
+    (guestData: { clientName: string; clientPhone: string }) => {
       if (!selectedBarber || !selectedService || !selectedDate || !selectedSlot)
         return;
 
       setShowSelector(null);
-      setStep("confirming");
+      setGuestInfo(guestData);
       addMessage({
         type: "user",
         text: `${guestData.clientName} • ${formatPhoneDisplay(guestData.clientPhone)}`,
       });
-      addMessage({ type: "bot", text: "⏳ Confirmando seu agendamento..." });
 
-      try {
-        const appointment = await createGuestAppointment.mutateAsync({
+      // Go to review step instead of confirming immediately
+      setTimeout(() => setStep("review"), 100);
+    },
+    [selectedBarber, selectedService, selectedDate, selectedSlot, addMessage],
+  );
+
+  // Handle booking confirmation (called from review step)
+  const handleConfirmBooking = useCallback(async () => {
+    if (!selectedBarber || !selectedService || !selectedDate || !selectedSlot)
+      return;
+
+    setShowSelector(null);
+    setStep("confirming");
+    addMessage({ type: "bot", text: "⏳ Confirmando seu agendamento..." });
+
+    try {
+      if (isGuest && guestInfo) {
+        // Guest booking
+        const result = await createGuestAppointment.mutateAsync({
           serviceId: selectedService.id,
           barberId: selectedBarber.id,
           date: formatDateToString(selectedDate),
           startTime: selectedSlot.time,
-          clientName: guestData.clientName,
-          clientPhone: guestData.clientPhone,
+          clientName: guestInfo.clientName,
+          clientPhone: guestInfo.clientPhone,
+        });
+
+        setConfirmedAppointment(result.appointment);
+        setGuestPhone(guestInfo.clientPhone);
+      } else {
+        // Logged in user booking
+        const appointment = await createAppointment.mutateAsync({
+          serviceId: selectedService.id,
+          barberId: selectedBarber.id,
+          date: formatDateToString(selectedDate),
+          startTime: selectedSlot.time,
         });
 
         setConfirmedAppointment(appointment);
-        setGuestPhone(guestData.clientPhone);
-        setStep("confirmation");
-        toast.success("Agendamento realizado com sucesso!");
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Erro ao agendar";
-        toast.error(errorMessage);
-
-        // Handle specific slot errors with appropriate messages
-        const isSlotPastError = errorMessage.includes("passou");
-        const isSlotOccupiedError =
-          errorMessage.includes("ocupado") ||
-          errorMessage.includes("reservado");
-
-        if (isSlotPastError) {
-          // Slot time has passed - user needs to select a different time
-          addMessage({
-            type: "bot",
-            text: "⏰ Este horário já passou. Por favor, escolha outro horário.",
-          });
-          setSelectedSlot(null);
-          processedStepsRef.current.delete("time");
-          setStep("time");
-          setTimeout(() => setShowSelector("time"), 300);
-        } else if (isSlotOccupiedError) {
-          // Slot was taken by someone else
-          addMessage({
-            type: "bot",
-            text: "😔 Este horário já foi ocupado. Por favor, escolha outro horário.",
-          });
-          setSelectedSlot(null);
-          processedStepsRef.current.delete("time");
-          setStep("time");
-          setTimeout(() => setShowSelector("time"), 300);
-        } else {
-          // Other errors - let user retry submitting their info
-          addMessage({ type: "bot", text: `❌ ${errorMessage}` });
-          setShowSelector("info");
-          setStep("info");
-        }
       }
-    },
-    [
-      selectedBarber,
-      selectedService,
-      selectedDate,
-      selectedSlot,
-      createGuestAppointment,
-      addMessage,
-    ],
-  );
+
+      setStep("confirmation");
+      toast.success("Agendamento realizado com sucesso!");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao agendar";
+      toast.error(errorMessage);
+
+      // Handle specific slot errors with appropriate messages
+      const isSlotPastError = errorMessage.includes("passou");
+      const isSlotOccupiedError =
+        errorMessage.includes("ocupado") || errorMessage.includes("reservado");
+
+      if (isSlotPastError) {
+        addMessage({
+          type: "bot",
+          text: "⏰ Este horário já passou. Por favor, escolha outro horário.",
+        });
+        setSelectedSlot(null);
+        processedStepsRef.current.delete("time");
+        setStep("time");
+        setTimeout(() => setShowSelector("time"), 300);
+      } else if (isSlotOccupiedError) {
+        addMessage({
+          type: "bot",
+          text: "😔 Este horário já foi ocupado. Por favor, escolha outro horário.",
+        });
+        setSelectedSlot(null);
+        processedStepsRef.current.delete("time");
+        setStep("time");
+        setTimeout(() => setShowSelector("time"), 300);
+      } else {
+        addMessage({ type: "bot", text: `❌ ${errorMessage}` });
+        // Go back to review so user can try again
+        setStep("review");
+      }
+    }
+  }, [
+    selectedBarber,
+    selectedService,
+    selectedDate,
+    selectedSlot,
+    isGuest,
+    guestInfo,
+    createAppointment,
+    createGuestAppointment,
+    addMessage,
+  ]);
+
+  const handleBackFromReview = useCallback(() => {
+    setShowSelector(null);
+    processedStepsRef.current.delete("review");
+    if (isGuest) {
+      setStep("info");
+      setTimeout(() => setShowSelector("info"), 300);
+    } else {
+      setStep("time");
+      setTimeout(() => setShowSelector("time"), 300);
+    }
+  }, [isGuest]);
 
   const handleViewGuestAppointments = useCallback(() => {
-    if (guestPhone) {
-      router.push(`/${locale}/meus-agendamentos?phone=${guestPhone}`);
-    }
-  }, [guestPhone, router, locale]);
+    // Token is already saved in localStorage, just redirect
+    router.push(`/${locale}/meus-agendamentos`);
+  }, [router, locale]);
 
   const handleNewBooking = useCallback(() => {
     setStep("greeting");
@@ -474,6 +445,7 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
     setSelectedSlot(null);
     setConfirmedAppointment(null);
     setGuestPhone(null);
+    setGuestInfo(null);
     setShowSelector(null);
     messageIdRef.current = 0;
     processedStepsRef.current = new Set();
@@ -587,6 +559,21 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
     }
   }, [step, selectedSlot, showTypingThenMessage]);
 
+  // Review step effect
+  useEffect(() => {
+    if (step === "review" && !processedStepsRef.current.has("review")) {
+      processedStepsRef.current.add("review");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot",
+          text: "📋 Confira os detalhes do seu agendamento antes de confirmar:",
+          step: "review",
+        });
+        setTimeout(() => setShowSelector("review"), 500);
+      }, 300);
+    }
+  }, [step, showTypingThenMessage]);
+
   // Confirmation screen
   if (step === "confirmation" && confirmedAppointment) {
     return (
@@ -690,10 +677,94 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
             </Button>
             <ChatGuestInfoForm
               onSubmit={handleGuestSubmit}
-              isLoading={createGuestAppointment.isPending}
+              isLoading={false}
+              submitLabel="Revisar Agendamento"
             />
           </div>
         );
+      case "review": {
+        if (
+          !selectedBarber ||
+          !selectedService ||
+          !selectedDate ||
+          !selectedSlot
+        )
+          return null;
+
+        // Calculate end time
+        const [hours, minutes] = selectedSlot.time.split(":").map(Number);
+        const endMinutes = hours * 60 + minutes + selectedService.duration;
+        const endHours = Math.floor(endMinutes / 60);
+        const endMins = endMinutes % 60;
+        const endTime = `${String(endHours).padStart(2, "0")}:${String(endMins).padStart(2, "0")}`;
+
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="bg-card border rounded-lg p-4 space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">👤 Barbeiro:</span>
+                  <span className="font-medium">{selectedBarber.name}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">✂️ Serviço:</span>
+                  <span className="font-medium">
+                    {selectedService.name} • R${" "}
+                    {selectedService.price.toFixed(2).replace(".", ",")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">📅 Data:</span>
+                  <span className="font-medium">
+                    {formatDateDdMmYyyyInSaoPaulo(selectedDate)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">🕐 Horário:</span>
+                  <span className="font-medium">
+                    {selectedSlot.time} - {endTime}
+                  </span>
+                </div>
+                {guestInfo && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">📱 Cliente:</span>
+                    <span className="font-medium">
+                      {guestInfo.clientName} •{" "}
+                      {formatPhoneDisplay(guestInfo.clientPhone)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button
+                  onClick={handleConfirmBooking}
+                  disabled={
+                    createAppointment.isPending ||
+                    createGuestAppointment.isPending
+                  }
+                  className="w-full"
+                >
+                  {createAppointment.isPending ||
+                  createGuestAppointment.isPending
+                    ? "Confirmando..."
+                    : "✅ Confirmar Agendamento"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleBackFromReview}
+                  disabled={
+                    createAppointment.isPending ||
+                    createGuestAppointment.isPending
+                  }
+                  className="w-full"
+                >
+                  Voltar e Editar
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      }
       default:
         return null;
     }

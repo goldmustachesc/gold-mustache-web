@@ -1,23 +1,28 @@
 import { NextResponse } from "next/server";
-import { getGuestAppointments } from "@/services/booking";
-import { guestLookupSchema } from "@/lib/validations/booking";
+import { getGuestAppointmentsByToken } from "@/services/booking";
 
-export async function POST(request: Request) {
+/**
+ * GET /api/appointments/guest/lookup
+ * Fetches guest appointments using the X-Guest-Token header for authentication.
+ * This is more secure than the old phone-based lookup as the token is:
+ * - Not guessable (UUID v4 with 128 bits of entropy)
+ * - Device-bound (stored in localStorage)
+ */
+export async function GET(request: Request) {
   try {
-    const body = await request.json();
-    const validation = guestLookupSchema.safeParse(body);
+    const accessToken = request.headers.get("X-Guest-Token");
 
-    if (!validation.success) {
+    if (!accessToken) {
       return NextResponse.json(
         {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
+          error: "MISSING_TOKEN",
+          message: "Token de acesso não fornecido",
         },
-        { status: 422 },
+        { status: 401 },
       );
     }
 
-    const appointments = await getGuestAppointments(validation.data.phone);
+    const appointments = await getGuestAppointmentsByToken(accessToken);
     return NextResponse.json({ appointments });
   } catch (error) {
     console.error("Error fetching guest appointments:", error);

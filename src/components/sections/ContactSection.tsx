@@ -21,13 +21,13 @@ import {
   Navigation,
   Phone,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 export function ContactSection() {
   const t = useTranslations("contact");
-  const handleBookingClick = () => {
-    window.open(BRAND.booking.inbarberUrl, "_blank", "noopener,noreferrer");
-  };
+  const locale = useLocale();
+  const bookingLink = `/${locale}/agendar`;
 
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent(t("whatsappMessage"));
@@ -256,18 +256,16 @@ export function ContactSection() {
 
             {/* Call to Actions */}
             <div className="flex w-full">
-              <Button
-                onClick={handleBookingClick}
-                size="lg"
-                className="h-auto py-4 w-full"
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                <div className="text-left">
-                  <div className="font-semibold">{t("cta.book")}</div>
-                  <div className="text-xs opacity-90">
-                    {t("cta.bookDescription")}
+              <Button size="lg" className="h-auto py-4 w-full" asChild>
+                <Link href={bookingLink} className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  <div className="text-left">
+                    <div className="font-semibold">{t("cta.book")}</div>
+                    <div className="text-xs opacity-90">
+                      {t("cta.bookDescription")}
+                    </div>
                   </div>
-                </div>
+                </Link>
               </Button>
 
               {/* <Button

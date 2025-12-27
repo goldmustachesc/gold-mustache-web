@@ -10,17 +10,15 @@ import {
 import { AppointmentCard } from "@/components/booking/AppointmentCard";
 import { Calendar, LogOut, LogIn, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import { useState, Suspense } from "react";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import type { AppointmentWithDetails } from "@/types/booking";
 
 function MeusAgendamentosContent() {
-  const searchParams = useSearchParams();
   const params = useParams();
   const locale = params.locale as string;
-  const phoneFromQuery = searchParams.get("phone");
 
   const { data: user, isLoading: userLoading } = useUser();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
@@ -113,13 +111,8 @@ function MeusAgendamentosContent() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Guest View - Phone lookup */}
-        {isGuest && (
-          <GuestAppointmentsLookup
-            initialPhone={phoneFromQuery || undefined}
-            locale={locale}
-          />
-        )}
+        {/* Guest View - Token-based lookup */}
+        {isGuest && <GuestAppointmentsLookup locale={locale} />}
 
         {/* Logged in user - Show their appointments directly */}
         {user && (

@@ -5,16 +5,14 @@ import { BRAND } from "@/constants/brand";
 import { Calendar, Clock, Instagram, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const t = useTranslations("footer");
   const tBrand = useTranslations("brand");
-
-  const handleBookingClick = () => {
-    window.open(BRAND.booking.inbarberUrl, "_blank", "noopener,noreferrer");
-  };
+  const locale = useLocale();
+  const bookingLink = `/${locale}/agendar`;
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
@@ -126,11 +124,13 @@ export function Footer() {
               <Button
                 variant="link"
                 size="sm"
-                onClick={handleBookingClick}
                 className="h-auto p-0 text-primary hover:text-primary/80 text-sm font-normal"
+                asChild
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                {t("links.book")}
+                <Link href={bookingLink} className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t("links.book")}
+                </Link>
               </Button>
             </div>
           </div>

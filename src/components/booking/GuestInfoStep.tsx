@@ -9,6 +9,7 @@ import { User, Phone } from "lucide-react";
 interface GuestInfoStepProps {
   onSubmit: (data: { clientName: string; clientPhone: string }) => void;
   isLoading?: boolean;
+  submitLabel?: string;
 }
 
 // Format phone number as (XX) XXXXX-XXXX
@@ -29,7 +30,11 @@ function getPhoneDigits(value: string): string {
   return value.replace(/\D/g, "");
 }
 
-export function GuestInfoStep({ onSubmit, isLoading }: GuestInfoStepProps) {
+export function GuestInfoStep({
+  onSubmit,
+  isLoading,
+  submitLabel = "Confirmar Agendamento",
+}: GuestInfoStepProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
@@ -123,7 +128,7 @@ export function GuestInfoStep({ onSubmit, isLoading }: GuestInfoStepProps) {
       </div>
 
       <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-        {isLoading ? "Confirmando..." : "Confirmar Agendamento"}
+        {isLoading ? "Confirmando..." : submitLabel}
       </Button>
     </form>
   );
