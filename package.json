@@ -20,6 +20,8 @@
     "test:coverage:integrations:check": "COVERAGE_SCOPE=integrations COVERAGE_ENFORCE=true pnpm exec vitest --run --coverage",
     "test:gate": "pnpm lint && pnpm test && pnpm test:coverage:check && pnpm test:coverage:services:check",
     "test:gate:full": "pnpm test:gate && pnpm test:coverage:integrations:check",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
     "prepare": "husky",
     "postinstall": "prisma generate",
     "commit": "git-cz",
