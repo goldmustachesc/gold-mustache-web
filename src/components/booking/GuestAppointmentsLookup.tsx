@@ -14,6 +14,7 @@ import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
 import { toast } from "sonner";
 import Link from "next/link";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
+import type { AppointmentWithDetails } from "@/types/booking";
 
 function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -105,10 +106,17 @@ export function GuestAppointmentsLookup({
     }
   };
 
+  const isPastOrStarted = (apt: AppointmentWithDetails) =>
+    getMinutesUntilAppointment(apt.date, apt.startTime) <= 0;
+
   const confirmedAppointments =
-    appointments?.filter((apt) => apt.status === "CONFIRMED") || [];
+    appointments?.filter(
+      (apt) => apt.status === "CONFIRMED" && !isPastOrStarted(apt),
+    ) || [];
   const otherAppointments =
-    appointments?.filter((apt) => apt.status !== "CONFIRMED") || [];
+    appointments?.filter(
+      (apt) => apt.status !== "CONFIRMED" || isPastOrStarted(apt),
+    ) || [];
 
   return (
     <div className="space-y-6">
@@ -181,6 +189,7 @@ export function GuestAppointmentsLookup({
                     appointment={appointment}
                     onCancel={() => handleCancel(appointment.id)}
                     isCancelling={cancellingId === appointment.id}
+                    canCancel
                   />
                 ))}
               </div>

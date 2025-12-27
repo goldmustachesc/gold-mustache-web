@@ -944,6 +944,12 @@ export async function cancelAppointmentByBarber(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
+  // Align with client/guest rule: cancellation is allowed only before the start time.
+  // This prevents cancelling already-started (or past) appointments that are still marked as CONFIRMED.
+  if (!canClientCancel(appointment.date, appointment.startTime)) {
+    throw new Error("APPOINTMENT_IN_PAST");
+  }
+
   // Update the appointment
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },

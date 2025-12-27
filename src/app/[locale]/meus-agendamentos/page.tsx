@@ -14,6 +14,7 @@ import { useSearchParams, useParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import { useState, Suspense } from "react";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
+import type { AppointmentWithDetails } from "@/types/booking";
 
 function MeusAgendamentosContent() {
   const searchParams = useSearchParams();
@@ -58,10 +59,17 @@ function MeusAgendamentosContent() {
     }
   };
 
+  const isPastOrStarted = (apt: AppointmentWithDetails) =>
+    getMinutesUntilAppointment(apt.date, apt.startTime) <= 0;
+
   const confirmedAppointments =
-    appointments?.filter((apt) => apt.status === "CONFIRMED") || [];
+    appointments?.filter(
+      (apt) => apt.status === "CONFIRMED" && !isPastOrStarted(apt),
+    ) || [];
   const otherAppointments =
-    appointments?.filter((apt) => apt.status !== "CONFIRMED") || [];
+    appointments?.filter(
+      (apt) => apt.status !== "CONFIRMED" || isPastOrStarted(apt),
+    ) || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -159,6 +167,7 @@ function MeusAgendamentosContent() {
                       appointment={appointment}
                       onCancel={() => handleCancel(appointment.id)}
                       isCancelling={cancellingId === appointment.id}
+                      canCancel
                     />
                   ))}
                 </div>

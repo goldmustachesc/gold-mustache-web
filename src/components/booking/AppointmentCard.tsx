@@ -30,6 +30,7 @@ interface AppointmentCardProps {
   onCancel?: () => void;
   isCancelling?: boolean;
   showClientInfo?: boolean;
+  canCancel?: boolean;
 }
 
 const statusConfig: Record<
@@ -54,12 +55,14 @@ export function AppointmentCard({
   onCancel,
   isCancelling,
   showClientInfo = false,
+  canCancel,
 }: AppointmentCardProps) {
   const formatDate = (dateStr: string) => {
     return formatDateDdMmYyyyFromIsoDateLike(dateStr);
   };
 
-  const canCancel = appointment.status === AppointmentStatus.CONFIRMED;
+  const isCancellable =
+    canCancel ?? appointment.status === AppointmentStatus.CONFIRMED;
   const status = statusConfig[appointment.status as AppointmentStatusType];
 
   return (
@@ -118,7 +121,7 @@ export function AppointmentCard({
         )}
       </CardContent>
 
-      {canCancel && onCancel && (
+      {isCancellable && onCancel && (
         <CardFooter className="pt-0">
           <Button
             variant="outline"

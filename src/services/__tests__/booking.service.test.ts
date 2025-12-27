@@ -938,6 +938,24 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       cancelAppointmentByBarber("apt-1", "barber-1", ""),
     ).rejects.toThrow("CANCELLATION_REASON_REQUIRED");
 
+    // Reject after start time (same business rule as client/guest)
+    // Now is 2025-01-02 09:05 BRT => 12:05Z
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 5, 0, 0)));
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      clientId: "client-1",
+      guestClientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "09:00",
+      endTime: "09:30",
+      status: AppointmentStatus.CONFIRMED,
+    });
+    await expect(
+      cancelAppointmentByBarber("apt-1", "barber-1", "x"),
+    ).rejects.toThrow("APPOINTMENT_IN_PAST");
+
     asMock(prisma.appointment.findUnique).mockResolvedValue({
       id: "apt-1",
       clientId: "client-1",

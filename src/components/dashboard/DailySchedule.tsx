@@ -5,6 +5,7 @@ import { AppointmentCard } from "@/components/booking/AppointmentCard";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { Calendar, Clock } from "lucide-react";
 import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
+import { getMinutesUntilAppointment } from "@/utils/time-slots";
 
 interface DailyScheduleProps {
   date: Date;
@@ -81,6 +82,13 @@ export function DailySchedule({
                       key={appointment.id}
                       appointment={appointment}
                       showClientInfo
+                      canCancel={
+                        appointment.status === "CONFIRMED" &&
+                        getMinutesUntilAppointment(
+                          appointment.date,
+                          appointment.startTime,
+                        ) > 0
+                      }
                       onCancel={() => {
                         const reason = prompt("Motivo do cancelamento:");
                         if (reason) {
