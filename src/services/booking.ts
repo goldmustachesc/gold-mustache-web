@@ -31,6 +31,7 @@ import type {
   TimeSlot,
   CreateAppointmentInput,
   CreateGuestAppointmentInput,
+  CreateAppointmentByBarberInput,
   AppointmentWithDetails,
   DateRange,
 } from "@/types/booking";
@@ -632,6 +633,148 @@ export async function createGuestAppointment(
       },
     },
     accessToken: result.accessToken,
+  };
+}
+
+/**
+ * Create a new appointment by a barber for a client
+ * Used when the barber creates the booking on behalf of the client
+ * Does not generate an access token (client can still look up by phone if needed)
+ */
+export async function createAppointmentByBarber(
+  input: CreateAppointmentByBarberInput,
+  barberId: string,
+): Promise<AppointmentWithDetails> {
+  const { serviceId, date, startTime, clientName, clientPhone } = input;
+
+  // Get service to calculate end time
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+  });
+
+  if (!service) {
+    throw new Error("Service not found");
+  }
+
+  const endTime = calculateEndTime(startTime, service.duration);
+
+  // Parse date for local (business logic) and UTC (DB) usage
+  const appointmentDateLocal = parseDateString(date);
+  const appointmentDateDb = parseDateStringToUTC(date);
+
+  // Validate that the appointment is not in the past
+  if (isDateTimeInPast(appointmentDateLocal, startTime)) {
+    throw new Error("SLOT_IN_PAST");
+  }
+
+  const policyError = await getBookingPolicyError({
+    barberId,
+    appointmentDateLocal,
+    appointmentDateDb,
+    startTime,
+    serviceDuration: service.duration,
+  });
+
+  if (policyError) {
+    throw new Error(policyError);
+  }
+
+  const normalizedPhone = normalizePhoneDigits(clientPhone);
+
+  // Same concurrency protection for barber bookings
+  const appointment = await prisma.$transaction(async (tx) => {
+    await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+
+    const hasOverlap = await hasOverlappingAppointment(
+      tx,
+      barberId,
+      appointmentDateDb,
+      startTime,
+      endTime,
+    );
+
+    if (hasOverlap) {
+      throw new Error("SLOT_OCCUPIED");
+    }
+
+    // Create or update guest client (without generating new access token)
+    const guestClient = await tx.guestClient.upsert({
+      where: { phone: normalizedPhone },
+      update: {
+        fullName: clientName,
+        // Don't update accessToken - preserve existing if any
+      },
+      create: {
+        fullName: clientName,
+        phone: normalizedPhone,
+        // No accessToken for barber-created bookings
+      },
+    });
+
+    return tx.appointment.create({
+      data: {
+        guestClientId: guestClient.id,
+        barberId,
+        serviceId,
+        date: appointmentDateDb,
+        startTime,
+        endTime,
+        status: AppointmentStatus.CONFIRMED,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+        guestClient: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+        barber: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            name: true,
+            duration: true,
+            price: true,
+          },
+        },
+      },
+    });
+  });
+
+  return {
+    id: appointment.id,
+    clientId: appointment.clientId,
+    guestClientId: appointment.guestClientId,
+    barberId: appointment.barberId,
+    serviceId: appointment.serviceId,
+    date: formatPrismaDateToString(appointment.date),
+    startTime: appointment.startTime,
+    endTime: appointment.endTime,
+    status: appointment.status,
+    cancelReason: appointment.cancelReason,
+    createdAt: appointment.createdAt.toISOString(),
+    updatedAt: appointment.updatedAt.toISOString(),
+    client: appointment.client,
+    guestClient: appointment.guestClient,
+    barber: appointment.barber,
+    service: {
+      ...appointment.service,
+      price: Number(appointment.service.price),
+    },
   };
 }
 

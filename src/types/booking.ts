@@ -26,6 +26,14 @@ export interface CreateGuestAppointmentInput extends CreateAppointmentInput {
   clientPhone: string;
 }
 
+export interface CreateAppointmentByBarberInput {
+  serviceId: string;
+  date: string; // "2025-12-15"
+  startTime: string; // "10:30"
+  clientName: string;
+  clientPhone: string;
+}
+
 export interface GuestClientData {
   id: string;
   fullName: string;

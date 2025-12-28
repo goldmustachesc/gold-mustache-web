@@ -10,7 +10,7 @@ import {
 } from "@/hooks/useBooking";
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
-import { LogOut, Scissors } from "lucide-react";
+import { LogOut, Scissors, UserPlus } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import {
   formatDateToString,
@@ -150,6 +150,13 @@ export default function BarberDashboardPage() {
             <h1 className="text-xl font-bold">Minha Agenda</h1>
           </div>
           <div className="flex items-center gap-4">
+            <Link href={`/${locale}/barbeiro/agendar`}>
+              <Button size="sm">
+                <UserPlus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Agendar para Cliente</span>
+                <span className="sm:hidden">Agendar</span>
+              </Button>
+            </Link>
             <Link href={`/${locale}/barbeiro/ausencias`}>
               <Button variant="outline" size="sm">
                 Ausências

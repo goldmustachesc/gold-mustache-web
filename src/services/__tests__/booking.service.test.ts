@@ -27,6 +27,7 @@ import {
   canClientCancel,
   shouldWarnLateCancellation,
   createAppointment,
+  createAppointmentByBarber,
   getAvailableSlots,
   getBarberAppointments,
   getClientAppointments,
@@ -1345,5 +1346,335 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     const updated = await cancelAppointmentByGuestToken("apt-1", "valid-token");
     expect(updated.status).toBe(AppointmentStatus.CANCELLED_BY_CLIENT);
     expect(updated.guestClient?.id).toBe("guest-1");
+  });
+
+  // ========== Tests for createAppointmentByBarber ==========
+
+  it("createAppointmentByBarber creates appointment when no overlap and policies allow", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      slug: "corte",
+      name: "S",
+      description: null,
+      duration: 30,
+      price: 10,
+      active: true,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      const callback = cb as (tx: unknown) => Promise<unknown>;
+      const tx = {
+        $executeRaw: vi.fn(),
+        appointment: {
+          findMany: vi.fn().mockResolvedValue([]),
+          create: vi.fn().mockResolvedValue({
+            id: "apt-1",
+            clientId: null,
+            guestClientId: "guest-1",
+            barberId: "barber-1",
+            serviceId: "service-1",
+            date: new Date(Date.UTC(2099, 0, 1, 0, 0, 0, 0)),
+            startTime: "09:00",
+            endTime: "09:30",
+            status: AppointmentStatus.CONFIRMED,
+            cancelReason: null,
+            createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+            updatedAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+            client: null,
+            guestClient: {
+              id: "guest-1",
+              fullName: "João Silva",
+              phone: "11999998888",
+            },
+            barber: { id: "barber-1", name: "B", avatarUrl: null },
+            service: { id: "service-1", name: "S", duration: 30, price: 10 },
+          }),
+        },
+        guestClient: {
+          upsert: vi.fn().mockResolvedValue({
+            id: "guest-1",
+            fullName: "João Silva",
+            phone: "11999998888",
+          }),
+        },
+      };
+      return await callback(tx);
+    });
+
+    const apt = await createAppointmentByBarber(
+      {
+        serviceId: "service-1",
+        date: "2099-01-01",
+        startTime: "09:00",
+        clientName: "João Silva",
+        clientPhone: "11999998888",
+      },
+      "barber-1",
+    );
+
+    expect(apt.id).toBe("apt-1");
+    expect(apt.guestClientId).toBe("guest-1");
+    expect(apt.clientId).toBeNull();
+    expect(apt.status).toBe(AppointmentStatus.CONFIRMED);
+    expect(apt.guestClient?.fullName).toBe("João Silva");
+    expect(apt.service.price).toBe(10);
+  });
+
+  it("createAppointmentByBarber rejects when service does not exist", async () => {
+    asMock(prisma.service.findUnique).mockResolvedValue(null);
+
+    await expect(
+      createAppointmentByBarber(
+        {
+          serviceId: "service-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+          clientName: "João Silva",
+          clientPhone: "11999998888",
+        },
+        "barber-1",
+      ),
+    ).rejects.toThrow("Service not found");
+  });
+
+  it("createAppointmentByBarber rejects when slot is in the past", async () => {
+    // Brazil date is 2025-01-02; appointment is previous day
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      duration: 30,
+      price: 10,
+    });
+
+    await expect(
+      createAppointmentByBarber(
+        {
+          serviceId: "service-1",
+          date: "2025-01-01",
+          startTime: "09:00",
+          clientName: "João Silva",
+          clientPhone: "11999998888",
+        },
+        "barber-1",
+      ),
+    ).rejects.toThrow("SLOT_IN_PAST");
+  });
+
+  it("createAppointmentByBarber rejects when barber is unavailable", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      duration: 30,
+      price: 10,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue(null);
+
+    await expect(
+      createAppointmentByBarber(
+        {
+          serviceId: "service-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+          clientName: "João Silva",
+          clientPhone: "11999998888",
+        },
+        "barber-1",
+      ),
+    ).rejects.toThrow("BARBER_UNAVAILABLE");
+  });
+
+  it("createAppointmentByBarber rejects when shop is closed", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      duration: 30,
+      price: 10,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue(null);
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    await expect(
+      createAppointmentByBarber(
+        {
+          serviceId: "service-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+          clientName: "João Silva",
+          clientPhone: "11999998888",
+        },
+        "barber-1",
+      ),
+    ).rejects.toThrow("SHOP_CLOSED");
+  });
+
+  it("createAppointmentByBarber rejects when there is an overlap", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      duration: 30,
+      price: 10,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      const callback = cb as (tx: unknown) => Promise<unknown>;
+      const tx = {
+        $executeRaw: vi.fn(),
+        appointment: {
+          findMany: vi.fn().mockResolvedValue([
+            {
+              startTime: "09:00",
+              endTime: "09:30",
+            },
+          ]),
+          create: vi.fn(),
+        },
+        guestClient: { upsert: vi.fn() },
+      };
+      return await callback(tx);
+    });
+
+    await expect(
+      createAppointmentByBarber(
+        {
+          serviceId: "service-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+          clientName: "João Silva",
+          clientPhone: "11999998888",
+        },
+        "barber-1",
+      ),
+    ).rejects.toThrow("SLOT_OCCUPIED");
+  });
+
+  it("createAppointmentByBarber normalizes phone number", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      slug: "corte",
+      name: "S",
+      description: null,
+      duration: 30,
+      price: 10,
+      active: true,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    let capturedPhone: string | undefined;
+
+    asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      const callback = cb as (tx: unknown) => Promise<unknown>;
+      const tx = {
+        $executeRaw: vi.fn(),
+        appointment: {
+          findMany: vi.fn().mockResolvedValue([]),
+          create: vi.fn().mockResolvedValue({
+            id: "apt-1",
+            clientId: null,
+            guestClientId: "guest-1",
+            barberId: "barber-1",
+            serviceId: "service-1",
+            date: new Date(Date.UTC(2099, 0, 1, 0, 0, 0, 0)),
+            startTime: "09:00",
+            endTime: "09:30",
+            status: AppointmentStatus.CONFIRMED,
+            cancelReason: null,
+            createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+            updatedAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+            client: null,
+            guestClient: {
+              id: "guest-1",
+              fullName: "João Silva",
+              phone: "11999998888",
+            },
+            barber: { id: "barber-1", name: "B", avatarUrl: null },
+            service: { id: "service-1", name: "S", duration: 30, price: 10 },
+          }),
+        },
+        guestClient: {
+          upsert: vi.fn().mockImplementation((args) => {
+            capturedPhone = args.where.phone;
+            return Promise.resolve({
+              id: "guest-1",
+              fullName: "João Silva",
+              phone: args.where.phone,
+            });
+          }),
+        },
+      };
+      return await callback(tx);
+    });
+
+    await createAppointmentByBarber(
+      {
+        serviceId: "service-1",
+        date: "2099-01-01",
+        startTime: "09:00",
+        clientName: "João Silva",
+        clientPhone: "(11) 99999-8888",
+      },
+      "barber-1",
+    );
+
+    // Phone should be normalized to digits only
+    expect(capturedPhone).toBe("11999998888");
   });
 });

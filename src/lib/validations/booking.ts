@@ -63,6 +63,28 @@ export type CancelAppointmentByBarberInput = z.infer<
   typeof cancelAppointmentByBarberSchema
 >;
 
+// Schema for barber creating appointment for a client
+export const createAppointmentByBarberSchema = z.object({
+  serviceId: z.string().uuid("ID do serviço inválido"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
+  startTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Horário deve estar no formato HH:MM"),
+  clientName: z
+    .string()
+    .min(2, "Nome deve ter pelo menos 2 caracteres")
+    .max(100, "Nome deve ter no máximo 100 caracteres"),
+  clientPhone: z
+    .string()
+    .regex(/^\d{10,11}$/, "Telefone deve ter 10 ou 11 dígitos"),
+});
+
+export type CreateAppointmentByBarberInput = z.infer<
+  typeof createAppointmentByBarberSchema
+>;
+
 // ============================================
 // Working Hours Schemas
 // ============================================

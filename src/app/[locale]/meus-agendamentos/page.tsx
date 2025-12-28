@@ -12,13 +12,19 @@ import { Calendar, LogOut, LogIn, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import type { AppointmentWithDetails } from "@/types/booking";
 
 function MeusAgendamentosContent() {
   const params = useParams();
   const locale = params.locale as string;
+
+  // Prevent hydration mismatch by tracking client mount
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const { data: user, isLoading: userLoading } = useUser();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
@@ -27,8 +33,10 @@ function MeusAgendamentosContent() {
   const cancelMutation = useCancelAppointment();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const isGuest = !user && !userLoading;
-  const isLoading = userLoading || appointmentsLoading;
+  // Consider loading until mounted and user check completes
+  const isUserLoading = !hasMounted || userLoading;
+  const isGuest = hasMounted && !user && !userLoading;
+  const isLoading = isUserLoading || appointmentsLoading;
 
   const handleCancel = async (appointmentId: string) => {
     const appointment = appointments?.find((apt) => apt.id === appointmentId);
@@ -79,7 +87,7 @@ function MeusAgendamentosContent() {
             <h1 className="text-xl font-bold">Meus Agendamentos</h1>
           </Link>
           <div className="flex items-center gap-4">
-            {userLoading ? (
+            {isUserLoading ? (
               <div className="h-8 w-20 bg-muted animate-pulse rounded" />
             ) : user ? (
               <>
@@ -115,7 +123,7 @@ function MeusAgendamentosContent() {
         {isGuest && <GuestAppointmentsLookup locale={locale} />}
 
         {/* Logged in user - Show their appointments directly */}
-        {user && (
+        {hasMounted && user && (
           <div className="space-y-6">
             {isLoading && (
               <div className="space-y-4">
@@ -197,7 +205,7 @@ function MeusAgendamentosContent() {
         )}
 
         {/* Loading state for user check */}
-        {userLoading && (
+        {isUserLoading && (
           <div className="space-y-4">
             <div className="h-12 bg-muted animate-pulse rounded-lg" />
             <div className="h-48 bg-muted animate-pulse rounded-lg" />

@@ -327,6 +327,77 @@ export function useCancelAppointmentByBarber() {
 }
 
 // ============================================
+// Barber Create Appointment Hooks
+// ============================================
+
+interface CreateAppointmentByBarberInput {
+  serviceId: string;
+  date: string;
+  startTime: string;
+  clientName: string;
+  clientPhone: string;
+}
+
+async function createAppointmentByBarber(
+  input: CreateAppointmentByBarberInput,
+): Promise<AppointmentWithDetails> {
+  const res = await fetch("/api/barbers/me/appointments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    if (error.error === "SLOT_IN_PAST") {
+      throw new Error(
+        "Este horário já passou. Por favor, escolha outro horário.",
+      );
+    }
+    if (error.error === "SHOP_CLOSED") {
+      throw new Error(
+        "A barbearia não atende neste horário. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "BARBER_UNAVAILABLE") {
+      throw new Error(
+        "Você não atende neste horário. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "SLOT_UNAVAILABLE") {
+      throw new Error(
+        "Este horário não está disponível. Por favor, escolha outro.",
+      );
+    }
+    if (error.error === "SLOT_OCCUPIED") {
+      throw new Error(
+        "Este horário já foi reservado. Por favor, escolha outro.",
+      );
+    }
+    throw new Error(error.message || "Erro ao criar agendamento");
+  }
+
+  const data = await res.json();
+  return data.appointment;
+}
+
+export function useCreateAppointmentByBarber() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createAppointmentByBarber,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
+    },
+  });
+}
+
+// ============================================
 // Guest Appointment Hooks (Token-based)
 // ============================================
 
