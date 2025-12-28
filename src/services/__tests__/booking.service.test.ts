@@ -31,11 +31,13 @@ import {
   getBarberAppointments,
   getClientAppointments,
   getGuestAppointments,
+  getGuestAppointmentsByToken,
   getServices,
   cancelAppointmentByBarber,
   cancelAppointmentByClient,
   createGuestAppointment,
   cancelAppointmentByGuest,
+  cancelAppointmentByGuestToken,
 } from "../booking";
 
 function asMock(fn: unknown): MockInstance {
@@ -1154,5 +1156,194 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     await expect(
       cancelAppointmentByGuest("apt-1", "(11) 99999-8888"),
     ).rejects.toThrow("APPOINTMENT_NOT_CANCELLABLE");
+  });
+
+  // ========== Tests for getGuestAppointmentsByToken ==========
+
+  it("getGuestAppointmentsByToken returns [] when token not found", async () => {
+    asMock(prisma.guestClient.findUnique).mockResolvedValue(null);
+    const result = await getGuestAppointmentsByToken("invalid-token");
+    expect(result).toEqual([]);
+  });
+
+  it("getGuestAppointmentsByToken returns appointments for valid token", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token-123",
+    });
+
+    asMock(prisma.appointment.findMany).mockResolvedValue([
+      {
+        id: "apt-1",
+        clientId: null,
+        guestClientId: "guest-1",
+        barberId: "barber-1",
+        serviceId: "service-1",
+        date: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+        startTime: "09:00",
+        endTime: "09:30",
+        status: AppointmentStatus.CONFIRMED,
+        cancelReason: null,
+        createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+        updatedAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+        client: null,
+        guestClient: { id: "guest-1", fullName: "X", phone: "11999998888" },
+        barber: { id: "barber-1", name: "B", avatarUrl: null },
+        service: { id: "service-1", name: "S", duration: 30, price: 10 },
+      },
+    ]);
+
+    const result = await getGuestAppointmentsByToken("valid-token-123");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("apt-1");
+    expect(result[0]?.date).toBe("2025-01-03");
+    expect(result[0]?.guestClient?.id).toBe("guest-1");
+  });
+
+  // ========== Tests for cancelAppointmentByGuestToken ==========
+
+  it("cancelAppointmentByGuestToken rejects when token not found", async () => {
+    asMock(prisma.guestClient.findUnique).mockResolvedValue(null);
+    await expect(
+      cancelAppointmentByGuestToken("apt-1", "invalid-token"),
+    ).rejects.toThrow("GUEST_NOT_FOUND");
+  });
+
+  it("cancelAppointmentByGuestToken rejects when appointment not found", async () => {
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue(null);
+
+    await expect(
+      cancelAppointmentByGuestToken("apt-404", "valid-token"),
+    ).rejects.toThrow("APPOINTMENT_NOT_FOUND");
+  });
+
+  it("cancelAppointmentByGuestToken rejects when appointment belongs to different guest", async () => {
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      guestClientId: "guest-2",
+      clientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CONFIRMED,
+    });
+
+    await expect(
+      cancelAppointmentByGuestToken("apt-1", "valid-token"),
+    ).rejects.toThrow("UNAUTHORIZED");
+  });
+
+  it("cancelAppointmentByGuestToken rejects when appointment is not cancellable", async () => {
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      guestClientId: "guest-1",
+      clientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CANCELLED_BY_CLIENT,
+    });
+
+    await expect(
+      cancelAppointmentByGuestToken("apt-1", "valid-token"),
+    ).rejects.toThrow("APPOINTMENT_NOT_CANCELLABLE");
+  });
+
+  it("cancelAppointmentByGuestToken rejects when appointment is in the past", async () => {
+    // Now: 2025-01-02 09:05 BRT => 12:05Z
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 5, 0, 0)));
+
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      guestClientId: "guest-1",
+      clientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "09:00",
+      endTime: "09:30",
+      status: AppointmentStatus.CONFIRMED,
+    });
+
+    await expect(
+      cancelAppointmentByGuestToken("apt-1", "valid-token"),
+    ).rejects.toThrow("APPOINTMENT_IN_PAST");
+  });
+
+  it("cancelAppointmentByGuestToken updates status when allowed", async () => {
+    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      guestClientId: "guest-1",
+      clientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CONFIRMED,
+    });
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-1",
+      clientId: null,
+      guestClientId: "guest-1",
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CANCELLED_BY_CLIENT,
+      cancelReason: null,
+      createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      updatedAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      client: null,
+      guestClient: { id: "guest-1", fullName: "X", phone: "11999998888" },
+      barber: { id: "barber-1", name: "B", avatarUrl: null },
+      service: { id: "service-1", name: "S", duration: 30, price: 10 },
+    });
+
+    const updated = await cancelAppointmentByGuestToken("apt-1", "valid-token");
+    expect(updated.status).toBe(AppointmentStatus.CANCELLED_BY_CLIENT);
+    expect(updated.guestClient?.id).toBe("guest-1");
   });
 });
