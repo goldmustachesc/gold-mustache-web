@@ -182,4 +182,33 @@ describe("utils/time-slots (deterministic unit tests)", () => {
     const nextYearLocal = parseDateString("2026-01-02");
     expect(isDateTimeInPast(nextYearLocal, "00:00")).toBe(false);
   });
+
+  it("isDateTimeInPast covers all year/month/day branches", () => {
+    // Set current time to 2025-06-15 12:00 BRT (15:00 UTC)
+    vi.setSystemTime(new Date(Date.UTC(2025, 5, 15, 15, 0, 0, 0)));
+
+    // Branch: appointmentYear < brazilDate.year -> true (past year)
+    expect(isDateTimeInPast(parseDateString("2024-06-15"), "12:00")).toBe(true);
+
+    // Branch: appointmentYear > brazilDate.year -> false (future year)
+    expect(isDateTimeInPast(parseDateString("2026-06-15"), "12:00")).toBe(
+      false,
+    );
+
+    // Branch: same year, appointmentMonth < brazilDate.month -> true (past month)
+    expect(isDateTimeInPast(parseDateString("2025-05-15"), "12:00")).toBe(true);
+
+    // Branch: same year, appointmentMonth > brazilDate.month -> false (future month)
+    expect(isDateTimeInPast(parseDateString("2025-07-15"), "12:00")).toBe(
+      false,
+    );
+
+    // Branch: same year/month, appointmentDay < brazilDate.day -> true (past day)
+    expect(isDateTimeInPast(parseDateString("2025-06-14"), "12:00")).toBe(true);
+
+    // Branch: same year/month, appointmentDay > brazilDate.day -> false (future day)
+    expect(isDateTimeInPast(parseDateString("2025-06-16"), "12:00")).toBe(
+      false,
+    );
+  });
 });

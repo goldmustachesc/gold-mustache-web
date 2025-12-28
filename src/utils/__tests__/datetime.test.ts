@@ -69,4 +69,26 @@ describe("utils/datetime", () => {
       expected,
     );
   });
+
+  it("formatDateDdMmYyyyFromIsoDateLike handles edge cases with incomplete parts", () => {
+    // Empty parts should return original input
+    expect(formatDateDdMmYyyyFromIsoDateLike("")).toBe("");
+    expect(formatDateDdMmYyyyFromIsoDateLike("2025")).toBe("2025");
+    expect(formatDateDdMmYyyyFromIsoDateLike("2025-01")).toBe("2025-01");
+  });
+
+  it("formatDateDdMmYyyyFromIsoDateLike pads single-digit day/month", () => {
+    // The split should handle dates that might not be zero-padded
+    expect(formatDateDdMmYyyyFromIsoDateLike("2025-1-2")).toBe("02-01-2025");
+  });
+
+  it("handles dates at various times of day in São Paulo", () => {
+    // Test early morning UTC (still previous day in São Paulo during DST)
+    const earlyUTC = new Date(Date.UTC(2025, 5, 15, 2, 0, 0, 0)); // 02:00 UTC = 23:00 BRT previous day
+    expect(formatDateDdMmYyyyInSaoPaulo(earlyUTC)).toBe("14-06-2025");
+
+    // Test late night in São Paulo
+    const lateUTC = new Date(Date.UTC(2025, 5, 15, 23, 30, 0, 0)); // 23:30 UTC = 20:30 BRT same day
+    expect(formatTimeHHmmInSaoPaulo(lateUTC)).toBe("20:30");
+  });
 });
