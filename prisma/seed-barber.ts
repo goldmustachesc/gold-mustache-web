@@ -126,17 +126,30 @@ async function main() {
   ];
 
   for (const service of services) {
-    const created = await prisma.service.create({
-      data: service,
+    // Verifica se o serviço já existe pelo slug
+    let serviceRecord = await prisma.service.findUnique({
+      where: { slug: service.slug },
     });
 
-    // Associa o serviço ao barbeiro
-    await prisma.barberService.create({
-      data: {
-        barberId: barber.id,
-        serviceId: created.id,
-      },
+    if (!serviceRecord) {
+      serviceRecord = await prisma.service.create({
+        data: service,
+      });
+    }
+
+    // Verifica se já está associado ao barbeiro
+    const existingLink = await prisma.barberService.findFirst({
+      where: { barberId: barber.id, serviceId: serviceRecord.id },
     });
+
+    if (!existingLink) {
+      await prisma.barberService.create({
+        data: {
+          barberId: barber.id,
+          serviceId: serviceRecord.id,
+        },
+      });
+    }
   }
 
   console.log("💈 Serviços criados:", services.map((s) => s.name).join(", "));

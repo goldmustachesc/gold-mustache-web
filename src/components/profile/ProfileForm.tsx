@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { User, MapPin, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { ProfileMeData, ProfileUpdateInput } from "@/types/profile";
+import { maskPhone, maskZipCode } from "@/utils/masks";
 
 interface ProfileFormProps {
   profile: ProfileMeData | undefined;
@@ -27,22 +28,31 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   const t = useTranslations("profile");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form state
+  // Form state - aplica máscaras aos valores iniciais
   const [formData, setFormData] = useState<ProfileUpdateInput>({
     fullName: profile?.fullName || "",
-    phone: profile?.phone || "",
+    phone: profile?.phone ? maskPhone(profile.phone) : "",
     street: profile?.street || "",
     number: profile?.number || "",
     complement: profile?.complement || "",
     neighborhood: profile?.neighborhood || "",
     city: profile?.city || "",
     state: profile?.state || "",
-    zipCode: profile?.zipCode || "",
+    zipCode: profile?.zipCode ? maskZipCode(profile.zipCode) : "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Aplica máscaras conforme o campo
+    let maskedValue = value;
+    if (name === "phone") {
+      maskedValue = maskPhone(value);
+    } else if (name === "zipCode") {
+      maskedValue = maskZipCode(value);
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: maskedValue }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,6 +153,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               value={formData.phone || ""}
               onChange={handleInputChange}
               placeholder={t("personalInfo.phonePlaceholder")}
+              maxLength={15}
             />
           </div>
         </CardContent>

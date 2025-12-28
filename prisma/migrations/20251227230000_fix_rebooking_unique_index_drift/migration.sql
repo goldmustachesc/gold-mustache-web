@@ -15,6 +15,7 @@ CREATE INDEX IF NOT EXISTS "appointments_barber_id_date_start_time_idx"
 ON "appointments" ("barber_id", "date", "start_time");
 
 -- Drop any drifting UNIQUE index on (barber_id, date, start_time) that blocks rebooking.
+-- We exclude partial indexes (indpred IS NOT NULL) to preserve the confirmed-only index.
 DO $$
 DECLARE
   r record;
@@ -31,7 +32,8 @@ BEGIN
       n.nspname = 'public'
       AND t.relname = 'appointments'
       AND idx.indisunique = true
-      AND pg_get_indexdef(idx.indexrelid) LIKE '%("barber_id", "date", "start_time")%'
+      AND idx.indpred IS NULL  -- Exclude partial indexes (with WHERE clause)
+      AND pg_get_indexdef(idx.indexrelid) LIKE '%(barber_id, date, start_time)%'
   LOOP
     EXECUTE format('DROP INDEX IF EXISTS %I', r.index_name);
   END LOOP;
