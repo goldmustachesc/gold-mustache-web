@@ -1,0 +1,91 @@
+{
+  "title": "Mi Perfil",
+  "subtitle": "Gestiona tu información personal",
+  "backToDashboard": "Volver al Dashboard",
+  "personalInfo": {
+    "title": "Información Personal",
+    "description": "Tus datos básicos de identificación",
+    "email": "Email",
+    "emailHint": "El email no se puede cambiar aquí",
+    "fullName": "Nombre completo",
+    "fullNamePlaceholder": "Tu nombre completo",
+    "phone": "Teléfono",
+    "phonePlaceholder": "(11) 99999-9999"
+  },
+  "address": {
+    "title": "Dirección",
+    "description": "Tu dirección de referencia (opcional)",
+    "zipCode": "Código Postal",
+    "zipCodePlaceholder": "00000-000",
+    "state": "Estado",
+    "statePlaceholder": "SP",
+    "city": "Ciudad",
+    "cityPlaceholder": "São Paulo",
+    "neighborhood": "Barrio",
+    "neighborhoodPlaceholder": "Centro",
+    "street": "Calle",
+    "streetPlaceholder": "Calle de las Flores",
+    "number": "Número",
+    "numberPlaceholder": "123",
+    "complement": "Complemento",
+    "complementPlaceholder": "Apto 101, Bloque A"
+  },
+  "save": {
+    "button": "Guardar Cambios",
+    "saving": "Guardando...",
+    "success": "¡Perfil actualizado con éxito!",
+    "error": "Error al actualizar el perfil. Inténtalo de nuevo."
+  },
+  "emailVerification": {
+    "title": "Verificación de Email",
+    "description": "Confirma tu email para mayor seguridad",
+    "verified": "Verificado",
+    "pending": "Pendiente",
+    "verifiedMessage": "Tu email {email} está verificado.",
+    "unverifiedWarning": "Verificar tu email aumenta la seguridad de tu cuenta y permite la recuperación de contraseña.",
+    "sendButton": "Enviar verificación",
+    "sending": "Enviando...",
+    "success": "¡Email de verificación enviado! Revisa tu bandeja de entrada.",
+    "error": "Error al enviar email de verificación. Inténtalo de nuevo.",
+    "hint": "Se enviará un email con un enlace para confirmar tu dirección. También revisa la carpeta de spam."
+  },
+  "password": {
+    "title": "Cambiar Contraseña",
+    "description": "Actualiza tu contraseña de acceso",
+    "newPassword": "Nueva contraseña",
+    "newPasswordPlaceholder": "Mínimo 6 caracteres",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "confirmPasswordPlaceholder": "Repite la nueva contraseña",
+    "button": "Cambiar Contraseña",
+    "changing": "Cambiando...",
+    "success": "¡Tu contraseña ha sido cambiada con éxito!",
+    "error": "Error al cambiar la contraseña. Inténtalo de nuevo.",
+    "validation": {
+      "required": "La nueva contraseña es obligatoria",
+      "minLength": "La contraseña debe tener al menos 6 caracteres",
+      "mismatch": "Las contraseñas no coinciden"
+    }
+  },
+  "deleteAccount": {
+    "title": "Eliminar Cuenta",
+    "description": "Elimina permanentemente tu cuenta y todos los datos",
+    "button": "Eliminar Mi Cuenta",
+    "confirmWord": "ELIMINAR",
+    "success": "Tu cuenta ha sido eliminada con éxito.",
+    "error": "Error al eliminar la cuenta. Inténtalo de nuevo.",
+    "warning": {
+      "title": "¡Esta acción es irreversible!",
+      "item1": "Todos tus datos personales serán eliminados",
+      "item2": "Tu historial de citas será eliminado",
+      "item3": "No podrás recuperar tu cuenta"
+    },
+    "dialog": {
+      "title": "¿Estás seguro?",
+      "description": "Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta y todos tus datos de nuestros servidores.",
+      "confirmLabel": "Escribe \"{word}\" para confirmar:",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar Cuenta",
+      "deleting": "Eliminando..."
+    }
+  }
+}

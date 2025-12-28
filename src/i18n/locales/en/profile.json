@@ -1,0 +1,91 @@
+{
+  "title": "My Profile",
+  "subtitle": "Manage your personal information",
+  "backToDashboard": "Back to Dashboard",
+  "personalInfo": {
+    "title": "Personal Information",
+    "description": "Your basic identification data",
+    "email": "Email",
+    "emailHint": "Email cannot be changed here",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Your full name",
+    "phone": "Phone",
+    "phonePlaceholder": "(11) 99999-9999"
+  },
+  "address": {
+    "title": "Address",
+    "description": "Your address for reference (optional)",
+    "zipCode": "ZIP Code",
+    "zipCodePlaceholder": "00000-000",
+    "state": "State",
+    "statePlaceholder": "SP",
+    "city": "City",
+    "cityPlaceholder": "São Paulo",
+    "neighborhood": "Neighborhood",
+    "neighborhoodPlaceholder": "Downtown",
+    "street": "Street",
+    "streetPlaceholder": "Flower Street",
+    "number": "Number",
+    "numberPlaceholder": "123",
+    "complement": "Complement",
+    "complementPlaceholder": "Apt 101, Block A"
+  },
+  "save": {
+    "button": "Save Changes",
+    "saving": "Saving...",
+    "success": "Profile updated successfully!",
+    "error": "Error updating profile. Please try again."
+  },
+  "emailVerification": {
+    "title": "Email Verification",
+    "description": "Confirm your email for better security",
+    "verified": "Verified",
+    "pending": "Pending",
+    "verifiedMessage": "Your email {email} is verified.",
+    "unverifiedWarning": "Verifying your email increases your account security and enables password recovery.",
+    "sendButton": "Send verification",
+    "sending": "Sending...",
+    "success": "Verification email sent! Check your inbox.",
+    "error": "Error sending verification email. Please try again.",
+    "hint": "An email will be sent with a link to confirm your address. Also check your spam folder."
+  },
+  "password": {
+    "title": "Change Password",
+    "description": "Update your access password",
+    "newPassword": "New password",
+    "newPasswordPlaceholder": "Minimum 6 characters",
+    "confirmPassword": "Confirm new password",
+    "confirmPasswordPlaceholder": "Repeat the new password",
+    "button": "Change Password",
+    "changing": "Changing...",
+    "success": "Your password has been changed successfully!",
+    "error": "Error changing password. Please try again.",
+    "validation": {
+      "required": "New password is required",
+      "minLength": "Password must have at least 6 characters",
+      "mismatch": "Passwords do not match"
+    }
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "description": "Permanently delete your account and all data",
+    "button": "Delete My Account",
+    "confirmWord": "DELETE",
+    "success": "Your account has been successfully deleted.",
+    "error": "Error deleting account. Please try again.",
+    "warning": {
+      "title": "This action is irreversible!",
+      "item1": "All your personal data will be deleted",
+      "item2": "Your appointment history will be removed",
+      "item3": "You will not be able to recover your account"
+    },
+    "dialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. This will permanently delete your account and remove all your data from our servers.",
+      "confirmLabel": "Type \"{word}\" to confirm:",
+      "cancel": "Cancel",
+      "confirm": "Delete Account",
+      "deleting": "Deleting..."
+    }
+  }
+}

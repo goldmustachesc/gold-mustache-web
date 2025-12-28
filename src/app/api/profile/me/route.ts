@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { profileUpdateSchema } from "@/lib/validations/profile";
 
 export async function GET() {
   try {
@@ -33,21 +34,123 @@ export async function GET() {
       });
     }
 
+    // Check if email is verified via Supabase or profile flag
+    const emailVerified =
+      profile.emailVerified || user.email_confirmed_at != null;
+
     return NextResponse.json({
       profile: {
         id: profile.id,
         userId: profile.userId,
         fullName: profile.fullName,
+        avatarUrl: profile.avatarUrl,
         phone: profile.phone,
+        street: profile.street,
+        number: profile.number,
+        complement: profile.complement,
+        neighborhood: profile.neighborhood,
+        city: profile.city,
+        state: profile.state,
+        zipCode: profile.zipCode,
+        emailVerified,
+        role: profile.role,
+        createdAt: profile.createdAt.toISOString(),
+        updatedAt: profile.updatedAt.toISOString(),
+      },
+      email: user.email,
+    });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    return NextResponse.json(
+      { error: "INTERNAL_ERROR", message: "Erro ao buscar perfil" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "UNAUTHORIZED", message: "Não autorizado" },
+        { status: 401 },
+      );
+    }
+
+    const body = await request.json();
+
+    // Validate input with Zod using safeParse
+    const validationResult = profileUpdateSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      return NextResponse.json(
+        {
+          error: "VALIDATION_ERROR",
+          message: firstError?.message || "Dados inválidos",
+          details: validationResult.error.issues,
+        },
+        { status: 400 },
+      );
+    }
+
+    const validatedData = validationResult.data;
+
+    // Sanitize input - trim strings and convert empty to undefined
+    const updateData: Record<string, string | undefined> = {};
+    if (validatedData.fullName !== undefined)
+      updateData.fullName = validatedData.fullName.trim() || undefined;
+    if (validatedData.phone !== undefined)
+      updateData.phone = validatedData.phone.trim() || undefined;
+    if (validatedData.street !== undefined)
+      updateData.street = validatedData.street.trim() || undefined;
+    if (validatedData.number !== undefined)
+      updateData.number = validatedData.number.trim() || undefined;
+    if (validatedData.complement !== undefined)
+      updateData.complement = validatedData.complement.trim() || undefined;
+    if (validatedData.neighborhood !== undefined)
+      updateData.neighborhood = validatedData.neighborhood.trim() || undefined;
+    if (validatedData.city !== undefined)
+      updateData.city = validatedData.city.trim() || undefined;
+    if (validatedData.state !== undefined)
+      updateData.state = validatedData.state.trim() || undefined;
+    if (validatedData.zipCode !== undefined)
+      updateData.zipCode = validatedData.zipCode.trim() || undefined;
+
+    const profile = await prisma.profile.update({
+      where: { userId: user.id },
+      data: updateData,
+    });
+
+    return NextResponse.json({
+      profile: {
+        id: profile.id,
+        userId: profile.userId,
+        fullName: profile.fullName,
+        avatarUrl: profile.avatarUrl,
+        phone: profile.phone,
+        street: profile.street,
+        number: profile.number,
+        complement: profile.complement,
+        neighborhood: profile.neighborhood,
+        city: profile.city,
+        state: profile.state,
+        zipCode: profile.zipCode,
+        emailVerified: profile.emailVerified || user.email_confirmed_at != null,
         role: profile.role,
         createdAt: profile.createdAt.toISOString(),
         updatedAt: profile.updatedAt.toISOString(),
       },
     });
   } catch (error) {
-    console.error("Error fetching profile:", error);
+    console.error("Error updating profile:", error);
     return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar perfil" },
+      { error: "INTERNAL_ERROR", message: "Erro ao atualizar perfil" },
       { status: 500 },
     );
   }

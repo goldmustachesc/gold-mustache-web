@@ -11,14 +11,24 @@ datasource db {
 }
 
 model Profile {
-  id        String   @id @default(uuid())
-  userId    String   @unique @map("user_id")
-  fullName  String?  @map("full_name")
-  avatarUrl String?  @map("avatar_url")
-  phone     String?
-  role      UserRole @default(CLIENT)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  fullName       String?  @map("full_name")
+  avatarUrl      String?  @map("avatar_url")
+  phone          String?
+  // Address fields
+  street         String?
+  number         String?
+  complement     String?
+  neighborhood   String?
+  city           String?
+  state          String?
+  zipCode        String?  @map("zip_code")
+  // Account verification
+  emailVerified  Boolean  @default(false) @map("email_verified")
+  role           UserRole @default(CLIENT)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   appointments Appointment[]
 

@@ -25,6 +25,7 @@ import {
   Settings,
   Loader2,
   UserPlus,
+  UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -66,14 +67,26 @@ export default function DashboardPage() {
 
       {/* Welcome Card */}
       <div className="rounded-lg border bg-card p-6">
-        <h2 className="mb-2 text-xl font-semibold">
-          Olá
-          {profileMe?.fullName ? `, ${profileMe.fullName.split(" ")[0]}` : ""}!
-          👋
-        </h2>
-        <p className="text-muted-foreground">
-          Você está logado como: <strong>{user?.email}</strong>
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="mb-2 text-xl font-semibold">
+              Olá
+              {profileMe?.fullName
+                ? `, ${profileMe.fullName.split(" ")[0]}`
+                : ""}
+              ! 👋
+            </h2>
+            <p className="text-muted-foreground">
+              Você está logado como: <strong>{user?.email}</strong>
+            </p>
+          </div>
+          <Link href={`/${locale}/profile`}>
+            <Button variant="outline" size="sm">
+              <UserCog className="mr-2 h-4 w-4" />
+              Meu Perfil
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Loading Stats */}

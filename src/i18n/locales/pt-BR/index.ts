@@ -10,6 +10,7 @@ import gallery from "./gallery.json";
 import hero from "./hero.json";
 import metadata from "./metadata.json";
 import navigation from "./navigation.json";
+import profile from "./profile.json";
 import services from "./services.json";
 import team from "./team.json";
 import testimonials from "./testimonials.json";
@@ -27,6 +28,7 @@ export default {
   hero,
   metadata,
   navigation,
+  profile,
   services,
   team,
   testimonials,

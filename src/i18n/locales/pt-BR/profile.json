@@ -1,0 +1,91 @@
+{
+  "title": "Meu Perfil",
+  "subtitle": "Gerencie suas informações pessoais",
+  "backToDashboard": "Voltar ao Dashboard",
+  "personalInfo": {
+    "title": "Informações Pessoais",
+    "description": "Seus dados básicos de identificação",
+    "email": "Email",
+    "emailHint": "O email não pode ser alterado aqui",
+    "fullName": "Nome completo",
+    "fullNamePlaceholder": "Seu nome completo",
+    "phone": "Telefone",
+    "phonePlaceholder": "(11) 99999-9999"
+  },
+  "address": {
+    "title": "Endereço",
+    "description": "Seu endereço para referência (opcional)",
+    "zipCode": "CEP",
+    "zipCodePlaceholder": "00000-000",
+    "state": "Estado",
+    "statePlaceholder": "SP",
+    "city": "Cidade",
+    "cityPlaceholder": "São Paulo",
+    "neighborhood": "Bairro",
+    "neighborhoodPlaceholder": "Centro",
+    "street": "Rua",
+    "streetPlaceholder": "Rua das Flores",
+    "number": "Número",
+    "numberPlaceholder": "123",
+    "complement": "Complemento",
+    "complementPlaceholder": "Apto 101, Bloco A"
+  },
+  "save": {
+    "button": "Salvar Alterações",
+    "saving": "Salvando...",
+    "success": "Perfil atualizado com sucesso!",
+    "error": "Erro ao atualizar perfil. Tente novamente."
+  },
+  "emailVerification": {
+    "title": "Verificação de Email",
+    "description": "Confirme seu email para maior segurança",
+    "verified": "Verificado",
+    "pending": "Pendente",
+    "verifiedMessage": "Seu email {email} está verificado.",
+    "unverifiedWarning": "Verificar seu email aumenta a segurança da sua conta e permite recuperação de senha.",
+    "sendButton": "Enviar verificação",
+    "sending": "Enviando...",
+    "success": "Email de verificação enviado! Verifique sua caixa de entrada.",
+    "error": "Erro ao enviar email de verificação. Tente novamente.",
+    "hint": "Um email será enviado com um link para confirmar seu endereço. Verifique também a pasta de spam."
+  },
+  "password": {
+    "title": "Alterar Senha",
+    "description": "Atualize sua senha de acesso",
+    "newPassword": "Nova senha",
+    "newPasswordPlaceholder": "Mínimo 6 caracteres",
+    "confirmPassword": "Confirmar nova senha",
+    "confirmPasswordPlaceholder": "Repita a nova senha",
+    "button": "Alterar Senha",
+    "changing": "Alterando...",
+    "success": "Sua senha foi alterada com sucesso!",
+    "error": "Erro ao alterar senha. Tente novamente.",
+    "validation": {
+      "required": "Nova senha é obrigatória",
+      "minLength": "Senha deve ter pelo menos 6 caracteres",
+      "mismatch": "As senhas não coincidem"
+    }
+  },
+  "deleteAccount": {
+    "title": "Excluir Conta",
+    "description": "Exclua permanentemente sua conta e todos os dados",
+    "button": "Excluir Minha Conta",
+    "confirmWord": "EXCLUIR",
+    "success": "Sua conta foi excluída com sucesso.",
+    "error": "Erro ao excluir conta. Tente novamente.",
+    "warning": {
+      "title": "Esta ação é irreversível!",
+      "item1": "Todos os seus dados pessoais serão excluídos",
+      "item2": "Seu histórico de agendamentos será removido",
+      "item3": "Você não poderá recuperar sua conta"
+    },
+    "dialog": {
+      "title": "Tem certeza?",
+      "description": "Esta ação não pode ser desfeita. Isso excluirá permanentemente sua conta e removerá todos os seus dados dos nossos servidores.",
+      "confirmLabel": "Digite \"{word}\" para confirmar:",
+      "cancel": "Cancelar",
+      "confirm": "Excluir Conta",
+      "deleting": "Excluindo..."
+    }
+  }
+}
