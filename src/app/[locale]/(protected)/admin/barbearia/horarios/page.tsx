@@ -24,7 +24,8 @@ import {
   parseDateString,
 } from "@/utils/time-slots";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
-import { CalendarOff, Save, Trash2 } from "lucide-react";
+import { CalendarOff, Save, Trash2, Users } from "lucide-react";
+import Link from "next/link";
 
 const WEEKDAYS: Array<{ dayOfWeek: number; label: string }> = [
   { dayOfWeek: 0, label: "Domingo" },
@@ -107,11 +108,16 @@ export default function AdminShopHoursPage() {
     () => normalizeShopHours(shopHoursRaw),
     [shopHoursRaw],
   );
-  const [draft, setDraft] = useState<ShopHoursData[]>(shopHours);
+  const [draft, setDraft] = useState<ShopHoursData[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
+  // Initialize draft from server data only once
   useEffect(() => {
-    setDraft(shopHours);
-  }, [shopHours]);
+    if (shopHoursRaw.length > 0 && !initialized) {
+      setDraft(shopHours);
+      setInitialized(true);
+    }
+  }, [shopHours, shopHoursRaw.length, initialized]);
 
   const startDate = useMemo(() => getBrazilDateString(), []);
   const endDate = useMemo(() => {
@@ -214,12 +220,32 @@ export default function AdminShopHoursPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+        {/* Link to manage individual barber hours */}
+        <Card>
+          <CardContent className="flex items-center justify-between py-4">
+            <div>
+              <h3 className="font-medium">
+                Horários individuais dos barbeiros
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Configure horários específicos para cada barbeiro
+              </p>
+            </div>
+            <Link href={`/${locale}/admin/barbeiros`}>
+              <Button variant="outline">
+                <Users className="h-4 w-4 mr-2" />
+                Gerenciar Barbeiros
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Horário padrão (por dia)</CardTitle>
             <Button
               onClick={handleSaveHours}
-              disabled={updateHours.isPending || hoursLoading}
+              disabled={updateHours.isPending || hoursLoading || !initialized}
             >
               <Save className="h-4 w-4" />
               <span className="ml-2">
@@ -228,7 +254,7 @@ export default function AdminShopHoursPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {hoursLoading ? (
+            {hoursLoading || !initialized ? (
               <div className="animate-pulse text-muted-foreground">
                 Carregando...
               </div>

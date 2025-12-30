@@ -1,13 +1,22 @@
 import { siteConfig } from "@/config/site";
-import { BRAND, SERVICES } from "@/constants/brand";
+import { BRAND } from "@/constants/brand";
+import { getServices } from "@/services/booking";
 
-export function SchemaMarkup() {
+export async function SchemaMarkup() {
   // Em ambientes não-produção, não renderizar schema markup para SEO
   if (!siteConfig.isProduction) {
     return null;
   }
 
   const baseUrl = siteConfig.productionUrl;
+
+  // Fetch services from database (only active)
+  let services: Awaited<ReturnType<typeof getServices>> = [];
+  try {
+    services = await getServices();
+  } catch (error) {
+    console.error("Error fetching services for schema markup:", error);
+  }
 
   // Review Schema - Top reviews for SEO
   const reviewSchema = {
@@ -153,7 +162,8 @@ export function SchemaMarkup() {
     logo: `${baseUrl}/logo.png`,
   };
 
-  const servicesSchema = {
+  // Build services schema - only include offer catalog if services exist
+  const servicesSchemaBase = {
     "@context": "https://schema.org",
     "@type": "Service",
     "@id": `${baseUrl}/#services`,
@@ -175,25 +185,33 @@ export function SchemaMarkup() {
         },
       },
     },
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Serviços de Barbearia",
-      itemListElement: SERVICES.map((service, index) => ({
-        "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: service.id,
-          description: service.id,
-        },
-        price: service.price.replace("R$ ", "").replace(",", "."),
-        priceCurrency: "BRL",
-        availability: "https://schema.org/InStock",
-        validFrom: new Date().toISOString().split("T")[0],
-        url: `${baseUrl}/#service-${service.id}`,
-        position: index + 1,
-      })),
-    },
   };
+
+  // Only add offer catalog if there are services
+  const servicesSchema =
+    services.length > 0
+      ? {
+          ...servicesSchemaBase,
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "Serviços de Barbearia",
+            itemListElement: services.map((service, index) => ({
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: service.name,
+                description: service.description || service.name,
+              },
+              price: service.price.toFixed(2),
+              priceCurrency: "BRL",
+              availability: "https://schema.org/InStock",
+              validFrom: new Date().toISOString().split("T")[0],
+              url: `${baseUrl}/#servico-${service.slug}`,
+              position: index + 1,
+            })),
+          },
+        }
+      : servicesSchemaBase;
 
   const organizationSchema = {
     "@context": "https://schema.org",

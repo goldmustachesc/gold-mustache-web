@@ -18,33 +18,38 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Separator } from "@/components/ui/separator";
-import { SERVICES } from "@/constants/brand";
-import { Calendar, Clock, Scissors, Star } from "lucide-react";
+import { BRAND } from "@/constants/brand";
+import { useServices } from "@/hooks/useBooking";
+import { Calendar, Clock, Scissors, Star, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 
-const serviceIcons = {
-  "corte-tradicional": Scissors,
-  "corte-degrade": Scissors,
-  "corte-barba": Scissors,
-  "barba-completa": Scissors,
-  bigode: Scissors,
-  "sobrancelha-na-navalha": Scissors,
-  "corte-americano": Scissors,
-  "corte-low-fade": Scissors,
-  "cera-nariz-ouvido": Scissors,
-  "corte-degrade-tradicional": Scissors,
-  "corte-degrade-na-zero": Scissors,
-  "progressiva-relaxamento": Scissors,
-  luzes: Scissors,
-  platinado: Scissors,
-  "sobrancelha-na-pinca": Scissors,
-};
+function formatPrice(price: number): string {
+  return price.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}min`;
+}
 
 export function ServicesSection() {
   const t = useTranslations("services");
   const locale = useLocale();
   const bookingLink = `/${locale}/agendar`;
+
+  // Fetch services from database (public API, only active services)
+  const { data: services = [], isLoading, isError } = useServices();
+
+  // Featured combo prices from brand constants
+  const { originalPrice, discountedPrice } = BRAND.featuredCombo;
+  const featuredSavings = originalPrice - discountedPrice;
 
   return (
     <section id="servicos" className="py-20 bg-muted/30">
@@ -81,10 +86,14 @@ export function ServicesSection() {
             <CardContent className="text-center">
               <div className="flex items-center justify-center space-x-4 mb-6">
                 <div className="text-lg text-muted-foreground line-through">
-                  R$ 115,00
+                  {formatPrice(originalPrice)}
                 </div>
-                <div className="text-3xl font-bold text-primary">R$ 100,00</div>
-                <Badge variant="destructive">{t("featured.save")} R$ 15</Badge>
+                <div className="text-3xl font-bold text-primary">
+                  {formatPrice(discountedPrice)}
+                </div>
+                <Badge variant="destructive">
+                  {t("featured.save")} {formatPrice(featuredSavings)}
+                </Badge>
               </div>
               <div className="flex items-center justify-center space-x-2 text-muted-foreground mb-6">
                 <Clock className="h-4 w-4" />
@@ -107,137 +116,161 @@ export function ServicesSection() {
           </Card>
         </div>
 
-        {/* Mobile Carousel */}
-        <div className="md:hidden">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: false,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {SERVICES.map((service) => {
-                const IconComponent =
-                  serviceIcons[service.id as keyof typeof serviceIcons];
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">{t("loading")}</span>
+          </div>
+        )}
 
-                return (
-                  <CarouselItem
-                    id={`servico-${service.id}`}
-                    key={service.id}
-                    className="pl-2 md:pl-4 basis-[85%] sm:basis-[70%]"
-                  >
-                    <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full">
-                      <CardHeader className="text-center pb-4">
-                        <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                          <IconComponent className="h-8 w-8 text-primary" />
-                        </div>
-                        <CardTitle className="text-xl">
-                          {t(`items.${service.id}.name`)}
-                        </CardTitle>
-                        <CardDescription className="text-base">
-                          {t(`items.${service.id}.description`)}
-                        </CardDescription>
-                      </CardHeader>
+        {/* Error State */}
+        {isError && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>{t("error.title")}</p>
+            <p className="text-sm mt-2">{t("error.message")}</p>
+          </div>
+        )}
 
-                      <CardContent className="text-center">
-                        <Separator className="mb-4" />
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-center space-x-2">
-                            <span className="text-2xl font-bold text-primary">
-                              {service.price}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-center space-x-2 text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            <span className="text-sm">{service.duration}</span>
-                          </div>
-                        </div>
-                      </CardContent>
+        {/* Empty State */}
+        {!isLoading && !isError && services.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>{t("empty")}</p>
+          </div>
+        )}
 
-                      <CardFooter>
-                        <Button
-                          className="w-full cursor-pointer"
-                          variant="default"
-                          asChild
-                        >
-                          <Link
-                            href={bookingLink}
-                            className="flex items-center justify-center"
-                          >
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {t("labels.book")} {t(`items.${service.id}.name`)}
-                          </Link>
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </CarouselItem>
-                );
-              })}
-            </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
-          </Carousel>
-        </div>
-
-        {/* Desktop Grid */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-          {SERVICES.map((service) => {
-            const IconComponent =
-              serviceIcons[service.id as keyof typeof serviceIcons];
-
-            return (
-              <Card
-                id={`servico-${service.id}`}
-                key={service.id}
-                className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary"
+        {/* Services List */}
+        {!isLoading && !isError && services.length > 0 && (
+          <>
+            {/* Mobile Carousel */}
+            <div className="md:hidden">
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: false,
+                }}
+                className="w-full"
               >
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <IconComponent className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl">
-                    {t(`items.${service.id}.name`)}
-                  </CardTitle>
-                  <CardDescription className="text-base">
-                    {t(`items.${service.id}.description`)}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="text-center">
-                  <Separator className="mb-4" />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center space-x-2">
-                      <span className="text-2xl font-bold text-primary">
-                        {service.price}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm">{service.duration}</span>
-                    </div>
-                  </div>
-                </CardContent>
-
-                <CardFooter>
-                  <Button
-                    className="w-full cursor-pointer"
-                    variant="default"
-                    asChild
-                  >
-                    <Link
-                      href={bookingLink}
-                      className="flex items-center justify-center"
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {services.map((service) => (
+                    <CarouselItem
+                      id={`servico-${service.slug}`}
+                      key={service.id}
+                      className="pl-2 md:pl-4 basis-[85%] sm:basis-[70%]"
                     >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {t("labels.book")} {t(`items.${service.id}.name`)}
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </div>
+                      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full">
+                        <CardHeader className="text-center pb-4">
+                          <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <Scissors className="h-8 w-8 text-primary" />
+                          </div>
+                          <CardTitle className="text-xl">
+                            {service.name}
+                          </CardTitle>
+                          {service.description && (
+                            <CardDescription className="text-base">
+                              {service.description}
+                            </CardDescription>
+                          )}
+                        </CardHeader>
+
+                        <CardContent className="text-center">
+                          <Separator className="mb-4" />
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-center space-x-2">
+                              <span className="text-2xl font-bold text-primary">
+                                {formatPrice(service.price)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-center space-x-2 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span className="text-sm">
+                                {formatDuration(service.duration)}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+
+                        <CardFooter>
+                          <Button
+                            className="w-full cursor-pointer"
+                            variant="default"
+                            asChild
+                          >
+                            <Link
+                              href={bookingLink}
+                              className="flex items-center justify-center"
+                            >
+                              <Calendar className="h-4 w-4 mr-2" />
+                              {t("labels.book")} {service.name}
+                            </Link>
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </Carousel>
+            </div>
+
+            {/* Desktop Grid */}
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service) => (
+                <Card
+                  id={`servico-${service.slug}`}
+                  key={service.id}
+                  className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary"
+                >
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Scissors className="h-8 w-8 text-primary" />
+                    </div>
+                    <CardTitle className="text-xl">{service.name}</CardTitle>
+                    {service.description && (
+                      <CardDescription className="text-base">
+                        {service.description}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+
+                  <CardContent className="text-center">
+                    <Separator className="mb-4" />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-2xl font-bold text-primary">
+                          {formatPrice(service.price)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">
+                          {formatDuration(service.duration)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter>
+                    <Button
+                      className="w-full cursor-pointer"
+                      variant="default"
+                      asChild
+                    >
+                      <Link
+                        href={bookingLink}
+                        className="flex items-center justify-center"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {t("labels.book")} {service.name}
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

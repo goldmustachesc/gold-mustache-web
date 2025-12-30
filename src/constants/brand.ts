@@ -68,84 +68,14 @@ export const BRAND = {
     dark: "oklch(0.12 0.02 85)",
     lightDark: "oklch(0.25 0.02 85)",
   },
+
+  // Featured combo pricing (Corte + Barba)
+  featuredCombo: {
+    originalPrice: 115,
+    discountedPrice: 100,
+  },
 } as const;
 
-// Services array - name and description come from i18n translations
-// Use t(`services.items.${service.id}.name`) to get translated name
-export const SERVICES = [
-  {
-    id: "corte-tradicional",
-    price: "R$ 30,00",
-    duration: "20 min",
-  },
-  {
-    id: "corte-degrade",
-    price: "R$ 60,00",
-    duration: "45 min",
-  },
-  {
-    id: "corte-barba",
-    price: "R$ 90,00",
-    duration: "60 min",
-  },
-  {
-    id: "barba-completa",
-    price: "R$ 45,00",
-    duration: "30 min",
-  },
-  {
-    id: "bigode",
-    price: "R$ 60,00",
-    duration: "45 min",
-  },
-  {
-    id: "corte-americano",
-    price: "R$ 50,00",
-    duration: "45 min",
-  },
-  {
-    id: "sobrancelha-na-navalha",
-    price: "R$ 20,00",
-    duration: "15 min",
-  },
-  {
-    id: "corte-low-fade",
-    price: "R$ 60,00",
-    duration: "50 min",
-  },
-  {
-    id: "cera-nariz-ouvido",
-    price: "R$ 30,00",
-    duration: "15 min",
-  },
-  {
-    id: "corte-degrade-tradicional",
-    price: "R$ 45,00",
-    duration: "35 min",
-  },
-  {
-    id: "corte-degrade-na-zero",
-    price: "R$ 50,00",
-    duration: "35 min",
-  },
-  {
-    id: "progressiva-relaxamento",
-    price: "R$ 100,00",
-    duration: "50 min",
-  },
-  {
-    id: "luzes",
-    price: "R$ 150,00",
-    duration: "1 hora 30 min",
-  },
-  {
-    id: "platinado",
-    price: "R$ 200,00",
-    duration: "2 horas",
-  },
-  {
-    id: "sobrancelha-na-pinca",
-    price: "R$ 30,00",
-    duration: "15 min",
-  },
-] as const;
+// Services are now fetched from the database via /api/services
+// Use the useServices() hook from @/hooks/useBooking for client-side
+// Use getServices() from @/services/booking for server-side

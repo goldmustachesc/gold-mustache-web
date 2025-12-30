@@ -85,7 +85,7 @@ export function useSignUp() {
 
   return useMutation({
     mutationFn: (data: SignupInput) =>
-      authService.signUp(data.email, data.password),
+      authService.signUp(data.email, data.password, data.fullName, data.phone),
     onSuccess: (response) => {
       if (response.error) {
         const errorMessage = response.error.message || "";

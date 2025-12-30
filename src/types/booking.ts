@@ -124,6 +124,19 @@ export interface WorkingHoursData {
   breakEnd: string | null;
 }
 
+/**
+ * Barber working hours with isWorking flag for UI
+ * Used when displaying all 7 days (including days off)
+ */
+export interface BarberWorkingHoursDay {
+  dayOfWeek: number;
+  isWorking: boolean;
+  startTime: string | null;
+  endTime: string | null;
+  breakStart: string | null;
+  breakEnd: string | null;
+}
+
 // ============================================
 // Barber Absence Types
 // ============================================

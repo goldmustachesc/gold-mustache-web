@@ -108,7 +108,7 @@ CRON_SECRET=seu_secret_aleatorio_aqui
 
 2. Teste o endpoint de sincronização:
    \`\`\`bash
-   curl -X POST http://localhost:3000/api/cron/sync-instagram \
+   curl -X POST http://localhost:3001/api/cron/sync-instagram \
      -H "Authorization: Bearer {seu_cron_secret}"
    \`\`\`
 

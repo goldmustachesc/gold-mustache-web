@@ -13,6 +13,12 @@
   "labels": {
     "book": "Book"
   },
+  "loading": "Loading services...",
+  "error": {
+    "title": "Could not load services.",
+    "message": "Please try again later."
+  },
+  "empty": "No services available at the moment.",
   "items": {
     "corte-tradicional": {
       "name": "Simple Haircut",

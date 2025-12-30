@@ -1,9 +1,9 @@
 import { siteConfig } from "@/config/site";
-import { SERVICES } from "@/constants/brand";
+import { getServices } from "@/services/booking";
 import { locales } from "@/i18n/config";
 import type { MetadataRoute } from "next";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Em ambientes não-produção, retornar sitemap vazio
   if (!siteConfig.isProduction) {
     return [];
@@ -11,6 +11,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const baseUrl = siteConfig.productionUrl;
   const currentDate = new Date().toISOString();
+
+  // Fetch services from database (only active)
+  let services: Awaited<ReturnType<typeof getServices>> = [];
+  try {
+    services = await getServices();
+  } catch (error) {
+    console.error("Error fetching services for sitemap:", error);
+  }
 
   const routes: MetadataRoute.Sitemap = [];
 
@@ -62,18 +70,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       });
     }
 
-    // Service-specific pages (virtual pages for SEO)
-    for (const service of SERVICES) {
+    // Service-specific pages (virtual pages for SEO) - from database
+    for (const service of services) {
       routes.push({
-        url: `${baseUrl}${localePrefix}#servico-${service.id}`,
+        url: `${baseUrl}${localePrefix}#servico-${service.slug}`,
         lastModified: currentDate,
         changeFrequency: "monthly",
         priority: 0.6,
         alternates: {
           languages: {
-            "pt-BR": `${baseUrl}/pt-BR#servico-${service.id}`,
-            es: `${baseUrl}/es#servico-${service.id}`,
-            en: `${baseUrl}/en#servico-${service.id}`,
+            "pt-BR": `${baseUrl}/pt-BR#servico-${service.slug}`,
+            es: `${baseUrl}/es#servico-${service.slug}`,
+            en: `${baseUrl}/en#servico-${service.slug}`,
           },
         },
       });

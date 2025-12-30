@@ -27,7 +27,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   beforeEach(() => {
     // happy-dom provides window; ensure origin exists
     Object.defineProperty(window, "location", {
-      value: { origin: "http://localhost:3000" },
+      value: { origin: "http://localhost:3001" },
       writable: true,
     });
   });
@@ -42,10 +42,21 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
       error: null,
     });
 
-    const result = await authService.signUp("a@b.com", "pw");
+    const result = await authService.signUp(
+      "a@b.com",
+      "pw",
+      "João Silva",
+      "11999999999",
+    );
     expect(supabaseAuthMock.signUp).toHaveBeenCalledWith({
       email: "a@b.com",
       password: "pw",
+      options: {
+        data: {
+          full_name: "João Silva",
+          phone: "11999999999",
+        },
+      },
     });
     expect(result.user).toEqual({ id: "u-1" });
     expect(result.session).toEqual({ access_token: "t" });
@@ -74,7 +85,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     expect(supabaseAuthMock.signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:3000/auth/callback",
+        redirectTo: "http://localhost:3001/auth/callback",
       },
     });
 
@@ -99,7 +110,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.resetPassword("a@b.com")).resolves.toBeUndefined();
     expect(supabaseAuthMock.resetPasswordForEmail).toHaveBeenCalledWith(
       "a@b.com",
-      { redirectTo: "http://localhost:3000/reset-password/update" },
+      { redirectTo: "http://localhost:3001/reset-password/update" },
     );
   });
 

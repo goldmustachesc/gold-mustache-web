@@ -32,7 +32,7 @@ npm run dev
 npm run build
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) para ver o resultado.
+Acesse [http://localhost:3001](http://localhost:3001) para ver o resultado.
 
 ## Estrutura do Projeto
 

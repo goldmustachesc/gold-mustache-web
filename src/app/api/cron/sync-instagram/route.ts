@@ -7,6 +7,11 @@ import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+// Constantes de configuração do cron
+const MAX_RETRIES = 3;
+const POSTS_LIMIT = 10;
+const RETRY_BASE_DELAY_MS = 1000;
+
 /**
  * POST /api/cron/sync-instagram
  * Sincroniza posts do Instagram e salva no cache local
@@ -43,29 +48,30 @@ export async function POST(request: Request) {
     // Buscar posts do Instagram com retry
     let posts: InstagramPost[] = [];
     let retryCount = 0;
-    const maxRetries = 3;
 
-    while (retryCount < maxRetries) {
+    while (retryCount < MAX_RETRIES) {
       try {
         posts = await fetchInstagramPosts(
           config.accessToken ?? "",
           config.userId ?? "",
-          10,
+          POSTS_LIMIT,
         );
         break;
       } catch (error) {
         retryCount++;
         console.warn(
-          `[Instagram Cron] Tentativa ${retryCount}/${maxRetries} falhou:`,
+          `[Instagram Cron] Tentativa ${retryCount}/${MAX_RETRIES} falhou:`,
           error,
         );
 
-        if (retryCount >= maxRetries) {
+        if (retryCount >= MAX_RETRIES) {
           throw error;
         }
 
         // Aguardar antes de tentar novamente (exponential backoff)
-        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_BASE_DELAY_MS * retryCount),
+        );
       }
     }
 
@@ -134,6 +140,6 @@ export async function GET() {
   return NextResponse.json({
     message:
       "Use POST com Authorization: Bearer {CRON_SECRET} para sincronizar",
-    dev: "Em dev, você pode testar: curl -X POST http://localhost:3000/api/cron/sync-instagram -H 'Authorization: Bearer {seu_cron_secret}'",
+    dev: "Em dev, você pode testar: curl -X POST http://localhost:3001/api/cron/sync-instagram -H 'Authorization: Bearer {seu_cron_secret}'",
   });
 }

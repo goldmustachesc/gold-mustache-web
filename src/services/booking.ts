@@ -58,7 +58,21 @@ async function getBookingPolicyError(params: {
 
   const dayOfWeek = appointmentDateLocal.getDay();
 
-  // Barber working hours gate (also validates slot boundary based on service duration)
+  // Shop-wide hours gate (checked first for fallback)
+  const shopHours = await prisma.shopHours.findUnique({
+    where: { dayOfWeek },
+  });
+
+  if (
+    !shopHours ||
+    !shopHours.isOpen ||
+    !shopHours.startTime ||
+    !shopHours.endTime
+  ) {
+    return "SHOP_CLOSED";
+  }
+
+  // Barber working hours - fallback to shop hours if not configured
   const workingHours = await prisma.workingHours.findUnique({
     where: {
       barberId_dayOfWeek: {
@@ -68,25 +82,31 @@ async function getBookingPolicyError(params: {
     },
   });
 
-  if (!workingHours) {
-    return "BARBER_UNAVAILABLE";
-  }
+  // Use barber's working hours if available, otherwise use shop hours as fallback
+  const effectiveHours = workingHours
+    ? {
+        startTime: workingHours.startTime,
+        endTime: workingHours.endTime,
+        breakStart: workingHours.breakStart,
+        breakEnd: workingHours.breakEnd,
+      }
+    : {
+        startTime: shopHours.startTime,
+        endTime: shopHours.endTime,
+        breakStart: shopHours.breakStart,
+        breakEnd: shopHours.breakEnd,
+      };
 
   // Pure policy: validate slot is within working hours and aligned to slot grid (incl. break)
   const workingHoursError = getWorkingHoursSlotError({
-    workingStartTime: workingHours.startTime,
-    workingEndTime: workingHours.endTime,
-    breakStart: workingHours.breakStart,
-    breakEnd: workingHours.breakEnd,
+    workingStartTime: effectiveHours.startTime,
+    workingEndTime: effectiveHours.endTime,
+    breakStart: effectiveHours.breakStart,
+    breakEnd: effectiveHours.breakEnd,
     startTime,
     durationMinutes: serviceDuration,
   });
   if (workingHoursError) return workingHoursError;
-
-  // Shop-wide hours gate
-  const shopHours = await prisma.shopHours.findUnique({
-    where: { dayOfWeek },
-  });
 
   // Shop closures (date-specific)
   const shopClosures = await prisma.shopClosure.findMany({
@@ -219,6 +239,7 @@ export async function getServices(barberId?: string): Promise<ServiceData[]> {
 /**
  * Get available time slots for a specific date, barber and service.
  * Slots are generated based on the service duration to ensure perfect scheduling.
+ * Falls back to shop hours if the barber hasn't configured their own working hours.
  */
 export async function getAvailableSlots(
   date: Date,
@@ -284,9 +305,20 @@ export async function getAvailableSlots(
     },
   });
 
-  if (!workingHours) {
-    return []; // Barber doesn't work on this day
-  }
+  // Use barber's working hours if available, otherwise use shop hours as fallback
+  const effectiveHours = workingHours
+    ? {
+        startTime: workingHours.startTime,
+        endTime: workingHours.endTime,
+        breakStart: workingHours.breakStart,
+        breakEnd: workingHours.breakEnd,
+      }
+    : {
+        startTime: shopHours.startTime,
+        endTime: shopHours.endTime,
+        breakStart: shopHours.breakStart,
+        breakEnd: shopHours.breakEnd,
+      };
 
   // Get existing appointments for this date and barber
   const existingAppointments = await prisma.appointment.findMany({
@@ -304,11 +336,11 @@ export async function getAvailableSlots(
 
   // Generate slots based on service duration
   const allSlots = generateTimeSlots({
-    startTime: workingHours.startTime,
-    endTime: workingHours.endTime,
+    startTime: effectiveHours.startTime,
+    endTime: effectiveHours.endTime,
     duration: service.duration,
-    breakStart: workingHours.breakStart,
-    breakEnd: workingHours.breakEnd,
+    breakStart: effectiveHours.breakStart,
+    breakEnd: effectiveHours.breakEnd,
   });
 
   const policySlots = allSlots.filter((slot) => {

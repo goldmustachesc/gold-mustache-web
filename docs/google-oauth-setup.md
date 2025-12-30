@@ -10,7 +10,7 @@
 6. Configure:
    - **Name**: Gold Mustache Auth
    - **Authorized JavaScript origins**: 
-     - `http://localhost:3000` (desenvolvimento)
+     - `http://localhost:3001` (desenvolvimento)
      - `https://www.goldmustachebarbearia.com.br` (produção)
    - **Authorized redirect URIs**:
      - `https://wkickkimvghrcnamvefx.supabase.co/auth/v1/callback`
@@ -45,9 +45,9 @@
 
 ### Desenvolvimento
 ```
-http://localhost:3000/pt-BR/auth/callback
-http://localhost:3000/en/auth/callback
-http://localhost:3000/es/auth/callback
+http://localhost:3001/pt-BR/auth/callback
+http://localhost:3001/en/auth/callback
+http://localhost:3001/es/auth/callback
 ```
 
 ### Produção
@@ -69,7 +69,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_anon_key
 ## 6. Testar
 
 1. Rode o projeto: `npm run dev`
-2. Acesse: `http://localhost:3000/pt-BR/login`
+2. Acesse: `http://localhost:3001/pt-BR/login`
 3. Clique em "Continuar com Google"
 4. Faça login com sua conta Google
 5. Você deve ser redirecionado para o dashboard

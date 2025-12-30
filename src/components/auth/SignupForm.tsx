@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useSignUp } from "@/hooks/useAuth";
 import { signupSchema, type SignupInput } from "@/lib/validations/auth";
@@ -14,16 +15,38 @@ interface SignupFormProps {
   locale: string;
 }
 
+// Format phone number as (XX) XXXXX-XXXX
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+  if (digits.length <= 7) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 export function SignupForm({ locale }: SignupFormProps) {
   const { mutate: signUp, isPending } = useSignUp();
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
   });
+
+  const handlePhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const formatted = formatPhone(e.target.value);
+      setValue("phone", formatted, { shouldValidate: true });
+    },
+    [setValue],
+  );
 
   const onSubmit = (data: SignupInput) => {
     signUp(data);
@@ -33,10 +56,31 @@ export function SignupForm({ locale }: SignupFormProps) {
     <AuthCard title="Criar conta" description="Preencha os dados abaixo">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <FormField
+          id="fullName"
+          label="Nome completo"
+          type="text"
+          placeholder="Seu nome completo"
+          autoComplete="name"
+          error={errors.fullName}
+          {...register("fullName")}
+        />
+
+        <FormField
+          id="phone"
+          label="Telefone (WhatsApp)"
+          type="tel"
+          placeholder="(11) 99999-9999"
+          autoComplete="tel"
+          error={errors.phone}
+          {...register("phone", { onChange: handlePhoneChange })}
+        />
+
+        <FormField
           id="email"
           label="Email"
           type="email"
           placeholder="seu@email.com"
+          autoComplete="email"
           error={errors.email}
           {...register("email")}
         />

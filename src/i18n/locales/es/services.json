@@ -13,6 +13,12 @@
   "labels": {
     "book": "Reservar"
   },
+  "loading": "Cargando servicios...",
+  "error": {
+    "title": "No se pudieron cargar los servicios.",
+    "message": "Por favor, inténtelo de nuevo más tarde."
+  },
+  "empty": "Ningún servicio disponible en este momento.",
   "items": {
     "corte-tradicional": {
       "name": "Corte Simple",

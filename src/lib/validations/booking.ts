@@ -119,6 +119,48 @@ export const workingHoursSchema = z
 
 export type WorkingHoursInput = z.infer<typeof workingHoursSchema>;
 
+// Schema for updating barber working hours (bulk update for all days)
+export const barberWorkingHoursDaySchema = z
+  .object({
+    dayOfWeek: z
+      .number()
+      .int()
+      .min(0)
+      .max(6, "Dia da semana deve ser entre 0 (domingo) e 6 (sábado)"),
+    isWorking: z.boolean(),
+    startTime: timeStringSchema.nullable().optional(),
+    endTime: timeStringSchema.nullable().optional(),
+    breakStart: timeStringSchema.nullable().optional(),
+    breakEnd: timeStringSchema.nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.isWorking) return true;
+      if (!data.startTime || !data.endTime) return false;
+      const start = data.startTime.split(":").map(Number);
+      const end = data.endTime.split(":").map(Number);
+      const startMinutes = start[0] * 60 + start[1];
+      const endMinutes = end[0] * 60 + end[1];
+      return endMinutes > startMinutes;
+    },
+    {
+      message:
+        "Quando trabalhando, informe início e fim (fim deve ser após o início).",
+    },
+  );
+
+export const updateBarberWorkingHoursSchema = z.object({
+  days: z.array(barberWorkingHoursDaySchema).min(1).max(7),
+});
+
+export type UpdateBarberWorkingHoursInput = z.infer<
+  typeof updateBarberWorkingHoursSchema
+>;
+
+export type BarberWorkingHoursDayInput = z.infer<
+  typeof barberWorkingHoursDaySchema
+>;
+
 // ============================================
 // Barber Absence Schemas
 // ============================================

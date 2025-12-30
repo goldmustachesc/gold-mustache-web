@@ -8,11 +8,11 @@
 - Import from the project root using the `@/` alias (see `tsconfig.json`).
 
 ## Build, Test, and Development Commands
-- `npm install` sets up dependencies; keep lockfile changes committed.
-- `npm run dev` runs the local server with Turbopack at `http://localhost:3000`.
-- `npm run build` validates the production bundle; run before shipping major changes.
-- `npm run start` serves the compiled build for smoke testing production behavior.
-- `npm run lint` runs Biome checks; `pnpm format` applies Biome formatting fixes.
+- `pnpm install` sets up dependencies; keep lockfile changes committed.
+- `pnpm dev` runs the local server with Turbopack at `http://localhost:3001`.
+- `pnpm build` validates the production bundle; run before shipping major changes.
+- `pnpm start` serves the compiled build for smoke testing production behavior.
+- `pnpm lint` runs Biome checks; `pnpm format` applies Biome formatting fixes.
 
 ## Coding Style & Naming Conventions
 - Biome enforces 2-space indentation, import sorting, and the shared lint rules in `biome.json`.

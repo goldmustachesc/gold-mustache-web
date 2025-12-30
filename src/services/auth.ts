@@ -12,10 +12,21 @@ export interface AuthResponse {
 const supabase = createClient();
 
 export const authService = {
-  async signUp(email: string, password: string): Promise<AuthResponse> {
+  async signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+  ): Promise<AuthResponse> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: fullName,
+          phone,
+        },
+      },
     });
     return {
       user: data.user,

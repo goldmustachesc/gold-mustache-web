@@ -13,6 +13,12 @@
   "labels": {
     "book": "Agendar"
   },
+  "loading": "Carregando serviços...",
+  "error": {
+    "title": "Não foi possível carregar os serviços.",
+    "message": "Por favor, tente novamente mais tarde."
+  },
+  "empty": "Nenhum serviço disponível no momento.",
   "items": {
     "corte-tradicional": {
       "name": "Corte Simples",

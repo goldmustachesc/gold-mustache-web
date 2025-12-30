@@ -238,6 +238,19 @@ export default function DashboardPage() {
                 </CardHeader>
               </Card>
             </Link>
+            <Link href={`/${locale}/admin/barbearia/servicos`}>
+              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
+                    <Scissors className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle>Serviços</CardTitle>
+                  <CardDescription>
+                    Gerencie os serviços oferecidos pela barbearia
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
         </section>
       )}

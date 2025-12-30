@@ -27,7 +27,7 @@ URL base do site (sem trailing slash).
 |----------|---------|
 | Production | `https://www.goldmustachebarbearia.com.br` |
 | Staging | `https://staging-gold-mustache-web.vercel.app` |
-| Development | `http://localhost:3000` |
+| Development | `http://localhost:3001` |
 
 **Nota:** Se não definido, usa `VERCEL_URL` automaticamente em deployments Vercel.
 
