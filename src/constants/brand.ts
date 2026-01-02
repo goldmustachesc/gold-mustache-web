@@ -30,7 +30,7 @@ export const BRAND = {
       lng: -48.611896766062245,
     },
     googleMapsUrl:
-      "https://www.google.com/maps/place/R.+115,+79+-+Centro,+Itapema+-+SC,+88220-000",
+      "https://www.google.com/maps/search/?api=1&query=Gold+Mustache+Barbearia+Itapema",
   },
 
   contactVitor: {

@@ -9,7 +9,16 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { AppointmentWithDetails } from "@/types/booking";
-import { Calendar, Clock, Scissors, User, X } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Scissors,
+  User,
+  X,
+  AlertCircle,
+  Phone,
+  UserX,
+} from "lucide-react";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 
 // Status values matching Prisma enum
@@ -31,6 +40,16 @@ interface AppointmentCardProps {
   isCancelling?: boolean;
   showClientInfo?: boolean;
   canCancel?: boolean;
+  /** When true, shows a message that cancellation is blocked (within 2h window) */
+  isCancellationBlocked?: boolean;
+  /** Callback to mark appointment as NO_SHOW (barber only) */
+  onMarkNoShow?: () => void;
+  /** Whether the appointment can be marked as NO_SHOW */
+  canMarkNoShow?: boolean;
+  /** Whether NO_SHOW is being processed */
+  isMarkingNoShow?: boolean;
+  /** Whether to show the client phone (for NO_SHOW cases) */
+  showClientPhone?: boolean;
 }
 
 const statusConfig: Record<
@@ -56,14 +75,25 @@ export function AppointmentCard({
   isCancelling,
   showClientInfo = false,
   canCancel,
+  isCancellationBlocked = false,
+  onMarkNoShow,
+  canMarkNoShow = false,
+  isMarkingNoShow = false,
+  showClientPhone = false,
 }: AppointmentCardProps) {
   const formatDate = (dateStr: string) => {
     return formatDateDdMmYyyyFromIsoDateLike(dateStr);
   };
 
+  // If cancellation is blocked, cannot cancel
   const isCancellable =
-    canCancel ?? appointment.status === AppointmentStatus.CONFIRMED;
+    (canCancel ?? appointment.status === AppointmentStatus.CONFIRMED) &&
+    !isCancellationBlocked;
   const status = statusConfig[appointment.status as AppointmentStatusType];
+
+  // Get client phone for NO_SHOW display
+  const clientPhone =
+    appointment.client?.phone ?? appointment.guestClient?.phone;
 
   return (
     <Card
@@ -114,27 +144,63 @@ export function AppointmentCard({
           </span>
         </div>
 
+        {showClientPhone && clientPhone && (
+          <div className="flex items-center gap-3 text-sm">
+            <Phone className="h-4 w-4 text-muted-foreground" />
+            <a
+              href={`tel:${clientPhone}`}
+              className="text-primary hover:underline"
+            >
+              {clientPhone}
+            </a>
+          </div>
+        )}
+
         {appointment.cancelReason && (
           <div className="mt-2 p-2 bg-destructive/10 rounded text-sm text-destructive">
             <strong>Motivo:</strong> {appointment.cancelReason}
           </div>
         )}
+
+        {isCancellationBlocked && (
+          <div className="mt-2 p-3 bg-amber-500/10 rounded text-sm text-amber-700 dark:text-amber-400 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Cancelamento não permitido com menos de 2 horas de antecedência.
+              Em caso de não comparecimento, será cobrada uma taxa.
+            </span>
+          </div>
+        )}
       </CardContent>
 
-      {isCancellable && onCancel && (
-        <CardFooter className="pt-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCancel}
-            disabled={isCancelling}
-            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <X className="h-4 w-4 mr-2" />
-            {isCancelling ? "Cancelando..." : "Cancelar Agendamento"}
-          </Button>
+      {(isCancellable && onCancel) || (canMarkNoShow && onMarkNoShow) ? (
+        <CardFooter className="pt-0 flex gap-2">
+          {isCancellable && onCancel && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+              disabled={isCancelling || isMarkingNoShow}
+              className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <X className="h-4 w-4 mr-2" />
+              {isCancelling ? "Cancelando..." : "Cancelar"}
+            </Button>
+          )}
+          {canMarkNoShow && onMarkNoShow && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onMarkNoShow}
+              disabled={isCancelling || isMarkingNoShow}
+              className="flex-1 text-amber-600 hover:text-amber-600 hover:bg-amber-500/10"
+            >
+              <UserX className="h-4 w-4 mr-2" />
+              {isMarkingNoShow ? "Marcando..." : "Não Compareceu"}
+            </Button>
+          )}
         </CardFooter>
-      )}
+      ) : null}
     </Card>
   );
 }

@@ -14,7 +14,13 @@ import { useParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import { useState, Suspense, useEffect } from "react";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
+import { getAppointmentCancellationStatus } from "@/lib/booking/cancellation";
 import type { AppointmentWithDetails } from "@/types/booking";
+
+// Error codes from API - centralized for consistency
+const CANCELLATION_ERROR_CODES = {
+  BLOCKED: "CANCELLATION_BLOCKED",
+} as const;
 
 function MeusAgendamentosContent() {
   const params = useParams();
@@ -39,27 +45,20 @@ function MeusAgendamentosContent() {
   const isLoading = isUserLoading || appointmentsLoading;
 
   const handleCancel = async (appointmentId: string) => {
-    const appointment = appointments?.find((apt) => apt.id === appointmentId);
-    if (appointment) {
-      const minutesUntil = getMinutesUntilAppointment(
-        appointment.date,
-        appointment.startTime,
-      );
-
-      if (minutesUntil > 0 && minutesUntil < 120) {
-        toast("Atenção", {
-          description:
-            "Você está cancelando com menos de 2 horas de antecedência. O horário será liberado, mas pode ser mais difícil de preencher.",
-        });
-      }
-    }
-
     setCancellingId(appointmentId);
     try {
       await cancelMutation.mutateAsync({ appointmentId });
       toast.success("Agendamento cancelado com sucesso!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao cancelar");
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao cancelar";
+      if (errorMessage === CANCELLATION_ERROR_CODES.BLOCKED) {
+        toast.error(
+          "Cancelamento não permitido com menos de 2 horas de antecedência.",
+        );
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setCancellingId(null);
     }
@@ -67,6 +66,11 @@ function MeusAgendamentosContent() {
 
   const isPastOrStarted = (apt: AppointmentWithDetails) =>
     getMinutesUntilAppointment(apt.date, apt.startTime) <= 0;
+
+  const getCancellationStatus = (apt: AppointmentWithDetails) => {
+    const minutesUntil = getMinutesUntilAppointment(apt.date, apt.startTime);
+    return getAppointmentCancellationStatus(minutesUntil);
+  };
 
   const confirmedAppointments =
     appointments?.filter(
@@ -168,7 +172,10 @@ function MeusAgendamentosContent() {
                       appointment={appointment}
                       onCancel={() => handleCancel(appointment.id)}
                       isCancelling={cancellingId === appointment.id}
-                      canCancel
+                      canCancel={getCancellationStatus(appointment).canCancel}
+                      isCancellationBlocked={
+                        getCancellationStatus(appointment).isBlocked
+                      }
                     />
                   ))}
                 </div>

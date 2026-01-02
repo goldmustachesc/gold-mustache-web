@@ -871,9 +871,9 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     expect(shouldWarnLateCancellation(appointmentDate, "10:00")).toBe(true);
   });
 
-  it("cancelAppointmentByClient updates status when allowed", async () => {
-    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00)
-    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+  it("cancelAppointmentByClient updates status when allowed (more than 2h before)", async () => {
+    // Now: 2025-01-02 03:00 BRT => 06:00Z (appointment at 11:00 = 8h away, outside 2h block window)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 6, 0, 0, 0)));
 
     asMock(prisma.appointment.findUnique).mockResolvedValue({
       id: "apt-1",
@@ -911,6 +911,30 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
 
     const updated = await cancelAppointmentByClient("apt-1", "client-1");
     expect(updated.status).toBe(AppointmentStatus.CANCELLED_BY_CLIENT);
+  });
+
+  it("cancelAppointmentByClient rejects when within 2h block window", async () => {
+    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00 = 2h away, inside block window)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      clientId: "client-1",
+      guestClientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CONFIRMED,
+      cancelReason: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await expect(
+      cancelAppointmentByClient("apt-1", "client-1"),
+    ).rejects.toThrow("CANCELLATION_BLOCKED");
   });
 
   it("cancelAppointmentByClient rejects when appointment is not found / unauthorized / not cancellable / in past", async () => {
@@ -989,6 +1013,10 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     await expect(
       cancelAppointmentByBarber("apt-1", "barber-1", "x"),
     ).rejects.toThrow("APPOINTMENT_IN_PAST");
+
+    // Now: 2025-01-02 03:00 BRT => 06:00Z (appointment at 11:00 = 8h away, outside 2h block window)
+    // Note: Barber cancellation uses the same canClientCancel check
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 6, 0, 0, 0)));
 
     asMock(prisma.appointment.findUnique).mockResolvedValue({
       id: "apt-1",
@@ -1097,9 +1125,9 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("APPOINTMENT_IN_PAST");
   });
 
-  it("cancelAppointmentByGuest updates status when allowed", async () => {
-    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00)
-    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+  it("cancelAppointmentByGuest updates status when allowed (more than 2h before)", async () => {
+    // Now: 2025-01-02 03:00 BRT => 06:00Z (appointment at 11:00 = 8h away, outside 2h block window)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 6, 0, 0, 0)));
 
     asMock(prisma.guestClient.findUnique).mockResolvedValue({
       id: "guest-1",
@@ -1138,6 +1166,32 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
 
     const updated = await cancelAppointmentByGuest("apt-1", "(11) 99999-8888");
     expect(updated.status).toBe(AppointmentStatus.CANCELLED_BY_CLIENT);
+  });
+
+  it("cancelAppointmentByGuest rejects when within 2h block window", async () => {
+    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00 = 2h away, inside block window)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      guestClientId: "guest-1",
+      clientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CONFIRMED,
+    });
+
+    await expect(
+      cancelAppointmentByGuest("apt-1", "(11) 99999-8888"),
+    ).rejects.toThrow("CANCELLATION_BLOCKED");
   });
 
   it("cancelAppointmentByGuest rejects when guest not found / appointment not found / unauthorized / not cancellable", async () => {
@@ -1331,9 +1385,9 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("APPOINTMENT_IN_PAST");
   });
 
-  it("cancelAppointmentByGuestToken updates status when allowed", async () => {
-    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00)
-    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+  it("cancelAppointmentByGuestToken updates status when allowed (more than 2h before)", async () => {
+    // Now: 2025-01-02 03:00 BRT => 06:00Z (appointment at 11:00 = 8h away, outside 2h block window)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 6, 0, 0, 0)));
 
     asMock(prisma.guestClient.findUnique).mockResolvedValue({
       id: "guest-1",
@@ -1374,6 +1428,33 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     const updated = await cancelAppointmentByGuestToken("apt-1", "valid-token");
     expect(updated.status).toBe(AppointmentStatus.CANCELLED_BY_CLIENT);
     expect(updated.guestClient?.id).toBe("guest-1");
+  });
+
+  it("cancelAppointmentByGuestToken rejects when within 2h block window", async () => {
+    // Now: 2025-01-02 09:00 BRT => 12:00Z (appointment at 11:00 = 2h away, inside block window)
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
+
+    asMock(prisma.guestClient.findUnique).mockResolvedValue({
+      id: "guest-1",
+      phone: "11999998888",
+      fullName: "X",
+      accessToken: "valid-token",
+    });
+    asMock(prisma.appointment.findUnique).mockResolvedValue({
+      id: "apt-1",
+      guestClientId: "guest-1",
+      clientId: null,
+      barberId: "barber-1",
+      serviceId: "service-1",
+      date: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+      startTime: "11:00",
+      endTime: "11:30",
+      status: AppointmentStatus.CONFIRMED,
+    });
+
+    await expect(
+      cancelAppointmentByGuestToken("apt-1", "valid-token"),
+    ).rejects.toThrow("CANCELLATION_BLOCKED");
   });
 
   // ========== Tests for createAppointmentByBarber ==========

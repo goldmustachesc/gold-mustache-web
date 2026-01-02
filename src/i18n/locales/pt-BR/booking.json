@@ -62,7 +62,7 @@
     "date": "Data",
     "time": "Horário",
     "value": "Valor",
-    "cancelNote": "Você pode cancelar a qualquer momento antes do horário. Se faltar menos de 2 horas, exibimos apenas um aviso.",
+    "cancelNote": "Você pode cancelar até 2 horas antes do horário. Após esse prazo, o cancelamento é bloqueado e poderá ser cobrada uma taxa em caso de não comparecimento.",
     "viewAppointments": "Ver Meus Agendamentos",
     "newBooking": "Fazer Novo Agendamento"
   },
@@ -116,7 +116,18 @@
     "cancelSuccess": "Agendamento cancelado com sucesso!",
     "cancelError": "Erro ao cancelar",
     "slotOccupied": "Este horário já foi reservado. Por favor, escolha outro.",
-    "cancellationTooLate": "Atenção: você está cancelando com menos de 2 horas de antecedência."
+    "cancellationBlocked": "Cancelamento não permitido com menos de 2 horas de antecedência.",
+    "noShowSuccess": "Cliente marcado como não compareceu. O telefone está disponível para contato.",
+    "noShowError": "Erro ao marcar ausência"
+  },
+  "cancellation": {
+    "blockedTitle": "Cancelamento bloqueado",
+    "blockedMessage": "Cancelamento não permitido com menos de 2 horas de antecedência. Em caso de não comparecimento, será cobrada uma taxa."
+  },
+  "noShow": {
+    "markButton": "Não Compareceu",
+    "marking": "Marcando...",
+    "contactClient": "Entre em contato com o cliente para cobrar a taxa de não comparecimento."
   },
   "errors": {
     "loadServices": "Erro ao carregar serviços",

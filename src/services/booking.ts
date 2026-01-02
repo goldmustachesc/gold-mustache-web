@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import {
-  canCancelBeforeStart,
-  CANCELLATION_WARNING_WINDOW_MINUTES,
+  canClientCancelOutsideWindow,
+  CANCELLATION_BLOCK_WINDOW_MINUTES,
   shouldWarnLateCancellation as shouldWarnLateCancellationCore,
 } from "@/lib/booking/cancellation";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
@@ -966,12 +966,30 @@ export async function getBarberAppointments(
 // ============================================
 
 /**
+ * Get minutes until an appointment from Prisma date format.
+ * Returns negative value if appointment is in the past.
+ */
+export function getMinutesUntilAppointmentFromPrisma(
+  appointmentDate: Date,
+  appointmentTime: string,
+): number {
+  const appointmentDateStr = formatPrismaDateToString(appointmentDate);
+  const brazilDateStr = getBrazilDateString();
+
+  // If appointment date is in the past, return a large negative number
+  if (appointmentDateStr < brazilDateStr) {
+    return -9999;
+  }
+
+  return getMinutesUntilAppointment(appointmentDateStr, appointmentTime);
+}
+
+/**
  * Checks if an appointment can be cancelled by a client.
  *
- * Business rule (updated):
- * - Cancellation is allowed up to the appointment start time.
- * - If cancelling with less than 2 hours of notice, it should be treated as a warning (UI),
- *   not a hard block (backend).
+ * Business rule (updated 2024-12):
+ * - Cancellation is BLOCKED when within 2 hours of the appointment.
+ * - Client must cancel at least 2 hours before to avoid no-show fee.
  *
  * Note: appointmentDate comes from Prisma @db.Date field as UTC midnight.
  * We extract year/month/day using UTC methods and compare against Brazil timezone.
@@ -983,27 +1001,38 @@ export function canClientCancel(
   appointmentDate: Date,
   appointmentTime: string,
 ): boolean {
-  // Get appointment date as "YYYY-MM-DD" string (using UTC since Prisma stores dates at UTC midnight)
-  const appointmentDateStr = formatPrismaDateToString(appointmentDate);
-
-  // Get current Brazil date as "YYYY-MM-DD" string
-  const brazilDateStr = getBrazilDateString();
-
-  // Check if appointment is in the past
-  if (appointmentDateStr < brazilDateStr) {
-    return false;
-  }
-
-  // Calculate actual minutes until the appointment (handles cross-day scenarios)
-  // e.g., 23:30 today to 00:30 tomorrow = 60 minutes, not "future day = always ok"
-  const minutesUntilAppointment = getMinutesUntilAppointment(
-    appointmentDateStr,
+  const minutesUntilAppointment = getMinutesUntilAppointmentFromPrisma(
+    appointmentDate,
     appointmentTime,
   );
 
-  return canCancelBeforeStart(minutesUntilAppointment);
+  // Client can only cancel if MORE than 2 hours before the appointment
+  return canClientCancelOutsideWindow(minutesUntilAppointment);
 }
 
+/**
+ * Determine if cancellation is blocked (within 2h window but not past).
+ * Used to show appropriate messaging to clients.
+ */
+export function isClientCancellationBlocked(
+  appointmentDate: Date,
+  appointmentTime: string,
+): boolean {
+  const minutesUntilAppointment = getMinutesUntilAppointmentFromPrisma(
+    appointmentDate,
+    appointmentTime,
+  );
+
+  // Blocked if within the 2h window but not already past
+  return (
+    minutesUntilAppointment > 0 &&
+    minutesUntilAppointment <= CANCELLATION_BLOCK_WINDOW_MINUTES
+  );
+}
+
+/**
+ * @deprecated Cancellation is now blocked, not just warned. Use isClientCancellationBlocked instead.
+ */
 export function shouldWarnLateCancellation(
   appointmentDate: Date,
   appointmentTime: string,
@@ -1016,14 +1045,13 @@ export function shouldWarnLateCancellation(
 
   return shouldWarnLateCancellationCore(
     minutesUntilAppointment,
-    CANCELLATION_WARNING_WINDOW_MINUTES,
+    CANCELLATION_BLOCK_WINDOW_MINUTES,
   );
 }
 
 /**
  * Cancel an appointment by client
- * Cancellation is allowed until the appointment start time.
- * If within 2 hours, it's allowed (warning should be handled by UI).
+ * Cancellation is BLOCKED when within 2 hours of the appointment.
  */
 export async function cancelAppointmentByClient(
   appointmentId: string,
@@ -1046,7 +1074,12 @@ export async function cancelAppointmentByClient(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check cancellation is still possible (not in the past / already started)
+  // Check if cancellation is blocked (within 2h window)
+  if (isClientCancellationBlocked(appointment.date, appointment.startTime)) {
+    throw new Error("CANCELLATION_BLOCKED");
+  }
+
+  // Check if appointment is in the past
   if (!canClientCancel(appointment.date, appointment.startTime)) {
     throw new Error("APPOINTMENT_IN_PAST");
   }
@@ -1156,6 +1189,104 @@ export async function cancelAppointmentByBarber(
     data: {
       status: AppointmentStatus.CANCELLED_BY_BARBER,
       cancelReason: reason.trim(),
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
+      guestClient: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
+      barber: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          duration: true,
+          price: true,
+        },
+      },
+    },
+  });
+
+  return {
+    id: updated.id,
+    clientId: updated.clientId,
+    guestClientId: updated.guestClientId,
+    barberId: updated.barberId,
+    serviceId: updated.serviceId,
+    date: formatPrismaDateToString(updated.date),
+    startTime: updated.startTime,
+    endTime: updated.endTime,
+    status: updated.status,
+    cancelReason: updated.cancelReason,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+    client: updated.client,
+    guestClient: updated.guestClient,
+    barber: updated.barber,
+    service: {
+      ...updated.service,
+      price: Number(updated.service.price),
+    },
+  };
+}
+
+/**
+ * Mark an appointment as NO_SHOW by barber
+ * Can only be done after the appointment start time has passed
+ */
+export async function markAppointmentAsNoShow(
+  appointmentId: string,
+  barberId: string,
+): Promise<AppointmentWithDetails> {
+  // Get the appointment with ownership check in query to avoid leaking existence info
+  const appointment = await prisma.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      barberId: barberId,
+    },
+  });
+
+  if (!appointment) {
+    // Returns generic NOT_FOUND whether the appointment doesn't exist
+    // or belongs to another barber (security: no information leakage)
+    throw new Error("APPOINTMENT_NOT_FOUND");
+  }
+
+  if (appointment.status !== AppointmentStatus.CONFIRMED) {
+    throw new Error("APPOINTMENT_NOT_MARKABLE");
+  }
+
+  // Check if the appointment time has passed (can only mark NO_SHOW after start time)
+  const minutesUntil = getMinutesUntilAppointmentFromPrisma(
+    appointment.date,
+    appointment.startTime,
+  );
+
+  if (minutesUntil > 0) {
+    throw new Error("APPOINTMENT_NOT_STARTED");
+  }
+
+  // Update the appointment
+  const updated = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: {
+      status: AppointmentStatus.NO_SHOW,
     },
     include: {
       client: {
@@ -1389,6 +1520,7 @@ export async function getGuestAppointments(
 /**
  * Cancel an appointment by guest client using access token (secure)
  * Validates ownership via access token and respects cancellation window
+ * Cancellation is BLOCKED when within 2 hours of the appointment.
  */
 export async function cancelAppointmentByGuestToken(
   appointmentId: string,
@@ -1420,7 +1552,12 @@ export async function cancelAppointmentByGuestToken(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check cancellation is still possible (not in the past / already started)
+  // Check if cancellation is blocked (within 2h window)
+  if (isClientCancellationBlocked(appointment.date, appointment.startTime)) {
+    throw new Error("CANCELLATION_BLOCKED");
+  }
+
+  // Check if appointment is in the past
   if (!canClientCancel(appointment.date, appointment.startTime)) {
     throw new Error("APPOINTMENT_IN_PAST");
   }
@@ -1524,7 +1661,12 @@ export async function cancelAppointmentByGuest(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check cancellation is still possible (not in the past / already started)
+  // Check if cancellation is blocked (within 2h window)
+  if (isClientCancellationBlocked(appointment.date, appointment.startTime)) {
+    throw new Error("CANCELLATION_BLOCKED");
+  }
+
+  // Check if appointment is in the past
   if (!canClientCancel(appointment.date, appointment.startTime)) {
     throw new Error("APPOINTMENT_IN_PAST");
   }

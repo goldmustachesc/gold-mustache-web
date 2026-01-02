@@ -7,6 +7,7 @@ import { DailySchedule, WeeklyCalendar } from "@/components/dashboard";
 import {
   useBarberAppointments,
   useCancelAppointmentByBarber,
+  useMarkNoShow,
 } from "@/hooks/useBooking";
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
@@ -78,7 +79,9 @@ export default function BarberDashboardPage() {
     useBarberAppointments(barberId, weekStart, weekEnd);
 
   const cancelAppointment = useCancelAppointmentByBarber();
+  const markNoShow = useMarkNoShow();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [markingNoShowId, setMarkingNoShowId] = useState<string | null>(null);
 
   const handleCancelAppointment = async (
     appointmentId: string,
@@ -92,6 +95,22 @@ export default function BarberDashboardPage() {
       toast.error(error instanceof Error ? error.message : "Erro ao cancelar");
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleMarkNoShow = async (appointmentId: string) => {
+    setMarkingNoShowId(appointmentId);
+    try {
+      await markNoShow.mutateAsync({ appointmentId });
+      toast.success(
+        "Cliente marcado como não compareceu. O telefone está disponível para contato.",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao marcar ausência",
+      );
+    } finally {
+      setMarkingNoShowId(null);
     }
   };
 
@@ -203,6 +222,9 @@ export default function BarberDashboardPage() {
           onCancelAppointment={handleCancelAppointment}
           isCancelling={cancelAppointment.isPending}
           cancellingId={cancellingId}
+          onMarkNoShow={handleMarkNoShow}
+          isMarkingNoShow={markNoShow.isPending}
+          markingNoShowId={markingNoShowId}
         />
       </main>
     </div>

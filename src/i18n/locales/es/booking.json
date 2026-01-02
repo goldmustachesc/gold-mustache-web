@@ -39,7 +39,7 @@
     "date": "Fecha",
     "time": "Hora",
     "value": "Precio",
-    "cancelNote": "Puedes cancelar en cualquier momento antes de la cita. Si faltan menos de 2 horas, solo mostraremos un aviso.",
+    "cancelNote": "Puedes cancelar hasta 2 horas antes de la cita. Después de ese plazo, la cancelación está bloqueada y podría cobrarse una tarifa por inasistencia.",
     "viewAppointments": "Ver Mis Citas",
     "newBooking": "Hacer Nueva Reserva"
   },
@@ -93,7 +93,18 @@
     "cancelSuccess": "¡Cita cancelada con éxito!",
     "cancelError": "Error al cancelar",
     "slotOccupied": "Este horario ya está reservado. Por favor, elige otro.",
-    "cancellationTooLate": "Aviso: estás cancelando con menos de 2 horas de anticipación."
+    "cancellationBlocked": "Cancelación no permitida con menos de 2 horas de anticipación.",
+    "noShowSuccess": "Cliente marcado como inasistente. El teléfono está disponible para contacto.",
+    "noShowError": "Error al marcar inasistencia"
+  },
+  "cancellation": {
+    "blockedTitle": "Cancelación bloqueada",
+    "blockedMessage": "Cancelación no permitida con menos de 2 horas de anticipación. Se podrá cobrar una tarifa por inasistencia."
+  },
+  "noShow": {
+    "markButton": "No Asistió",
+    "marking": "Marcando...",
+    "contactClient": "Contacta al cliente para cobrar la tarifa por inasistencia."
   },
   "errors": {
     "loadServices": "Error al cargar servicios",

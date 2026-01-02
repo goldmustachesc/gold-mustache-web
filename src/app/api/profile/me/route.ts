@@ -34,9 +34,10 @@ export async function GET() {
       });
     }
 
-    // Check if email is verified via Supabase or profile flag
-    const emailVerified =
-      profile.emailVerified || user.email_confirmed_at != null;
+    // Use only profile.emailVerified - the application's own flag
+    // This ensures the user must explicitly verify via the email link
+    // Do NOT use user.email_confirmed_at as Supabase may auto-set it
+    const emailVerified = profile.emailVerified;
 
     return NextResponse.json({
       profile: {
@@ -141,7 +142,7 @@ export async function PUT(request: Request) {
         city: profile.city,
         state: profile.state,
         zipCode: profile.zipCode,
-        emailVerified: profile.emailVerified || user.email_confirmed_at != null,
+        emailVerified: profile.emailVerified,
         role: profile.role,
         createdAt: profile.createdAt.toISOString(),
         updatedAt: profile.updatedAt.toISOString(),

@@ -4,7 +4,8 @@ import type { AppointmentWithDetails, ServiceData } from "@/types/booking";
 import { AppointmentStatus } from "@prisma/client";
 import {
   canCancelBeforeStart,
-  CANCELLATION_WARNING_WINDOW_MINUTES,
+  canClientCancelOutsideWindow,
+  CANCELLATION_BLOCK_WINDOW_MINUTES,
   shouldWarnLateCancellation,
 } from "@/lib/booking/cancellation";
 
@@ -402,24 +403,33 @@ describe("Appointment Persistence Properties", () => {
 
 describe("Cancellation Properties", () => {
   /**
-   * **Feature: booking-system, Property 5: Late-cancellation warning (no hard block)**
-   * *For any* appointment, cancellation by client SHALL be allowed as long as the
-   * appointment hasn't started yet. If it's less than 2 hours away, the system
-   * SHALL only show a warning (UI), not reject the cancellation.
+   * **Feature: booking-system, Property 5: Cancellation blocked within 2h window**
+   * *For any* appointment, cancellation by client SHALL be BLOCKED when within
+   * 2 hours of the appointment. This prevents late cancellations and allows
+   * the barber to mark no-shows.
    */
-  it("client cancellation is allowed before start time and warns under 2 hours", () => {
+  it("client cancellation is blocked within 2 hours of appointment", () => {
     fc.assert(
       fc.property(
         // Minutes until appointment can be in the past or future.
         fc.integer({ min: -24 * 60, max: 24 * 60 }),
         (minutesUntil) => {
-          const canCancel = canCancelBeforeStart(minutesUntil);
+          const canCancelOld = canCancelBeforeStart(minutesUntil);
+          const canCancelNew = canClientCancelOutsideWindow(minutesUntil);
           const shouldWarn = shouldWarnLateCancellation(minutesUntil);
 
-          expect(canCancel).toBe(minutesUntil > 0);
+          // Old behavior: allowed before start
+          expect(canCancelOld).toBe(minutesUntil > 0);
+
+          // New behavior: blocked within 2h window
+          expect(canCancelNew).toBe(
+            minutesUntil > CANCELLATION_BLOCK_WINDOW_MINUTES,
+          );
+
+          // Warning still works for deprecated flow
           expect(shouldWarn).toBe(
             minutesUntil > 0 &&
-              minutesUntil < CANCELLATION_WARNING_WINDOW_MINUTES,
+              minutesUntil < CANCELLATION_BLOCK_WINDOW_MINUTES,
           );
 
           return true;

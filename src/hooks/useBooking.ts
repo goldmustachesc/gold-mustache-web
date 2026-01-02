@@ -326,6 +326,46 @@ export function useCancelAppointmentByBarber() {
   });
 }
 
+async function markAppointmentNoShow(
+  appointmentId: string,
+): Promise<AppointmentWithDetails> {
+  const res = await fetch(`/api/appointments/${appointmentId}/no-show`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    if (error.error === "PRECONDITION_FAILED") {
+      throw new Error(
+        "Só é possível marcar ausência após o horário do agendamento.",
+      );
+    }
+    if (error.error === "CONFLICT") {
+      throw new Error("Este agendamento não pode ser marcado como ausência.");
+    }
+    throw new Error(error.message || "Erro ao marcar ausência");
+  }
+
+  const data = await res.json();
+  return data.appointment;
+}
+
+export function useMarkNoShow() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ appointmentId }: { appointmentId: string }) =>
+      markAppointmentNoShow(appointmentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+    },
+  });
+}
+
 // ============================================
 // Barber Create Appointment Hooks
 // ============================================

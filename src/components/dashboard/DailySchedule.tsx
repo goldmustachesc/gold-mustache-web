@@ -13,6 +13,9 @@ interface DailyScheduleProps {
   onCancelAppointment: (id: string, reason: string) => void;
   isCancelling?: boolean;
   cancellingId?: string | null;
+  onMarkNoShow?: (id: string) => void;
+  isMarkingNoShow?: boolean;
+  markingNoShowId?: string | null;
 }
 
 export function DailySchedule({
@@ -21,6 +24,9 @@ export function DailySchedule({
   onCancelAppointment,
   isCancelling,
   cancellingId,
+  onMarkNoShow,
+  isMarkingNoShow,
+  markingNoShowId,
 }: DailyScheduleProps) {
   const formatDate = (d: Date) => {
     return formatDateDdMmYyyyInSaoPaulo(d);
@@ -77,29 +83,43 @@ export function DailySchedule({
                   <div className="flex-1 h-px bg-border" />
                 </div>
                 <div className="ml-14 space-y-3">
-                  {appointmentsByHour[hour].map((appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      showClientInfo
-                      canCancel={
-                        appointment.status === "CONFIRMED" &&
-                        getMinutesUntilAppointment(
-                          appointment.date,
-                          appointment.startTime,
-                        ) > 0
-                      }
-                      onCancel={() => {
-                        const reason = prompt("Motivo do cancelamento:");
-                        if (reason) {
-                          onCancelAppointment(appointment.id, reason);
+                  {appointmentsByHour[hour].map((appointment) => {
+                    const minutesUntil = getMinutesUntilAppointment(
+                      appointment.date,
+                      appointment.startTime,
+                    );
+                    const isConfirmed = appointment.status === "CONFIRMED";
+                    const isNoShow = appointment.status === "NO_SHOW";
+                    const isPast = minutesUntil <= 0;
+
+                    return (
+                      <AppointmentCard
+                        key={appointment.id}
+                        appointment={appointment}
+                        showClientInfo
+                        canCancel={isConfirmed && !isPast}
+                        onCancel={() => {
+                          const reason = prompt("Motivo do cancelamento:");
+                          if (reason) {
+                            onCancelAppointment(appointment.id, reason);
+                          }
+                        }}
+                        isCancelling={
+                          isCancelling && cancellingId === appointment.id
                         }
-                      }}
-                      isCancelling={
-                        isCancelling && cancellingId === appointment.id
-                      }
-                    />
-                  ))}
+                        canMarkNoShow={isConfirmed && isPast && !!onMarkNoShow}
+                        onMarkNoShow={
+                          onMarkNoShow
+                            ? () => onMarkNoShow(appointment.id)
+                            : undefined
+                        }
+                        isMarkingNoShow={
+                          isMarkingNoShow && markingNoShowId === appointment.id
+                        }
+                        showClientPhone={isNoShow}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))}

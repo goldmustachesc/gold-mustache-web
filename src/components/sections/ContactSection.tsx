@@ -62,11 +62,7 @@ export function ContactSection() {
   };
 
   const handleDirectionsClick = () => {
-    const encodedAddress = encodeURIComponent(BRAND.contact.address);
-    window.open(
-      `https://www.google.com/maps/search/${encodedAddress}`,
-      "_blank",
-    );
+    window.open(BRAND.contact.googleMapsUrl, "_blank");
   };
 
   return (
