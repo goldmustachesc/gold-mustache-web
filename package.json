@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 3004",
-    "build": "next build --turbopack",
+    "build": "prisma generate && next build --turbopack",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
