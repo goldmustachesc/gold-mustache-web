@@ -80,7 +80,7 @@ O site sincroniza automaticamente os últimos 10 posts do Instagram 1x por dia (
 
 **Guia completo:** Veja [INSTAGRAM_SETUP.md](./INSTAGRAM_SETUP.md) para instruções passo a passo.
 
-**Funcionamento:**
+**Funcionamento::**
 - Vercel Cron Job sincroniza posts diariamente
 - Cache local em `public/data/instagram-cache.json`
 - Fallback automático para posts mockados se houver erro
