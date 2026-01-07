@@ -93,6 +93,47 @@ String de conexão direta (sem pooler), recomendada pelo Supabase para operaçõ
 
 ---
 
+## Upstash (Rate Limiting)
+
+O rate limiting usa Upstash Redis para proteção contra abuso de API.
+
+### `UPSTASH_REDIS_REST_URL`
+
+URL do endpoint REST do Upstash Redis.
+
+```
+https://your-instance.upstash.io
+```
+
+### `UPSTASH_REDIS_REST_TOKEN`
+
+Token de autenticação do Upstash Redis.
+
+**Como obter:**
+1. Crie uma conta em [upstash.com](https://upstash.com)
+2. Crie um novo banco Redis
+3. Copie o `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` das configurações
+
+**Nota:** Se não configurado, o rate limiting será desabilitado (útil para desenvolvimento local).
+
+---
+
+## Cron Jobs
+
+### `CRON_SECRET`
+
+Token secreto para autenticar chamadas de cron jobs (ex: limpeza de dados de guests).
+
+```
+CRON_SECRET=seu-token-secreto-aqui
+```
+
+**Como gerar:** `openssl rand -base64 32`
+
+**Uso:** Enviar no header `Authorization: Bearer {CRON_SECRET}`
+
+---
+
 ## Comportamento por Ambiente
 
 ### Staging (Homologação)

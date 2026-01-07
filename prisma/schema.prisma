@@ -187,8 +187,8 @@ model Appointment {
 
   client      Profile?     @relation(fields: [clientId], references: [id])
   guestClient GuestClient? @relation(fields: [guestClientId], references: [id])
-  barber      Barber       @relation(fields: [barberId], references: [id])
-  service     Service      @relation(fields: [serviceId], references: [id])
+  barber      Barber       @relation(fields: [barberId], references: [id], onDelete: Restrict)
+  service     Service      @relation(fields: [serviceId], references: [id], onDelete: Restrict)
 
   // IMPORTANT:
   // We intentionally do NOT keep a global UNIQUE constraint here, because cancelled
@@ -224,4 +224,24 @@ enum NotificationType {
   APPOINTMENT_CONFIRMED
   APPOINTMENT_CANCELLED
   APPOINTMENT_REMINDER
+}
+
+// ============================================
+// LGPD Compliance - Cookie Consent Tracking
+// ============================================
+
+model CookieConsent {
+  id               String   @id @default(uuid())
+  userId           String?  @map("user_id") // For authenticated users
+  anonymousId      String?  @map("anonymous_id") // For anonymous visitors
+  analyticsConsent Boolean  @default(false) @map("analytics_consent")
+  marketingConsent Boolean  @default(false) @map("marketing_consent")
+  ipAddress        String?  @map("ip_address") @db.VarChar(45)
+  userAgent        String?  @map("user_agent")
+  consentDate      DateTime @default(now()) @map("consent_date")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Partial unique indexes are defined in the migration SQL
+  // to allow multiple NULLs while preventing duplicates for non-null values
+  @@map("cookie_consents")
 }

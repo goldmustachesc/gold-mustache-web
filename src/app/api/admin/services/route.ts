@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import {
   createAdminServiceSchema,
   generateSlug,
@@ -41,8 +42,13 @@ export async function GET() {
 /**
  * POST /api/admin/services
  * Create a new service
+ * Protected by Origin verification for CSRF protection.
  */
 export async function POST(request: Request) {
+  // CSRF protection
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 

@@ -1,13 +1,24 @@
 "use client";
 
 import Script from "next/script";
+import { useConsent } from "@/hooks/useConsent";
 
 interface GoogleAnalyticsProps {
   trackingId: string;
 }
 
+/**
+ * Google Analytics component with LGPD-compliant consent check.
+ * Only loads GA scripts if the user has consented to analytics cookies.
+ */
 export function GoogleAnalytics({ trackingId }: GoogleAnalyticsProps) {
-  if (!trackingId) return null;
+  const { hasConsent, isLoading } = useConsent();
+
+  // Don't render anything until we know the consent status
+  if (isLoading) return null;
+
+  // Don't load GA if no tracking ID or no consent
+  if (!trackingId || !hasConsent("analytics")) return null;
 
   return (
     <>
@@ -26,7 +37,8 @@ export function GoogleAnalytics({ trackingId }: GoogleAnalyticsProps) {
             gtag('config', '${trackingId}', {
               page_title: document.title,
               page_location: window.location.href,
-              send_page_view: true
+              send_page_view: true,
+              anonymize_ip: true
             });
           `,
         }}

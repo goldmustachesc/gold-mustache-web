@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
  * DELETE /api/profile/delete
@@ -12,9 +14,30 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
  * - Supabase Auth user (if service role key is configured)
  *
  * This action is irreversible.
+ *
+ * Protected by:
+ * - Origin verification (CSRF protection)
+ * - Rate limiting (prevent abuse)
  */
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
+    // CSRF protection - verify origin
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
+    // Rate limiting - sensitive operation
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("sensitive", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em alguns minutos.",
+        },
+        { status: 429 },
+      );
+    }
+
     const supabase = await createClient();
     const {
       data: { user },

@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { parseDateStringToUTC, getTodayUTCMidnight } from "@/utils/time-slots";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { Prisma } from "@prisma/client";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
   try {
@@ -84,6 +85,25 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting check
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("appointments", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const supabase = await createClient();
     const {
       data: { user },

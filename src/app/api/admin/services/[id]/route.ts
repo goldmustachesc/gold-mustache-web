@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import {
   updateAdminServiceSchema,
   generateSlug,
@@ -54,8 +55,13 @@ export async function GET(_request: Request, { params }: RouteParams) {
 /**
  * PUT /api/admin/services/[id]
  * Update an existing service
+ * Protected by Origin verification for CSRF protection.
  */
 export async function PUT(request: Request, { params }: RouteParams) {
+  // CSRF protection
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 
@@ -180,8 +186,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
  * DELETE /api/admin/services/[id]
  * Soft delete (deactivate) a service
  * We don't actually delete to preserve appointment history
+ * Protected by Origin verification for CSRF protection.
  */
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(request: Request, { params }: RouteParams) {
+  // CSRF protection
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 

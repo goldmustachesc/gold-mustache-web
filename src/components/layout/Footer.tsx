@@ -141,7 +141,16 @@ export function Footer() {
           <p>
             © {currentYear} {t("copyright")}
           </p>
-          <p className="mt-2 md:mt-0">{tBrand("location")}</p>
+          <div className="flex items-center gap-4 mt-2 md:mt-0">
+            <Link
+              href={`/${locale}/politica-de-privacidade`}
+              className="hover:text-primary transition-colors"
+            >
+              {t("links.privacy")}
+            </Link>
+            <span className="text-border">|</span>
+            <p>{tBrand("location")}</p>
+          </div>
         </div>
       </div>
     </footer>

@@ -1,0 +1,131 @@
+{
+  "title": "Política de Privacidad",
+  "description": "Política de Privacidad de Gold Mustache Barbería - Cómo recopilamos, usamos y protegemos sus datos personales.",
+  "lastUpdated": "Última actualización",
+  "sections": {
+    "intro": {
+      "title": "Introducción",
+      "content": "Gold Mustache Barbería está comprometida con la protección de su privacidad y el tratamiento adecuado de sus datos personales, en conformidad con la Ley General de Protección de Datos de Brasil (LGPD - Ley nº 13.709/2018). Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos y protegemos su información."
+    },
+    "controller": {
+      "title": "Controlador de Datos",
+      "content": "El controlador responsable del tratamiento de sus datos personales es:",
+      "companyName": "Razón Social",
+      "address": "Dirección",
+      "email": "Correo electrónico",
+      "phone": "Teléfono"
+    },
+    "dataCollected": {
+      "title": "Datos Recopilados",
+      "intro": "Recopilamos los siguientes tipos de datos personales:",
+      "registration": {
+        "title": "Datos de Registro",
+        "name": "Nombre completo",
+        "email": "Dirección de correo electrónico",
+        "phone": "Número de teléfono",
+        "address": "Dirección (opcional)"
+      },
+      "booking": {
+        "title": "Datos de Citas",
+        "appointments": "Historial de citas y servicios realizados",
+        "preferences": "Preferencias de barbero y horarios"
+      },
+      "analytics": {
+        "title": "Datos de Navegación (con consentimiento)",
+        "content": "Cuando consiente las cookies de analytics, recopilamos:",
+        "ip": "Dirección IP (anonimizada)",
+        "browser": "Tipo de navegador y sistema operativo",
+        "pages": "Páginas visitadas y tiempo de permanencia",
+        "device": "Tipo de dispositivo (escritorio, móvil, tableta)"
+      }
+    },
+    "purposes": {
+      "title": "Finalidades del Tratamiento",
+      "booking": "Gestionar citas y proporcionar nuestros servicios de barbería",
+      "communication": "Enviar confirmaciones, recordatorios y comunicaciones sobre sus citas",
+      "improvement": "Mejorar nuestros servicios y la experiencia del usuario en el sitio",
+      "legal": "Cumplir con obligaciones legales y regulatorias"
+    },
+    "legalBasis": {
+      "title": "Base Legal",
+      "intro": "El tratamiento de sus datos se basa en las siguientes hipótesis legales de la LGPD:",
+      "consent": {
+        "title": "Consentimiento (Art. 7º, I)",
+        "content": "Para cookies de analytics y comunicaciones de marketing."
+      },
+      "contract": {
+        "title": "Ejecución de Contrato (Art. 7º, V)",
+        "content": "Para prestación de servicios de agendamiento y atención."
+      },
+      "legitimate": {
+        "title": "Interés Legítimo (Art. 7º, IX)",
+        "content": "Para mejoras operacionales y prevención de fraudes."
+      }
+    },
+    "sharing": {
+      "title": "Compartimiento de Datos",
+      "intro": "Sus datos pueden ser compartidos con los siguientes proveedores de servicios:",
+      "supabase": "Plataforma de autenticación y base de datos (servidores en EE.UU., con cláusulas contractuales estándar).",
+      "analytics": "Análisis de tráfico del sitio (datos anonimizados).",
+      "vercel": "Alojamiento del sitio (servidores globales con protecciones adecuadas)."
+    },
+    "retention": {
+      "title": "Período de Retención",
+      "content": "Mantenemos sus datos el tiempo necesario para cumplir las finalidades descritas:",
+      "account": "Datos de cuenta: mientras su cuenta esté activa o según sea necesario para proporcionar servicios.",
+      "appointments": "Historial de citas: 5 años después del último servicio, para fines fiscales y legales.",
+      "analytics": "Datos de analytics: 26 meses, según configuración predeterminada de Google Analytics."
+    },
+    "rights": {
+      "title": "Sus Derechos (LGPD Art. 18)",
+      "intro": "Usted tiene los siguientes derechos en relación con sus datos personales:",
+      "access": {
+        "title": "Acceso",
+        "content": "Solicitar una copia de los datos que tenemos sobre usted."
+      },
+      "correction": {
+        "title": "Corrección",
+        "content": "Corregir datos incompletos, inexactos o desactualizados."
+      },
+      "deletion": {
+        "title": "Eliminación",
+        "content": "Solicitar la eliminación de sus datos personales."
+      },
+      "portability": {
+        "title": "Portabilidad",
+        "content": "Recibir sus datos en formato estructurado para transferencia."
+      },
+      "revocation": {
+        "title": "Revocación del Consentimiento",
+        "content": "Retirar su consentimiento en cualquier momento."
+      },
+      "howTo": "Para ejercer sus derechos, acceda a su cuenta y vaya a Perfil > Sus Datos, o contáctenos a través de los canales listados abajo."
+    },
+    "cookies": {
+      "title": "Cookies",
+      "intro": "Utilizamos cookies para mejorar su experiencia en el sitio. Puede gestionar sus preferencias en cualquier momento.",
+      "essential": {
+        "title": "Cookies Esenciales",
+        "content": "Necesarias para el funcionamiento del sitio, incluyendo autenticación y preferencias de idioma. No pueden ser desactivadas."
+      },
+      "analytics": {
+        "title": "Cookies de Analytics",
+        "content": "Utilizamos Google Analytics para entender cómo los visitantes usan nuestro sitio. Estas cookies solo se activan con su consentimiento explícito."
+      },
+      "management": "Puede cambiar sus preferencias de cookies en cualquier momento haciendo clic en el botón de configuración de cookies en el pie de página."
+    },
+    "security": {
+      "title": "Seguridad",
+      "content": "Implementamos medidas técnicas y organizativas para proteger sus datos contra acceso no autorizado, alteración, divulgación o destrucción. Esto incluye cifrado en tránsito (HTTPS), controles de acceso y monitoreo de seguridad."
+    },
+    "changes": {
+      "title": "Cambios en esta Política",
+      "content": "Podemos actualizar esta Política de Privacidad periódicamente. Cuando hagamos cambios significativos, le notificaremos a través del sitio o por correo electrónico. Recomendamos revisar esta página regularmente."
+    },
+    "contact": {
+      "title": "Contacto y Oficial de Protección de Datos (DPO)",
+      "content": "Para preguntas sobre esta política o para ejercer sus derechos, contáctenos:",
+      "address": "Dirección"
+    }
+  }
+}

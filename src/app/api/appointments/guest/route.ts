@@ -2,9 +2,29 @@ import { NextResponse } from "next/server";
 import { createGuestAppointment } from "@/services/booking";
 import { createGuestAppointmentSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting check - stricter for guest appointments
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const body = await request.json();
 
     // Validate input

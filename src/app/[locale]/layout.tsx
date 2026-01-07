@@ -1,4 +1,5 @@
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { CookieBanner } from "@/components/cookies";
 import { Layout } from "@/components/layout/Layout";
 import { StagingBanner } from "@/components/layout/StagingBanner";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -209,6 +210,7 @@ export default async function LocaleLayout({
             >
               <StagingBanner />
               <Layout>{children}</Layout>
+              <CookieBanner />
             </ThemeProvider>
           </QueryProvider>
         </NextIntlClientProvider>

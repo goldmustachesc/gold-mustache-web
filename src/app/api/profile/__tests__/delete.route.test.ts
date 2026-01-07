@@ -41,12 +41,36 @@ vi.mock("@supabase/supabase-js", () => ({
   }),
 }));
 
+// Mock rate limiting
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi
+    .fn()
+    .mockResolvedValue({ success: true, remaining: 10, reset: 0 }),
+  getClientIdentifier: vi.fn().mockReturnValue("test-ip"),
+}));
+
+// Mock origin verification
+vi.mock("@/lib/api/verify-origin", () => ({
+  requireValidOrigin: vi.fn().mockReturnValue(null),
+}));
+
 // Set environment variables
 vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co");
 vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
+vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3001");
 
 // Import the route handler after mocks
 import { DELETE } from "../delete/route";
+
+// Helper to create mock Request
+function createMockRequest(): Request {
+  return new Request("http://localhost:3001/api/profile/delete", {
+    method: "DELETE",
+    headers: {
+      origin: "http://localhost:3001",
+    },
+  });
+}
 
 describe("DELETE /api/profile/delete", () => {
   const mockUser = {
@@ -98,7 +122,7 @@ describe("DELETE /api/profile/delete", () => {
       data: { user: null },
     });
 
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -107,7 +131,7 @@ describe("DELETE /api/profile/delete", () => {
   });
 
   it("should delete appointments and profile within transaction", async () => {
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -134,7 +158,7 @@ describe("DELETE /api/profile/delete", () => {
   });
 
   it("should delete user from Supabase Auth when service key is available", async () => {
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -149,7 +173,7 @@ describe("DELETE /api/profile/delete", () => {
 
     const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -171,7 +195,7 @@ describe("DELETE /api/profile/delete", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -192,7 +216,7 @@ describe("DELETE /api/profile/delete", () => {
 
     mockPrismaTransaction.mockRejectedValue(new Error("Database error"));
 
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(500);
@@ -205,7 +229,7 @@ describe("DELETE /api/profile/delete", () => {
   it("should handle user with no appointments", async () => {
     mockAppointmentDeleteMany.mockResolvedValue({ count: 0 });
 
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -221,7 +245,7 @@ describe("DELETE /api/profile/delete", () => {
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    const response = await DELETE();
+    const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
