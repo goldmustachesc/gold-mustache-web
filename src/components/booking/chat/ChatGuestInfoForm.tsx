@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Send } from "lucide-react";
 
 interface ChatGuestInfoFormProps {
@@ -82,7 +83,7 @@ export function ChatGuestInfoForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="bg-background border-2 border-muted rounded-xl p-4 space-y-3">
+      <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 space-y-3 shadow-sm">
         <div>
           <Input
             type="text"
@@ -90,7 +91,11 @@ export function ChatGuestInfoForm({
             value={name}
             onChange={handleNameChange}
             disabled={isLoading}
-            className={errors.name ? "border-destructive" : ""}
+            className={cn(
+              "bg-zinc-50/50 border-zinc-300 text-zinc-900 placeholder:text-zinc-500 dark:bg-zinc-900/50 dark:border-zinc-700 dark:text-zinc-100",
+              "focus:border-primary focus:ring-primary/20",
+              errors.name && "border-destructive",
+            )}
             autoComplete="name"
           />
           {errors.name && (
@@ -105,7 +110,11 @@ export function ChatGuestInfoForm({
             value={phone}
             onChange={handlePhoneChange}
             disabled={isLoading}
-            className={errors.phone ? "border-destructive" : ""}
+            className={cn(
+              "bg-zinc-50/50 border-zinc-300 text-zinc-900 placeholder:text-zinc-500 dark:bg-zinc-900/50 dark:border-zinc-700 dark:text-zinc-100",
+              "focus:border-primary focus:ring-primary/20",
+              errors.phone && "border-destructive",
+            )}
             autoComplete="tel"
           />
           {errors.phone && (
@@ -116,7 +125,7 @@ export function ChatGuestInfoForm({
 
       <Button
         type="submit"
-        className="w-full"
+        className="w-full shadow-md"
         disabled={isLoading || !name.trim() || !phone}
       >
         {isLoading ? (

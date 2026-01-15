@@ -41,10 +41,10 @@ export function ChatMessage({
       )}
       <div
         className={cn(
-          "rounded-2xl px-4 py-2.5",
+          "rounded-2xl px-4 py-3 text-sm leading-relaxed",
           isBot
-            ? "bg-muted text-foreground rounded-tl-sm"
-            : "bg-primary text-primary-foreground rounded-tr-sm",
+            ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 rounded-tl-sm shadow-sm"
+            : "bg-primary text-primary-foreground rounded-tr-sm shadow-md",
         )}
       >
         {children}
@@ -106,15 +106,16 @@ export function TypingIndicator() {
   return (
     <div className="flex gap-2 self-start animate-in fade-in duration-200">
       <Avatar className="h-8 w-8 shrink-0">
+        <AvatarImage src="/logo.png" alt="Gold Mustache" />
         <AvatarFallback className="bg-primary/10">
           <Scissors className="h-4 w-4 text-primary" />
         </AvatarFallback>
       </Avatar>
-      <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
-        <div className="flex gap-1">
-          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0ms]" />
-          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:150ms]" />
-          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:300ms]" />
+      <div className="bg-zinc-200 dark:bg-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+        <div className="flex gap-1.5">
+          <span className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-delay:0ms]" />
+          <span className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-delay:150ms]" />
+          <span className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-delay:300ms]" />
         </div>
       </div>
     </div>

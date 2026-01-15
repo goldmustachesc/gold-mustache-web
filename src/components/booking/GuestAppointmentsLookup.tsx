@@ -89,28 +89,28 @@ export function GuestAppointmentsLookup({
   if (!hasToken) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-8 space-y-4">
-          <div className="p-4 bg-muted rounded-full w-fit mx-auto">
-            <Smartphone className="h-8 w-8 text-muted-foreground" />
+        <div className="text-center py-12 space-y-4">
+          <div className="p-4 bg-muted dark:bg-zinc-800 rounded-full w-fit mx-auto">
+            <Smartphone className="h-8 w-8 text-muted-foreground dark:text-zinc-500" />
           </div>
           <div className="space-y-2">
-            <h3 className="font-semibold text-lg">
+            <h3 className="font-semibold text-lg text-foreground dark:text-zinc-100">
               Nenhum agendamento neste dispositivo
             </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            <p className="text-sm text-muted-foreground dark:text-zinc-500 max-w-md mx-auto">
               Seus agendamentos ficam vinculados ao dispositivo onde foram
               criados. Se você agendou em outro aparelho ou navegador, acesse
               por lá.
             </p>
           </div>
           <div className="pt-4 space-y-3">
-            <Button asChild className="w-full sm:w-auto">
+            <Button asChild className="w-full sm:w-auto shadow-md">
               <Link href={`/${locale}/agendar`}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Fazer novo agendamento
               </Link>
             </Button>
-            <div className="flex items-start gap-2 p-3 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-sm max-w-md mx-auto">
+            <div className="flex items-start gap-2 p-3 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm max-w-md mx-auto">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <p>
                 Dica: Crie uma conta para acessar seus agendamentos de qualquer
@@ -134,7 +134,7 @@ export function GuestAppointmentsLookup({
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-center">
+        <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-center">
           Erro ao buscar agendamentos. Tente novamente.
         </div>
       )}
@@ -143,13 +143,15 @@ export function GuestAppointmentsLookup({
       {!isLoading && !error && (
         <div className="space-y-6">
           {appointments && appointments.length === 0 && (
-            <div className="text-center py-8 space-y-4">
-              <div className="p-4 bg-muted rounded-full w-fit mx-auto">
-                <Calendar className="h-8 w-8 text-muted-foreground" />
+            <div className="text-center py-12 space-y-4">
+              <div className="p-4 bg-muted dark:bg-zinc-800 rounded-full w-fit mx-auto">
+                <Calendar className="h-8 w-8 text-muted-foreground dark:text-zinc-500" />
               </div>
               <div>
-                <h3 className="font-semibold">Nenhum agendamento encontrado</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h3 className="font-semibold text-foreground dark:text-zinc-100">
+                  Nenhum agendamento encontrado
+                </h3>
+                <p className="text-sm text-muted-foreground dark:text-zinc-500 mt-1">
                   Você ainda não tem agendamentos futuros neste dispositivo.
                 </p>
               </div>
@@ -164,10 +166,10 @@ export function GuestAppointmentsLookup({
 
           {confirmedAppointments.length > 0 && (
             <div className="space-y-4">
-              <h2 className="font-semibold text-lg">
+              <h2 className="font-semibold text-foreground dark:text-zinc-100">
                 Agendamentos Confirmados ({confirmedAppointments.length})
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {confirmedAppointments.map((appointment) => (
                   <AppointmentCard
                     key={appointment.id}
@@ -186,10 +188,10 @@ export function GuestAppointmentsLookup({
 
           {otherAppointments.length > 0 && (
             <div className="space-y-4">
-              <h2 className="font-semibold text-lg text-muted-foreground">
+              <h2 className="font-semibold text-muted-foreground dark:text-zinc-500">
                 Histórico ({otherAppointments.length})
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {otherAppointments.map((appointment) => (
                   <AppointmentCard
                     key={appointment.id}

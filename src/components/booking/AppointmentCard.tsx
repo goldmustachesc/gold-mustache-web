@@ -98,44 +98,57 @@ export function AppointmentCard({
   return (
     <Card
       className={cn(
-        "transition-all",
-        appointment.status !== AppointmentStatus.CONFIRMED && "opacity-70",
+        "transition-all shadow-sm dark:bg-zinc-800/80 dark:border-zinc-700/50",
+        appointment.status !== AppointmentStatus.CONFIRMED && "opacity-60",
       )}
     >
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-full">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-primary/10 rounded-xl">
               <Scissors className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold">{appointment.service.name}</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-semibold text-foreground dark:text-zinc-100">
+                {appointment.service.name}
+              </h3>
+              <p className="text-sm text-muted-foreground dark:text-zinc-500">
                 {appointment.service.duration} min • R${" "}
                 {appointment.service.price.toFixed(2).replace(".", ",")}
               </p>
             </div>
           </div>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          <Badge
+            variant={status.variant}
+            className={cn(
+              "shrink-0",
+              status.variant === "default" &&
+                "bg-primary/20 text-primary border-primary/30",
+            )}
+          >
+            {status.label}
+          </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2.5">
         <div className="flex items-center gap-3 text-sm">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{formatDate(appointment.date)}</span>
+          <Calendar className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+          <span className="text-foreground dark:text-zinc-300">
+            {formatDate(appointment.date)}
+          </span>
         </div>
 
         <div className="flex items-center gap-3 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>
+          <Clock className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+          <span className="text-foreground dark:text-zinc-300">
             {appointment.startTime} - {appointment.endTime}
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-sm">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <span>
+          <User className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+          <span className="text-foreground dark:text-zinc-300">
             {showClientInfo
               ? (appointment.client?.fullName ??
                 appointment.guestClient?.fullName ??
@@ -146,7 +159,7 @@ export function AppointmentCard({
 
         {showClientPhone && clientPhone && (
           <div className="flex items-center gap-3 text-sm">
-            <Phone className="h-4 w-4 text-muted-foreground" />
+            <Phone className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
             <a
               href={`tel:${clientPhone}`}
               className="text-primary hover:underline"
@@ -157,13 +170,13 @@ export function AppointmentCard({
         )}
 
         {appointment.cancelReason && (
-          <div className="mt-2 p-2 bg-destructive/10 rounded text-sm text-destructive">
+          <div className="mt-2 p-2.5 bg-destructive/10 rounded-lg text-sm text-destructive">
             <strong>Motivo:</strong> {appointment.cancelReason}
           </div>
         )}
 
         {isCancellationBlocked && (
-          <div className="mt-2 p-3 bg-amber-500/10 rounded text-sm text-amber-700 dark:text-amber-400 flex items-start gap-2">
+          <div className="mt-2 p-3 bg-amber-500/10 rounded-lg text-sm text-amber-700 dark:text-amber-400 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
               Cancelamento não permitido com menos de 2 horas de antecedência.
@@ -181,7 +194,7 @@ export function AppointmentCard({
               size="sm"
               onClick={onCancel}
               disabled={isCancelling || isMarkingNoShow}
-              className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="flex-1 dark:border-zinc-700 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <X className="h-4 w-4 mr-2" />
               {isCancelling ? "Cancelando..." : "Cancelar"}
@@ -193,7 +206,7 @@ export function AppointmentCard({
               size="sm"
               onClick={onMarkNoShow}
               disabled={isCancelling || isMarkingNoShow}
-              className="flex-1 text-amber-600 hover:text-amber-600 hover:bg-amber-500/10"
+              className="flex-1 dark:border-zinc-700 text-amber-600 dark:text-amber-500 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-amber-500/10"
             >
               <UserX className="h-4 w-4 mr-2" />
               {isMarkingNoShow ? "Marcando..." : "Não Compareceu"}

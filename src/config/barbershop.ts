@@ -47,7 +47,7 @@ export const barbershopConfig = {
   contact: {
     phone: "47 98904-6178",
     whatsapp: "+5547989046178",
-    email: "contato@goldmustachebarbearia.com.br",
+    email: "goldmustachesc@gmail.com",
   },
 
   // ============================================

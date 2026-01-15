@@ -9,18 +9,27 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-// Rotas onde Header, Footer e botão de agendamento não devem aparecer
+// Rotas onde Header, Footer e botão de agendamento não devem aparecer (dashboards/áreas protegidas)
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/barbeiro",
   "/admin",
   "/profile",
   "/settings",
+  "/meus-agendamentos",
+  "/login",
+  "/signup",
+  "/reset-password",
+  "/verify-email",
+  "/agendar",
 ];
 
+function getPathnameWithoutLocale(pathname: string): string {
+  return pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?/, "");
+}
+
 function isProtectedRoute(pathname: string): boolean {
-  // Remove locale prefix (e.g., /pt-BR/dashboard -> /dashboard)
-  const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?/, "");
+  const pathWithoutLocale = getPathnameWithoutLocale(pathname);
   return PROTECTED_ROUTES.some((route) => pathWithoutLocale.startsWith(route));
 }
 

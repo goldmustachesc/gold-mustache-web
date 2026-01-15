@@ -96,49 +96,69 @@
 }
 
 .dark {
-  /* Gold Mustache Dark Mode - Premium barbershop feel */
-  --background: oklch(0.08 0.01 85);
-  /* Rich dark background */
-  --foreground: oklch(0.92 0.01 85);
-  /* Warm light text */
-  --card: oklch(0.12 0.02 85);
-  --card-foreground: oklch(0.92 0.01 85);
-  --popover: oklch(0.12 0.02 85);
-  --popover-foreground: oklch(0.92 0.01 85);
+  /* Gold Mustache Dark Mode - Neutral zinc tones with gold accents */
+  --background: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --card: oklch(0.1335 0.0044 256.8);
+  /* zinc-900 */
+  --card-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --popover: oklch(0.1335 0.0044 256.8);
+  /* zinc-900 */
+  --popover-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
   /* Primary: Bright gold for dark mode */
   --primary: oklch(0.75 0.18 85);
   /* Bright gold */
-  --primary-foreground: oklch(0.08 0.01 85);
-  /* Dark text */
-  --secondary: oklch(0.18 0.02 85);
-  --secondary-foreground: oklch(0.92 0.01 85);
-  --muted: oklch(0.15 0.02 85);
-  --muted-foreground: oklch(0.65 0.01 85);
-  --accent: oklch(0.22 0.03 85);
-  --accent-foreground: oklch(0.85 0.01 85);
+  --primary-foreground: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --secondary: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --secondary-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --muted: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --muted-foreground: oklch(0.6226 0.0112 256.8);
+  /* zinc-400 */
+  --accent: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --accent-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.25 0.02 85);
-  --input: oklch(0.16 0.02 85);
+  --border: oklch(0.2525 0.0066 256.8);
+  /* zinc-700 */
+  --input: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
   --ring: oklch(0.75 0.18 85);
   /* Gold focus ring */
   --chart-1: oklch(0.75 0.18 85);
   /* Gold */
-  --chart-2: oklch(0.45 0.02 85);
-  /* Mid tone */
-  --chart-3: oklch(0.65 0.08 85);
-  /* Light accent */
+  --chart-2: oklch(0.3825 0.0092 256.8);
+  /* zinc-600 */
+  --chart-3: oklch(0.5207 0.0108 256.8);
+  /* zinc-500 */
   --chart-4: oklch(0.85 0.12 85);
   /* Light gold */
-  --chart-5: oklch(0.35 0.05 85);
-  /* Dark accent */
-  --sidebar: oklch(0.08 0.01 85);
-  --sidebar-foreground: oklch(0.92 0.01 85);
+  --chart-5: oklch(0.2525 0.0066 256.8);
+  /* zinc-700 */
+  --sidebar: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --sidebar-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
   --sidebar-primary: oklch(0.75 0.18 85);
-  --sidebar-primary-foreground: oklch(0.08 0.01 85);
-  --sidebar-accent: oklch(0.22 0.03 85);
-  --sidebar-accent-foreground: oklch(0.85 0.01 85);
-  --sidebar-border: oklch(0.25 0.02 85);
+  /* Gold */
+  --sidebar-primary-foreground: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --sidebar-accent: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --sidebar-accent-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --sidebar-border: oklch(0.2525 0.0066 256.8);
+  /* zinc-700 */
   --sidebar-ring: oklch(0.75 0.18 85);
+  /* Gold */
 }
 
 @layer base {

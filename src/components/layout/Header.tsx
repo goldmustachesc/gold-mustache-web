@@ -57,32 +57,35 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 m-auto">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:border-zinc-800 dark:bg-zinc-900/95 dark:supports-[backdrop-filter]:bg-zinc-900/80">
+      <div className="container flex h-14 lg:h-16 items-center justify-between px-4 m-auto">
+        {/* Logo */}
         <Link
           href={homeLink}
-          className="flex items-center space-x-3 text-xl font-bold text-primary hover:text-primary/90 transition-colors"
+          className="flex items-center gap-2.5 text-lg lg:text-xl font-bold text-primary hover:text-primary/90 transition-colors"
         >
-          <div className="h-8 w-8 flex items-center justify-center">
+          <div className="h-8 w-8 flex items-center justify-center bg-muted dark:bg-zinc-800 rounded-lg p-1">
             <Image
               src="/logo.png"
               alt="Gold Mustache Logo"
-              width={32}
-              height={32}
-              className="rounded-full object-cover"
+              width={28}
+              height={28}
+              className="rounded-md object-cover"
             />
           </div>
-          <span className="font-playfair">Gold Mustache</span>
+          <span className="font-playfair hidden min-[400px]:inline">
+            Gold Mustache
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden lg:flex">
-          <NavigationMenuList className="gap-0.5">
+          <NavigationMenuList className="gap-1">
             {navLinks.map((link) => (
               <NavigationMenuItem key={link.href}>
                 <Link
                   href={link.href}
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors duration-200"
                 >
                   {link.label}
                 </Link>
@@ -97,7 +100,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-foreground flex items-center gap-2"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
             asChild
           >
             <Link
@@ -120,7 +123,7 @@ export function Header() {
           {!isScrolledPastThreshold && (
             <Button
               size="sm"
-              className="ml-1 flex items-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
+              className="ml-1 flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
               asChild
             >
               <Link href={bookingLink} aria-label={tCommon("buttons.book")}>
@@ -133,59 +136,65 @@ export function Header() {
 
         {/* Mobile Menu */}
         <div className="lg:hidden flex items-center gap-2">
-          <ThemeToggle />
           <Button
-            variant="outline"
             size="sm"
-            className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md text-xs px-3"
             asChild
           >
             <Link
               href={myAppointmentsLink}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
               aria-label={t("myAppointments")}
             >
               <CalendarCheck2 className="h-4 w-4" />
-              <span className="hidden sm:inline font-medium">
+              <span className="font-medium hidden min-[360px]:inline">
                 {t("myAppointments")}
               </span>
-              <span className="sr-only">{t("myAppointments")}</span>
-              <span className="ml-0.5 h-2 w-2 rounded-full bg-primary" />
             </Link>
           </Button>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 px-2"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">{tCommon("aria.openMenu")}</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <div className="flex flex-col space-y-6 mt-6 pl-4 pr-4">
+            <SheetContent
+              side="right"
+              className="w-72 bg-background dark:bg-zinc-900 border-border dark:border-zinc-800"
+            >
+              <div className="flex flex-col space-y-6 mt-6 px-2">
                 {/* Mobile Logo */}
-                <div className="flex items-center space-x-3 text-lg font-bold text-primary">
-                  <div className="h-8 w-8 flex items-center justify-center">
+                <div className="flex items-center gap-3 text-lg font-bold text-primary">
+                  <div className="h-10 w-10 flex items-center justify-center bg-muted dark:bg-zinc-800 rounded-xl p-1.5">
                     <Image
                       src="/logo.png"
                       alt="Gold Mustache Logo"
                       width={32}
                       height={32}
-                      className="rounded-full object-cover"
+                      className="rounded-lg object-cover"
                     />
                   </div>
                   <span className="font-playfair">Gold Mustache</span>
                 </div>
 
-                {/* Language Switcher - Mobile */}
-                <LanguageSwitcher variant="mobile" />
+                {/* Preferences - Mobile */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-zinc-800/50 rounded-xl">
+                  <LanguageSwitcher variant="mobile" />
+                  <ThemeToggle />
+                </div>
 
                 {/* Mobile Navigation */}
-                <nav className="flex flex-col space-y-4">
+                <nav className="flex flex-col space-y-1">
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="text-lg font-medium text-foreground hover:text-primary transition-colors"
+                      className="text-base font-medium text-foreground hover:text-primary hover:bg-muted/50 dark:text-zinc-300 dark:hover:bg-zinc-800/50 px-3 py-2.5 rounded-lg transition-colors"
                       onClick={() => setIsOpen(false)}
                     >
                       {link.label}
@@ -194,25 +203,29 @@ export function Header() {
                 </nav>
 
                 {/* Mobile Actions */}
-                <div className="flex flex-col space-y-3 pt-4 border-t">
+                <div className="flex flex-col space-y-3 pt-4 border-t border-border dark:border-zinc-800">
                   <Button
                     variant="outline"
                     asChild
-                    className="w-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                    className="w-full border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary hover:border-primary/50"
                   >
                     <Link
                       href={myAppointmentsLink}
-                      className="flex items-center justify-center space-x-2"
+                      className="flex items-center justify-center gap-2"
                       onClick={() => setIsOpen(false)}
                     >
                       <CalendarCheck2 className="h-4 w-4" />
                       <span>{t("myAppointments")}</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild className="w-full">
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full border-border text-foreground hover:bg-muted dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  >
                     <Link
                       href={user ? `/${locale}/dashboard` : `/${locale}/login`}
-                      className="flex items-center justify-center space-x-2"
+                      className="flex items-center justify-center gap-2"
                       onClick={() => setIsOpen(false)}
                     >
                       {user ? (
@@ -223,24 +236,28 @@ export function Header() {
                       <span>{user ? "Minha Conta" : "Entrar"}</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild className="w-full">
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full border-border text-foreground hover:bg-muted dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  >
                     <Link
                       href={BRAND.instagram.mainUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center space-x-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       <Instagram className="h-4 w-4" />
                       <span>{tCommon("buttons.follow")}</span>
                     </Link>
                   </Button>
                   <Button
-                    className="w-full flex items-center justify-center space-x-2"
+                    className="w-full flex items-center justify-center gap-2 shadow-md"
                     asChild
                   >
                     <Link
                       href={bookingLink}
-                      className="flex items-center justify-center space-x-2"
+                      className="flex items-center justify-center gap-2"
                       onClick={() => setIsOpen(false)}
                     >
                       <Calendar className="h-4 w-4" />

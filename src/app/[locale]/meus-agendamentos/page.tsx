@@ -82,32 +82,33 @@ function MeusAgendamentosContent() {
     ) || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href={`/${locale}/agendar`} className="flex items-center gap-2">
-            <ArrowLeft className="h-5 w-5" />
-            <Calendar className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Meus Agendamentos</h1>
+    <div className="min-h-screen bg-background dark:bg-zinc-900">
+      <header className="border-b border-border dark:border-zinc-800 bg-background/95 dark:bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:supports-[backdrop-filter]:bg-zinc-900/80 sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Link
+            href={`/${locale}/agendar`}
+            className="flex items-center gap-2 text-foreground dark:text-zinc-100 hover:text-primary transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <Calendar className="h-5 w-5 text-primary" />
+            </div>
+            <h1 className="text-lg font-semibold">Meus Agendamentos</h1>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {isUserLoading ? (
-              <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+              <div className="h-8 w-16 bg-muted dark:bg-zinc-800 animate-pulse rounded" />
             ) : user ? (
-              <>
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  {user.email}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => signOut()}
-                  disabled={signOutPending}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-2">Sair</span>
-                </Button>
-              </>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut()}
+                disabled={signOutPending}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Sair</span>
+              </Button>
             ) : (
               <Button variant="outline" size="sm" asChild>
                 <Link
@@ -122,7 +123,7 @@ function MeusAgendamentosContent() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="container mx-auto px-4 py-6 max-w-lg">
         {/* Guest View - Token-based lookup */}
         {isGuest && <GuestAppointmentsLookup locale={locale} />}
 
@@ -134,24 +135,26 @@ function MeusAgendamentosContent() {
                 {[1, 2].map((i) => (
                   <div
                     key={i}
-                    className="h-48 bg-muted animate-pulse rounded-lg"
+                    className="h-48 bg-muted dark:bg-zinc-800 animate-pulse rounded-xl"
                   />
                 ))}
               </div>
             )}
 
             {!isLoading && appointments && appointments.length === 0 && (
-              <div className="text-center py-8 space-y-4">
-                <div className="p-4 bg-muted rounded-full w-fit mx-auto">
-                  <Calendar className="h-8 w-8 text-muted-foreground" />
+              <div className="text-center py-12 space-y-4">
+                <div className="p-4 bg-muted dark:bg-zinc-800 rounded-full w-fit mx-auto">
+                  <Calendar className="h-8 w-8 text-muted-foreground dark:text-zinc-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Nenhum agendamento</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h3 className="font-semibold text-foreground dark:text-zinc-100">
+                    Nenhum agendamento
+                  </h3>
+                  <p className="text-sm text-muted-foreground dark:text-zinc-500 mt-1">
                     Você ainda não tem agendamentos futuros.
                   </p>
                 </div>
-                <Button asChild>
+                <Button asChild className="shadow-md">
                   <Link href={`/${locale}/agendar`}>
                     <Calendar className="h-4 w-4 mr-2" />
                     Fazer agendamento
@@ -162,10 +165,10 @@ function MeusAgendamentosContent() {
 
             {!isLoading && confirmedAppointments.length > 0 && (
               <div className="space-y-4">
-                <h2 className="font-semibold text-lg">
+                <h2 className="font-semibold text-foreground dark:text-zinc-100">
                   Próximos Agendamentos ({confirmedAppointments.length})
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {confirmedAppointments.map((appointment) => (
                     <AppointmentCard
                       key={appointment.id}
@@ -184,10 +187,10 @@ function MeusAgendamentosContent() {
 
             {!isLoading && otherAppointments.length > 0 && (
               <div className="space-y-4">
-                <h2 className="font-semibold text-lg text-muted-foreground">
+                <h2 className="font-semibold text-muted-foreground dark:text-zinc-500">
                   Histórico ({otherAppointments.length})
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {otherAppointments.map((appointment) => (
                     <AppointmentCard
                       key={appointment.id}
@@ -214,8 +217,8 @@ function MeusAgendamentosContent() {
         {/* Loading state for user check */}
         {isUserLoading && (
           <div className="space-y-4">
-            <div className="h-12 bg-muted animate-pulse rounded-lg" />
-            <div className="h-48 bg-muted animate-pulse rounded-lg" />
+            <div className="h-12 bg-muted dark:bg-zinc-800 animate-pulse rounded-lg" />
+            <div className="h-48 bg-muted dark:bg-zinc-800 animate-pulse rounded-xl" />
           </div>
         )}
       </main>
@@ -229,8 +232,8 @@ export default function MeusAgendamentosPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">
+        <div className="min-h-screen bg-background dark:bg-zinc-900 flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground dark:text-zinc-500">
             Carregando...
           </div>
         </div>

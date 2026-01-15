@@ -19,7 +19,10 @@ export function ChatServiceSelector({
     return (
       <div className="flex flex-col gap-2 animate-pulse">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted rounded-xl" />
+          <div
+            key={i}
+            className="h-[72px] bg-zinc-200 dark:bg-zinc-800 rounded-xl"
+          />
         ))}
       </div>
     );
@@ -27,7 +30,7 @@ export function ChatServiceSelector({
 
   if (services.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground bg-muted/50 rounded-xl p-4">
+      <div className="text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-xl p-4">
         Nenhum serviço disponível no momento.
       </div>
     );
@@ -41,21 +44,24 @@ export function ChatServiceSelector({
           type="button"
           onClick={() => onSelect(service)}
           className={cn(
-            "flex items-center gap-3 px-4 py-3 rounded-xl",
-            "bg-background border-2 border-muted",
-            "hover:border-primary hover:bg-primary/5",
+            "flex items-center gap-3 px-4 py-3.5 rounded-xl",
+            "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50",
+            "hover:border-primary/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800",
             "transition-all duration-200",
             "active:scale-[0.98]",
             "text-left w-full",
+            "shadow-sm",
           )}
         >
-          <div className="p-2 bg-primary/10 rounded-full shrink-0">
+          <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
             <Scissors className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm">{service.name}</div>
+            <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+              {service.name}
+            </div>
             {service.description && (
-              <div className="text-xs text-muted-foreground truncate">
+              <div className="text-xs text-zinc-500 truncate mt-0.5">
                 {service.description}
               </div>
             )}
@@ -64,7 +70,7 @@ export function ChatServiceSelector({
             <div className="font-bold text-primary text-sm">
               R$ {service.price.toFixed(2).replace(".", ",")}
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-zinc-500 justify-end mt-0.5">
               <Clock className="h-3 w-3" />
               <span>{service.duration} min</span>
             </div>

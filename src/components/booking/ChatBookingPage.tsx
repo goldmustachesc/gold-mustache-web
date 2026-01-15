@@ -750,49 +750,61 @@ export function ChatBookingPage({
 
         return (
           <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-card border rounded-lg p-4 space-y-4">
+            <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 space-y-4 shadow-sm">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">👤 Barbeiro:</span>
-                  <span className="font-medium">{selectedBarber.name}</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    👤 Barbeiro:
+                  </span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {selectedBarber.name}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">✂️ Serviço:</span>
-                  <span className="font-medium">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    ✂️ Serviço:
+                  </span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {selectedService.name} • R${" "}
                     {selectedService.price.toFixed(2).replace(".", ",")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">📅 Data:</span>
-                  <span className="font-medium">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    📅 Data:
+                  </span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {formatDateDdMmYyyyInSaoPaulo(selectedDate)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">🕐 Horário:</span>
-                  <span className="font-medium">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    🕐 Horário:
+                  </span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {selectedSlot.time} - {endTime}
                   </span>
                 </div>
                 {guestInfo && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">📱 Cliente:</span>
-                    <span className="font-medium">
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      📱 Cliente:
+                    </span>
+                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
                       {guestInfo.clientName} •{" "}
                       {formatPhoneDisplay(guestInfo.clientPhone)}
                     </span>
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-2 pt-2">
+              <div className="flex flex-col gap-2 pt-2 border-t border-zinc-300/50 dark:border-zinc-700/50">
                 <Button
                   onClick={handleConfirmBooking}
                   disabled={
                     createAppointment.isPending ||
                     createGuestAppointment.isPending
                   }
-                  className="w-full"
+                  className="w-full shadow-md"
                 >
                   {createAppointment.isPending ||
                   createGuestAppointment.isPending
@@ -806,7 +818,7 @@ export function ChatBookingPage({
                     createAppointment.isPending ||
                     createGuestAppointment.isPending
                   }
-                  className="w-full"
+                  className="w-full border-zinc-300 hover:bg-zinc-200/50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
                   Voltar e Editar
                 </Button>
@@ -821,28 +833,32 @@ export function ChatBookingPage({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-160px)] max-h-[700px]">
+    <div className="flex flex-col h-[calc(100vh-120px)]">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold">Novo Agendamento</h2>
+      <div className="flex items-center justify-between py-3 px-1 border-b border-zinc-300/50 dark:border-zinc-800/50">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Calendar className="h-5 w-5 text-primary" />
+          </div>
+          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
+            Novo Agendamento
+          </h2>
         </div>
         {messages.length > 0 && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleNewBooking}
-            className="text-muted-foreground"
+            className="text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
           >
-            <RotateCcw className="h-4 w-4 mr-1" />
+            <RotateCcw className="h-4 w-4 mr-1.5" />
             Recomeçar
           </Button>
         )}
       </div>
 
       {/* Chat area */}
-      <ChatContainer className="flex-1 mt-4">
+      <ChatContainer className="flex-1 mt-3">
         {messages.map((msg) => {
           const { data } = msg;
 

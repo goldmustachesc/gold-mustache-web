@@ -16,11 +16,11 @@ export function GoogleButton({
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      className="w-full py-6 border-zinc-300 bg-zinc-100/50 text-zinc-900 hover:bg-zinc-200/50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-100 dark:hover:bg-zinc-700/50"
       onClick={() => signInWithGoogle()}
       disabled={isPending}
     >
-      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
         <title>Google</title>
         <path
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

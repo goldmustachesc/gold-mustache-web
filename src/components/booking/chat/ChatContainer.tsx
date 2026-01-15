@@ -26,10 +26,8 @@ export function ChatContainer({ children, className }: ChatContainerProps) {
       ref={scrollRef}
       className={cn(
         "flex flex-col gap-4 overflow-y-auto scroll-smooth",
-        "min-h-[400px] max-h-[calc(100vh-200px)]",
-        "p-4 rounded-lg",
-        // Subtle chat background pattern
-        "bg-gradient-to-b from-background to-muted/20",
+        "min-h-[400px] max-h-[calc(100vh-180px)]",
+        "py-4 px-1",
         className,
       )}
     >

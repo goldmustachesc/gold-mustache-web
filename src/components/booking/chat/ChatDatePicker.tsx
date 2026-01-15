@@ -110,25 +110,25 @@ export function ChatDatePicker({
   };
 
   return (
-    <div className="bg-background border-2 border-muted rounded-xl p-3">
+    <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700"
           onClick={goToPrevMonth}
           disabled={!canGoPrev}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="font-semibold text-sm">
+        <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
           {MONTHS[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </span>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700"
           onClick={goToNextMonth}
           disabled={!canGoNext}
         >
@@ -137,11 +137,11 @@ export function ChatDatePicker({
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
+      <div className="grid grid-cols-7 gap-1 mb-2">
         {WEEKDAYS.map((day) => (
           <div
             key={day.key}
-            className="text-center text-xs font-medium text-muted-foreground py-1"
+            className="text-center text-xs font-medium text-zinc-500 py-1"
           >
             {day.label}
           </div>
@@ -167,10 +167,11 @@ export function ChatDatePicker({
               disabled={isDisabled}
               className={cn(
                 "aspect-square flex items-center justify-center rounded-lg text-sm transition-all",
-                isDisabled && "text-muted-foreground/30 cursor-not-allowed",
+                isDisabled &&
+                  "text-zinc-400 dark:text-zinc-600 cursor-not-allowed",
                 !isDisabled &&
-                  "hover:bg-primary hover:text-primary-foreground cursor-pointer active:scale-90",
-                isToday && !isDisabled && "border-2 border-primary font-bold",
+                  "text-zinc-700 dark:text-zinc-200 hover:bg-primary hover:text-primary-foreground cursor-pointer active:scale-90",
+                isToday && !isDisabled && "ring-2 ring-primary font-bold",
               )}
             >
               {date.getDate()}

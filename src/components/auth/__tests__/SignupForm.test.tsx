@@ -110,40 +110,28 @@ describe("SignupForm", () => {
   });
 
   describe("form validation", () => {
-    it("should show error for empty fullName on submit", async () => {
-      const user = userEvent.setup();
+    it("should disable submit button when form is empty", () => {
       render(<SignupForm locale="pt-BR" />);
 
       const submitButton = screen.getByRole("button", { name: "Criar conta" });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Nome é obrigatório")).toBeInTheDocument();
-      });
+      expect(submitButton).toBeDisabled();
     });
 
-    it("should show error for empty phone on submit", async () => {
+    it("should enable submit button when all fields are filled", async () => {
       const user = userEvent.setup();
       render(<SignupForm locale="pt-BR" />);
 
-      const submitButton = screen.getByRole("button", { name: "Criar conta" });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Telefone é obrigatório")).toBeInTheDocument();
-      });
-    });
-
-    it("should show error for empty email on submit", async () => {
-      const user = userEvent.setup();
-      render(<SignupForm locale="pt-BR" />);
+      await user.type(screen.getByLabelText("Nome completo"), "João Silva");
+      await user.type(
+        screen.getByLabelText("Telefone (WhatsApp)"),
+        "11999999999",
+      );
+      await user.type(screen.getByLabelText("Email"), "joao@example.com");
+      await user.type(screen.getByLabelText("Senha"), "123456");
+      await user.type(screen.getByLabelText("Confirmar senha"), "123456");
 
       const submitButton = screen.getByRole("button", { name: "Criar conta" });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Email é obrigatório")).toBeInTheDocument();
-      });
+      expect(submitButton).not.toBeDisabled();
     });
 
     it("should show error for short password", async () => {
@@ -222,17 +210,11 @@ describe("SignupForm", () => {
       });
     });
 
-    it("should not call signUp with invalid data", async () => {
-      const user = userEvent.setup();
+    it("should not call signUp when form is empty (button disabled)", () => {
       render(<SignupForm locale="pt-BR" />);
 
       const submitButton = screen.getByRole("button", { name: "Criar conta" });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Nome é obrigatório")).toBeInTheDocument();
-      });
-
+      expect(submitButton).toBeDisabled();
       expect(mockSignUp).not.toHaveBeenCalled();
     });
   });

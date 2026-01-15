@@ -2,15 +2,14 @@
 
 import { ChatBookingPage } from "@/components/booking";
 import { Button } from "@/components/ui/button";
-import { useSignOut, useUser } from "@/hooks/useAuth";
-import { Scissors, LogOut, LogIn } from "lucide-react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useUser } from "@/hooks/useAuth";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Toaster } from "sonner";
 
 export default function AgendarPage() {
-  const { data: user, isLoading } = useUser();
-  const { mutate: signOut, isPending } = useSignOut();
+  const { data: user } = useUser();
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -26,51 +25,35 @@ export default function AgendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href={`/${locale}`} className="flex items-center gap-2">
-            <Scissors className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Gold Mustache</h1>
-          </Link>
-          <div className="flex items-center gap-4">
-            {isLoading ? (
-              <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-            ) : user ? (
-              <>
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  {user.email}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => signOut()}
-                  disabled={isPending}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-2">Sair</span>
-                </Button>
-              </>
-            ) : (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/${locale}/login?redirect=/${locale}/agendar`}>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Entrar
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-black relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent dark:from-primary/10 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-primary/10 to-transparent blur-3xl dark:from-primary/5 pointer-events-none" />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 max-w-xl">
-        <ChatBookingPage
-          onViewAppointments={handleViewAppointments}
-          preSelectedBarberId={preSelectedBarberId}
-        />
-      </main>
+      {/* Home button */}
+      <div className="absolute top-4 left-4 z-20">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/50"
+        >
+          <Link href={`/${locale}`} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+        </Button>
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 flex min-h-screen flex-col items-center px-3 pt-14 pb-4">
+        <div className="w-full max-w-lg">
+          <ChatBookingPage
+            onViewAppointments={handleViewAppointments}
+            preSelectedBarberId={preSelectedBarberId}
+          />
+        </div>
+      </div>
 
       <Toaster position="top-center" richColors />
     </div>
