@@ -10,7 +10,7 @@ async function main() {
   const barbers = [
     { name: "Ygor Luan", avatarUrl: "/barbers/ygor.webp" },
     { name: "Vitor Maronez", avatarUrl: "/barbers/vitor.webp" },
-    { name: "David Trindade", avatarUrl: null },
+    { name: "David Trindade", avatarUrl: "/barbers/david.webp" },
     { name: "João Vitor", avatarUrl: "/barbers/joao.webp" },
   ];
 

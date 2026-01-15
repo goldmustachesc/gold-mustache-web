@@ -2,16 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
+import { Mail, CheckCircle2, Loader2, Send, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth";
 
@@ -43,62 +36,52 @@ export function EmailVerificationCard({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Mail className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>{t("title")}</CardTitle>
-              <CardDescription>{t("description")}</CardDescription>
-            </div>
+    <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
+      <div className="p-4 border-b border-zinc-700/50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-lg">
+            <Mail className="h-5 w-5 text-amber-500" />
           </div>
-          {isVerified ? (
-            <Badge
-              variant="outline"
-              className="bg-green-500/10 text-green-500 border-green-500/20"
-            >
-              <CheckCircle2 className="mr-1 h-3 w-3" />
-              {t("verified")}
-            </Badge>
-          ) : (
-            <Badge
-              variant="outline"
-              className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-            >
-              <AlertCircle className="mr-1 h-3 w-3" />
-              {t("pending")}
-            </Badge>
-          )}
+          <div>
+            <h3 className="font-semibold text-white">{t("title")}</h3>
+            <p className="text-sm text-zinc-400">{t("description")}</p>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
         {isVerified ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            {t("verified")}
+          </Badge>
+        ) : (
+          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+            <Clock className="mr-1 h-3 w-3" />
+            {t("pending")}
+          </Badge>
+        )}
+      </div>
+      <div className="p-5">
+        {isVerified ? (
+          <div className="flex items-center gap-2 text-sm text-zinc-400">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             <span>{t("verifiedMessage", { email: email || "" })}</span>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                {t("unverifiedWarning")}
-              </p>
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-sm text-amber-400">{t("unverifiedWarning")}</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">
-                  Email:{" "}
-                  <span className="font-medium text-foreground">{email}</span>
+                <p className="text-sm text-zinc-400">
+                  Email: <span className="font-medium text-white">{email}</span>
                 </p>
               </div>
               <Button
                 variant="outline"
                 onClick={handleResendVerification}
                 disabled={isLoading || !email}
+                className="border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 hover:text-white"
               >
                 {isLoading ? (
                   <>
@@ -114,10 +97,10 @@ export function EmailVerificationCard({
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground">{t("hint")}</p>
+            <p className="text-xs text-zinc-500">{t("hint")}</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

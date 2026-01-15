@@ -7,5 +7,16 @@
   "events": "Eventos",
   "contact": "Contacto",
   "sponsors": "Patrocinadores",
-  "myAppointments": "Mis citas"
+  "myAppointments": "Mis citas",
+  "account": "Cuenta",
+  "login": "Iniciar sesión",
+  "preferences": {
+    "title": "Preferencias",
+    "subtitle": "Personaliza tu experiencia",
+    "language": "Idioma",
+    "languageDescription": "Elige tu idioma preferido",
+    "appearance": "Apariencia",
+    "appearanceDescription": "Claro u oscuro",
+    "followInstagram": "Síguenos en Instagram"
+  }
 }

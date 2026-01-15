@@ -246,6 +246,8 @@ export function useCancelAppointment() {
         exact: false,
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
+      // Invalida a lista de cancelados para refletir o novo cancelamento
+      queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
     },
   });
 }
@@ -322,6 +324,8 @@ export function useCancelAppointmentByBarber() {
         exact: false,
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
+      // Invalida a lista de cancelados para refletir o novo cancelamento
+      queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
     },
   });
 }

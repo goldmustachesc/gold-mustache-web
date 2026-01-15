@@ -3,17 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -21,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import {
@@ -37,6 +33,10 @@ import {
   Phone,
   Scissors,
   Check,
+  Menu,
+  Info,
+  CheckCircle2,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateToString, getBrazilDateString } from "@/utils/time-slots";
@@ -48,6 +48,7 @@ export default function BarberAgendarPage() {
 
   const { data: user, isLoading: userLoading } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Form state
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
@@ -146,8 +147,8 @@ export default function BarberAgendarPage() {
 
   if (isLoading || !user || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     );
   }
@@ -170,264 +171,592 @@ export default function BarberAgendarPage() {
     /^\d{10,11}$/.test(clientPhone) &&
     !createAppointment.isPending;
 
+  // Calculate completion steps
+  const completedSteps = [
+    clientName.trim().length >= 2,
+    /^\d{10,11}$/.test(clientPhone),
+    !!selectedServiceId,
+    !!selectedDate,
+    !!selectedTime,
+  ].filter(Boolean).length;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-zinc-900 text-white">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Link
-            href={`/${locale}/barbeiro`}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
+        <div className="flex items-center justify-between px-4 py-4 lg:px-8">
+          {/* Back button + Logo (desktop) */}
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/${locale}/barbeiro`}
+              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div className="hidden lg:flex items-center gap-3">
+              <Link href={`/${locale}`} className="flex items-center gap-3">
+                <Image
+                  src="/logo.png"
+                  alt="Gold Mustache"
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+                <span className="font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
+                  GOLD MUSTACHE
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="flex items-center gap-2 lg:flex-1 lg:justify-center">
+            <Scissors className="h-5 w-5 text-amber-500" />
+            <h1 className="text-lg lg:text-xl font-bold">
+              Agendar para Cliente
+            </h1>
+          </div>
+
+          {/* Actions */}
           <div className="flex items-center gap-2">
-            <Scissors className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Agendar para Cliente</h1>
+            {/* Desktop Quick Links */}
+            <Link href={`/${locale}/barbeiro`} className="hidden lg:block">
+              <Button
+                variant="ghost"
+                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              >
+                Minha Agenda
+              </Button>
+            </Link>
+            <Link
+              href={`/${locale}/barbeiro/horarios`}
+              className="hidden lg:block"
+            >
+              <Button
+                variant="ghost"
+                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              >
+                Meus Horários
+              </Button>
+            </Link>
+
+            {user?.id && <NotificationPanel userId={user.id} />}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Client Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Dados do Cliente
-              </CardTitle>
-              <CardDescription>
-                Informe os dados do cliente para o agendamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="clientName">Nome do Cliente</Label>
-                <Input
-                  id="clientName"
-                  placeholder="Nome completo"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="clientPhone">Telefone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="clientPhone"
-                    placeholder="11999999999"
-                    value={clientPhone}
-                    onChange={handlePhoneChange}
-                    className="pl-10"
-                    maxLength={11}
-                    required
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Apenas números, com DDD (10 ou 11 dígitos)
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+      <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
+        {/* Page Title - Desktop */}
+        <div className="hidden lg:block mb-8">
+          <h2 className="text-2xl font-bold">Novo Agendamento para Cliente</h2>
+          <p className="text-zinc-400 mt-1">
+            Crie um agendamento para um cliente presencial ou por telefone
+          </p>
+        </div>
 
-          {/* Service Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Scissors className="h-5 w-5 text-primary" />
-                Serviço
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select
-                value={selectedServiceId}
-                onValueChange={setSelectedServiceId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {servicesLoading ? (
-                    <div className="p-2 text-center text-muted-foreground">
-                      Carregando...
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          {/* Left Column - Form */}
+          <div className="lg:col-span-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Client Info & Service - Side by side on desktop */}
+              <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
+                {/* Client Info */}
+                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">
+                        Dados do Cliente
+                      </h2>
+                      <p className="text-xs text-zinc-500">
+                        Informações do cliente
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="clientName" className="text-zinc-300">
+                        Nome do Cliente
+                      </Label>
+                      <Input
+                        id="clientName"
+                        placeholder="Nome completo"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        required
+                        className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientPhone" className="text-zinc-300">
+                        Telefone
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        <Input
+                          id="clientPhone"
+                          placeholder="11999999999"
+                          value={clientPhone}
+                          onChange={handlePhoneChange}
+                          className="pl-10 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 h-11"
+                          maxLength={11}
+                          required
+                        />
+                      </div>
+                      <p className="text-xs text-zinc-500">
+                        Apenas números, com DDD (10 ou 11 dígitos)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service Selection */}
+                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <Scissors className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">Serviço</h2>
+                      <p className="text-xs text-zinc-500">Escolha o serviço</p>
+                    </div>
+                  </div>
+                  <Select
+                    value={selectedServiceId}
+                    onValueChange={setSelectedServiceId}
+                  >
+                    <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white h-11">
+                      <SelectValue placeholder="Selecione um serviço" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-700">
+                      {servicesLoading ? (
+                        <div className="p-2 text-center text-zinc-400">
+                          Carregando...
+                        </div>
+                      ) : (
+                        services?.map((service) => (
+                          <SelectItem
+                            key={service.id}
+                            value={service.id}
+                            className="text-white focus:bg-zinc-800 focus:text-white"
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span>{service.name}</span>
+                              <span className="text-zinc-400 ml-2">
+                                {service.duration}min - R${" "}
+                                {service.price.toFixed(2).replace(".", ",")}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Service Preview */}
+                  {selectedService && (
+                    <div className="mt-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-700/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-white">
+                          {selectedService.name}
+                        </span>
+                        <span className="text-sm font-bold text-amber-500">
+                          R${" "}
+                          {selectedService.price.toFixed(2).replace(".", ",")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-zinc-400">
+                        <Clock className="h-3 w-3" />
+                        <span>Duração: {selectedService.duration} min</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Date & Time - Side by side on desktop */}
+              <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
+                {/* Date Selection */}
+                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">Data</h2>
+                      <p className="text-xs text-zinc-500">Escolha a data</p>
+                    </div>
+                  </div>
+                  <Select value={selectedDate} onValueChange={setSelectedDate}>
+                    <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white h-11">
+                      <SelectValue placeholder="Selecione uma data" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-700 max-h-60">
+                      {dateOptions.map((date) => {
+                        const [year, month, day] = date.split("-");
+                        const displayDate = `${day}/${month}/${year}`;
+                        const dateObj = new Date(
+                          Number(year),
+                          Number(month) - 1,
+                          Number(day),
+                        );
+                        const weekday = dateObj.toLocaleDateString("pt-BR", {
+                          weekday: "long",
+                        });
+                        const isToday = date === getBrazilDateString();
+                        return (
+                          <SelectItem
+                            key={date}
+                            value={date}
+                            className="text-white focus:bg-zinc-800 focus:text-white"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{displayDate}</span>
+                              <span className="text-zinc-500 capitalize">
+                                {weekday}
+                              </span>
+                              {isToday && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                                  Hoje
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Time Selection */}
+                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">Horário</h2>
+                      <p className="text-xs text-zinc-500">
+                        {selectedService
+                          ? `Duração: ${selectedService.duration} min`
+                          : "Selecione um serviço primeiro"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!selectedServiceId ? (
+                    <div className="text-center py-6 text-zinc-500">
+                      <Clock className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">
+                        Selecione um serviço para ver os horários
+                      </p>
+                    </div>
+                  ) : slotsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                    </div>
+                  ) : availableSlots.length === 0 ? (
+                    <div className="text-center py-6 text-zinc-400">
+                      <Clock className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Nenhum horário disponível</p>
+                      <p className="text-xs mt-1 text-zinc-500">
+                        Tente outra data
+                      </p>
                     </div>
                   ) : (
-                    services?.map((service) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>{service.name}</span>
-                          <span className="text-muted-foreground ml-2">
-                            {service.duration}min - R${" "}
-                            {service.price.toFixed(2).replace(".", ",")}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))
+                    <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1">
+                      {availableSlots.map((slot) => (
+                        <button
+                          key={slot.time}
+                          type="button"
+                          onClick={() => setSelectedTime(slot.time)}
+                          className={cn(
+                            "px-2 py-2 rounded-lg text-sm font-medium transition-colors",
+                            selectedTime === slot.time
+                              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
+                              : "bg-zinc-700/50 text-zinc-300 hover:bg-zinc-700 border border-zinc-600/50",
+                          )}
+                        >
+                          {slot.time}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Date Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={selectedDate} onValueChange={setSelectedDate}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma data" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dateOptions.map((date) => {
-                    const [year, month, day] = date.split("-");
-                    const displayDate = `${day}/${month}/${year}`;
-                    const dateObj = new Date(
-                      Number(year),
-                      Number(month) - 1,
-                      Number(day),
-                    );
-                    const weekday = dateObj.toLocaleDateString("pt-BR", {
-                      weekday: "short",
-                    });
-                    return (
-                      <SelectItem key={date} value={date}>
-                        {displayDate} ({weekday})
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Time Selection */}
-          {selectedServiceId && selectedDate && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Horário
-                </CardTitle>
-                {selectedService && (
-                  <CardDescription>
-                    Duração: {selectedService.duration} minutos
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                {slotsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                ) : availableSlots.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p>Nenhum horário disponível nesta data</p>
-                    <p className="text-sm mt-1">
-                      Tente selecionar outra data ou verifique suas ausências
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot.time}
-                        type="button"
-                        onClick={() => setSelectedTime(slot.time)}
-                        className={cn(
-                          "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                          selectedTime === slot.time
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted hover:bg-muted/80",
-                        )}
-                      >
-                        {slot.time}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Summary & Submit */}
-          {selectedService && selectedTime && (
-            <Card className="border-primary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-primary" />
-                  Resumo do Agendamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cliente:</span>
-                  <span className="font-medium">{clientName || "-"}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Telefone:</span>
-                  <span className="font-medium">{clientPhone || "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Serviço:</span>
-                  <span className="font-medium">{selectedService.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Data:</span>
-                  <span className="font-medium">
-                    {selectedDate.split("-").reverse().join("/")}
+              </div>
+
+              {/* Mobile Submit Button */}
+              <div className="lg:hidden">
+                <Button
+                  type="submit"
+                  className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                  size="lg"
+                  disabled={!canSubmit}
+                >
+                  {createAppointment.isPending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Criando agendamento...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-5 w-5 mr-2" />
+                      Confirmar Agendamento
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Right Column - Summary (Desktop) */}
+          <div className="hidden lg:block lg:col-span-4 space-y-6">
+            {/* Progress Card */}
+            <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="h-5 w-5 text-amber-500" />
+                <h3 className="font-semibold">Progresso</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      clientName.trim().length >= 2
+                        ? "bg-emerald-500 text-white"
+                        : "bg-zinc-700 text-zinc-400",
+                    )}
+                  >
+                    {clientName.trim().length >= 2 ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      "1"
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      clientName.trim().length >= 2
+                        ? "text-white"
+                        : "text-zinc-500",
+                    )}
+                  >
+                    Nome do cliente
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Horário:</span>
-                  <span className="font-medium">{selectedTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duração:</span>
-                  <span className="font-medium">
-                    {selectedService.duration} min
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      /^\d{10,11}$/.test(clientPhone)
+                        ? "bg-emerald-500 text-white"
+                        : "bg-zinc-700 text-zinc-400",
+                    )}
+                  >
+                    {/^\d{10,11}$/.test(clientPhone) ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      "2"
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      /^\d{10,11}$/.test(clientPhone)
+                        ? "text-white"
+                        : "text-zinc-500",
+                    )}
+                  >
+                    Telefone válido
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="text-muted-foreground">Valor:</span>
-                  <span className="font-bold text-lg">
-                    R$ {selectedService.price.toFixed(2).replace(".", ",")}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      selectedServiceId
+                        ? "bg-emerald-500 text-white"
+                        : "bg-zinc-700 text-zinc-400",
+                    )}
+                  >
+                    {selectedServiceId ? <Check className="h-3 w-3" /> : "3"}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      selectedServiceId ? "text-white" : "text-zinc-500",
+                    )}
+                  >
+                    Serviço selecionado
                   </span>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      selectedDate
+                        ? "bg-emerald-500 text-white"
+                        : "bg-zinc-700 text-zinc-400",
+                    )}
+                  >
+                    {selectedDate ? <Check className="h-3 w-3" /> : "4"}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      selectedDate ? "text-white" : "text-zinc-500",
+                    )}
+                  >
+                    Data selecionada
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      selectedTime
+                        ? "bg-emerald-500 text-white"
+                        : "bg-zinc-700 text-zinc-400",
+                    )}
+                  >
+                    {selectedTime ? <Check className="h-3 w-3" /> : "5"}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      selectedTime ? "text-white" : "text-zinc-500",
+                    )}
+                  >
+                    Horário selecionado
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-zinc-700/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-zinc-400">Progresso</span>
+                  <span className="font-bold text-amber-500">
+                    {completedSteps}/5
+                  </span>
+                </div>
+                <div className="mt-2 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
+                    style={{ width: `${(completedSteps / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={!canSubmit}
-          >
-            {createAppointment.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Criando agendamento...
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Confirmar Agendamento
-              </>
+            {/* Summary Card */}
+            {selectedService && selectedTime && (
+              <div className="bg-zinc-800/50 rounded-2xl p-6 border border-amber-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <Receipt className="h-5 w-5 text-amber-500" />
+                  <h3 className="font-semibold">Resumo</h3>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Cliente:</span>
+                    <span className="font-medium text-white truncate ml-2 max-w-[140px]">
+                      {clientName || "-"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Telefone:</span>
+                    <span className="font-medium text-white">
+                      {clientPhone || "-"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Serviço:</span>
+                    <span className="font-medium text-white">
+                      {selectedService.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Data:</span>
+                    <span className="font-medium text-white">
+                      {selectedDate.split("-").reverse().join("/")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Horário:</span>
+                    <span className="font-medium text-white">
+                      {selectedTime}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Duração:</span>
+                    <span className="font-medium text-white">
+                      {selectedService.duration} min
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-3 border-t border-zinc-700">
+                    <span className="text-zinc-400">Valor:</span>
+                    <span className="font-bold text-xl text-amber-500">
+                      R$ {selectedService.price.toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                </div>
+              </div>
             )}
-          </Button>
-        </form>
+
+            {/* Submit Button - Desktop Sticky */}
+            <div className="sticky top-24">
+              <Button
+                type="submit"
+                form="booking-form"
+                onClick={handleSubmit}
+                className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                size="lg"
+                disabled={!canSubmit}
+              >
+                {createAppointment.isPending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-5 w-5 mr-2" />
+                    Confirmar Agendamento
+                  </>
+                )}
+              </Button>
+
+              {/* Info Card */}
+              <div className="mt-4 bg-zinc-800/30 rounded-xl p-4 border border-zinc-700/50">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-zinc-400">
+                    O agendamento será criado diretamente na sua agenda. O
+                    cliente receberá confirmação por telefone se cadastrado.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
+
+      {/* Sidebar */}
+      <BarberSidebar
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        locale={locale}
+      />
 
       <Toaster position="top-center" richColors />
     </div>

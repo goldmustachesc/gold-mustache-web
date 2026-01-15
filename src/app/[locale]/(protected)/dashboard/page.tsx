@@ -13,18 +13,17 @@ import { useProfileMe } from "@/hooks/useProfileMe";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import {
   NextAppointmentCard,
-  BarberDayOverview,
   AdminOverview,
   ClientStatsOverview,
 } from "@/components/dashboard";
+import { BarberDashboard } from "@/components/dashboard/BarberDashboard";
+import { NotificationPanel } from "@/components/notifications";
 import {
   Calendar,
-  CalendarOff,
   ClipboardList,
   Scissors,
   Settings,
   Loader2,
-  UserPlus,
   UserCog,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +32,7 @@ import { useParams } from "next/navigation";
 export default function DashboardPage() {
   const { data: user, isLoading: userLoading } = useUser();
   const { mutate: signOut, isPending } = useSignOut();
-  const { data: barberProfile } = useBarberProfile();
+  const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
   const { data: profileMe } = useProfileMe();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const params = useParams();
@@ -43,7 +42,8 @@ export default function DashboardPage() {
   const isAdmin = profileMe?.role === "ADMIN";
   const isLoading = userLoading || statsLoading;
 
-  if (userLoading) {
+  // Show loading while checking user and barber status
+  if (userLoading || barberLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,18 +51,27 @@ export default function DashboardPage() {
     );
   }
 
+  // If user is a barber, show the new BarberDashboard
+  if (isBarber) {
+    return <BarberDashboard locale={locale} />;
+  }
+
+  // Otherwise, show the client/admin dashboard
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button
-          variant="outline"
-          onClick={() => signOut()}
-          disabled={isPending}
-        >
-          {isPending ? "Saindo..." : "Sair"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {user?.id && <NotificationPanel userId={user.id} />}
+          <Button
+            variant="outline"
+            onClick={() => signOut()}
+            disabled={isPending}
+          >
+            {isPending ? "Saindo..." : "Sair"}
+          </Button>
+        </div>
       </div>
 
       {/* Welcome Card */}
@@ -106,17 +115,6 @@ export default function DashboardPage() {
             appointment={stats.client.nextAppointment}
             locale={locale}
           />
-        </section>
-      )}
-
-      {/* Barber Section - Day Overview */}
-      {!isLoading && isBarber && stats?.barber && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Scissors className="h-5 w-5 text-primary" />
-            Sua Agenda
-          </h2>
-          <BarberDayOverview stats={stats.barber} locale={locale} />
         </section>
       )}
 
@@ -171,54 +169,6 @@ export default function DashboardPage() {
           </Link>
         </div>
       </section>
-
-      {/* Barber Quick Actions */}
-      {isBarber && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Área Profissional</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link href={`/${locale}/barbeiro`}>
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                    <Scissors className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Minha Agenda</CardTitle>
-                  <CardDescription>
-                    Gerencie seus atendimentos e horários
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-            <Link href={`/${locale}/barbeiro/agendar`}>
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                    <UserPlus className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Agendar para Cliente</CardTitle>
-                  <CardDescription>
-                    Crie um agendamento em nome de um cliente
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-            <Link href={`/${locale}/barbeiro/ausencias`}>
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                    <CalendarOff className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Ausências</CardTitle>
-                  <CardDescription>
-                    Cadastre folgas e indisponibilidades por data/horário
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          </div>
-        </section>
-      )}
 
       {/* Admin Quick Actions */}
       {isAdmin && (

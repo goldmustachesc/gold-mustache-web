@@ -10,7 +10,7 @@ const intlMiddleware = createIntlMiddleware({
 });
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard", "/profile", "/settings", "/barbeiro"];
+const protectedRoutes = ["/dashboard", "/profile", "/barbeiro", "/admin"];
 
 // Routes that should redirect to dashboard if already authenticated
 const authRoutes = ["/login", "/signup", "/reset-password"];

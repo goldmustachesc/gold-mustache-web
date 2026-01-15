@@ -3,13 +3,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,6 +10,7 @@ import { User, MapPin, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { ProfileMeData, ProfileUpdateInput } from "@/types/profile";
 import { maskPhone, maskZipCode } from "@/utils/masks";
+import { cn } from "@/lib/utils";
 
 interface ProfileFormProps {
   profile: ProfileMeData | undefined;
@@ -102,38 +96,52 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
     }
   };
 
+  const inputClassName = cn(
+    "bg-zinc-900/50 border-zinc-700/50 rounded-lg",
+    "text-white placeholder:text-zinc-500",
+    "focus:border-amber-500/50 focus:ring-amber-500/20",
+  );
+
+  const labelClassName = "text-zinc-300 text-sm font-medium";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Personal Information */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <User className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>{t("personalInfo.title")}</CardTitle>
-              <CardDescription>{t("personalInfo.description")}</CardDescription>
-            </div>
+      <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
+        <div className="p-4 border-b border-zinc-700/50 flex items-center gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-lg">
+            <User className="h-5 w-5 text-amber-500" />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-white">
+              {t("personalInfo.title")}
+            </h3>
+            <p className="text-sm text-zinc-400">
+              {t("personalInfo.description")}
+            </p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">{t("personalInfo.email")}</Label>
+            <Label htmlFor="email" className={labelClassName}>
+              {t("personalInfo.email")}
+            </Label>
             <Input
               id="email"
               type="email"
               value={userEmail || ""}
               disabled
-              className="bg-muted"
+              className="bg-zinc-800/50 border-zinc-700/50 text-zinc-400"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-zinc-500">
               {t("personalInfo.emailHint")}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="fullName">{t("personalInfo.fullName")}</Label>
+            <Label htmlFor="fullName" className={labelClassName}>
+              {t("personalInfo.fullName")}
+            </Label>
             <Input
               id="fullName"
               name="fullName"
@@ -141,11 +149,14 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               value={formData.fullName || ""}
               onChange={handleInputChange}
               placeholder={t("personalInfo.fullNamePlaceholder")}
+              className={inputClassName}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">{t("personalInfo.phone")}</Label>
+            <Label htmlFor="phone" className={labelClassName}>
+              {t("personalInfo.phone")}
+            </Label>
             <Input
               id="phone"
               name="phone"
@@ -154,28 +165,29 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               onChange={handleInputChange}
               placeholder={t("personalInfo.phonePlaceholder")}
               maxLength={15}
+              className={inputClassName}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Address */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <MapPin className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>{t("address.title")}</CardTitle>
-              <CardDescription>{t("address.description")}</CardDescription>
-            </div>
+      <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
+        <div className="p-4 border-b border-zinc-700/50 flex items-center gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-lg">
+            <MapPin className="h-5 w-5 text-amber-500" />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-white">{t("address.title")}</h3>
+            <p className="text-sm text-zinc-400">{t("address.description")}</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="zipCode">{t("address.zipCode")}</Label>
+              <Label htmlFor="zipCode" className={labelClassName}>
+                {t("address.zipCode")}
+              </Label>
               <Input
                 id="zipCode"
                 name="zipCode"
@@ -185,10 +197,13 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 onBlur={handleCepBlur}
                 placeholder={t("address.zipCodePlaceholder")}
                 maxLength={9}
+                className={inputClassName}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="state">{t("address.state")}</Label>
+              <Label htmlFor="state" className={labelClassName}>
+                {t("address.state")}
+              </Label>
               <Input
                 id="state"
                 name="state"
@@ -197,12 +212,15 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 onChange={handleInputChange}
                 placeholder={t("address.statePlaceholder")}
                 maxLength={2}
+                className={inputClassName}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="city">{t("address.city")}</Label>
+            <Label htmlFor="city" className={labelClassName}>
+              {t("address.city")}
+            </Label>
             <Input
               id="city"
               name="city"
@@ -210,11 +228,14 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               value={formData.city || ""}
               onChange={handleInputChange}
               placeholder={t("address.cityPlaceholder")}
+              className={inputClassName}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="neighborhood">{t("address.neighborhood")}</Label>
+            <Label htmlFor="neighborhood" className={labelClassName}>
+              {t("address.neighborhood")}
+            </Label>
             <Input
               id="neighborhood"
               name="neighborhood"
@@ -222,12 +243,15 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               value={formData.neighborhood || ""}
               onChange={handleInputChange}
               placeholder={t("address.neighborhoodPlaceholder")}
+              className={inputClassName}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="street">{t("address.street")}</Label>
+              <Label htmlFor="street" className={labelClassName}>
+                {t("address.street")}
+              </Label>
               <Input
                 id="street"
                 name="street"
@@ -235,10 +259,13 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 value={formData.street || ""}
                 onChange={handleInputChange}
                 placeholder={t("address.streetPlaceholder")}
+                className={inputClassName}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="number">{t("address.number")}</Label>
+              <Label htmlFor="number" className={labelClassName}>
+                {t("address.number")}
+              </Label>
               <Input
                 id="number"
                 name="number"
@@ -246,12 +273,15 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 value={formData.number || ""}
                 onChange={handleInputChange}
                 placeholder={t("address.numberPlaceholder")}
+                className={inputClassName}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="complement">{t("address.complement")}</Label>
+            <Label htmlFor="complement" className={labelClassName}>
+              {t("address.complement")}
+            </Label>
             <Input
               id="complement"
               name="complement"
@@ -259,13 +289,18 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               value={formData.complement || ""}
               onChange={handleInputChange}
               placeholder={t("address.complementPlaceholder")}
+              className={inputClassName}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Submit Button */}
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button
+        type="submit"
+        className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-semibold h-12"
+        disabled={isLoading}
+      >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

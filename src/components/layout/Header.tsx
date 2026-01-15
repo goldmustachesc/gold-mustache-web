@@ -7,6 +7,7 @@ import {
   NavigationMenuItem,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
+import { PreferencesDropdown } from "@/components/ui/preferences-dropdown";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { BRAND } from "@/constants/brand";
@@ -91,45 +92,12 @@ export function Header() {
         </NavigationMenu>
 
         {/* Desktop Actions */}
-        <div className="hidden lg:flex items-center gap-1">
-          <LanguageSwitcher variant="desktop" />
-          <div className="w-px h-4 bg-border mx-1" />
-          <ThemeToggle />
+        <div className="hidden lg:flex items-center gap-2">
+          <PreferencesDropdown />
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="ml-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50"
-            asChild
-          >
-            <Link
-              href={myAppointmentsLink}
-              className="flex items-center gap-2"
-              aria-label={t("myAppointments")}
-            >
-              <CalendarCheck2 className="h-4 w-4" />
-              <span>{t("myAppointments")}</span>
-              <span className="ml-1 h-2 w-2 rounded-full bg-primary" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            asChild
-          >
-            <Link
-              href={BRAND.instagram.mainUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-            >
-              <Instagram className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-2"
             asChild
           >
             <Link
@@ -137,16 +105,22 @@ export function Header() {
               aria-label={user ? "Dashboard" : "Login"}
             >
               {user ? (
-                <User className="h-4 w-4" />
+                <>
+                  <User className="h-4 w-4" />
+                  <span>{t("account")}</span>
+                </>
               ) : (
-                <LogIn className="h-4 w-4" />
+                <>
+                  <LogIn className="h-4 w-4" />
+                  <span>{t("login")}</span>
+                </>
               )}
             </Link>
           </Button>
           {!isScrolledPastThreshold && (
             <Button
               size="sm"
-              className="ml-2 flex items-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
+              className="ml-1 flex items-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
               asChild
             >
               <Link href={bookingLink} aria-label={tCommon("buttons.book")}>

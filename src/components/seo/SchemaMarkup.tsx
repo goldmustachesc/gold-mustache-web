@@ -1,5 +1,5 @@
+import { barbershopConfig } from "@/config/barbershop";
 import { siteConfig } from "@/config/site";
-import { BRAND } from "@/constants/brand";
 import { getServices } from "@/services/booking";
 
 export async function SchemaMarkup() {
@@ -9,6 +9,14 @@ export async function SchemaMarkup() {
   }
 
   const baseUrl = siteConfig.productionUrl;
+  const {
+    address,
+    coordinates,
+    contact,
+    barberContacts,
+    social,
+    defaultHours,
+  } = barbershopConfig;
 
   // Fetch services from database (only active)
   let services: Awaited<ReturnType<typeof getServices>> = [];
@@ -24,17 +32,17 @@ export async function SchemaMarkup() {
     "@type": "Review",
     itemReviewed: {
       "@type": "LocalBusiness",
-      name: BRAND.name,
+      name: barbershopConfig.name,
       image: `${baseUrl}/logo.png`,
       address: {
         "@type": "PostalAddress",
-        streetAddress: "R. 115, 79 - Centro",
-        addressLocality: "Itapema",
-        addressRegion: "SC",
-        postalCode: "88220-000",
-        addressCountry: "BR",
+        streetAddress: `${address.street}, ${address.number} - ${address.neighborhood}`,
+        addressLocality: address.city,
+        addressRegion: address.state,
+        postalCode: address.zipCode,
+        addressCountry: address.country,
       },
-      telephone: BRAND.contact.phone,
+      telephone: contact.phone,
     },
     reviewRating: {
       "@type": "Rating",
@@ -49,48 +57,48 @@ export async function SchemaMarkup() {
       "Excelente atendimento! Profissionais qualificados e ambiente agradável. Recomendo!",
     datePublished: "2024-11-01",
   };
+
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "@id": `${baseUrl}/#organization`,
-    name: BRAND.name,
-    description:
-      "Tradição e Estilo Masculino - Barbearia tradicional em Itapema-SC com mais de 6 anos de experiência oferecendo cortes masculinos clássicos e modernos, barba completa e degradê navalhado.",
+    name: barbershopConfig.name,
+    description: barbershopConfig.description,
     url: baseUrl,
     telephone: [
-      BRAND.contact.phone,
-      BRAND.contactVitor.phone,
-      BRAND.contactJoao.phone,
-      BRAND.contactDavid.phone,
+      contact.phone,
+      barberContacts.vitor.phone,
+      barberContacts.joao.phone,
+      barberContacts.david.phone,
     ],
     address: {
       "@type": "PostalAddress",
-      streetAddress: "R. 115, 79 - Centro",
-      addressLocality: "Itapema",
-      addressRegion: "SC",
-      postalCode: "88220-000",
-      addressCountry: "BR",
+      streetAddress: `${address.street}, ${address.number} - ${address.neighborhood}`,
+      addressLocality: address.city,
+      addressRegion: address.state,
+      postalCode: address.zipCode,
+      addressCountry: address.country,
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: -27.0897,
-      longitude: -48.617,
+      latitude: coordinates.lat,
+      longitude: coordinates.lng,
     },
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",
         dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        opens: "10:00",
-        closes: "20:00",
+        opens: defaultHours.weekdays?.open,
+        closes: defaultHours.weekdays?.close,
       },
       {
         "@type": "OpeningHoursSpecification",
         dayOfWeek: "Saturday",
-        opens: "10:00",
-        closes: "20:00",
+        opens: defaultHours.saturday?.open,
+        closes: defaultHours.saturday?.close,
       },
     ],
-    sameAs: [BRAND.instagram.mainUrl, BRAND.instagram.storeUrl],
+    sameAs: [social.instagram.mainUrl, social.instagram.storeUrl],
     priceRange: "$$",
     currenciesAccepted: "BRL",
     paymentAccepted: ["Cash", "Credit Card", "Debit Card", "Pix"],
@@ -98,8 +106,8 @@ export async function SchemaMarkup() {
       "@type": "GeoCircle",
       geoMidpoint: {
         "@type": "GeoCoordinates",
-        latitude: -27.0897,
-        longitude: -48.617,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
       },
       geoRadius: "50000",
     },
@@ -175,7 +183,7 @@ export async function SchemaMarkup() {
     serviceType: "Barbearia",
     areaServed: {
       "@type": "City",
-      name: "Itapema",
+      name: address.city,
       containedInPlace: {
         "@type": "State",
         name: "Santa Catarina",
@@ -217,23 +225,22 @@ export async function SchemaMarkup() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
-    name: BRAND.name,
-    alternateName: "Gold Mustache",
+    name: barbershopConfig.name,
+    alternateName: barbershopConfig.shortName,
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
     contactPoint: [
       {
         "@type": "ContactPoint",
-        telephone: BRAND.contact.phone,
+        telephone: contact.phone,
         contactType: "customer service",
         availableLanguage: ["Portuguese"],
-        areaServed: "BR",
+        areaServed: address.country,
       },
     ],
-    sameAs: [BRAND.instagram.mainUrl, BRAND.instagram.storeUrl],
-    foundingDate: "2018",
-    description:
-      "Tradição e Estilo Masculino - Barbearia tradicional especializada em cortes masculinos",
+    sameAs: [social.instagram.mainUrl, social.instagram.storeUrl],
+    foundingDate: String(barbershopConfig.foundingYear),
+    description: `${barbershopConfig.tagline} - Barbearia tradicional especializada em cortes masculinos`,
   };
 
   const breadcrumbSchema = {
@@ -254,8 +261,8 @@ export async function SchemaMarkup() {
     "@type": "WebSite",
     "@id": `${baseUrl}/#website`,
     url: baseUrl,
-    name: BRAND.name,
-    description: "Tradição e Estilo Masculino - Site oficial da barbearia",
+    name: barbershopConfig.name,
+    description: `${barbershopConfig.tagline} - Site oficial da barbearia`,
     publisher: {
       "@id": `${baseUrl}/#organization`,
     },

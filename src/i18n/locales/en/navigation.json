@@ -7,5 +7,16 @@
   "events": "Events",
   "contact": "Contact",
   "sponsors": "Sponsors",
-  "myAppointments": "My appointments"
+  "myAppointments": "My appointments",
+  "account": "Account",
+  "login": "Sign in",
+  "preferences": {
+    "title": "Preferences",
+    "subtitle": "Customize your experience",
+    "language": "Language",
+    "languageDescription": "Choose your preferred language",
+    "appearance": "Appearance",
+    "appearanceDescription": "Light or dark",
+    "followInstagram": "Follow on Instagram"
+  }
 }

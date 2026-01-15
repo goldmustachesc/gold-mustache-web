@@ -227,6 +227,56 @@ enum NotificationType {
 }
 
 // ============================================
+// Barbershop Settings (singleton)
+// ============================================
+
+model BarbershopSettings {
+  id          String  @id @default("default")
+  
+  // Business Identity
+  name        String  @default("Gold Mustache Barbearia")
+  shortName   String  @default("Gold Mustache") @map("short_name")
+  tagline     String  @default("Tradição e Estilo Masculino")
+  description String?
+  
+  // Address
+  street       String @default("R. 115")
+  number       String @default("79")
+  neighborhood String @default("Centro")
+  city         String @default("Itapema")
+  state        String @default("SC")
+  zipCode      String @default("88220-000") @map("zip_code")
+  country      String @default("BR")
+  
+  // Coordinates
+  latitude  Decimal @default(-27.0923025919406) @db.Decimal(10, 8)
+  longitude Decimal @default(-48.611896766062245) @db.Decimal(11, 8)
+  
+  // Contact
+  phone    String @default("47 98904-6178")
+  whatsapp String @default("+5547989046178")
+  email    String @default("contato@goldmustachebarbearia.com.br")
+  
+  // Social Media
+  instagramMain  String  @default("@goldmustachebarbearia") @map("instagram_main")
+  instagramStore String? @map("instagram_store")
+  googleMapsUrl  String? @map("google_maps_url")
+  
+  // Booking
+  bookingEnabled     Boolean @default(true) @map("booking_enabled")
+  externalBookingUrl String? @map("external_booking_url")
+  
+  // Branding
+  foundingYear Int @default(2018) @map("founding_year")
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("barbershop_settings")
+}
+
+// ============================================
 // LGPD Compliance - Cookie Consent Tracking
 // ============================================
 

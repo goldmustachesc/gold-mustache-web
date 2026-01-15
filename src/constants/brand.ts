@@ -1,79 +1,63 @@
+/**
+ * Constantes da marca - Re-exporta de barbershopConfig para compatibilidade
+ *
+ * @deprecated Prefira usar `barbershopConfig` de `@/config/barbershop` diretamente.
+ * Este arquivo é mantido para compatibilidade com código existente.
+ */
+
+import { barbershopConfig } from "@/config/barbershop";
+
+/**
+ * @deprecated Use `barbershopConfig` de `@/config/barbershop` diretamente.
+ */
 export const BRAND = {
-  name: "Gold Mustache Barbearia",
+  name: barbershopConfig.name,
   // tagline and location now come from i18n translations
   // Use t('brand.tagline') and t('brand.location')
 
-  analytics: {
-    googleAnalyticsId: process.env.NEXT_PUBLIC_GA_ID || "",
-  },
+  analytics: barbershopConfig.analytics,
 
-  instagram: {
-    main: "@goldmustachebarbearia",
-    store: "@_goldlab",
-    mainUrl: "https://instagram.com/goldmustachebarbearia",
-    storeUrl: "https://instagram.com/_goldlab",
-  },
+  instagram: barbershopConfig.social.instagram,
 
   booking: {
-    inbarberUrl:
-      "https://chat.inbarberapp.com/?id=6c060e9d-672d-4f39-bbc4-fac594f4cc28",
+    inbarberUrl: barbershopConfig.externalBooking.inbarberUrl,
   },
 
   contact: {
-    phone: "47 98904-6178",
-    whatsapp: "+5547989046178",
-    email: "contato@goldmustachebarbearia.com.br",
-    address:
-      "R. 115, 79 - Centro, Itapema - SC, 88220-000 - Gold Mustache Barbearia",
-    coordinates: {
-      lat: -27.0923025919406,
-      lng: -48.611896766062245,
-    },
-    googleMapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=Gold+Mustache+Barbearia+Itapema",
+    phone: barbershopConfig.contact.phone,
+    whatsapp: barbershopConfig.contact.whatsapp,
+    email: barbershopConfig.contact.email,
+    address: barbershopConfig.address.withName,
+    coordinates: barbershopConfig.coordinates,
+    googleMapsUrl: barbershopConfig.social.googleMaps,
   },
 
   contactVitor: {
-    phone: "47 98882-8032",
-    whatsapp: "+5547988828032",
-    // email: 'contato@goldmustache.com', // TODO: Add real email
-    address:
-      "R. 115, 79 - Centro, Itapema - SC, 88220-000 - Gold Mustache Barbearia",
+    phone: barbershopConfig.barberContacts.vitor.phone,
+    whatsapp: barbershopConfig.barberContacts.vitor.whatsapp,
+    address: barbershopConfig.address.withName,
   },
 
   contactJoao: {
-    phone: "47 99953-8340",
-    whatsapp: "+5547999538340",
-    // email: 'contato@goldmustache.com', // TODO: Add real email
-    address:
-      "R. 115, 79 - Centro, Itapema - SC, 88220-000 - Gold Mustache Barbearia",
+    phone: barbershopConfig.barberContacts.joao.phone,
+    whatsapp: barbershopConfig.barberContacts.joao.whatsapp,
+    address: barbershopConfig.address.withName,
   },
 
   contactDavid: {
-    phone: "51 98594-7566",
-    whatsapp: "+5551985947566",
-    // email: 'contato@goldmustache.com', // TODO: Add real email
-    address:
-      "R. 115, 79 - Centro, Itapema - SC, 88220-000 - Gold Mustache Barbearia",
+    phone: barbershopConfig.barberContacts.david.phone,
+    whatsapp: barbershopConfig.barberContacts.david.whatsapp,
+    address: barbershopConfig.address.withName,
   },
 
   // Business Hours - now come from i18n translations
   // Use t('contact.hours.weekdays'), t('contact.hours.time'), etc.
 
   // Brand Colors (for use in custom components)
-  colors: {
-    gold: "oklch(0.65 0.15 85)",
-    darkGold: "oklch(0.55 0.15 85)",
-    lightGold: "oklch(0.75 0.12 85)",
-    dark: "oklch(0.12 0.02 85)",
-    lightDark: "oklch(0.25 0.02 85)",
-  },
+  colors: barbershopConfig.colors,
 
   // Featured combo pricing (Corte + Barba)
-  featuredCombo: {
-    originalPrice: 115,
-    discountedPrice: 100,
-  },
+  featuredCombo: barbershopConfig.featuredCombo,
 } as const;
 
 // Services are now fetched from the database via /api/services

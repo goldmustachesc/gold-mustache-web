@@ -67,6 +67,7 @@ interface Message {
 
 interface ChatBookingPageProps {
   onViewAppointments?: () => void;
+  preSelectedBarberId?: string;
 }
 
 function formatPhoneDisplay(phone: string): string {
@@ -80,7 +81,10 @@ function formatPhoneDisplay(phone: string): string {
   return phone;
 }
 
-export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
+export function ChatBookingPage({
+  onViewAppointments,
+  preSelectedBarberId,
+}: ChatBookingPageProps) {
   const { data: user } = useUser();
   const router = useRouter();
   const params = useParams();
@@ -91,6 +95,8 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedBarber, setSelectedBarber] = useState<BarberData | null>(null);
+  const [preSelectedBarberHandled, setPreSelectedBarberHandled] =
+    useState(false);
   const [selectedService, setSelectedService] = useState<ServiceData | null>(
     null,
   );
@@ -451,26 +457,70 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
     processedStepsRef.current = new Set();
   }, []);
 
+  // Handle pre-selected barber
+  useEffect(() => {
+    if (
+      preSelectedBarberId &&
+      !preSelectedBarberHandled &&
+      barbers.length > 0 &&
+      step === "barber"
+    ) {
+      const preSelectedBarber = barbers.find(
+        (b) => b.id === preSelectedBarberId,
+      );
+      if (preSelectedBarber) {
+        setPreSelectedBarberHandled(true);
+        setSelectedBarber(preSelectedBarber);
+        // Add message showing the pre-selected barber
+        addMessage({
+          type: "bot-jsx",
+          content: (
+            <span>
+              Você está agendando com <strong>{preSelectedBarber.name}</strong>{" "}
+              ✂️
+            </span>
+          ),
+        });
+        // Skip to service selection
+        setTimeout(() => setStep("service"), 100);
+      }
+    }
+  }, [
+    preSelectedBarberId,
+    preSelectedBarberHandled,
+    barbers,
+    step,
+    addMessage,
+  ]);
+
   // Step flow effects
   useEffect(() => {
     if (step === "greeting" && !processedStepsRef.current.has("greeting")) {
       processedStepsRef.current.add("greeting");
+      const greetingMessage = preSelectedBarberId ? (
+        <span>Olá! 👋 Vamos agendar seu horário de forma rápida e fácil.</span>
+      ) : (
+        <span>
+          Olá! 👋 Eu sou o assistente da <strong>Gold Mustache</strong>. Vou te
+          ajudar a agendar seu horário de forma rápida e fácil.
+        </span>
+      );
       showTypingThenMessage({
         type: "bot-jsx",
-        content: (
-          <span>
-            Olá! 👋 Eu sou o assistente da <strong>Gold Mustache</strong>. Vou
-            te ajudar a agendar seu horário de forma rápida e fácil.
-          </span>
-        ),
+        content: greetingMessage,
       });
       setTimeout(() => setStep("barber"), 800);
     }
-  }, [step, showTypingThenMessage]);
+  }, [step, showTypingThenMessage, preSelectedBarberId]);
 
   useEffect(() => {
     if (step === "barber" && !processedStepsRef.current.has("barber")) {
       processedStepsRef.current.add("barber");
+      // If we have a pre-selected barber, don't show the barber selector
+      // The pre-selection effect will handle the flow
+      if (preSelectedBarberId) {
+        return;
+      }
       setTimeout(() => {
         showTypingThenMessage({
           type: "bot",
@@ -480,7 +530,7 @@ export function ChatBookingPage({ onViewAppointments }: ChatBookingPageProps) {
         setTimeout(() => setShowSelector("barber"), 500);
       }, 300);
     }
-  }, [step, showTypingThenMessage]);
+  }, [step, showTypingThenMessage, preSelectedBarberId]);
 
   useEffect(() => {
     if (

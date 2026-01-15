@@ -4,7 +4,7 @@ import { ChatBookingPage } from "@/components/booking";
 import { Button } from "@/components/ui/button";
 import { useSignOut, useUser } from "@/hooks/useAuth";
 import { Scissors, LogOut, LogIn } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Toaster } from "sonner";
 
@@ -13,7 +13,9 @@ export default function AgendarPage() {
   const { mutate: signOut, isPending } = useSignOut();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = params.locale as string;
+  const preSelectedBarberId = searchParams.get("barbeiro") ?? undefined;
 
   const handleViewAppointments = () => {
     if (user) {
@@ -64,7 +66,10 @@ export default function AgendarPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-xl">
-        <ChatBookingPage onViewAppointments={handleViewAppointments} />
+        <ChatBookingPage
+          onViewAppointments={handleViewAppointments}
+          preSelectedBarberId={preSelectedBarberId}
+        />
       </main>
 
       <Toaster position="top-center" richColors />
