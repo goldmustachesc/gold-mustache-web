@@ -130,6 +130,16 @@ function MeusAgendamentosContent() {
         {/* Logged in user - Show their appointments directly */}
         {hasMounted && user && (
           <div className="space-y-6">
+            {/* Botão de novo agendamento sempre visível no topo */}
+            {!isLoading && (
+              <Button asChild className="w-full shadow-md">
+                <Link href={`/${locale}/agendar`}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Fazer novo agendamento
+                </Link>
+              </Button>
+            )}
+
             {isLoading && (
               <div className="space-y-4">
                 {[1, 2].map((i) => (
@@ -154,12 +164,6 @@ function MeusAgendamentosContent() {
                     Você ainda não tem agendamentos futuros.
                   </p>
                 </div>
-                <Button asChild className="shadow-md">
-                  <Link href={`/${locale}/agendar`}>
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Fazer agendamento
-                  </Link>
-                </Button>
               </div>
             )}
 
@@ -198,17 +202,6 @@ function MeusAgendamentosContent() {
                     />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {!isLoading && appointments && appointments.length > 0 && (
-              <div className="pt-4">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/${locale}/agendar`}>
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Fazer novo agendamento
-                  </Link>
-                </Button>
               </div>
             )}
           </div>

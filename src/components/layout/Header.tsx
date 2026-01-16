@@ -103,6 +103,17 @@ export function Header() {
             className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
             asChild
           >
+            <Link href={myAppointmentsLink} aria-label={t("myAppointments")}>
+              <CalendarCheck2 className="h-4 w-4" />
+              <span>{t("myAppointments")}</span>
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+            asChild
+          >
             <Link
               href={user ? `/${locale}/dashboard` : `/${locale}/login`}
               aria-label={user ? "Dashboard" : "Login"}
