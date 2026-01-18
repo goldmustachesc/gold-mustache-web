@@ -9,7 +9,13 @@ export interface AuthResponse {
   error: AuthError | null;
 }
 
-const supabase = createClient();
+/**
+ * Gets Supabase client lazily to avoid module-level initialization issues
+ * where environment variables might not be available during SSR/build.
+ */
+function getClient() {
+  return createClient();
+}
 
 export const authService = {
   async signUp(
@@ -18,6 +24,7 @@ export const authService = {
     fullName: string,
     phone: string,
   ): Promise<AuthResponse> {
+    const supabase = getClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -36,6 +43,7 @@ export const authService = {
   },
 
   async signIn(email: string, password: string): Promise<AuthResponse> {
+    const supabase = getClient();
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -48,6 +56,7 @@ export const authService = {
   },
 
   async signInWithGoogle(): Promise<void> {
+    const supabase = getClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -58,11 +67,13 @@ export const authService = {
   },
 
   async signOut(): Promise<void> {
+    const supabase = getClient();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   },
 
   async resetPassword(email: string): Promise<void> {
+    const supabase = getClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password/update`,
     });
@@ -70,21 +81,25 @@ export const authService = {
   },
 
   async updatePassword(password: string): Promise<void> {
+    const supabase = getClient();
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
   },
 
   async getUser(): Promise<User | null> {
+    const supabase = getClient();
     const { data } = await supabase.auth.getUser();
     return data.user;
   },
 
   async getSession(): Promise<Session | null> {
+    const supabase = getClient();
     const { data } = await supabase.auth.getSession();
     return data.session;
   },
 
   async resendConfirmationEmail(email: string): Promise<void> {
+    const supabase = getClient();
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
