@@ -143,7 +143,7 @@ export function BarberSidebar({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-72 bg-[#1a1a1a] border-l border-zinc-800 p-0"
+        className="w-72 bg-[#1a1a1a] border-l border-zinc-800 p-0 flex h-full flex-col"
       >
         <SheetHeader className="p-6 pb-4">
           <SheetTitle className="sr-only">Menu do Barbeiro</SheetTitle>
@@ -180,7 +180,7 @@ export function BarberSidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-1 px-4 overflow-y-auto max-h-[calc(100vh-280px)]">
+        <nav className="flex min-h-0 flex-1 flex-col gap-1 px-4 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -231,7 +231,7 @@ export function BarberSidebar({
         </nav>
 
         {/* Logout Button */}
-        <div className="absolute bottom-8 left-4 right-4">
+        <div className="mt-auto px-4 pb-6">
           <Button
             variant="ghost"
             onClick={handleSignOut}
