@@ -6,12 +6,12 @@
     {
       "id": "scheduling-1",
       "question": "Como faço para agendar um horário?",
-      "answer": "Você pode agendar através do nosso app Inbarber ou pelo WhatsApp. Recomendamos agendar com antecedência para garantir o horário de sua preferência, especialmente aos finais de semana."
+      "answer": "Você pode agendar diretamente pelo nosso site, de forma rápida e prática. Recomendamos agendar com antecedência para garantir o horário de sua preferência, especialmente aos finais de semana."
     },
     {
       "id": "scheduling-2",
       "question": "Posso agendar para o mesmo dia?",
-      "answer": "Sim! Aceitamos agendamentos para o mesmo dia, sujeito à disponibilidade. Entre em contato pelo WhatsApp para verificar os horários disponíveis."
+      "answer": "Sim! Aceitamos agendamentos para o mesmo dia, sujeito à disponibilidade. Acesse nosso site para verificar os horários disponíveis em tempo real."
     },
     {
       "id": "payment-1",
@@ -26,12 +26,12 @@
     {
       "id": "cancellation-1",
       "question": "Como faço para cancelar ou remarcar meu horário?",
-      "answer": "Para cancelar ou remarcar, entre em contato conosco pelo WhatsApp. Se possível, avise com pelo menos 2 horas de antecedência — isso nos ajuda a liberar e preencher o horário para outros clientes."
+      "answer": "Você pode cancelar ou remarcar diretamente pelo nosso site, na área 'Meus Agendamentos'. Por favor, avise com pelo menos 2 horas de antecedência para evitar a taxa de cancelamento."
     },
     {
       "id": "cancellation-2",
       "question": "Existe taxa de cancelamento?",
-      "answer": "Não cobramos taxa de cancelamento. Ainda assim, recomendamos avisar com antecedência (idealmente 2 horas). Cancelamentos em cima da hora ou não comparecimento podem afetar futuros agendamentos."
+      "answer": "Cancelamentos feitos com mais de 2 horas de antecedência são gratuitos. Cancelamentos dentro das 2 horas antes do horário agendado ou não comparecimento estão sujeitos a uma taxa equivalente a 50% do valor do serviço."
     },
     {
       "id": "services-1",

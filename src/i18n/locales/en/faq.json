@@ -6,12 +6,12 @@
     {
       "id": "scheduling-1",
       "question": "How do I schedule an appointment?",
-      "answer": "You can schedule through our Inbarber app or via WhatsApp. We recommend booking in advance to secure your preferred time, especially on weekends."
+      "answer": "You can schedule directly through our website, quickly and easily. We recommend booking in advance to secure your preferred time, especially on weekends."
     },
     {
       "id": "scheduling-2",
       "question": "Can I book for the same day?",
-      "answer": "Yes! We accept same-day appointments, subject to availability. Contact us via WhatsApp to check available time slots."
+      "answer": "Yes! We accept same-day appointments, subject to availability. Visit our website to check available time slots in real-time."
     },
     {
       "id": "payment-1",
@@ -26,12 +26,12 @@
     {
       "id": "cancellation-1",
       "question": "How do I cancel or reschedule my appointment?",
-      "answer": "To cancel or reschedule, contact us via WhatsApp. If possible, please notify us at least 2 hours in advance — it helps us free up and fill the time slot for other clients."
+      "answer": "You can cancel or reschedule directly through our website, in the 'My Appointments' section. Please notify us at least 2 hours in advance to avoid the cancellation fee."
     },
     {
       "id": "cancellation-2",
       "question": "Is there a cancellation fee?",
-      "answer": "We don't charge a cancellation fee. Still, we recommend giving notice in advance (ideally 2 hours). Last-minute cancellations or no-shows may affect future bookings."
+      "answer": "Cancellations made more than 2 hours in advance are free. Cancellations within 2 hours of the scheduled time or no-shows are subject to a fee of 50% of the service value."
     },
     {
       "id": "services-1",

@@ -23,15 +23,15 @@ function getPathnameWithoutLocale(pathname: string): string {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Skip i18n middleware for API routes
+  // Handle Supabase auth session refresh
+  const { supabaseResponse, user } = await updateSession(request);
+
+  // Skip i18n middleware for API routes, but keep session refresh
   if (pathname.startsWith("/api")) {
-    return NextResponse.next();
+    return supabaseResponse;
   }
 
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
-
-  // Handle Supabase auth session refresh
-  const { supabaseResponse, user } = await updateSession(request);
 
   // Check if route is protected
   const isProtectedRoute = protectedRoutes.some((route) =>

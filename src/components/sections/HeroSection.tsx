@@ -1,8 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Star } from "lucide-react";
+import { Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -14,62 +13,60 @@ export function HeroSection() {
   const bookingLink = `/${locale}/agendar`;
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/20">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-30 bg-gradient-to-br from-muted/10 to-muted/20" />
+    <section className="relative min-h-[calc(100vh-3.5rem)] lg:min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <Image
+        src="/images/interno/interno-01.webp"
+        alt="Interior da Gold Mustache Barbearia"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center"
+      />
 
-      <div className="container relative z-10 px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          {/* Badges */}
-          <div className="flex flex-wrap justify-center gap-3">
-            <Badge variant="default" className="text-sm px-4 py-2">
-              <MapPin className="h-4 w-4 mr-2" />
-              {t("badges.location")}
-            </Badge>
-            <Badge variant="default" className="text-sm px-4 py-2">
-              <Clock className="h-4 w-4 mr-2" />
-              {t("badges.schedule")}
-            </Badge>
-            <Badge variant="default" className="text-sm px-4 py-2">
-              <Star className="h-4 w-4 mr-2 fill-primary text-primary" />
-              {t("badges.experience")}
-            </Badge>
+      {/* Overlay - gradiente para legibilidade (mobile-first, adaptado para dark mode) */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80 dark:from-black/80 dark:via-black/60 dark:to-black/90" />
+
+      {/* Vinheta sutil nas bordas */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)]" />
+
+      {/* Content */}
+      <div className="container relative z-10 px-4 py-12 md:py-16 lg:py-20">
+        <div className="max-w-2xl mx-auto text-center space-y-6 md:space-y-8">
+          {/* Logo */}
+          <div className="flex justify-center">
+            <div className="relative">
+              <Image
+                src="/logo.png"
+                alt="Gold Mustache Logo"
+                width={140}
+                height={140}
+                className="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-full object-cover ring-2 ring-primary/40 shadow-2xl"
+                priority
+              />
+              {/* Glow effect atrás da logo */}
+              <div className="absolute inset-0 -z-10 rounded-full bg-primary/20 blur-2xl scale-150" />
+            </div>
           </div>
 
-          {/* Main Heading */}
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight font-playfair sr-only">
-              <span className="text-primary font-playfair font-extrabold">
-                Gold
-              </span>{" "}
-              <span className="text-foreground font-extrabold">Mustache</span>
-            </h1>
-            {/* <div className="flex justify-center"> */}
-            <Image
-              src="/logo.png"
-              alt="Gold Mustache Logo"
-              width={300}
-              height={300}
-              className="mx-auto rounded-full object-cover"
-            />
-            {/* </div> */}
-            <p className="text-xl md:text-2xl text-muted-foreground font-medium sr-only">
-              {tBrand("tagline")}
-            </p>
-          </div>
+          {/* Brand Name (sr-only para SEO, visualmente representado pela logo) */}
+          <h1 className="sr-only">Gold Mustache Barbearia</h1>
+
+          {/* Tagline */}
+          <p className="text-lg md:text-xl lg:text-2xl font-playfair font-medium text-white/90 tracking-wide">
+            {tBrand("tagline")}
+          </p>
 
           {/* Description */}
-          <div className="max-w-2xl mx-auto">
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              {t("description")}
-            </p>
-          </div>
+          <p className="text-sm md:text-base lg:text-lg text-white/75 leading-relaxed max-w-xl mx-auto">
+            {t("description")}
+          </p>
 
-          {/* Call to Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
+          {/* CTA Principal */}
+          <div className="pt-4 md:pt-6">
             <Button
               size="lg"
-              className="text-lg px-8 py-6 h-auto min-w-[200px] font-semibold"
+              className="text-base md:text-lg px-8 py-6 h-auto font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               asChild
             >
               <Link href={bookingLink} className="flex items-center gap-2">
@@ -77,44 +74,7 @@ export function HeroSection() {
                 {t("cta.book")}
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="text-lg px-8 py-6 h-auto min-w-[200px]"
-            >
-              <a href="#servicos">{t("cta.services")}</a>
-            </Button>
           </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 max-w-2xl mx-auto mb-8">
-            <div className="text-center space-y-2">
-              <div className="text-3xl font-bold text-primary">1000+</div>
-              <div className="text-sm text-muted-foreground">
-                {t("stats.clients")}
-              </div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="text-3xl font-bold text-primary">6+</div>
-              <div className="text-sm text-muted-foreground">
-                {t("stats.experience")}
-              </div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="text-3xl font-bold text-primary">5★</div>
-              <div className="text-sm text-muted-foreground">
-                {t("stats.rating")}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full p-1">
-          <div className="w-1 h-3 bg-muted-foreground/30 rounded-full mx-auto animate-pulse" />
         </div>
       </div>
     </section>

@@ -68,7 +68,7 @@ export function TeamSection() {
                     src={member.image}
                     alt={member.name}
                     fill
-                    className="object-cover"
+                    className="object-contain sm:object-cover object-top"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     onError={() => handleImageError(member.id)}
                   />

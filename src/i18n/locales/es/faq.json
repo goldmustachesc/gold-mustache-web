@@ -6,12 +6,12 @@
     {
       "id": "scheduling-1",
       "question": "¿Cómo hago para agendar una cita?",
-      "answer": "Puedes agendar a través de nuestra app Inbarber o por WhatsApp. Recomendamos reservar con anticipación para garantizar tu horario preferido, especialmente los fines de semana."
+      "answer": "Puedes agendar directamente en nuestro sitio web, de forma rápida y práctica. Recomendamos reservar con anticipación para garantizar tu horario preferido, especialmente los fines de semana."
     },
     {
       "id": "scheduling-2",
       "question": "¿Puedo reservar para el mismo día?",
-      "answer": "¡Sí! Aceptamos citas para el mismo día, sujeto a disponibilidad. Contáctanos por WhatsApp para verificar los horarios disponibles."
+      "answer": "¡Sí! Aceptamos citas para el mismo día, sujeto a disponibilidad. Visita nuestro sitio web para verificar los horarios disponibles en tiempo real."
     },
     {
       "id": "payment-1",
@@ -26,12 +26,12 @@
     {
       "id": "cancellation-1",
       "question": "¿Cómo cancelo o reprogramo mi cita?",
-      "answer": "Para cancelar o reprogramar, contáctanos por WhatsApp. Si es posible, avisa con al menos 2 horas de anticipación — esto nos ayuda a liberar y completar el horario para otros clientes."
+      "answer": "Puedes cancelar o reprogramar directamente en nuestro sitio web, en la sección 'Mis Citas'. Por favor, avisa con al menos 2 horas de anticipación para evitar la tarifa de cancelación."
     },
     {
       "id": "cancellation-2",
       "question": "¿Hay tarifa de cancelación?",
-      "answer": "No cobramos tarifa de cancelación. Aun así, recomendamos avisar con anticipación (idealmente 2 horas). Cancelaciones de último minuto o no presentarse pueden afectar futuras reservas."
+      "answer": "Las cancelaciones realizadas con más de 2 horas de anticipación son gratuitas. Las cancelaciones dentro de las 2 horas antes del horario programado o no presentarse están sujetas a una tarifa del 50% del valor del servicio."
     },
     {
       "id": "services-1",
