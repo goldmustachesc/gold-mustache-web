@@ -6,6 +6,7 @@ import {
   getBarberAppointments,
 } from "@/services/booking";
 import { notifyAppointmentConfirmed } from "@/services/notification";
+import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
 import { createAppointmentSchema } from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
 import { parseDateStringToUTC, getTodayUTCMidnight } from "@/utils/time-slots";
@@ -70,6 +71,11 @@ export async function GET(request: Request) {
           phone: user.user_metadata?.phone || null,
         },
       });
+
+      // Link any guest appointments to this new profile
+      if (profile.phone) {
+        await linkGuestAppointmentsToProfile(profile.id, profile.phone);
+      }
     }
 
     const appointments = await getClientAppointments(profile.id);
@@ -148,6 +154,11 @@ export async function POST(request: Request) {
           phone: user.user_metadata?.phone || null,
         },
       });
+
+      // Link any guest appointments to this new profile
+      if (profile.phone) {
+        await linkGuestAppointmentsToProfile(profile.id, profile.phone);
+      }
     }
 
     // Create appointment
