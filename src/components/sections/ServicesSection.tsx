@@ -21,8 +21,21 @@ import { Separator } from "@/components/ui/separator";
 import { BRAND } from "@/constants/brand";
 import { useServices } from "@/hooks/useBooking";
 import { Calendar, Clock, Scissors, Star, Loader2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+
+// Mapeamento de slug do serviço para imagem WebP
+const SERVICE_IMAGES: Record<string, string> = {
+  "corte-americano": "/images/services/americano.webp",
+  "corte-barba": "/images/services/corte-barba.webp",
+  "corte-degrade-na-zero": "/images/services/degrade-na-zero.webp",
+  "corte-degrade": "/images/services/degrade-navalhado.webp",
+  "corte-low-fade": "/images/services/low-fade-navalhado.webp",
+  luzes: "/images/services/luzes.webp",
+  platinado: "/images/services/plantinado.webp",
+  "corte-na-tesoura": "/images/services/tesoura.webp",
+};
 
 function formatPrice(price: number): string {
   return price.toLocaleString("pt-BR", {
@@ -158,22 +171,34 @@ export function ServicesSection() {
                       key={service.id}
                       className="pl-2 md:pl-4 basis-[85%] sm:basis-[70%]"
                     >
-                      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full">
-                        <CardHeader className="text-center pb-4">
-                          <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <Scissors className="h-8 w-8 text-primary" />
+                      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col overflow-hidden">
+                        {/* Service Image */}
+                        {SERVICE_IMAGES[service.slug] ? (
+                          <div className="relative w-full h-40 overflow-hidden">
+                            <Image
+                              src={SERVICE_IMAGES[service.slug]}
+                              alt={service.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              sizes="(max-width: 640px) 85vw, 70vw"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                           </div>
+                        ) : (
+                          <div className="w-full h-32 bg-primary/5 flex items-center justify-center">
+                            <Scissors className="h-12 w-12 text-primary/40" />
+                          </div>
+                        )}
+                        <CardHeader className="text-center pb-4 flex-shrink-0 pt-4">
                           <CardTitle className="text-xl">
                             {service.name}
                           </CardTitle>
-                          {service.description && (
-                            <CardDescription className="text-base">
-                              {service.description}
-                            </CardDescription>
-                          )}
+                          <CardDescription className="text-base min-h-[3rem] flex items-center justify-center">
+                            {service.description || "\u00A0"}
+                          </CardDescription>
                         </CardHeader>
 
-                        <CardContent className="text-center">
+                        <CardContent className="text-center flex-grow flex flex-col justify-center">
                           <Separator className="mb-4" />
                           <div className="space-y-2">
                             <div className="flex items-center justify-center space-x-2">
@@ -190,7 +215,7 @@ export function ServicesSection() {
                           </div>
                         </CardContent>
 
-                        <CardFooter>
+                        <CardFooter className="mt-auto">
                           <Button
                             className="w-full cursor-pointer"
                             variant="default"
@@ -220,21 +245,33 @@ export function ServicesSection() {
                 <Card
                   id={`servico-${service.slug}`}
                   key={service.id}
-                  className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary"
+                  className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary h-full flex flex-col overflow-hidden"
                 >
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Scissors className="h-8 w-8 text-primary" />
+                  {/* Service Image */}
+                  {SERVICE_IMAGES[service.slug] ? (
+                    <div className="relative w-full h-48 overflow-hidden">
+                      <Image
+                        src={SERVICE_IMAGES[service.slug]}
+                        alt={service.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 1024px) 50vw, 33vw"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                     </div>
+                  ) : (
+                    <div className="w-full h-40 bg-primary/5 flex items-center justify-center">
+                      <Scissors className="h-16 w-16 text-primary/40" />
+                    </div>
+                  )}
+                  <CardHeader className="text-center pb-4 flex-shrink-0 pt-4">
                     <CardTitle className="text-xl">{service.name}</CardTitle>
-                    {service.description && (
-                      <CardDescription className="text-base">
-                        {service.description}
-                      </CardDescription>
-                    )}
+                    <CardDescription className="text-base min-h-[3rem] flex items-center justify-center">
+                      {service.description || "\u00A0"}
+                    </CardDescription>
                   </CardHeader>
 
-                  <CardContent className="text-center">
+                  <CardContent className="text-center flex-grow flex flex-col justify-center">
                     <Separator className="mb-4" />
                     <div className="space-y-2">
                       <div className="flex items-center justify-center space-x-2">
@@ -251,7 +288,7 @@ export function ServicesSection() {
                     </div>
                   </CardContent>
 
-                  <CardFooter>
+                  <CardFooter className="mt-auto">
                     <Button
                       className="w-full cursor-pointer"
                       variant="default"

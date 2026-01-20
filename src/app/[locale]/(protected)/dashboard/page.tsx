@@ -1,13 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useSignOut, useUser } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -15,23 +10,93 @@ import {
   NextAppointmentCard,
   AdminOverview,
   ClientStatsOverview,
+  ClientSidebar,
 } from "@/components/dashboard";
 import { BarberDashboard } from "@/components/dashboard/BarberDashboard";
 import { NotificationPanel } from "@/components/notifications";
+import { cn } from "@/lib/utils";
 import {
   Calendar,
+  ChevronRight,
   ClipboardList,
+  Clock,
+  DollarSign,
+  Loader2,
+  Menu,
   Scissors,
   Settings,
-  Loader2,
-  UserCog,
+  User,
+  Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+interface QuickActionProps {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  description?: string;
+  variant?: "default" | "primary";
+}
+
+function QuickAction({
+  href,
+  icon,
+  label,
+  description,
+  variant = "default",
+}: QuickActionProps) {
+  return (
+    <Link href={href}>
+      <div
+        className={cn(
+          "group relative overflow-hidden rounded-xl p-4 transition-all duration-200",
+          "hover:scale-[1.02] hover:shadow-lg",
+          variant === "primary"
+            ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-500/20"
+            : "bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-100",
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              variant === "primary"
+                ? "bg-white/20"
+                : "bg-zinc-700/50 group-hover:bg-zinc-700",
+            )}
+          >
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold truncate">{label}</p>
+            {description && (
+              <p
+                className={cn(
+                  "text-xs truncate",
+                  variant === "primary" ? "text-white/80" : "text-zinc-400",
+                )}
+              >
+                {description}
+              </p>
+            )}
+          </div>
+          <ChevronRight
+            className={cn(
+              "h-5 w-5 transition-transform group-hover:translate-x-1",
+              variant === "primary" ? "text-white/60" : "text-zinc-500",
+            )}
+          />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: user, isLoading: userLoading } = useUser();
-  const { mutate: signOut, isPending } = useSignOut();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
   const { data: profileMe } = useProfileMe();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
@@ -42,11 +107,21 @@ export default function DashboardPage() {
   const isAdmin = profileMe?.role === "ADMIN";
   const isLoading = userLoading || statsLoading;
 
+  // Greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  const firstName = profileMe?.fullName?.split(" ")[0] || "";
+
   // Show loading while checking user and barber status
   if (userLoading || barberLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     );
   }
@@ -56,154 +131,174 @@ export default function DashboardPage() {
     return <BarberDashboard locale={locale} />;
   }
 
-  // Otherwise, show the client/admin dashboard
+  // Otherwise, show the client/admin dashboard with new design
   return (
-    <div className="container mx-auto max-w-4xl p-4 sm:p-8 space-y-8">
+    <div className="min-h-screen bg-zinc-900 text-white">
+      {/* Sidebar */}
+      <ClientSidebar
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        locale={locale}
+      />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-2">
-          {user?.id && <NotificationPanel userId={user.id} />}
-          <Button
-            variant="outline"
-            onClick={() => signOut()}
-            disabled={isPending}
-          >
-            {isPending ? "Saindo..." : "Sair"}
-          </Button>
-        </div>
-      </div>
+      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
+          {/* Logo */}
+          <Link href={`/${locale}`} className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Gold Mustache"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+            <span className="hidden sm:inline font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
+              GOLD MUSTACHE
+            </span>
+          </Link>
 
-      {/* Welcome Card */}
-      <div className="rounded-lg border bg-card p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="mb-2 text-xl font-semibold">
-              Olá
-              {profileMe?.fullName
-                ? `, ${profileMe.fullName.split(" ")[0]}`
-                : ""}
-              ! 👋
-            </h2>
-            <p className="text-muted-foreground">
-              Você está logado como: <strong>{user?.email}</strong>
-            </p>
-          </div>
-          <Link href={`/${locale}/profile`}>
-            <Button variant="outline" size="sm">
-              <UserCog className="mr-2 h-4 w-4" />
-              Meu Perfil
+          {/* Actions */}
+          <div className="flex items-center gap-2 lg:gap-4">
+            <Link href={`/${locale}/agendar`} className="hidden sm:block">
+              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
+                <Calendar className="h-4 w-4 mr-2" />
+                Agendar
+              </Button>
+            </Link>
+
+            {user?.email && (
+              <span className="text-sm text-zinc-400 hidden xl:inline">
+                {user.email}
+              </span>
+            )}
+
+            {user?.id && <NotificationPanel userId={user.id} />}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+            >
+              <Menu className="h-6 w-6" />
             </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Loading Stats */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">
-            Carregando informações...
-          </span>
-        </div>
-      )}
-
-      {/* Client Section - Next Appointment */}
-      {!isLoading && stats?.client?.nextAppointment && (
-        <section>
-          <NextAppointmentCard
-            appointment={stats.client.nextAppointment}
-            locale={locale}
-          />
-        </section>
-      )}
-
-      {/* Admin Section - Shop Overview */}
-      {!isLoading && isAdmin && stats?.admin && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Settings className="h-5 w-5 text-primary" />
-            Visão Geral da Barbearia
-          </h2>
-          <AdminOverview stats={stats.admin} />
-        </section>
-      )}
-
-      {/* Client Stats Section */}
-      {!isLoading && stats?.client && stats.client.totalVisits > 0 && (
-        <section>
-          <ClientStatsOverview stats={stats.client} locale={locale} />
-        </section>
-      )}
-
-      {/* Quick Actions - Scheduling */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">Agendamento</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href={`/${locale}/agendar`}>
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-              <CardHeader>
-                <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                  <Calendar className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>Agendar</CardTitle>
-                <CardDescription>
-                  Marque um novo horário com seu barbeiro favorito
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-
-          <Link href={`/${locale}/meus-agendamentos`}>
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-              <CardHeader>
-                <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                  <ClipboardList className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>Meus Agendamentos</CardTitle>
-                <CardDescription>
-                  Veja e gerencie seus agendamentos futuros
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        </div>
-      </section>
-
-      {/* Admin Quick Actions */}
-      {isAdmin && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Administração</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link href={`/${locale}/admin/barbearia/horarios`}>
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                    <Settings className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Horários da Barbearia</CardTitle>
-                  <CardDescription>
-                    Configure horário global e fechamentos por data
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-            <Link href={`/${locale}/admin/barbearia/servicos`}>
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="p-2 bg-primary/10 rounded-full w-fit mb-2">
-                    <Scissors className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Serviços</CardTitle>
-                  <CardDescription>
-                    Gerencie os serviços oferecidos pela barbearia
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
           </div>
-        </section>
-      )}
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8 space-y-6">
+        {/* Greeting */}
+        <div className="space-y-1">
+          <h1 className="text-2xl lg:text-3xl font-bold">
+            {getGreeting()}
+            {firstName ? `, ${firstName}` : ""}! 👋
+          </h1>
+          <p className="text-zinc-400">
+            Bem-vindo de volta! Confira seus agendamentos e novidades.
+          </p>
+        </div>
+
+        {/* Loading Stats */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+            <span className="ml-2 text-zinc-400">
+              Carregando informações...
+            </span>
+          </div>
+        )}
+
+        {/* Client Section - Next Appointment */}
+        {!isLoading && stats?.client?.nextAppointment && (
+          <section>
+            <NextAppointmentCard
+              appointment={stats.client.nextAppointment}
+              locale={locale}
+            />
+          </section>
+        )}
+
+        {/* Client Stats Section */}
+        {!isLoading && stats?.client && stats.client.totalVisits > 0 && (
+          <section>
+            <ClientStatsOverview stats={stats.client} locale={locale} />
+          </section>
+        )}
+
+        {/* Quick Actions */}
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-zinc-200">Acesso rápido</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <QuickAction
+              href={`/${locale}/agendar`}
+              icon={<Calendar className="h-5 w-5" />}
+              label="Agendar"
+              description="Marque um novo horário"
+              variant="primary"
+            />
+            <QuickAction
+              href={`/${locale}/meus-agendamentos`}
+              icon={<ClipboardList className="h-5 w-5 text-emerald-400" />}
+              label="Meus Agendamentos"
+              description="Ver e gerenciar"
+            />
+            <QuickAction
+              href={`/${locale}/profile`}
+              icon={<User className="h-5 w-5 text-blue-400" />}
+              label="Meu Perfil"
+              description="Editar dados pessoais"
+            />
+          </div>
+        </div>
+
+        {/* Admin Section - Shop Overview */}
+        {!isLoading && isAdmin && stats?.admin && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-zinc-200 flex items-center gap-2">
+              <Settings className="h-5 w-5 text-amber-400" />
+              Visão Geral da Barbearia
+            </h2>
+            <AdminOverview stats={stats.admin} />
+          </section>
+        )}
+
+        {/* Admin Quick Actions */}
+        {isAdmin && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-zinc-200">
+              Administração
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <QuickAction
+                href={`/${locale}/admin/barbearia/horarios`}
+                icon={<Clock className="h-5 w-5 text-orange-400" />}
+                label="Horários da Barbearia"
+                description="Configurar horário global"
+              />
+              <QuickAction
+                href={`/${locale}/admin/barbearia/servicos`}
+                icon={<Scissors className="h-5 w-5 text-purple-400" />}
+                label="Serviços"
+                description="Gerenciar serviços"
+              />
+              <QuickAction
+                href={`/${locale}/admin/barbeiros`}
+                icon={<Users className="h-5 w-5 text-cyan-400" />}
+                label="Barbeiros"
+                description="Gerenciar equipe"
+              />
+              <QuickAction
+                href={`/${locale}/admin/faturamento`}
+                icon={<DollarSign className="h-5 w-5 text-green-400" />}
+                label="Faturamento"
+                description="Relatório financeiro"
+              />
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

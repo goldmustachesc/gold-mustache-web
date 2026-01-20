@@ -8,6 +8,7 @@ export { ClientStatsOverview } from "./ClientStatsOverview";
 // BarberDashboard is intentionally not exported here to avoid circular dependencies.
 // Import it directly: import { BarberDashboard } from "@/components/dashboard/BarberDashboard";
 export { BarberSidebar } from "./BarberSidebar";
+export { ClientSidebar } from "./ClientSidebar";
 export { BarberStatsCards } from "./BarberStatsCards";
 export { MyLinkCard } from "./MyLinkCard";
 export { BarberHub } from "./BarberHub";

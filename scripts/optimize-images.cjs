@@ -17,6 +17,7 @@ const IMAGE_DIRS = [
   "images/ig",
   "images/interno",
   "images/sponsors",
+  "images/services",
   "barbers",
 ];
 

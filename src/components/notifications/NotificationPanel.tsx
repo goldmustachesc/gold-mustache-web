@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { NotificationBell } from "./NotificationBell";
 import { NotificationList } from "./NotificationList";
@@ -22,17 +22,20 @@ export function NotificationPanel({ userId }: NotificationPanelProps) {
   const { notifications, unreadCount, isLoading, markAsRead } =
     useNotifications({ userId });
 
+  // Track which notifications have already shown a toast
+  const shownToastIdsRef = useRef<Set<string>>(new Set());
+
   // Show toast for new notifications
   useEffect(() => {
-    if (notifications.length > 0) {
-      const latestUnread = notifications.find((n) => !n.read);
+    if (notifications.length > 0 && !open) {
+      const latestUnread = notifications.find(
+        (n) => !n.read && !shownToastIdsRef.current.has(n.id),
+      );
       if (latestUnread) {
-        // Only show toast if panel is closed
-        if (!open) {
-          toast(latestUnread.title, {
-            description: latestUnread.message,
-          });
-        }
+        shownToastIdsRef.current.add(latestUnread.id);
+        toast(latestUnread.title, {
+          description: latestUnread.message,
+        });
       }
     }
   }, [notifications, open]);

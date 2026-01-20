@@ -39,13 +39,13 @@ export default function Home() {
       <HeroSection />
       <ServicesSection />
       <TeamSection />
-      <FAQSection />
-      <GallerySection />
       <TestimonialsSection />
       <InstagramSection />
       <EventsSection />
-      <SponsorsSection />
       <ContactSection />
+      <SponsorsSection />
+      <GallerySection />
+      <FAQSection />
     </div>
   );
 }
