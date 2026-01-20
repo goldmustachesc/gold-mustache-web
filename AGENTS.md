@@ -7,6 +7,14 @@
 - Configuration, constants, and TypeScript contracts live in `src/config`, `src/constants`, and `src/types`; assets and fonts stay under `public/`.
 - Import from the project root using the `@/` alias (see `tsconfig.json`).
 
+## Brand Book & Visual Identity
+- **SEMPRE consulte `docs/Brand_Book_Gold_Mustache.md` antes de implementar qualquer mudança visual.**
+- O Brand Book define: cores (dourado como primário), tipografia (Playfair Display para títulos, Geist Sans para UI), tom de voz, espaçamentos e componentes visuais.
+- Use os design tokens definidos em `src/app/globals.css` (variáveis CSS como `--primary`, `--background`, etc.).
+- Configurações centralizadas da marca estão em `src/config/barbershop.ts`.
+- Respeite o sistema dual Light/Dark mode com as cores especificadas no Brand Book.
+- Tom de voz: direto, caloroso e profissional. Evite linguagem excessivamente informal ou corporativa.
+
 ## Build, Test, and Development Commands
 - `pnpm install` sets up dependencies; keep lockfile changes committed.
 - `pnpm dev` runs the local server with Turbopack at `http://localhost:3001`.

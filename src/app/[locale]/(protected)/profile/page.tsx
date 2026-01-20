@@ -24,6 +24,7 @@ import { PasswordChangeCard } from "@/components/profile/PasswordChangeCard";
 import { DeleteAccountCard } from "@/components/profile/DeleteAccountCard";
 import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -87,9 +88,7 @@ export default function ProfilePage() {
                   height={40}
                   className="rounded-full"
                 />
-                <span className="font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-                  GOLD MUSTACHE
-                </span>
+                <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
               </Link>
             </div>
 

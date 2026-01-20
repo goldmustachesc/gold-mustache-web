@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -141,9 +142,7 @@ export function ClientSidebar({
               height={48}
               className="rounded-full"
             />
-            <span className="font-playfair text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-              GOLD MUSTACHE
-            </span>
+            <BrandWordmark className="text-2xl">GOLD MUSTACHE</BrandWordmark>
           </Link>
         </div>
 

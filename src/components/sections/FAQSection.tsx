@@ -86,7 +86,10 @@ function FAQSectionComponent() {
               <HelpCircle className="h-4 w-4 mr-2" aria-hidden="true" />
               <span>{t("badge")}</span>
             </Badge>
-            <h2 id="faq-title" className="text-3xl md:text-4xl font-bold mb-4">
+            <h2
+              id="faq-title"
+              className="text-3xl md:text-4xl font-playfair font-bold mb-4"
+            >
               {t("title")}
             </h2>
             <p

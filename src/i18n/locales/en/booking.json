@@ -32,7 +32,7 @@
     "tryAnother": "Try selecting another day."
   },
   "confirmation": {
-    "title": "Booking Confirmed!",
+    "title": "Booking confirmed",
     "description": "Your appointment has been successfully booked.",
     "service": "Service",
     "barber": "Barber",
@@ -77,7 +77,7 @@
   },
   "barberDashboard": {
     "title": "My Schedule",
-    "freeDay": "Free day!",
+    "freeDay": "Free day",
     "noAppointments": "No appointments for this day"
   },
   "notifications": {
@@ -88,9 +88,9 @@
     "appointmentReminder": "Appointment reminder"
   },
   "toast": {
-    "bookingSuccess": "Booking successful!",
+    "bookingSuccess": "Booking successful",
     "bookingError": "Error booking",
-    "cancelSuccess": "Appointment cancelled successfully!",
+    "cancelSuccess": "Appointment cancelled successfully",
     "cancelError": "Error cancelling",
     "slotOccupied": "This time slot is already booked. Please choose another.",
     "cancellationBlocked": "Cancellation not allowed within 2 hours of the appointment.",

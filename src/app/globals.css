@@ -32,6 +32,12 @@
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
@@ -70,6 +76,12 @@
   /* Accent: Subtle gold accent */
   --accent: oklch(0.92 0.02 85);
   --accent-foreground: oklch(0.25 0.02 85);
+  --success: #22c55e;
+  --success-foreground: oklch(0.98 0.01 85);
+  --warning: #eab308;
+  --warning-foreground: oklch(0.15 0.02 85);
+  --info: #3b82f6;
+  --info-foreground: oklch(0.98 0.01 85);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.88 0.01 85);
   --input: oklch(0.96 0.005 85);
@@ -126,6 +138,12 @@
   /* zinc-800 */
   --accent-foreground: oklch(0.9235 0.0031 256.8);
   /* zinc-100 */
+  --success: #22c55e;
+  --success-foreground: oklch(0.15 0.02 85);
+  --warning: #eab308;
+  --warning-foreground: oklch(0.15 0.02 85);
+  --info: #3b82f6;
+  --info-foreground: oklch(0.9235 0.0031 256.8);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(0.2525 0.0066 256.8);
   /* zinc-700 */

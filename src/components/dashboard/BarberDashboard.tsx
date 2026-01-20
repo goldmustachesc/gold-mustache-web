@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { BarberSidebar } from "./BarberSidebar";
 import { BarberStatsCards } from "./BarberStatsCards";
@@ -171,9 +172,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
                 height={40}
                 className="rounded-full"
               />
-              <span className="font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-                GOLD MUSTACHE
-              </span>
+              <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
             </Link>
           </div>
 

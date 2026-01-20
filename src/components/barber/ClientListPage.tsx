@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
@@ -73,16 +74,16 @@ export function ClientListPage() {
                   height={40}
                   className="rounded-full"
                 />
-                <span className="hidden lg:block font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
+                <BrandWordmark className="hidden lg:block text-xl">
                   GOLD MUSTACHE
-                </span>
+                </BrandWordmark>
               </Link>
             </div>
 
             {/* Mobile Title */}
             <div className="lg:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
               <Users className="h-5 w-5 text-amber-500" />
-              <h1 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-playfair font-bold text-primary">
                 Lista de Clientes
               </h1>
             </div>

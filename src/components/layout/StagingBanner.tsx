@@ -21,8 +21,8 @@ export function StagingBanner() {
 
   const environmentColor =
     siteConfig.environment === "staging"
-      ? "bg-amber-500/90 text-amber-950"
-      : "bg-blue-500/90 text-blue-950";
+      ? "bg-warning/90 text-warning-foreground"
+      : "bg-info/90 text-info-foreground";
 
   return (
     <div

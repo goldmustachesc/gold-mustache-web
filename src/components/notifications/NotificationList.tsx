@@ -18,9 +18,9 @@ const typeIcons: Record<string, typeof Bell> = {
 };
 
 const typeColors: Record<string, string> = {
-  APPOINTMENT_CONFIRMED: "text-green-600 bg-green-100 dark:bg-green-900/30",
-  APPOINTMENT_CANCELLED: "text-red-600 bg-red-100 dark:bg-red-900/30",
-  APPOINTMENT_REMINDER: "text-blue-600 bg-blue-100 dark:bg-blue-900/30",
+  APPOINTMENT_CONFIRMED: "text-success bg-success/10",
+  APPOINTMENT_CANCELLED: "text-destructive bg-destructive/10",
+  APPOINTMENT_REMINDER: "text-info bg-info/10",
 };
 
 export function NotificationList({

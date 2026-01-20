@@ -62,7 +62,7 @@ export function BookingReview({
             <AlertCircle className="h-8 w-8 text-amber-500" />
           </div>
         </div>
-        <h2 className="text-xl font-bold">Confirme seu Agendamento</h2>
+        <h2 className="text-xl font-bold">Confirme o agendamento</h2>
         <p className="text-sm text-muted-foreground">
           Verifique se todos os dados estão corretos antes de confirmar
         </p>
@@ -103,7 +103,7 @@ export function BookingReview({
               </p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-primary text-lg">
+              <p className="font-bold font-mono text-primary text-lg">
                 R$ {service.price.toFixed(2).replace(".", ",")}
               </p>
             </div>
@@ -131,7 +131,7 @@ export function BookingReview({
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Horário</p>
-              <p className="font-semibold">
+              <p className="font-semibold font-mono">
                 {slot.time} - {endTime}
               </p>
             </div>
@@ -148,7 +148,7 @@ export function BookingReview({
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Cliente</p>
                   <p className="font-semibold">{guestInfo.clientName}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-mono">
                     {guestInfo.clientPhone}
                   </p>
                 </div>

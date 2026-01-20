@@ -83,7 +83,7 @@ export function SponsorsSection() {
             <HandshakeIcon className="h-4 w-4 mr-2" />
             Patrocinadores
           </Badge>
-          <h2 className="text-3xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl font-playfair font-bold text-foreground mb-4">
             Nossos <span className="text-primary">Parceiros</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">

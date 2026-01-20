@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
 import { CancelledAppointmentCard } from "@/components/barber/CancelledAppointmentCard";
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useUser } from "@/hooks/useAuth";
@@ -89,9 +90,7 @@ export default function CanceladosPage() {
                   height={40}
                   className="rounded-full"
                 />
-                <span className="font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-                  GOLD MUSTACHE
-                </span>
+                <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
               </Link>
             </div>
 

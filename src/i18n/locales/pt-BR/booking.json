@@ -55,7 +55,7 @@
     "tryAnother": "Tente selecionar outro dia."
   },
   "confirmation": {
-    "title": "Agendamento Confirmado!",
+    "title": "Agendamento confirmado",
     "description": "Seu horário foi reservado com sucesso.",
     "service": "Serviço",
     "barber": "Barbeiro",
@@ -100,7 +100,7 @@
   },
   "barberDashboard": {
     "title": "Minha Agenda",
-    "freeDay": "Dia livre!",
+    "freeDay": "Dia livre",
     "noAppointments": "Nenhum agendamento para este dia"
   },
   "notifications": {
@@ -111,9 +111,9 @@
     "appointmentReminder": "Lembrete de agendamento"
   },
   "toast": {
-    "bookingSuccess": "Agendamento realizado com sucesso!",
+    "bookingSuccess": "Agendamento realizado com sucesso",
     "bookingError": "Erro ao agendar",
-    "cancelSuccess": "Agendamento cancelado com sucesso!",
+    "cancelSuccess": "Agendamento cancelado com sucesso",
     "cancelError": "Erro ao cancelar",
     "slotOccupied": "Este horário já foi reservado. Por favor, escolha outro.",
     "cancellationBlocked": "Cancelamento não permitido com menos de 2 horas de antecedência.",

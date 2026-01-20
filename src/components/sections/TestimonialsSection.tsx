@@ -42,7 +42,9 @@ export function TestimonialsSection() {
             <Quote className="h-4 w-4 mr-2" />
             <span>{t("badge")}</span>
           </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("title")}</h2>
+          <h2 className="text-3xl md:text-4xl font-playfair font-bold mb-4">
+            {t("title")}
+          </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {t("description")}
           </p>

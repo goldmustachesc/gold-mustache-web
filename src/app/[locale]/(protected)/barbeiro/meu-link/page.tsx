@@ -20,6 +20,7 @@ import {
   Monitor,
   Download,
 } from "lucide-react";
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -122,9 +123,7 @@ export default function MeuLinkPage() {
                 height={40}
                 className="rounded-full"
               />
-              <span className="font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-                GOLD MUSTACHE
-              </span>
+              <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
             </Link>
           </div>
 

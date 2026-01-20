@@ -29,13 +29,13 @@ export function BookingConfirmation({
   };
 
   return (
-    <Card className="border-green-500/30 bg-green-50/50 dark:bg-green-950/20">
+    <Card className="border-success/30 bg-success/10">
       <CardHeader className="text-center pb-4">
-        <div className="mx-auto mb-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-full w-16 h-16 flex items-center justify-center">
-          <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+        <div className="mx-auto mb-4 p-3 bg-success/15 rounded-full w-16 h-16 flex items-center justify-center">
+          <CheckCircle className="h-8 w-8 text-success" />
         </div>
-        <CardTitle className="text-xl text-green-700 dark:text-green-400">
-          Agendamento Confirmado!
+        <CardTitle className="text-xl text-success">
+          Agendamento confirmado
         </CardTitle>
         <CardDescription>
           Seu horário foi reservado com sucesso.
@@ -72,7 +72,7 @@ export function BookingConfirmation({
             <Clock className="h-5 w-5 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">Horário</p>
-              <p className="font-medium">
+              <p className="font-medium font-mono">
                 {appointment.startTime} - {appointment.endTime}
               </p>
             </div>
@@ -81,7 +81,7 @@ export function BookingConfirmation({
 
         <div className="text-center p-3 bg-muted/50 rounded-lg">
           <p className="text-sm text-muted-foreground">Valor</p>
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-2xl font-bold font-mono text-primary">
             R$ {appointment.service.price.toFixed(2).replace(".", ",")}
           </p>
         </div>

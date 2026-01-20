@@ -89,7 +89,7 @@ export function InstagramSection() {
             <Instagram className="h-4 w-4 mr-2" />
             Instagram
           </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-playfair font-bold mb-4">
             Acompanhe no <span className="text-primary">Instagram</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
@@ -247,7 +247,7 @@ export function InstagramSection() {
         {/* Call to Action */}
         <div className="text-center">
           <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-8 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold mb-4">
+            <h3 className="text-2xl font-playfair font-bold mb-4">
               Quer ver mais trabalhos?
             </h3>
             <p className="text-muted-foreground mb-6">

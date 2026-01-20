@@ -58,38 +58,38 @@ const statusConfig: Record<
 > = {
   CONFIRMED: {
     label: "Confirmado",
-    bgClass: "bg-emerald-500/10",
-    textClass: "text-emerald-400",
-    borderClass: "border-emerald-500/30",
-    iconBgClass: "bg-emerald-500/20",
+    bgClass: "bg-success/10",
+    textClass: "text-success",
+    borderClass: "border-success/30",
+    iconBgClass: "bg-success/20",
   },
   CANCELLED_BY_CLIENT: {
     label: "Cancelado",
-    bgClass: "bg-red-500/10",
-    textClass: "text-red-400",
-    borderClass: "border-red-500/30",
-    iconBgClass: "bg-red-500/20",
+    bgClass: "bg-destructive/10",
+    textClass: "text-destructive",
+    borderClass: "border-destructive/30",
+    iconBgClass: "bg-destructive/20",
   },
   CANCELLED_BY_BARBER: {
     label: "Cancelado pelo barbeiro",
-    bgClass: "bg-red-500/10",
-    textClass: "text-red-400",
-    borderClass: "border-red-500/30",
-    iconBgClass: "bg-red-500/20",
+    bgClass: "bg-destructive/10",
+    textClass: "text-destructive",
+    borderClass: "border-destructive/30",
+    iconBgClass: "bg-destructive/20",
   },
   COMPLETED: {
     label: "Concluído",
-    bgClass: "bg-zinc-500/10",
-    textClass: "text-zinc-400",
-    borderClass: "border-zinc-500/30",
-    iconBgClass: "bg-zinc-500/20",
+    bgClass: "bg-muted/40",
+    textClass: "text-muted-foreground",
+    borderClass: "border-border/50",
+    iconBgClass: "bg-muted/50",
   },
   NO_SHOW: {
     label: "Não compareceu",
-    bgClass: "bg-amber-500/10",
-    textClass: "text-amber-400",
-    borderClass: "border-amber-500/30",
-    iconBgClass: "bg-amber-500/20",
+    bgClass: "bg-warning/10",
+    textClass: "text-warning",
+    borderClass: "border-warning/30",
+    iconBgClass: "bg-warning/20",
   },
 };
 
@@ -135,12 +135,12 @@ export function AppointmentCard({
         className={cn(
           "absolute top-0 left-0 right-0 h-1",
           isConfirmed
-            ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+            ? "bg-success"
             : appointment.status === AppointmentStatus.COMPLETED
-              ? "bg-gradient-to-r from-zinc-500 to-zinc-400"
+              ? "bg-muted-foreground/30"
               : appointment.status === AppointmentStatus.NO_SHOW
-                ? "bg-gradient-to-r from-amber-500 to-amber-400"
-                : "bg-gradient-to-r from-red-500 to-red-400",
+                ? "bg-warning"
+                : "bg-destructive",
         )}
       />
 
@@ -165,7 +165,7 @@ export function AppointmentCard({
                   {appointment.service.duration} min
                 </span>
                 <span className="text-zinc-600">•</span>
-                <span className="text-sm font-medium text-amber-400">
+                <span className="text-sm font-medium font-mono text-primary">
                   R$ {appointment.service.price.toFixed(2).replace(".", ",")}
                 </span>
               </div>
@@ -194,7 +194,7 @@ export function AppointmentCard({
 
           <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-900/50">
             <Clock className="h-4 w-4 text-zinc-500" />
-            <span className="text-sm text-zinc-300">
+            <span className="text-sm text-zinc-300 font-mono">
               {appointment.startTime} - {appointment.endTime}
             </span>
           </div>
@@ -205,11 +205,9 @@ export function AppointmentCard({
           <User className="h-4 w-4 text-zinc-500" />
           <span className="text-sm text-zinc-300">
             {showClientInfo ? (
-              <>
-                {appointment.client?.fullName ??
-                  appointment.guestClient?.fullName ??
-                  "Cliente"}
-              </>
+              (appointment.client?.fullName ??
+              appointment.guestClient?.fullName ??
+              "Cliente")
             ) : (
               <>
                 Com{" "}
@@ -227,7 +225,7 @@ export function AppointmentCard({
             <Phone className="h-4 w-4 text-zinc-500" />
             <a
               href={`tel:${clientPhone}`}
-              className="text-sm text-amber-400 hover:underline"
+              className="text-sm text-info hover:underline font-mono"
             >
               {clientPhone}
             </a>
@@ -236,8 +234,8 @@ export function AppointmentCard({
 
         {/* Cancel Reason */}
         {appointment.cancelReason && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg mb-4">
-            <p className="text-sm text-red-400">
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+            <p className="text-sm text-destructive">
               <strong>Motivo:</strong> {appointment.cancelReason}
             </p>
           </div>
@@ -245,9 +243,9 @@ export function AppointmentCard({
 
         {/* Cancellation Blocked Warning */}
         {isCancellationBlocked && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2.5 mb-4">
-            <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-            <p className="text-sm text-amber-400">
+          <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-2.5 mb-4">
+            <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+            <p className="text-sm text-warning">
               Cancelamento não permitido com menos de 2 horas de antecedência.
               Em caso de não comparecimento, será cobrada uma taxa.
             </p>
@@ -263,7 +261,7 @@ export function AppointmentCard({
                 size="sm"
                 onClick={onCancel}
                 disabled={isCancelling || isMarkingNoShow}
-                className="flex-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                className="flex-1 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
               >
                 <X className="h-4 w-4 mr-2" />
                 {isCancelling ? "Cancelando..." : "Cancelar Agendamento"}
@@ -275,7 +273,7 @@ export function AppointmentCard({
                 size="sm"
                 onClick={onMarkNoShow}
                 disabled={isCancelling || isMarkingNoShow}
-                className="flex-1 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                className="flex-1 text-warning hover:text-warning/90 hover:bg-warning/10"
               >
                 <UserX className="h-4 w-4 mr-2" />
                 {isMarkingNoShow ? "Marcando..." : "Não Compareceu"}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { BarberSidebar } from "./BarberSidebar";
 import { BarberStatsCards } from "./BarberStatsCards";
@@ -196,9 +197,9 @@ export function BarberHub({ locale }: BarberHubProps) {
               height={40}
               className="rounded-full"
             />
-            <span className="hidden sm:inline font-playfair text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
+            <BrandWordmark className="hidden sm:inline text-xl">
               GOLD MUSTACHE
-            </span>
+            </BrandWordmark>
           </Link>
 
           {/* Actions */}
