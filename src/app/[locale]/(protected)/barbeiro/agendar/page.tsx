@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useDeferredValue, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,19 +25,22 @@ import {
   useSlots,
   useCreateAppointmentByBarber,
 } from "@/hooks/useBooking";
+import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
 import {
   ArrowLeft,
   Calendar,
   Clock,
   Loader2,
   User,
-  Phone,
   Scissors,
   Check,
   Menu,
   Info,
   CheckCircle2,
   Receipt,
+  UserCheck,
+  X,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateToString, getBrazilDateString } from "@/utils/time-slots";
@@ -60,6 +63,13 @@ export default function BarberAgendarPage() {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
 
+  // Client search state
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const deferredPhone = useDeferredValue(clientPhone);
+
   // Data hooks
   const { data: services, isLoading: servicesLoading } = useServices(
     barberProfile?.id,
@@ -69,6 +79,11 @@ export default function BarberAgendarPage() {
     barberProfile?.id || null,
     selectedServiceId || null,
   );
+
+  // Client search - only search when phone has 6+ digits and no client selected
+  const shouldSearch = deferredPhone.length >= 6 && !selectedClient;
+  const { data: clientSuggestions = [], isLoading: clientsLoading } =
+    useBarberClients(shouldSearch ? deferredPhone : undefined);
 
   const createAppointment = useCreateAppointmentByBarber();
 
@@ -92,10 +107,67 @@ export default function BarberAgendarPage() {
     setSelectedTime("");
   }, [selectedDate, selectedServiceId]);
 
+  // Show suggestions when we have results
+  useEffect(() => {
+    if (clientSuggestions.length > 0 && !selectedClient) {
+      setShowSuggestions(true);
+    }
+  }, [clientSuggestions, selectedClient]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        phoneInputRef.current &&
+        !phoneInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Format phone number for display: (XX) XXXXX-XXXX or (XX) XXXX-XXXX
+  const formatPhoneDisplay = (phone: string): string => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length === 0) return "";
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    // 11 digits (with 9)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow digits
-    const value = e.target.value.replace(/\D/g, "");
+    // Only allow digits, max 11
+    const value = e.target.value.replace(/\D/g, "").slice(0, 11);
     setClientPhone(value);
+    // Clear selected client when phone changes
+    if (selectedClient) {
+      setSelectedClient(null);
+      setClientName("");
+    }
+  };
+
+  const handleSelectClient = (client: ClientData) => {
+    setSelectedClient(client);
+    setClientName(client.fullName);
+    setClientPhone(client.phone);
+    setShowSuggestions(false);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedClient(null);
+    setClientName("");
+    setClientPhone("");
+    setShowSuggestions(false);
+    phoneInputRef.current?.focus();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,6 +204,7 @@ export default function BarberAgendarPage() {
       setSelectedTime("");
       setClientName("");
       setClientPhone("");
+      setSelectedClient(null);
 
       // Redirect to barber schedule
       setTimeout(() => {
@@ -270,21 +343,179 @@ export default function BarberAgendarPage() {
               {/* Client Info & Service - Side by side on desktop */}
               <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
                 {/* Client Info */}
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-amber-500" />
+                <div
+                  className={cn(
+                    "bg-zinc-800/50 rounded-2xl p-6 border",
+                    selectedClient
+                      ? "border-emerald-500/30"
+                      : "border-zinc-700/50",
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "h-10 w-10 rounded-xl flex items-center justify-center",
+                          selectedClient
+                            ? "bg-emerald-500/10"
+                            : "bg-amber-500/10",
+                        )}
+                      >
+                        {selectedClient ? (
+                          <UserCheck className="h-5 w-5 text-emerald-500" />
+                        ) : (
+                          <User className="h-5 w-5 text-amber-500" />
+                        )}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold">
+                          Dados do Cliente
+                        </h2>
+                        <p className="text-xs text-zinc-500">
+                          {selectedClient
+                            ? "Cliente selecionado"
+                            : "Digite o telefone para buscar"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg font-semibold">
-                        Dados do Cliente
-                      </h2>
-                      <p className="text-xs text-zinc-500">
-                        Informações do cliente
+                    {selectedClient && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearSelection}
+                        className="text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Selected client badge */}
+                  {selectedClient && (
+                    <div className="mb-4 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 text-emerald-400" />
+                        <span className="text-sm text-emerald-400 font-medium">
+                          Cliente cadastrado
+                        </span>
+                        {selectedClient.type === "registered" && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                            Conta ativa
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        {selectedClient.appointmentCount} agendamento
+                        {selectedClient.appointmentCount !== 1 ? "s" : ""}{" "}
+                        anterior
+                        {selectedClient.appointmentCount !== 1 ? "es" : ""}
                       </p>
                     </div>
-                  </div>
+                  )}
+
                   <div className="space-y-4">
+                    {/* Phone field with search */}
+                    <div className="space-y-2">
+                      <Label htmlFor="clientPhone" className="text-zinc-300">
+                        Telefone
+                      </Label>
+                      <div className="relative">
+                        {clientsLoading ? (
+                          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 animate-spin" />
+                        ) : (
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        )}
+                        <Input
+                          ref={phoneInputRef}
+                          id="clientPhone"
+                          placeholder="(00) 00000-0000"
+                          value={formatPhoneDisplay(clientPhone)}
+                          onChange={handlePhoneChange}
+                          onFocus={() => {
+                            if (
+                              clientSuggestions.length > 0 &&
+                              !selectedClient
+                            ) {
+                              setShowSuggestions(true);
+                            }
+                          }}
+                          className={cn(
+                            "pl-10 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 h-11",
+                            selectedClient
+                              ? "border-emerald-500/50 focus:border-emerald-500"
+                              : "focus:border-amber-500",
+                          )}
+                          maxLength={16}
+                          required
+                          readOnly={!!selectedClient}
+                        />
+
+                        {/* Suggestions dropdown */}
+                        {showSuggestions && clientSuggestions.length > 0 && (
+                          <div
+                            ref={suggestionsRef}
+                            className="absolute z-50 top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden"
+                          >
+                            <div className="p-2 text-xs text-zinc-500 border-b border-zinc-800">
+                              <Search className="h-3 w-3 inline mr-1" />
+                              {clientSuggestions.length} cliente
+                              {clientSuggestions.length !== 1 ? "s" : ""}{" "}
+                              encontrado
+                              {clientSuggestions.length !== 1 ? "s" : ""}
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                              {clientSuggestions.map((client) => (
+                                <button
+                                  key={client.id}
+                                  type="button"
+                                  onClick={() => handleSelectClient(client)}
+                                  className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-zinc-800 transition-colors text-left"
+                                >
+                                  <div
+                                    className={cn(
+                                      "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium",
+                                      client.type === "registered"
+                                        ? "bg-emerald-500/20 text-emerald-400"
+                                        : "bg-amber-500/20 text-amber-400",
+                                    )}
+                                  >
+                                    {client.fullName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-white font-medium truncate">
+                                      {client.fullName}
+                                    </p>
+                                    <p className="text-xs text-zinc-500">
+                                      {client.phone.length === 11
+                                        ? client.phone.replace(
+                                            /(\d{2})(\d{5})(\d{4})/,
+                                            "($1) $2-$3",
+                                          )
+                                        : client.phone.replace(
+                                            /(\d{2})(\d{4})(\d{4})/,
+                                            "($1) $2-$3",
+                                          )}
+                                    </p>
+                                  </div>
+                                  <div className="text-xs text-zinc-600">
+                                    {client.appointmentCount} agend.
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500">
+                        {selectedClient
+                          ? "Cliente selecionado automaticamente"
+                          : "Digite o telefone para buscar ou criar novo cliente"}
+                      </p>
+                    </div>
+
+                    {/* Name field */}
                     <div className="space-y-2">
                       <Label htmlFor="clientName" className="text-zinc-300">
                         Nome do Cliente
@@ -295,28 +526,14 @@ export default function BarberAgendarPage() {
                         value={clientName}
                         onChange={(e) => setClientName(e.target.value)}
                         required
-                        className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 h-11"
+                        readOnly={!!selectedClient}
+                        className={cn(
+                          "bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 h-11",
+                          selectedClient
+                            ? "border-emerald-500/50 bg-zinc-900/50 cursor-not-allowed"
+                            : "focus:border-amber-500",
+                        )}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clientPhone" className="text-zinc-300">
-                        Telefone
-                      </Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                        <Input
-                          id="clientPhone"
-                          placeholder="11999999999"
-                          value={clientPhone}
-                          onChange={handlePhoneChange}
-                          className="pl-10 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 h-11"
-                          maxLength={11}
-                          required
-                        />
-                      </div>
-                      <p className="text-xs text-zinc-500">
-                        Apenas números, com DDD (10 ou 11 dígitos)
-                      </p>
                     </div>
                   </div>
                 </div>

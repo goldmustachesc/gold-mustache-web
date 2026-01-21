@@ -21,8 +21,10 @@ import { ChatServiceSelector } from "./chat/ChatServiceSelector";
 import { ChatDatePicker } from "./chat/ChatDatePicker";
 import { ChatTimeSlotSelector } from "./chat/ChatTimeSlotSelector";
 import { ChatGuestInfoForm } from "./chat/ChatGuestInfoForm";
+import { ChatProfileUpdateForm } from "./chat/ChatProfileUpdateForm";
 import { BookingConfirmation } from "./BookingConfirmation";
 import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
+import { useProfileMe } from "@/hooks/useProfileMe";
 import {
   useBarbers,
   useServices,
@@ -47,6 +49,7 @@ type BookingStep =
   | "service"
   | "date"
   | "time"
+  | "profile-update"
   | "info"
   | "review"
   | "confirming"
@@ -86,10 +89,22 @@ export function ChatBookingPage({
   preSelectedBarberId,
 }: ChatBookingPageProps) {
   const { data: user } = useUser();
+  const { data: profile, isLoading: profileLoading } = useProfileMe();
   const router = useRouter();
   const params = useParams();
   const locale = (params.locale as string) || "pt-BR";
   const isGuest = !user;
+
+  // Check if logged-in user has complete profile (name and phone required for booking)
+  const hasCompleteProfile =
+    !user ||
+    (profile?.fullName &&
+      profile.fullName.trim().length >= 2 &&
+      profile?.phone &&
+      profile.phone.replace(/\D/g, "").length >= 10);
+
+  // Determine if we should wait for profile to load before proceeding
+  const profileReady = !user || !profileLoading;
 
   const [step, setStep] = useState<BookingStep>("greeting");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -104,7 +119,6 @@ export function ChatBookingPage({
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [confirmedAppointment, setConfirmedAppointment] =
     useState<AppointmentWithDetails | null>(null);
-  const [_guestPhone, setGuestPhone] = useState<string | null>(null);
   const [guestInfo, setGuestInfo] = useState<{
     clientName: string;
     clientPhone: string;
@@ -156,6 +170,8 @@ export function ChatBookingPage({
         return "date";
       case "info":
         return "time";
+      case "profile-update":
+        return "time";
       default:
         return null;
     }
@@ -203,6 +219,7 @@ export function ChatBookingPage({
       "service",
       "date",
       "time",
+      "profile-update",
       "info",
     ];
     const startIndex = flowSteps.indexOf(targetStep);
@@ -240,6 +257,7 @@ export function ChatBookingPage({
           setSelectedSlot(null);
           break;
         case "info":
+        case "profile-update":
           setSelectedSlot(null);
           break;
         default:
@@ -316,12 +334,19 @@ export function ChatBookingPage({
 
       if (isGuest) {
         setTimeout(() => setStep("info"), 100);
+      } else if (!profileReady) {
+        // Profile still loading for logged-in user - wait then decide
+        // The useEffect below will handle the transition once profile loads
+        setTimeout(() => setStep("profile-update"), 100);
+      } else if (!hasCompleteProfile) {
+        // Logged in user without complete profile - ask for missing info
+        setTimeout(() => setStep("profile-update"), 100);
       } else {
-        // Logged in user - go to review step first
+        // Logged in user with complete profile - go to review step
         setTimeout(() => setStep("review"), 100);
       }
     },
-    [addMessage, isGuest],
+    [addMessage, isGuest, hasCompleteProfile, profileReady],
   );
 
   const handleGuestSubmit = useCallback(
@@ -341,6 +366,16 @@ export function ChatBookingPage({
     },
     [selectedBarber, selectedService, selectedDate, selectedSlot, addMessage],
   );
+
+  const handleProfileUpdateSuccess = useCallback(() => {
+    setShowSelector(null);
+    addMessage({
+      type: "user",
+      text: "Perfil atualizado ✓",
+    });
+    // Go to review step after profile is complete
+    setTimeout(() => setStep("review"), 100);
+  }, [addMessage]);
 
   // Handle booking confirmation (called from review step)
   const handleConfirmBooking = useCallback(async () => {
@@ -364,7 +399,6 @@ export function ChatBookingPage({
         });
 
         setConfirmedAppointment(result.appointment);
-        setGuestPhone(guestInfo.clientPhone);
       } else {
         // Logged in user booking
         const appointment = await createAppointment.mutateAsync({
@@ -432,6 +466,8 @@ export function ChatBookingPage({
       setStep("info");
       setTimeout(() => setShowSelector("info"), 300);
     } else {
+      // For logged-in users, always go back to time selection
+      // The profile was already updated if needed
       setStep("time");
       setTimeout(() => setShowSelector("time"), 300);
     }
@@ -450,7 +486,6 @@ export function ChatBookingPage({
     setSelectedDate(null);
     setSelectedSlot(null);
     setConfirmedAppointment(null);
-    setGuestPhone(null);
     setGuestInfo(null);
     setShowSelector(null);
     messageIdRef.current = 0;
@@ -609,6 +644,25 @@ export function ChatBookingPage({
     }
   }, [step, selectedSlot, showTypingThenMessage]);
 
+  // Profile update step (for logged-in users without complete profile)
+  useEffect(() => {
+    if (
+      step === "profile-update" &&
+      selectedSlot &&
+      !processedStepsRef.current.has("profile-update")
+    ) {
+      processedStepsRef.current.add("profile-update");
+      setTimeout(() => {
+        showTypingThenMessage({
+          type: "bot",
+          text: "📱 Para concluir o agendamento, precisamos completar seu cadastro.",
+          step: "profile-update",
+        });
+        setTimeout(() => setShowSelector("profile-update"), 500);
+      }, 300);
+    }
+  }, [step, selectedSlot, showTypingThenMessage]);
+
   // Review step effect
   useEffect(() => {
     if (step === "review" && !processedStepsRef.current.has("review")) {
@@ -729,6 +783,27 @@ export function ChatBookingPage({
               onSubmit={handleGuestSubmit}
               isLoading={false}
               submitLabel="Revisar Agendamento"
+            />
+          </div>
+        );
+      case "profile-update":
+        return (
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleBack("profile-update")}
+              className="mb-2 text-muted-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
+            <ChatProfileUpdateForm
+              currentName={profile?.fullName}
+              currentPhone={profile?.phone}
+              onSuccess={handleProfileUpdateSuccess}
+              isLoading={profileLoading}
             />
           </div>
         );

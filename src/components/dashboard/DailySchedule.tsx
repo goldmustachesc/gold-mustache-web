@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailSheet";
 
 interface DailyScheduleProps {
   date: Date;
@@ -84,6 +85,22 @@ export function DailySchedule({
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(
     null,
   );
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentWithDetails | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
+    setSelectedAppointment(appointment);
+    setSheetOpen(true);
+  };
+
+  const handleCloseSheet = (open: boolean) => {
+    setSheetOpen(open);
+    if (!open) {
+      // Limpa o appointment selecionado após a animação de fechamento
+      setTimeout(() => setSelectedAppointment(null), 300);
+    }
+  };
 
   const formatDate = (d: Date) => {
     return formatDateDdMmYyyyInSaoPaulo(d);
@@ -183,13 +200,27 @@ export function DailySchedule({
                 const hasActions = canCancel || canMarkNoShow || canCallClient;
 
                 return (
+                  // biome-ignore lint/a11y/useSemanticElements: Cannot use button as it would nest buttons (inner action buttons)
                   <div
                     key={appointment.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenAppointmentDetail(appointment)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleOpenAppointmentDetail(appointment);
+                      }
+                    }}
                     className={cn(
                       "relative overflow-hidden rounded-xl",
-                      "bg-zinc-800/80",
-                      isCancelled && "bg-red-950/30 border border-red-900/30",
-                      isNoShow && "bg-amber-950/30 border border-amber-900/30",
+                      "bg-zinc-800/80 cursor-pointer",
+                      "transition-all duration-200 hover:bg-zinc-800 hover:scale-[1.01]",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-zinc-900",
+                      isCancelled &&
+                        "bg-red-950/30 border border-red-900/30 hover:bg-red-950/40",
+                      isNoShow &&
+                        "bg-amber-950/30 border border-amber-900/30 hover:bg-amber-950/40",
                     )}
                     style={{
                       backgroundImage: isCancelled
@@ -248,7 +279,10 @@ export function DailySchedule({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-zinc-400 hover:text-amber-400 hover:bg-zinc-700"
-                            onClick={() => handleSendReminder(appointment.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendReminder(appointment.id);
+                            }}
                             disabled={sendingReminderId === appointment.id}
                             title="Enviar lembrete ao cliente"
                           >
@@ -267,6 +301,7 @@ export function DailySchedule({
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700"
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
@@ -274,10 +309,12 @@ export function DailySchedule({
                             <DropdownMenuContent
                               align="end"
                               className="bg-zinc-900 border-zinc-700"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               {canCancel && (
                                 <DropdownMenuItem
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     const reason = prompt(
                                       "Motivo do cancelamento:",
                                     );
@@ -300,7 +337,10 @@ export function DailySchedule({
                               )}
                               {canMarkNoShow && (
                                 <DropdownMenuItem
-                                  onClick={() => onMarkNoShow?.(appointment.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkNoShow?.(appointment.id);
+                                  }}
                                   disabled={
                                     isMarkingNoShow &&
                                     markingNoShowId === appointment.id
@@ -315,6 +355,7 @@ export function DailySchedule({
                                   <a
                                     href={`tel:${appointment.guestClient?.phone}`}
                                     className="flex items-center"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
                                     <Phone className="h-4 w-4 mr-2" />
                                     Ligar para cliente
@@ -369,6 +410,21 @@ export function DailySchedule({
             </div>
           ))
         )}
+
+        {/* Appointment Detail Sheet */}
+        <AppointmentDetailSheet
+          appointment={selectedAppointment}
+          open={sheetOpen}
+          onOpenChange={handleCloseSheet}
+          onCancelAppointment={onCancelAppointment}
+          isCancelling={
+            isCancelling && cancellingId === selectedAppointment?.id
+          }
+          onMarkNoShow={onMarkNoShow}
+          isMarkingNoShow={
+            isMarkingNoShow && markingNoShowId === selectedAppointment?.id
+          }
+        />
       </div>
     );
   }
