@@ -20,7 +20,7 @@ export function EventsSection() {
             <PartyPopperIcon className="h-4 w-4 mr-2" />
             Eventos
           </Badge>
-          <h2 className="text-3xl font-bold md:text-4xl">
+          <h2 className="text-3xl font-playfair font-bold md:text-4xl">
             {heading} <span className="text-primary">{strong}</span>
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">{subheading}</p>

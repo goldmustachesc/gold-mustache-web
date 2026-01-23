@@ -26,6 +26,7 @@ import {
   Menu,
   Scissors,
   Settings,
+  Star,
   User,
   Users,
 } from "lucide-react";
@@ -295,6 +296,12 @@ export default function DashboardPage() {
                 icon={<DollarSign className="h-5 w-5 text-green-400" />}
                 label="Faturamento"
                 description="Relatório financeiro"
+              />
+              <QuickAction
+                href={`/${locale}/admin/feedbacks`}
+                icon={<Star className="h-5 w-5 text-yellow-400" />}
+                label="Avaliações"
+                description="Feedback dos clientes"
               />
             </div>
           </div>

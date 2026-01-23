@@ -16,6 +16,7 @@ import {
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
+import { useMyWorkingHours } from "@/hooks/useBarberWorkingHours";
 import { Menu, ArrowRight, Eye, EyeOff, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -54,6 +55,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const { data: user, isLoading: userLoading } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
   const { data: stats } = useDashboardStats();
+  const { data: workingHours } = useMyWorkingHours();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hideValues, setHideValues] = useState(false);
@@ -144,6 +146,13 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const dailyAppointments = appointments.filter(
     (apt) => apt.date === selectedDateStr,
   );
+
+  // Get working hours for the selected day
+  const selectedDayWorkingHours = useMemo(() => {
+    if (!workingHours) return null;
+    const dayOfWeek = selectedDate.getDay();
+    return workingHours.find((wh) => wh.dayOfWeek === dayOfWeek) ?? null;
+  }, [workingHours, selectedDate]);
 
   const isLoading = userLoading || barberLoading || appointmentsLoading;
 
@@ -275,6 +284,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               markingNoShowId={markingNoShowId}
               variant="compact"
               hideValues={hideValues}
+              workingHours={selectedDayWorkingHours}
             />
           </div>
         </div>
@@ -326,6 +336,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
                     markingNoShowId={markingNoShowId}
                     variant="compact"
                     hideValues={hideValues}
+                    workingHours={selectedDayWorkingHours}
                   />
                 </div>
               </div>

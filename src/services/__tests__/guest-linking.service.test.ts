@@ -60,7 +60,7 @@ describe("services/guest-linking", () => {
     });
 
     it("should return early when phone normalizes to empty string", async () => {
-      const result = await linkGuestAppointmentsToProfile("profile-1", "");
+      const result = await linkGuestAppointmentsToProfile("profile-1", "abc");
 
       expect(result).toEqual({
         linked: false,

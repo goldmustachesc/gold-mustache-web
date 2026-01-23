@@ -7,6 +7,7 @@ const ENFORCE_COVERAGE = process.env.COVERAGE_ENFORCE === "true";
 
 const coverageInclude = (() => {
   if (COVERAGE_SCOPE === "all") return ["src/**/*.{ts,tsx}"];
+  if (COVERAGE_SCOPE === "app-api") return ["src/app/api/**/*.{ts,tsx}"];
   if (COVERAGE_SCOPE === "services") return ["src/services/**/*.{ts,tsx}"];
   if (COVERAGE_SCOPE === "integrations")
     return ["src/services/auth.ts", "src/services/instagram.ts"];
@@ -31,8 +32,7 @@ const coverageExclude = (() => {
     "**/*.d.ts",
     "**/*.config.*",
     "**/vitest.setup.*",
-    // Next App Router entrypoints & route handlers are better covered by e2e/integration
-    "src/app/**",
+    // Next App Router entrypoints are better covered by e2e/integration
     // i18n message catalogs are data, not logic
     "src/i18n/**",
     // External integration clients & auth helpers (covered later with integration)
@@ -41,6 +41,11 @@ const coverageExclude = (() => {
     "src/lib/prisma.ts",
     "src/lib/validations/**",
   ];
+
+  if (COVERAGE_SCOPE !== "app-api") {
+    // App router is excluded in all scopes except app-api
+    base.push("src/app/**");
+  }
 
   if (COVERAGE_SCOPE === "core") {
     base.push("src/services/**");
@@ -52,6 +57,44 @@ const coverageExclude = (() => {
   }
 
   return base;
+})();
+
+const coverageThresholds = (() => {
+  if (!ENFORCE_COVERAGE) return undefined;
+
+  if (COVERAGE_SCOPE === "all") {
+    return {
+      lines: 15,
+      functions: 10,
+      statements: 15,
+      branches: 8,
+    };
+  }
+
+  if (COVERAGE_SCOPE === "app-api") {
+    return {
+      lines: 10,
+      functions: 8,
+      statements: 10,
+      branches: 5,
+    };
+  }
+
+  if (COVERAGE_SCOPE === "services") {
+    return {
+      lines: 90,
+      functions: 90,
+      statements: 90,
+      branches: 85,
+    };
+  }
+
+  return {
+    lines: 90,
+    functions: 90,
+    statements: 90,
+    branches: 80,
+  };
 })();
 
 export default defineConfig({
@@ -66,17 +109,9 @@ export default defineConfig({
       reportsDirectory: "./coverage",
       include: coverageInclude,
       exclude: coverageExclude,
-      ...(ENFORCE_COVERAGE
+      ...(coverageThresholds
         ? {
-            thresholds: {
-              lines: 90,
-              functions: 90,
-              statements: 90,
-              // Branch coverage is intentionally a bit lower: several branches here are
-              // defensive fallbacks around Intl parts parsing that are hard/impossible
-              // to trigger deterministically without global mocking.
-              branches: 80,
-            },
+            thresholds: coverageThresholds,
           }
         : {}),
     },

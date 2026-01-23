@@ -136,6 +136,27 @@ describe("utils/time-slots (deterministic unit tests)", () => {
     expect(filtered.find((s) => s.time === "00:30")?.available).toBe(true);
   });
 
+  it("Brazil date/time helpers handle missing Intl parts gracefully", () => {
+    const originalDateTimeFormat = Intl.DateTimeFormat;
+    const formatToParts = vi.fn().mockReturnValue([]);
+
+    class MockDateTimeFormat {
+      formatToParts() {
+        return formatToParts();
+      }
+    }
+
+    Intl.DateTimeFormat =
+      MockDateTimeFormat as unknown as typeof Intl.DateTimeFormat;
+
+    try {
+      expect(getBrazilDateString()).toBe("0-00-00");
+      expect(getCurrentTimeInMinutes()).toBe(0);
+    } finally {
+      Intl.DateTimeFormat = originalDateTimeFormat;
+    }
+  });
+
   it("filterPastSlots returns slots unchanged when date is not today", () => {
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 3, 15, 0, 0))); // 00:15 BRT
     const notToday = parseIsoDateYyyyMmDdAsSaoPauloDate("2025-01-03");

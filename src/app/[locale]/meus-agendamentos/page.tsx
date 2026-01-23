@@ -8,7 +8,9 @@ import {
   useCancelAppointment,
 } from "@/hooks/useBooking";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useCreateFeedback } from "@/hooks/useFeedback";
 import { AppointmentCard } from "@/components/booking/AppointmentCard";
+import { FeedbackModal } from "@/components/feedback";
 import {
   Calendar,
   LogOut,
@@ -55,6 +57,13 @@ function MeusAgendamentosContent() {
   const cancelMutation = useCancelAppointment();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+  // Feedback state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackAppointment, setFeedbackAppointment] =
+    useState<AppointmentWithDetails | null>(null);
+  const [feedbacksGiven, setFeedbacksGiven] = useState<Set<string>>(new Set());
+  const createFeedbackMutation = useCreateFeedback();
+
   // Consider loading until mounted and user check completes
   const isUserLoading = !hasMounted || userLoading;
   const isGuest = hasMounted && !user && !userLoading;
@@ -78,6 +87,29 @@ function MeusAgendamentosContent() {
     } finally {
       setCancellingId(null);
     }
+  };
+
+  // Feedback handlers
+  const handleOpenFeedback = (appointment: AppointmentWithDetails) => {
+    setFeedbackAppointment(appointment);
+    setFeedbackModalOpen(true);
+  };
+
+  const handleSubmitFeedback = async (data: {
+    rating: number;
+    comment?: string;
+  }) => {
+    if (!feedbackAppointment) return;
+
+    await createFeedbackMutation.mutateAsync({
+      appointmentId: feedbackAppointment.id,
+      rating: data.rating,
+      comment: data.comment,
+    });
+
+    // Mark this appointment as having feedback
+    setFeedbacksGiven((prev) => new Set(prev).add(feedbackAppointment.id));
+    toast.success("Obrigado pela avaliação!");
   };
 
   const isPastOrStarted = (apt: AppointmentWithDetails) =>
@@ -389,12 +421,26 @@ function MeusAgendamentosContent() {
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {otherAppointments.map((appointment) => (
-                      <AppointmentCard
-                        key={appointment.id}
-                        appointment={appointment}
-                      />
-                    ))}
+                    {otherAppointments.map((appointment) => {
+                      // Can review if: COMPLETED, or CONFIRMED but already past (presume it happened)
+                      const canReview =
+                        appointment.status === "COMPLETED" ||
+                        (appointment.status === "CONFIRMED" &&
+                          isPastOrStarted(appointment));
+
+                      return (
+                        <AppointmentCard
+                          key={appointment.id}
+                          appointment={appointment}
+                          onFeedback={
+                            canReview
+                              ? () => handleOpenFeedback(appointment)
+                              : undefined
+                          }
+                          hasFeedback={feedbacksGiven.has(appointment.id)}
+                        />
+                      );
+                    })}
                   </div>
                 </section>
               )}
@@ -410,6 +456,17 @@ function MeusAgendamentosContent() {
           </div>
         )}
       </main>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        open={feedbackModalOpen}
+        onOpenChange={setFeedbackModalOpen}
+        onSubmit={handleSubmitFeedback}
+        isLoading={createFeedbackMutation.isPending}
+        barberName={feedbackAppointment?.barber.name}
+        serviceName={feedbackAppointment?.service.name}
+        appointmentDate={feedbackAppointment?.date}
+      />
 
       <Toaster
         position="bottom-center"

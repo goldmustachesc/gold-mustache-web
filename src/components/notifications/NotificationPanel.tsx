@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { NotificationBell } from "./NotificationBell";
 import { NotificationList } from "./NotificationList";
 import { useNotifications } from "@/hooks/useNotifications";
+import type { NotificationData } from "@/types/booking";
 import {
   Sheet,
   SheetContent,
@@ -19,26 +20,23 @@ interface NotificationPanelProps {
 
 export function NotificationPanel({ userId }: NotificationPanelProps) {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, isLoading, markAsRead } =
-    useNotifications({ userId });
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  // Track which notifications have already shown a toast
-  const shownToastIdsRef = useRef<Set<string>>(new Set());
-
-  // Show toast for new notifications
-  useEffect(() => {
-    if (notifications.length > 0 && !open) {
-      const latestUnread = notifications.find(
-        (n) => !n.read && !shownToastIdsRef.current.has(n.id),
-      );
-      if (latestUnread) {
-        shownToastIdsRef.current.add(latestUnread.id);
-        toast(latestUnread.title, {
-          description: latestUnread.message,
+  // Show toast only for new realtime notifications (not existing ones on load)
+  const handleNewNotification = useCallback(
+    (notification: NotificationData) => {
+      if (!openRef.current) {
+        toast(notification.title, {
+          description: notification.message,
         });
       }
-    }
-  }, [notifications, open]);
+    },
+    [],
+  );
+
+  const { notifications, unreadCount, isLoading, markAsRead } =
+    useNotifications({ userId, onNewNotification: handleNewNotification });
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {

@@ -8,7 +8,12 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { PreferencesDropdown } from "@/components/ui/preferences-dropdown";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { BRAND } from "@/constants/brand";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
@@ -18,6 +23,7 @@ import {
   CalendarCheck2,
   Instagram,
   LogIn,
+  LogOut,
   Menu,
   User,
 } from "lucide-react";
@@ -25,7 +31,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 
-import { useUser } from "@/hooks/useAuth";
+import { useSignOut, useUser } from "@/hooks/useAuth";
 import { useState } from "react";
 
 type NavLink = {
@@ -40,6 +46,12 @@ export function Header() {
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const { data: user } = useUser();
+  const { mutate: signOut, isPending: signOutPending } = useSignOut();
+
+  const handleSignOut = () => {
+    signOut();
+    setIsOpen(false);
+  };
 
   // Helper to create proper links that work from any page
   const homeLink = `/${locale}`;
@@ -178,6 +190,7 @@ export function Header() {
               side="right"
               className="w-72 bg-background dark:bg-zinc-900 border-border dark:border-zinc-800"
             >
+              <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
               <div className="flex flex-col space-y-6 mt-6 px-2">
                 {/* Mobile Logo */}
                 <div className="flex items-center gap-3 text-lg font-bold text-primary">
@@ -247,6 +260,17 @@ export function Header() {
                       <span>{user ? "Minha Conta" : "Entrar"}</span>
                     </Link>
                   </Button>
+                  {user && (
+                    <Button
+                      variant="outline"
+                      onClick={handleSignOut}
+                      disabled={signOutPending}
+                      className="w-full border-border text-foreground hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-red-500/10 dark:hover:text-red-400 dark:hover:border-red-500/30"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>{signOutPending ? "Saindo..." : "Sair"}</span>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     asChild

@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Phone,
   UserX,
+  Star,
+  CheckCircle,
 } from "lucide-react";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,10 @@ interface AppointmentCardProps {
   isMarkingNoShow?: boolean;
   /** Whether to show the client phone (for NO_SHOW cases) */
   showClientPhone?: boolean;
+  /** Callback to open feedback modal */
+  onFeedback?: () => void;
+  /** Whether the appointment already has feedback */
+  hasFeedback?: boolean;
 }
 
 const statusConfig: Record<
@@ -104,6 +110,8 @@ export function AppointmentCard({
   canMarkNoShow = false,
   isMarkingNoShow = false,
   showClientPhone = false,
+  onFeedback,
+  hasFeedback = false,
 }: AppointmentCardProps) {
   const formatDate = (dateStr: string) => {
     return formatDateDdMmYyyyFromIsoDateLike(dateStr);
@@ -115,6 +123,9 @@ export function AppointmentCard({
     !isCancellationBlocked;
   const status = statusConfig[appointment.status as AppointmentStatusType];
   const isConfirmed = appointment.status === AppointmentStatus.CONFIRMED;
+
+  // Can review if onFeedback is provided (page controls eligibility) and doesn't have feedback yet
+  const canReview = onFeedback && !hasFeedback;
 
   // Get client phone for NO_SHOW display
   const clientPhone =
@@ -252,8 +263,18 @@ export function AppointmentCard({
           </div>
         )}
 
+        {/* Feedback Badge (if already reviewed) */}
+        {hasFeedback && (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mb-4">
+            <CheckCircle className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm text-emerald-400">Avaliação enviada</span>
+          </div>
+        )}
+
         {/* Actions */}
-        {((isCancellable && onCancel) || (canMarkNoShow && onMarkNoShow)) && (
+        {((isCancellable && onCancel) ||
+          (canMarkNoShow && onMarkNoShow) ||
+          canReview) && (
           <div className="flex gap-2 pt-2 border-t border-zinc-700/50">
             {isCancellable && onCancel && (
               <Button
@@ -277,6 +298,17 @@ export function AppointmentCard({
               >
                 <UserX className="h-4 w-4 mr-2" />
                 {isMarkingNoShow ? "Marcando..." : "Não Compareceu"}
+              </Button>
+            )}
+            {canReview && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onFeedback}
+                className="flex-1 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
+              >
+                <Star className="h-4 w-4 mr-2" />
+                Avaliar Atendimento
               </Button>
             )}
           </div>

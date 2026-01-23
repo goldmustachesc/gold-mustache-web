@@ -20,6 +20,7 @@ import {
   Link2,
   LogOut,
   Scissors,
+  Star,
   User,
   UserPlus,
   Users,
@@ -100,6 +101,11 @@ export function BarberSidebar({
       icon: <DollarSign className="h-5 w-5" />,
     },
     {
+      href: `/${locale}/barbeiro/feedbacks`,
+      label: "Minhas Avaliações",
+      icon: <Star className="h-5 w-5" />,
+    },
+    {
       href: `/${locale}/profile`,
       label: "Meu Perfil",
       icon: <User className="h-5 w-5" />,
@@ -132,6 +138,11 @@ export function BarberSidebar({
       href: `/${locale}/admin/faturamento`,
       label: "Faturamento Geral",
       icon: <DollarSign className="h-5 w-5" />,
+    },
+    {
+      href: `/${locale}/admin/feedbacks`,
+      label: "Avaliações",
+      icon: <Star className="h-5 w-5" />,
     },
   ];
 
