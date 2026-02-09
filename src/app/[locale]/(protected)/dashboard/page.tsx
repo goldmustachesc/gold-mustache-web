@@ -7,6 +7,7 @@ import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import {
   NextAppointmentCard,
   AdminOverview,
@@ -40,6 +41,8 @@ interface QuickActionProps {
   label: string;
   description?: string;
   variant?: "default" | "primary";
+  linkTarget?: "_blank";
+  linkRel?: string;
 }
 
 function QuickAction({
@@ -48,9 +51,11 @@ function QuickAction({
   label,
   description,
   variant = "default",
+  linkTarget,
+  linkRel,
 }: QuickActionProps) {
   return (
-    <Link href={href}>
+    <Link href={href} target={linkTarget} rel={linkRel}>
       <div
         className={cn(
           "group relative overflow-hidden rounded-xl p-4 transition-all duration-200",
@@ -102,6 +107,8 @@ export default function DashboardPage() {
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
   const { data: profileMe } = useProfileMe();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { bookingHref, shouldShowBooking, isExternal, isInternal } =
+    useBookingSettings();
   const params = useParams();
   const locale = params.locale as string;
 
@@ -162,12 +169,20 @@ export default function DashboardPage() {
 
           {/* Actions */}
           <div className="flex items-center gap-2 lg:gap-4">
-            <Link href={`/${locale}/agendar`} className="hidden sm:block">
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
-                <Calendar className="h-4 w-4 mr-2" />
-                Agendar
-              </Button>
-            </Link>
+            {shouldShowBooking && bookingHref && (
+              <Link
+                href={bookingHref}
+                className="hidden sm:block"
+                {...(isExternal
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+              >
+                <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Agendar
+                </Button>
+              </Link>
+            )}
 
             {user?.email && (
               <span className="text-sm text-zinc-400 hidden xl:inline">
@@ -213,7 +228,7 @@ export default function DashboardPage() {
         )}
 
         {/* Client Section - Next Appointment */}
-        {!isLoading && stats?.client?.nextAppointment && (
+        {isInternal && !isLoading && stats?.client?.nextAppointment && (
           <section>
             <NextAppointmentCard
               appointment={stats.client.nextAppointment}
@@ -223,29 +238,38 @@ export default function DashboardPage() {
         )}
 
         {/* Client Stats Section */}
-        {!isLoading && stats?.client && stats.client.totalVisits > 0 && (
-          <section>
-            <ClientStatsOverview stats={stats.client} locale={locale} />
-          </section>
-        )}
+        {isInternal &&
+          !isLoading &&
+          stats?.client &&
+          stats.client.totalVisits > 0 && (
+            <section>
+              <ClientStatsOverview stats={stats.client} locale={locale} />
+            </section>
+          )}
 
         {/* Quick Actions */}
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-zinc-200">Acesso rápido</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <QuickAction
-              href={`/${locale}/agendar`}
-              icon={<Calendar className="h-5 w-5" />}
-              label="Agendar"
-              description="Marque um novo horário"
-              variant="primary"
-            />
-            <QuickAction
-              href={`/${locale}/meus-agendamentos`}
-              icon={<ClipboardList className="h-5 w-5 text-emerald-400" />}
-              label="Meus Agendamentos"
-              description="Ver e gerenciar"
-            />
+            {shouldShowBooking && bookingHref && (
+              <QuickAction
+                href={bookingHref}
+                icon={<Calendar className="h-5 w-5" />}
+                label="Agendar"
+                description="Marque um novo horário"
+                variant="primary"
+                linkTarget={isExternal ? "_blank" : undefined}
+                linkRel={isExternal ? "noopener noreferrer" : undefined}
+              />
+            )}
+            {isInternal && (
+              <QuickAction
+                href={`/${locale}/meus-agendamentos`}
+                icon={<ClipboardList className="h-5 w-5 text-emerald-400" />}
+                label="Meus Agendamentos"
+                description="Ver e gerenciar"
+              />
+            )}
             <QuickAction
               href={`/${locale}/profile`}
               icon={<User className="h-5 w-5 text-blue-400" />}

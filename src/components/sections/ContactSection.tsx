@@ -22,12 +22,15 @@ import {
   Phone,
 } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 
 export function ContactSection() {
   const t = useTranslations("contact");
-  const locale = useLocale();
-  const bookingLink = `/${locale}/agendar`;
+  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
+  const bookingLinkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent(t("whatsappMessage"));
@@ -252,17 +255,23 @@ export function ContactSection() {
 
             {/* Call to Actions */}
             <div className="flex w-full">
-              <Button size="lg" className="h-auto py-4 w-full" asChild>
-                <Link href={bookingLink} className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  <div className="text-left">
-                    <div className="font-semibold">{t("cta.book")}</div>
-                    <div className="text-xs opacity-90">
-                      {t("cta.bookDescription")}
+              {shouldShowBooking && bookingHref && (
+                <Button size="lg" className="h-auto py-4 w-full" asChild>
+                  <Link
+                    href={bookingHref}
+                    className="flex items-center"
+                    {...bookingLinkProps}
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    <div className="text-left">
+                      <div className="font-semibold">{t("cta.book")}</div>
+                      <div className="text-xs opacity-90">
+                        {t("cta.bookDescription")}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </Button>
+                  </Link>
+                </Button>
+              )}
 
               {/* <Button
                 onClick={handleWhatsAppClick}

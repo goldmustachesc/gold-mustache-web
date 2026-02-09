@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import type { ClientStats } from "@/types/dashboard";
 import {
   Calendar,
@@ -23,6 +24,7 @@ export function ClientStatsOverview({
   locale,
 }: ClientStatsOverviewProps) {
   const hasHistory = stats.totalVisits > 0;
+  const { isInternal } = useBookingSettings();
 
   return (
     <div className="space-y-4">
@@ -102,7 +104,7 @@ export function ClientStatsOverview({
       )}
 
       {/* Quick Rebook */}
-      {stats.lastService && (
+      {isInternal && stats.lastService && (
         <div className="rounded-2xl bg-zinc-800/30 border border-dashed border-zinc-700/50 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -135,7 +137,7 @@ export function ClientStatsOverview({
       )}
 
       {/* View History */}
-      {hasHistory && (
+      {isInternal && hasHistory && (
         <Button
           asChild
           variant="outline"

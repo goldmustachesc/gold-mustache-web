@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { BRAND } from "@/constants/brand";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { Calendar, Clock, Instagram, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,7 +13,10 @@ export function Footer() {
   const t = useTranslations("footer");
   const tBrand = useTranslations("brand");
   const locale = useLocale();
-  const bookingLink = `/${locale}/agendar`;
+  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
+  const bookingLinkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   return (
     <footer className="bg-zinc-100 dark:bg-zinc-900 text-foreground dark:text-zinc-100">
@@ -121,17 +125,23 @@ export function Footer() {
               >
                 {t("links.contact")}
               </Link>
-              <Button
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-primary hover:text-primary/80 text-sm font-normal"
-                asChild
-              >
-                <Link href={bookingLink} className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {t("links.book")}
-                </Link>
-              </Button>
+              {shouldShowBooking && bookingHref && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-primary hover:text-primary/80 text-sm font-normal"
+                  asChild
+                >
+                  <Link
+                    href={bookingHref}
+                    className="flex items-center"
+                    {...bookingLinkProps}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {t("links.book")}
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         </div>

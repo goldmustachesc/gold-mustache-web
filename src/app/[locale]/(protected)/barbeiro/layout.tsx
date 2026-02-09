@@ -1,24 +1,21 @@
 import { resolveBookingMode } from "@/lib/booking-mode";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { redirect } from "next/navigation";
-import { AgendarPageClient } from "./AgendarPageClient";
 
-export default async function AgendarPage({
+export default async function BarberLayout({
+  children,
   params,
 }: {
+  children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
   const settings = await getBarbershopSettings();
   const mode = resolveBookingMode(settings);
 
-  if (mode === "external" && settings.externalBookingUrl) {
-    redirect(settings.externalBookingUrl);
-  }
-
   if (mode !== "internal") {
-    redirect(`/${locale}`);
+    redirect(`/${locale}/dashboard`);
   }
 
-  return <AgendarPageClient />;
+  return <>{children}</>;
 }

@@ -13,6 +13,8 @@ import { parseDateStringToUTC, getTodayUTCMidnight } from "@/utils/time-slots";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { Prisma } from "@prisma/client";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { getBarbershopSettings } from "@/services/barbershop-settings";
+import { resolveBookingMode } from "@/lib/booking-mode";
 
 export async function GET(request: Request) {
   try {
@@ -91,6 +93,18 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const settings = await getBarbershopSettings();
+    const mode = resolveBookingMode(settings);
+    if (mode !== "internal") {
+      return NextResponse.json(
+        {
+          error: "BOOKING_DISABLED",
+          message: "Agendamento interno indisponível no momento.",
+        },
+        { status: 403 },
+      );
+    }
+
     // Rate limiting check
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("appointments", clientId);

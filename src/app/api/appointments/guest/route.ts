@@ -3,9 +3,23 @@ import { createGuestAppointment } from "@/services/booking";
 import { createGuestAppointmentSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { getBarbershopSettings } from "@/services/barbershop-settings";
+import { resolveBookingMode } from "@/lib/booking-mode";
 
 export async function POST(request: Request) {
   try {
+    const settings = await getBarbershopSettings();
+    const mode = resolveBookingMode(settings);
+    if (mode !== "internal") {
+      return NextResponse.json(
+        {
+          error: "BOOKING_DISABLED",
+          message: "Agendamento interno indisponível no momento.",
+        },
+        { status: 403 },
+      );
+    }
+
     // Rate limiting check - stricter for guest appointments
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);

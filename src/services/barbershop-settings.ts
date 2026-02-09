@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { barbershopConfig } from "@/config/barbershop";
+import { unstable_cache } from "next/cache";
 
 /**
  * Tipo para as configurações da barbearia retornadas pelo serviço.
@@ -60,11 +61,14 @@ export interface BarbershopSettingsData {
   updatedAt: Date | null;
 }
 
+export const BARBERSHOP_SETTINGS_CACHE_TAG = "barbershop-settings";
+const BARBERSHOP_SETTINGS_CACHE_TTL_SECONDS = 300;
+
 /**
  * Busca as configurações da barbearia do banco de dados.
  * Usa fallback para o config estático se não houver dados no DB.
  */
-export async function getBarbershopSettings(): Promise<BarbershopSettingsData> {
+async function getBarbershopSettingsUncached(): Promise<BarbershopSettingsData> {
   try {
     const dbSettings = await prisma.barbershopSettings.findUnique({
       where: { id: "default" },
@@ -160,4 +164,17 @@ export async function getBarbershopSettings(): Promise<BarbershopSettingsData> {
     foundingYear: barbershopConfig.foundingYear,
     updatedAt: null,
   };
+}
+
+const getBarbershopSettingsCached = unstable_cache(
+  getBarbershopSettingsUncached,
+  ["barbershop-settings"],
+  {
+    tags: [BARBERSHOP_SETTINGS_CACHE_TAG],
+    revalidate: BARBERSHOP_SETTINGS_CACHE_TTL_SECONDS,
+  },
+);
+
+export async function getBarbershopSettings(): Promise<BarbershopSettingsData> {
+  return getBarbershopSettingsCached();
 }

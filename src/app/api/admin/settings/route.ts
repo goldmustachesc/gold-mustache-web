@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { BARBERSHOP_SETTINGS_CACHE_TAG } from "@/services/barbershop-settings";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 
 const updateSettingsSchema = z.object({
@@ -45,6 +47,7 @@ export async function GET() {
       settings = await prisma.barbershopSettings.create({
         data: { id: "default" },
       });
+      revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
     }
 
     return NextResponse.json({ settings });
@@ -86,6 +89,7 @@ export async function PUT(request: Request) {
       update: parsed.data,
       create: { id: "default", ...parsed.data },
     });
+    revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
 
     return NextResponse.json({ settings });
   } catch (error) {

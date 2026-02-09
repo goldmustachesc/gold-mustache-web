@@ -4,13 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 
 export function HeroSection() {
   const t = useTranslations("hero");
   const tBrand = useTranslations("brand");
-  const locale = useLocale();
-  const bookingLink = `/${locale}/agendar`;
+  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
+
+  const bookingLinkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   return (
     <section className="relative min-h-[calc(100vh-3.5rem)] lg:min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
@@ -63,18 +67,24 @@ export function HeroSection() {
           </p>
 
           {/* CTA Principal */}
-          <div className="pt-4 md:pt-6">
-            <Button
-              size="lg"
-              className="text-base md:text-lg px-8 py-6 h-auto font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              asChild
-            >
-              <Link href={bookingLink} className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                {t("cta.book")}
-              </Link>
-            </Button>
-          </div>
+          {shouldShowBooking && bookingHref && (
+            <div className="pt-4 md:pt-6">
+              <Button
+                size="lg"
+                className="text-base md:text-lg px-8 py-6 h-auto font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                asChild
+              >
+                <Link
+                  href={bookingHref}
+                  className="flex items-center gap-2"
+                  {...bookingLinkProps}
+                >
+                  <Calendar className="h-5 w-5" />
+                  {t("cta.book")}
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </section>

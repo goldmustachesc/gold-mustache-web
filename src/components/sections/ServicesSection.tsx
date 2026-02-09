@@ -19,11 +19,12 @@ import {
 } from "@/components/ui/carousel";
 import { Separator } from "@/components/ui/separator";
 import { BRAND } from "@/constants/brand";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useServices } from "@/hooks/useBooking";
 import { Calendar, Clock, Scissors, Star, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
 // Mapeamento de slug do serviço para imagem WebP
 const SERVICE_IMAGES: Record<string, string> = {
@@ -54,8 +55,10 @@ function formatDuration(minutes: number): string {
 
 export function ServicesSection() {
   const t = useTranslations("services");
-  const locale = useLocale();
-  const bookingLink = `/${locale}/agendar`;
+  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
+  const bookingLinkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   // Fetch services from database (public API, only active services)
   const { data: services = [], isLoading, isError } = useServices();
@@ -114,18 +117,24 @@ export function ServicesSection() {
               </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col sm:flex-row gap-4">
-              <Button
-                size="default"
-                className="w-full max-w-xs mx-auto cursor-pointer"
-                asChild
-              >
-                <Link href={bookingLink} className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  {t("featured.cta")}
-                </Link>
-              </Button>
-            </CardFooter>
+            {shouldShowBooking && bookingHref && (
+              <CardFooter className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  size="default"
+                  className="w-full max-w-xs mx-auto cursor-pointer"
+                  asChild
+                >
+                  <Link
+                    href={bookingHref}
+                    className="flex items-center"
+                    {...bookingLinkProps}
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    {t("featured.cta")}
+                  </Link>
+                </Button>
+              </CardFooter>
+            )}
           </Card>
         </div>
 
@@ -215,21 +224,24 @@ export function ServicesSection() {
                           </div>
                         </CardContent>
 
-                        <CardFooter className="mt-auto">
-                          <Button
-                            className="w-full cursor-pointer"
-                            variant="default"
-                            asChild
-                          >
-                            <Link
-                              href={bookingLink}
-                              className="flex items-center justify-center"
+                        {shouldShowBooking && bookingHref && (
+                          <CardFooter className="mt-auto">
+                            <Button
+                              className="w-full cursor-pointer"
+                              variant="default"
+                              asChild
                             >
-                              <Calendar className="h-4 w-4 mr-2" />
-                              {t("labels.book")} {service.name}
-                            </Link>
-                          </Button>
-                        </CardFooter>
+                              <Link
+                                href={bookingHref}
+                                className="flex items-center justify-center"
+                                {...bookingLinkProps}
+                              >
+                                <Calendar className="h-4 w-4 mr-2" />
+                                {t("labels.book")} {service.name}
+                              </Link>
+                            </Button>
+                          </CardFooter>
+                        )}
                       </Card>
                     </CarouselItem>
                   ))}
@@ -288,21 +300,24 @@ export function ServicesSection() {
                     </div>
                   </CardContent>
 
-                  <CardFooter className="mt-auto">
-                    <Button
-                      className="w-full cursor-pointer"
-                      variant="default"
-                      asChild
-                    >
-                      <Link
-                        href={bookingLink}
-                        className="flex items-center justify-center"
+                  {shouldShowBooking && bookingHref && (
+                    <CardFooter className="mt-auto">
+                      <Button
+                        className="w-full cursor-pointer"
+                        variant="default"
+                        asChild
                       >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {t("labels.book")} {service.name}
-                      </Link>
-                    </Button>
-                  </CardFooter>
+                        <Link
+                          href={bookingHref}
+                          className="flex items-center justify-center"
+                          {...bookingLinkProps}
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          {t("labels.book")} {service.name}
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  )}
                 </Card>
               ))}
             </div>

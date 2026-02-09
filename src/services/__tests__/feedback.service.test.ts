@@ -113,11 +113,11 @@ describe("services/feedback", () => {
       ).rejects.toThrow("UNAUTHORIZED");
     });
 
-    it("throws APPOINTMENT_NOT_COMPLETED for pending appointment", async () => {
+    it("throws APPOINTMENT_NOT_COMPLETED for cancelled appointment", async () => {
       asMock(prisma.appointment.findUnique).mockResolvedValue({
         id: "appt-1",
         clientId: "client-1",
-        status: AppointmentStatus.PENDING,
+        status: AppointmentStatus.CANCELLED_BY_CLIENT,
         date: new Date("2025-01-25"),
         startTime: "10:00",
         feedback: null,
@@ -294,7 +294,7 @@ describe("services/feedback", () => {
       asMock(prisma.appointment.findUnique).mockResolvedValue({
         id: "appt-1",
         guestClientId: "guest-1",
-        status: AppointmentStatus.PENDING,
+        status: AppointmentStatus.CANCELLED_BY_CLIENT,
         date: new Date("2025-01-25"),
         startTime: "10:00",
         feedback: null,

@@ -8,7 +8,9 @@ import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper
 import { siteConfig } from "@/config/site";
 import { BRAND } from "@/constants/brand";
 import { locales } from "@/i18n/config";
+import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
 import { QueryProvider } from "@/providers/query-provider";
+import { getBarbershopSettings } from "@/services/barbershop-settings";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -180,6 +182,7 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  const barbershopSettings = await getBarbershopSettings();
 
   // Validate locale
   if (!locales.includes(locale as (typeof locales)[number])) {
@@ -208,9 +211,15 @@ export default async function LocaleLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <StagingBanner />
-              <Layout>{children}</Layout>
-              <CookieBanner />
+              <BookingSettingsProvider
+                locale={locale}
+                bookingEnabled={barbershopSettings.bookingEnabled}
+                externalBookingUrl={barbershopSettings.externalBookingUrl}
+              >
+                <StagingBanner />
+                <Layout>{children}</Layout>
+                <CookieBanner />
+              </BookingSettingsProvider>
             </ThemeProvider>
           </QueryProvider>
         </NextIntlClientProvider>

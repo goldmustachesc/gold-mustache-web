@@ -9,6 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useSignOut } from "@/hooks/useAuth";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +39,8 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  target?: "_blank";
+  rel?: string;
 }
 
 export function ClientSidebar({
@@ -48,8 +51,32 @@ export function ClientSidebar({
   const pathname = usePathname();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
   const { data: profile } = useProfileMe();
+  const { bookingHref, shouldShowBooking, isExternal, isInternal } =
+    useBookingSettings();
 
   const isAdmin = profile?.role === "ADMIN";
+  const bookingNavItems: NavItem[] =
+    shouldShowBooking && bookingHref
+      ? [
+          {
+            href: bookingHref,
+            label: "Agendar",
+            icon: <Calendar className="h-5 w-5" />,
+            ...(isExternal
+              ? { target: "_blank" as const, rel: "noopener noreferrer" }
+              : {}),
+          },
+        ]
+      : [];
+  const appointmentsNavItems: NavItem[] = isInternal
+    ? [
+        {
+          href: `/${locale}/meus-agendamentos`,
+          label: "Meus Agendamentos",
+          icon: <ClipboardList className="h-5 w-5" />,
+        },
+      ]
+    : [];
 
   const navItems: NavItem[] = [
     {
@@ -57,16 +84,8 @@ export function ClientSidebar({
       label: "Início",
       icon: <Home className="h-5 w-5" />,
     },
-    {
-      href: `/${locale}/agendar`,
-      label: "Agendar",
-      icon: <Calendar className="h-5 w-5" />,
-    },
-    {
-      href: `/${locale}/meus-agendamentos`,
-      label: "Meus Agendamentos",
-      icon: <ClipboardList className="h-5 w-5" />,
-    },
+    ...bookingNavItems,
+    ...appointmentsNavItems,
     {
       href: `/${locale}/profile`,
       label: "Meu Perfil",
@@ -154,6 +173,8 @@ export function ClientSidebar({
               <Link
                 key={item.href}
                 href={item.href}
+                target={item.target}
+                rel={item.rel}
                 onClick={() => onOpenChange(false)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",

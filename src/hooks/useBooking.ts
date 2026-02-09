@@ -76,6 +76,9 @@ async function createAppointment(
         "Este horário já foi reservado. Por favor, escolha outro.",
       );
     }
+    if (error.error === "BOOKING_DISABLED") {
+      throw new Error("Agendamento online indisponível no momento.");
+    }
     throw new Error(error.message || "Erro ao criar agendamento");
   }
 
@@ -123,6 +126,9 @@ async function createGuestAppointment(
       throw new Error(
         "Este horário já foi reservado. Por favor, escolha outro.",
       );
+    }
+    if (error.error === "BOOKING_DISABLED") {
+      throw new Error("Agendamento online indisponível no momento.");
     }
     throw new Error(error.message || "Erro ao criar agendamento");
   }

@@ -32,6 +32,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { useSignOut, useUser } from "@/hooks/useAuth";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useState } from "react";
 
 type NavLink = {
@@ -47,6 +48,8 @@ export function Header() {
   const locale = useLocale();
   const { data: user } = useUser();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
+  const { bookingHref, shouldShowBooking, isExternal, isInternal } =
+    useBookingSettings();
 
   const handleSignOut = () => {
     signOut();
@@ -56,8 +59,10 @@ export function Header() {
   // Helper to create proper links that work from any page
   const homeLink = `/${locale}`;
   const sectionLink = (section: string) => `/${locale}#${section}`;
-  const bookingLink = `/${locale}/agendar`;
   const myAppointmentsLink = `/${locale}/meus-agendamentos`;
+  const bookingLinkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   const navLinks: NavLink[] = [
     { href: homeLink, label: t("home") },
@@ -109,17 +114,19 @@ export function Header() {
         {/* Desktop Actions */}
         <div className="hidden lg:flex items-center gap-2">
           <PreferencesDropdown />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
-            asChild
-          >
-            <Link href={myAppointmentsLink} aria-label={t("myAppointments")}>
-              <CalendarCheck2 className="h-4 w-4" />
-              <span>{t("myAppointments")}</span>
-            </Link>
-          </Button>
+          {isInternal && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+              asChild
+            >
+              <Link href={myAppointmentsLink} aria-label={t("myAppointments")}>
+                <CalendarCheck2 className="h-4 w-4" />
+                <span>{t("myAppointments")}</span>
+              </Link>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -143,13 +150,17 @@ export function Header() {
               )}
             </Link>
           </Button>
-          {!isScrolledPastThreshold && (
+          {!isScrolledPastThreshold && shouldShowBooking && bookingHref && (
             <Button
               size="sm"
               className="ml-1 flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
               asChild
             >
-              <Link href={bookingLink} aria-label={tCommon("buttons.book")}>
+              <Link
+                href={bookingHref}
+                aria-label={tCommon("buttons.book")}
+                {...bookingLinkProps}
+              >
                 <Calendar className="h-4 w-4" />
                 <span>{tCommon("buttons.book")}</span>
               </Link>
@@ -159,22 +170,24 @@ export function Header() {
 
         {/* Mobile Menu */}
         <div className="lg:hidden flex items-center gap-2">
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md text-xs px-3"
-            asChild
-          >
-            <Link
-              href={myAppointmentsLink}
-              className="flex items-center gap-1.5"
-              aria-label={t("myAppointments")}
+          {isInternal && (
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md text-xs px-3"
+              asChild
             >
-              <CalendarCheck2 className="h-4 w-4" />
-              <span className="font-medium hidden min-[360px]:inline">
-                {t("myAppointments")}
-              </span>
-            </Link>
-          </Button>
+              <Link
+                href={myAppointmentsLink}
+                className="flex items-center gap-1.5"
+                aria-label={t("myAppointments")}
+              >
+                <CalendarCheck2 className="h-4 w-4" />
+                <span className="font-medium hidden min-[360px]:inline">
+                  {t("myAppointments")}
+                </span>
+              </Link>
+            </Button>
+          )}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
@@ -286,19 +299,22 @@ export function Header() {
                       <span>{tCommon("buttons.follow")}</span>
                     </Link>
                   </Button>
-                  <Button
-                    className="w-full flex items-center justify-center gap-2 shadow-md"
-                    asChild
-                  >
-                    <Link
-                      href={bookingLink}
-                      className="flex items-center justify-center gap-2"
-                      onClick={() => setIsOpen(false)}
+                  {shouldShowBooking && bookingHref && (
+                    <Button
+                      className="w-full flex items-center justify-center gap-2 shadow-md"
+                      asChild
                     >
-                      <Calendar className="h-4 w-4" />
-                      <span>{tCommon("buttons.bookAppointment")}</span>
-                    </Link>
-                  </Button>
+                      <Link
+                        href={bookingHref}
+                        className="flex items-center justify-center gap-2"
+                        onClick={() => setIsOpen(false)}
+                        {...bookingLinkProps}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>{tCommon("buttons.bookAppointment")}</span>
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
             </SheetContent>

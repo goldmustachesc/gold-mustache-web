@@ -2,17 +2,19 @@
 
 import { trackBookingClick } from "@/components/analytics/GoogleAnalytics";
 import { Button } from "@/components/ui/button";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { Calendar } from "lucide-react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
 
 export function FloatingBookingButton() {
   const { isScrolledPastThreshold } = useScrollPosition(300);
-  const locale = useLocale();
-  const bookingLink = `/${locale}/agendar`;
+  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
+  const bookingLinkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
-  if (!isScrolledPastThreshold) {
+  if (!isScrolledPastThreshold || !shouldShowBooking || !bookingHref) {
     return null;
   }
 
@@ -25,9 +27,10 @@ export function FloatingBookingButton() {
         asChild
       >
         <Link
-          href={bookingLink}
+          href={bookingHref}
           className="flex items-center"
           onClick={() => trackBookingClick()}
+          {...bookingLinkProps}
         >
           <Calendar className="mr-2 h-5 w-5" />
           Agendar
