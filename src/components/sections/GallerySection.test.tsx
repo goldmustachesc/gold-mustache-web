@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { GallerySection } from "./GallerySection";
@@ -31,12 +37,14 @@ vi.mock("next/image", () => ({
   default: ({
     src,
     alt,
-    fill,
+    fill: _fill,
+    priority: _priority,
     ...props
   }: {
     src: string;
     alt: string;
     fill?: boolean;
+    priority?: boolean;
     [key: string]: unknown;
     // biome-ignore lint/performance/noImgElement: Test mock requires img element
   }) => <img src={src} alt={alt} {...props} />,
@@ -70,6 +78,18 @@ vi.mock("@/constants/gallery", () => ({
 }));
 
 describe("GallerySection", () => {
+  const escapeRegExp = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const getGalleryItemButton = (serviceName: string) => {
+    const beforeImage = screen.getByRole("img", {
+      name: new RegExp(`Before service - ${escapeRegExp(serviceName)}`, "i"),
+    });
+    const button = beforeImage.closest("button");
+    expect(button).toBeInTheDocument();
+    return button as HTMLButtonElement;
+  };
+
   it("renders section header with badge, title, and description", () => {
     render(<GallerySection />);
 
@@ -118,7 +138,7 @@ describe("GallerySection", () => {
     const user = userEvent.setup();
     render(<GallerySection />);
 
-    const firstItem = screen.getAllByRole("button")[5]; // Skip filter buttons
+    const firstItem = getGalleryItemButton("Corte + Barba");
     await user.click(firstItem);
 
     // Lightbox should be visible with dialog role
@@ -126,19 +146,20 @@ describe("GallerySection", () => {
     expect(dialog).toBeInTheDocument();
   });
 
-  it("closes lightbox when clicking outside", async () => {
+  it("closes lightbox when clicking on overlay", async () => {
     const user = userEvent.setup();
     render(<GallerySection />);
 
     // Open lightbox
-    const firstItem = screen.getAllByRole("button")[5];
+    const firstItem = getGalleryItemButton("Corte + Barba");
     await user.click(firstItem);
 
     // Dialog should be visible
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
-    // Press Escape to close (more reliable than clicking outside in tests)
-    await user.keyboard("{Escape}");
+    const overlay = document.querySelector("[data-slot='dialog-overlay']");
+    expect(overlay).toBeInTheDocument();
+    await user.click(overlay as HTMLElement);
 
     // Wait for dialog to be removed
     await waitFor(() => {
@@ -151,14 +172,16 @@ describe("GallerySection", () => {
     render(<GallerySection />);
 
     // Open lightbox
-    const firstItem = screen.getAllByRole("button")[5];
+    const firstItem = getGalleryItemButton("Corte + Barba");
     await user.click(firstItem);
 
     // Press Escape
     await user.keyboard("{Escape}");
 
     // Dialog should not be in document
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
   });
 
   it("toggles between before and after images in lightbox", async () => {
@@ -166,31 +189,36 @@ describe("GallerySection", () => {
     render(<GallerySection />);
 
     // Open lightbox
-    const firstItem = screen.getAllByRole("button")[5];
+    const firstItem = getGalleryItemButton("Corte + Barba");
     await user.click(firstItem);
 
-    // Wait for dialog to be visible
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
-    });
+    const dialog = screen.getByRole("dialog");
+    const dialogQueries = within(dialog);
 
-    // Find Before and After buttons in lightbox using fireEvent (bypasses pointer-events)
-    const afterButtons = screen.getAllByText("After");
-    const beforeButtons = screen.getAllByText("Before");
+    expect(
+      dialogQueries.getByRole("img", {
+        name: /Before service - Corte \+ Barba/i,
+      }),
+    ).toBeInTheDocument();
 
-    // The buttons in lightbox are present
-    expect(afterButtons.length).toBeGreaterThanOrEqual(1);
-    expect(beforeButtons.length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(dialogQueries.getByRole("button", { name: "After" }));
+    expect(
+      dialogQueries.getByRole("img", {
+        name: /After service - Corte \+ Barba/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      dialogQueries.queryByRole("img", {
+        name: /Before service - Corte \+ Barba/i,
+      }),
+    ).not.toBeInTheDocument();
 
-    // Use fireEvent to click (bypasses pointer-events: none on body)
-    const afterButton = afterButtons[afterButtons.length - 1];
-    const beforeButton = beforeButtons[beforeButtons.length - 1];
-
-    fireEvent.click(afterButton);
-    fireEvent.click(beforeButton);
-
-    expect(beforeButton).toBeInTheDocument();
-    expect(afterButton).toBeInTheDocument();
+    fireEvent.click(dialogQueries.getByRole("button", { name: "Before" }));
+    expect(
+      dialogQueries.getByRole("img", {
+        name: /Before service - Corte \+ Barba/i,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("uses semantic HTML with proper structure", () => {
@@ -215,7 +243,7 @@ describe("GallerySection", () => {
       render(<GallerySection />);
 
       // Open lightbox
-      const firstItem = screen.getAllByRole("button")[5];
+      const firstItem = getGalleryItemButton("Corte + Barba");
       await user.click(firstItem);
 
       const dialog = screen.getByRole("dialog");
@@ -243,26 +271,21 @@ describe("GallerySection", () => {
       const user = userEvent.setup();
       render(<GallerySection />);
 
-      // Tab through filter buttons
+      const allButton = screen.getByRole("button", { name: "All" });
       await user.tab();
-      expect(document.activeElement).toBeTruthy();
+      expect(allButton).toHaveFocus();
     });
 
     it("gallery items are keyboard accessible", async () => {
       const user = userEvent.setup();
       render(<GallerySection />);
 
-      // Tab to first gallery item (after filter buttons)
-      for (let i = 0; i < 6; i++) {
-        await user.tab();
-      }
-
-      // Press Enter to open
+      const firstItem = getGalleryItemButton("Corte + Barba");
+      firstItem.focus();
       await user.keyboard("{Enter}");
 
       // Dialog should be visible
-      const dialog = screen.queryByRole("dialog");
-      expect(dialog).toBeInTheDocument();
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
   });
 

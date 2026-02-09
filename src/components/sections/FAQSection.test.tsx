@@ -94,10 +94,11 @@ describe("FAQSection", () => {
       const user = userEvent.setup();
       render(<FAQSection />);
 
-      // Start tabbing from the beginning
+      const firstTrigger = screen.getByRole("button", {
+        name: "Test Question 1?",
+      });
       await user.tab();
-      // First focusable element should be focused
-      expect(document.activeElement).toBeTruthy();
+      expect(firstTrigger).toHaveFocus();
     });
 
     it("supports keyboard interaction with Enter key", async () => {
@@ -109,8 +110,9 @@ describe("FAQSection", () => {
       // Initially collapsed
       expect(firstTrigger).toHaveAttribute("aria-expanded", "false");
 
-      // Click to expand
-      await user.click(firstTrigger);
+      // Focus and press Enter to expand
+      firstTrigger.focus();
+      await user.keyboard("{Enter}");
 
       // Should be expanded
       expect(firstTrigger).toHaveAttribute("aria-expanded", "true");

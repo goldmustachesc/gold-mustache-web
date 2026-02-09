@@ -82,6 +82,7 @@ describe("PATCH /api/appointments/[id]/no-show", () => {
   });
 
   it("maps known service errors to HTTP codes", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockBarberFindUnique.mockResolvedValue({ id: "barber-1" });
 
@@ -121,6 +122,7 @@ describe("PATCH /api/appointments/[id]/no-show", () => {
   });
 
   it("returns 500 for unexpected errors", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockBarberFindUnique.mockResolvedValue({ id: "barber-1" });
     mockMarkAppointmentAsNoShow.mockRejectedValue(new Error("boom"));

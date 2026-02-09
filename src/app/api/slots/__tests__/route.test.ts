@@ -45,6 +45,7 @@ describe("GET /api/slots", () => {
   });
 
   it("returns 500 when service throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetAvailableSlots.mockRejectedValue(new Error("boom"));
 
     const barberId = "b450f113-be42-4648-af5f-70893d137c19";

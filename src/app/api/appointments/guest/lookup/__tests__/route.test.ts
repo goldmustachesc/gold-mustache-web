@@ -42,6 +42,7 @@ describe("GET /api/appointments/guest/lookup", () => {
   });
 
   it("returns 500 when service throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetGuestAppointments.mockRejectedValue(new Error("boom"));
 
     const request = new Request(

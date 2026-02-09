@@ -211,6 +211,7 @@ describe("DeleteAccountCard", () => {
   it("should show error toast on API failure", async () => {
     const user = userEvent.setup();
     const { toast } = await import("sonner");
+    vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockFetch.mockResolvedValueOnce({
       ok: false,

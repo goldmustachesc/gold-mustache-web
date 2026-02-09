@@ -49,6 +49,7 @@ describe("PATCH /api/notifications/[id]/read", () => {
   });
 
   it("returns 500 when service throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockMarkAsRead.mockRejectedValue(new Error("boom"));
 

@@ -39,6 +39,7 @@ describe("GET /api/instagram/posts", () => {
   });
 
   it("returns mock posts when cache is empty", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     mockReadFile.mockResolvedValue(
       JSON.stringify({ posts: [], lastUpdated: null, source: "cache" }),
     );
@@ -52,6 +53,7 @@ describe("GET /api/instagram/posts", () => {
   });
 
   it("returns mock posts when cache read fails", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     mockReadFile.mockRejectedValue(new Error("boom"));
 
     const response = await GET();

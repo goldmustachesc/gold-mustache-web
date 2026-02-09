@@ -29,6 +29,7 @@ describe("GET /api/services", () => {
   });
 
   it("returns 500 on service failure", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetServices.mockRejectedValue(new Error("boom"));
 
     const request = new Request("http://localhost:3001/api/services");

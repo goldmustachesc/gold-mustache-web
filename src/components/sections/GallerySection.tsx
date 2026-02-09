@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogDescription,
   DialogOverlay,
   DialogPortal,
   DialogTitle,
@@ -172,6 +173,9 @@ export function GallerySection() {
               <DialogTitle className="sr-only">
                 {lightboxItem.service} - {t("before")} / {t("after")}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                {t("clickToView")}
+              </DialogDescription>
 
               <div className="w-full">
                 {/* Header com título e botões */}

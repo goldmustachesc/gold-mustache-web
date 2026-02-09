@@ -34,6 +34,7 @@ describe("GET /api/barbers", () => {
   });
 
   it("returns 500 when prisma throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockFindMany.mockRejectedValue(new Error("boom"));
 
     const response = await GET();

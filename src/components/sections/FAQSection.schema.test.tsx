@@ -46,21 +46,21 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("FAQ Schema Markup", () => {
-  it("generates valid FAQPage JSON-LD schema", () => {
-    const { container } = render(<FAQSection />);
-
-    // Find the schema script tag
+  function getSchema(container: HTMLElement) {
     const schemaScript = container.querySelector(
       'script[type="application/ld+json"]',
     );
     expect(schemaScript).toBeInTheDocument();
 
-    // Parse the schema
     const schemaContent = schemaScript?.textContent;
     expect(schemaContent).toBeTruthy();
 
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    return JSON.parse(schemaContent as string);
+  }
+
+  it("generates valid FAQPage JSON-LD schema", () => {
+    const { container } = render(<FAQSection />);
+    const schema = getSchema(container);
 
     // Verify schema structure
     expect(schema["@context"]).toBe("https://schema.org");
@@ -71,13 +71,7 @@ describe("FAQ Schema Markup", () => {
 
   it("includes all FAQ items in the schema", () => {
     const { container } = render(<FAQSection />);
-
-    const schemaScript = container.querySelector(
-      'script[type="application/ld+json"]',
-    );
-    const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    const schema = getSchema(container);
 
     // Should have at least the FAQ items we defined in the mock
     expect(schema.mainEntity.length).toBeGreaterThanOrEqual(3);
@@ -93,13 +87,7 @@ describe("FAQ Schema Markup", () => {
 
   it("includes complete question and answer data in schema", () => {
     const { container } = render(<FAQSection />);
-
-    const schemaScript = container.querySelector(
-      'script[type="application/ld+json"]',
-    );
-    const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    const schema = getSchema(container);
 
     // Verify first FAQ item structure
     const firstItem = schema.mainEntity[0];
@@ -114,13 +102,7 @@ describe("FAQ Schema Markup", () => {
 
   it("validates all FAQ items have required schema properties", () => {
     const { container } = render(<FAQSection />);
-
-    const schemaScript = container.querySelector(
-      'script[type="application/ld+json"]',
-    );
-    const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    const schema = getSchema(container);
 
     // Verify each item has the required structure
     schema.mainEntity.forEach(
@@ -142,18 +124,18 @@ describe("FAQ Schema Markup", () => {
 
   it("schema is valid JSON that can be parsed by search engines", () => {
     const { container } = render(<FAQSection />);
-
     const schemaScript = container.querySelector(
       'script[type="application/ld+json"]',
     );
+    expect(schemaScript).toBeInTheDocument();
     const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
+    expect(schemaContent).toBeTruthy();
 
     // Should not throw when parsing
-    expect(() => JSON.parse(schemaContent)).not.toThrow();
+    expect(() => JSON.parse(schemaContent as string)).not.toThrow();
 
     // Should be properly formatted JSON
-    const schema = JSON.parse(schemaContent);
+    const schema = JSON.parse(schemaContent as string);
     const reStringified = JSON.stringify(schema);
     expect(reStringified).toBeTruthy();
   });

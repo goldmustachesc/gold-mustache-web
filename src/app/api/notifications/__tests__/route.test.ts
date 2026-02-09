@@ -52,6 +52,7 @@ describe("GET /api/notifications", () => {
   });
 
   it("returns 500 on service error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockGetNotifications.mockRejectedValue(new Error("boom"));
 
