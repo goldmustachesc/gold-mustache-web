@@ -176,5 +176,21 @@ const getBarbershopSettingsCached = unstable_cache(
 );
 
 export async function getBarbershopSettings(): Promise<BarbershopSettingsData> {
-  return getBarbershopSettingsCached();
+  if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") {
+    return getBarbershopSettingsUncached();
+  }
+
+  try {
+    return await getBarbershopSettingsCached();
+  } catch (error) {
+    // Fallback para contextos sem incremental cache (ex: runners de teste não Next.js).
+    if (
+      error instanceof Error &&
+      error.message.includes("incrementalCache missing")
+    ) {
+      return getBarbershopSettingsUncached();
+    }
+
+    throw error;
+  }
 }
