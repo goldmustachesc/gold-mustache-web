@@ -19,12 +19,15 @@ export function ThemeToggle() {
 
   const currentTheme = (theme ?? "system") as ThemeValue;
 
-  const options: { value: ThemeValue; icon: React.ElementType; label: string }[] =
-    [
-      { value: "system", icon: Monitor, label: t("theme.system") },
-      { value: "light", icon: Sun, label: t("theme.light") },
-      { value: "dark", icon: Moon, label: t("theme.dark") },
-    ];
+  const options: {
+    value: ThemeValue;
+    icon: React.ElementType;
+    label: string;
+  }[] = [
+    { value: "system", icon: Monitor, label: t("theme.system") },
+    { value: "light", icon: Sun, label: t("theme.light") },
+    { value: "dark", icon: Moon, label: t("theme.dark") },
+  ];
 
   if (!mounted) {
     return (
@@ -48,6 +51,7 @@ export function ThemeToggle() {
       {options.map(({ value, icon: Icon, label }) => {
         const isActive = currentTheme === value;
         return (
+          // biome-ignore lint/a11y/useSemanticElements: Custom radio implementation using button
           <button
             key={value}
             type="button"
@@ -58,7 +62,7 @@ export function ThemeToggle() {
             className={cn(
               "flex flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background hover:text-foreground",
               isActive &&
-                "bg-background text-foreground shadow-sm hover:text-foreground"
+                "bg-background text-foreground shadow-sm hover:text-foreground",
             )}
           >
             <Icon className="h-4 w-4" />
