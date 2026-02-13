@@ -1,66 +1,70 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import * as React from "react";
+import { cn } from "@/lib/utils";
+
+type ThemeValue = "system" | "light" | "dark";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const t = useTranslations("common");
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isDark = theme === "dark";
+  const currentTheme = (theme ?? "system") as ThemeValue;
+
+  const options: { value: ThemeValue; icon: React.ElementType; label: string }[] =
+    [
+      { value: "system", icon: Monitor, label: t("theme.system") },
+      { value: "light", icon: Sun, label: t("theme.light") },
+      { value: "dark", icon: Moon, label: t("theme.dark") },
+    ];
 
   if (!mounted) {
     return (
-      <div className="relative h-8 w-14 rounded-full bg-gray-200 dark:bg-gray-800">
-        <div className="absolute inset-0 flex items-center justify-between px-2">
-          <Sun className="h-4 w-4 text-yellow-500" />
-          <Moon className="h-4 w-4 text-gray-400" />
+      <div
+        className="flex h-9 w-[7.5rem] rounded-lg border border-border bg-muted/50 p-0.5"
+        aria-hidden
+      >
+        <div className="flex flex-1 items-center justify-center gap-0.5 rounded-md bg-muted">
+          <span className="sr-only">{t("theme.label")}</span>
         </div>
-        <span className="sr-only">Toggle theme</span>
       </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative h-8 w-14 rounded-full bg-gray-200 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:ring-offset-2 dark:bg-gray-800"
-      aria-label="Toggle theme"
-      role="switch"
-      aria-checked={isDark}
+    <div
+      role="radiogroup"
+      aria-label={t("theme.label")}
+      className="flex h-9 w-[7.5rem] rounded-lg border border-border bg-muted/50 p-0.5"
     >
-      <div className="absolute inset-0 flex items-center justify-between px-2">
-        <Sun
-          className={`h-4 w-4 transition-colors duration-300 ${
-            isDark ? "text-gray-400" : "text-yellow-500"
-          }`}
-        />
-        <Moon
-          className={`h-4 w-4 transition-colors duration-300 ${
-            isDark ? "text-blue-400" : "text-gray-400"
-          }`}
-        />
-      </div>
-      <motion.div
-        className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-md"
-        initial={false}
-        animate={{
-          x: isDark ? 24 : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 700,
-          damping: 30,
-        }}
-      />
-      <span className="sr-only">Toggle theme</span>
-    </button>
+      {options.map(({ value, icon: Icon, label }) => {
+        const isActive = currentTheme === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={isActive}
+            onClick={() => setTheme(value)}
+            aria-label={label}
+            className={cn(
+              "flex flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background hover:text-foreground",
+              isActive &&
+                "bg-background text-foreground shadow-sm hover:text-foreground"
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        );
+      })}
+    </div>
   );
 }

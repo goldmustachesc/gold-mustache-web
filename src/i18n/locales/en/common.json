@@ -10,5 +10,11 @@
     "closeMenu": "Close menu",
     "changeLanguage": "Change language",
     "toggleTheme": "Toggle theme"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }
