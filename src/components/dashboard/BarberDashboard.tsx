@@ -17,7 +17,8 @@ import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useMyWorkingHours } from "@/hooks/useBarberWorkingHours";
-import { Menu, ArrowRight, Eye, EyeOff, Plus } from "lucide-react";
+import { useBarberAbsences } from "@/hooks/useBarberAbsences";
+import { Menu, ArrowRight, CalendarOff, Eye, EyeOff, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   formatDateToString,
@@ -82,9 +83,15 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
 
   const barberId = barberProfile?.id ?? null;
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
+  const weekStartStr = formatDateToString(weekStart);
+  const weekEndStr = formatDateToString(weekEnd);
 
   const { data: appointments = [], isLoading: appointmentsLoading } =
     useBarberAppointments(barberId, weekStart, weekEnd);
+  const { data: absences = [], isLoading: absencesLoading } = useBarberAbsences(
+    weekStartStr,
+    weekEndStr,
+  );
 
   const cancelAppointment = useCancelAppointmentByBarber();
   const markNoShow = useMarkNoShow();
@@ -146,6 +153,15 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const dailyAppointments = appointments.filter(
     (apt) => apt.date === selectedDateStr,
   );
+  const absencesPageHref = `/${locale}/barbeiro/ausencias?date=${selectedDateStr}`;
+  const selectedDateAbsences = useMemo(
+    () => absences.filter((absence) => absence.date === selectedDateStr),
+    [absences, selectedDateStr],
+  );
+  const weekAbsenceDates = useMemo(
+    () => [...new Set(absences.map((absence) => absence.date))],
+    [absences],
+  );
 
   // Get working hours for the selected day
   const selectedDayWorkingHours = useMemo(() => {
@@ -153,13 +169,30 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
     const dayOfWeek = selectedDate.getDay();
     return workingHours.find((wh) => wh.dayOfWeek === dayOfWeek) ?? null;
   }, [workingHours, selectedDate]);
+  const handleCreateAppointmentFromSlot = (startTime: string) => {
+    const params = new URLSearchParams({
+      date: selectedDateStr,
+      time: startTime,
+    });
+    router.push(`/${locale}/barbeiro/agendar?${params.toString()}`);
+  };
+  const handleCreateAbsenceFromSlot = (startTime: string, endTime: string) => {
+    const params = new URLSearchParams({
+      date: selectedDateStr,
+      startTime,
+      endTime,
+      allDay: "false",
+    });
+    router.push(`/${locale}/barbeiro/ausencias?${params.toString()}`);
+  };
 
-  const isLoading = userLoading || barberLoading || appointmentsLoading;
+  const isLoading =
+    userLoading || barberLoading || appointmentsLoading || absencesLoading;
 
   if (isLoading || !user || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <div className="animate-pulse text-zinc-400">Carregando...</div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Carregando...</div>
       </div>
     );
   }
@@ -167,9 +200,9 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const firstName = barberProfile.name?.split(" ")[0] || "Barbeiro";
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center justify-between px-4 py-4 lg:px-8">
           {/* Logo (visible on desktop) */}
           <div className="hidden lg:flex items-center gap-3">
@@ -188,9 +221,9 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
           {/* Greeting (visible on mobile) */}
           <div className="lg:hidden">
             <h1 className="text-2xl font-bold">Olá, {firstName}</h1>
-            <p className="text-sm text-zinc-400 flex items-center gap-1">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
               Você está em sua agenda.
-              <span className="text-zinc-600">▼</span>
+              <span className="text-muted-foreground">▼</span>
             </p>
           </div>
 
@@ -198,7 +231,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
           <div className="hidden lg:block flex-1 text-center">
             <h1 className="text-xl font-bold">
               Olá, {firstName}!{" "}
-              <span className="text-zinc-400 font-normal">
+              <span className="text-muted-foreground font-normal">
                 Você está em sua agenda.
               </span>
             </h1>
@@ -215,6 +248,25 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
                 Novo Agendamento
               </Button>
             </Link>
+            <Link href={absencesPageHref} className="hidden lg:block">
+              <Button
+                variant="outline"
+                className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400"
+              >
+                <CalendarOff className="h-4 w-4 mr-2" />
+                Nova Ausência
+              </Button>
+            </Link>
+            <Link href={absencesPageHref} className="lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                title="Adicionar ausência"
+              >
+                <CalendarOff className="h-5 w-5" />
+              </Button>
+            </Link>
 
             {/* Notifications */}
             {user?.id && <NotificationPanel userId={user.id} />}
@@ -223,7 +275,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               variant="ghost"
               size="icon"
               onClick={() => setHideValues((prev) => !prev)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
               title={hideValues ? "Mostrar valores" : "Ocultar valores"}
             >
               {hideValues ? (
@@ -236,7 +288,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Menu className="h-6 w-6" />
             </Button>
@@ -253,6 +305,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
             <WeeklyCalendar
               weekStart={weekStart}
               appointments={appointments}
+              absenceDates={weekAbsenceDates}
               selectedDate={selectedDate}
               onDateSelect={handleDateSelect}
               onWeekChange={handleWeekChange}
@@ -285,6 +338,9 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               variant="compact"
               hideValues={hideValues}
               workingHours={selectedDayWorkingHours}
+              absences={selectedDateAbsences}
+              onCreateAppointmentFromSlot={handleCreateAppointmentFromSlot}
+              onCreateAbsenceFromSlot={handleCreateAbsenceFromSlot}
             />
           </div>
         </div>
@@ -307,10 +363,11 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
             <div className="grid grid-cols-12 gap-6">
               {/* Left Column - Calendar */}
               <div className="col-span-4">
-                <div className="sticky top-24 bg-zinc-800/50 rounded-2xl p-4 border border-zinc-700/50">
+                <div className="sticky top-24 bg-card/50 rounded-2xl p-4 border border-border/70">
                   <WeeklyCalendar
                     weekStart={weekStart}
                     appointments={appointments}
+                    absenceDates={weekAbsenceDates}
                     selectedDate={selectedDate}
                     onDateSelect={handleDateSelect}
                     onWeekChange={handleWeekChange}
@@ -321,8 +378,8 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
 
               {/* Right Column - Schedule */}
               <div className="col-span-8">
-                <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50 min-h-[500px]">
-                  <h2 className="text-lg font-semibold text-zinc-200 mb-4">
+                <div className="bg-card/30 rounded-2xl p-6 border border-border/70 min-h-[500px]">
+                  <h2 className="text-lg font-semibold text-foreground mb-4">
                     Agendamentos do dia
                   </h2>
                   <DailySchedule
@@ -337,6 +394,11 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
                     variant="compact"
                     hideValues={hideValues}
                     workingHours={selectedDayWorkingHours}
+                    absences={selectedDateAbsences}
+                    onCreateAppointmentFromSlot={
+                      handleCreateAppointmentFromSlot
+                    }
+                    onCreateAbsenceFromSlot={handleCreateAbsenceFromSlot}
                   />
                 </div>
               </div>

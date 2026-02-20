@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -44,9 +44,24 @@ function addDays(date: Date, days: number): Date {
   return d;
 }
 
+function isValidDateParam(value: string | null): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+}
+
+function isValidTimeParam(value: string | null): value is string {
+  return Boolean(value && /^\d{2}:\d{2}$/.test(value));
+}
+
+function parseAllDayParam(value: string | null): boolean | null {
+  if (value === "true" || value === "1") return true;
+  if (value === "false" || value === "0") return false;
+  return null;
+}
+
 export default function BarberAbsencesPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = (params.locale as string) || "pt-BR";
 
   const { data: user, isLoading: userLoading } = useUser();
@@ -85,6 +100,37 @@ export default function BarberAbsencesPage() {
   const [startTime, setStartTime] = useState<string>("09:00");
   const [endTime, setEndTime] = useState<string>("18:00");
   const [reason, setReason] = useState<string>("");
+  const prefillAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (prefillAppliedRef.current) return;
+
+    const prefilledDate = searchParams.get("date");
+    const prefilledStartTime = searchParams.get("startTime");
+    const prefilledEndTime = searchParams.get("endTime");
+    const prefilledAllDay = parseAllDayParam(searchParams.get("allDay"));
+
+    const hasPrefilledDate = isValidDateParam(prefilledDate);
+    const hasPrefilledStartTime = isValidTimeParam(prefilledStartTime);
+    const hasPrefilledEndTime = isValidTimeParam(prefilledEndTime);
+
+    if (hasPrefilledDate) {
+      setDate(prefilledDate);
+    }
+    if (prefilledAllDay !== null) {
+      setAllDay(prefilledAllDay);
+    } else if (hasPrefilledStartTime || hasPrefilledEndTime) {
+      setAllDay(false);
+    }
+    if (hasPrefilledStartTime) {
+      setStartTime(prefilledStartTime);
+    }
+    if (hasPrefilledEndTime) {
+      setEndTime(prefilledEndTime);
+    }
+
+    prefillAppliedRef.current = true;
+  }, [searchParams]);
 
   const isLoading = userLoading || barberLoading;
 
@@ -413,75 +459,78 @@ export default function BarberAbsencesPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-zinc-700/50">
-                  {upcomingAbsences.map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex items-center justify-between gap-4 p-4 lg:p-5 hover:bg-zinc-800/30 transition-colors"
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Date Badge */}
-                        <div className="hidden sm:flex flex-col items-center justify-center h-14 w-14 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                          <span className="text-xs text-amber-400 font-medium">
-                            {formatDateDdMmYyyyFromIsoDateLike(a.date)
-                              .split("/")[1]
-                              .toUpperCase()}
-                          </span>
-                          <span className="text-xl font-bold text-amber-500">
-                            {
-                              formatDateDdMmYyyyFromIsoDateLike(a.date).split(
-                                "/",
-                              )[0]
-                            }
-                          </span>
-                        </div>
+                  {upcomingAbsences.map((a) => {
+                    const formattedDate = formatDateDdMmYyyyFromIsoDateLike(
+                      a.date,
+                    );
+                    const dateMatch = formattedDate.match(
+                      /^(\d{2})[-/](\d{2})[-/]\d{4}$/,
+                    );
+                    const dayLabel = dateMatch?.[1] ?? "--";
+                    const monthLabel = dateMatch?.[2] ?? "--";
 
-                        <div className="min-w-0">
-                          <div className="font-medium text-white flex items-center gap-2 flex-wrap">
-                            <span className="sm:hidden">
-                              {formatDateDdMmYyyyFromIsoDateLike(a.date)}
+                    return (
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between gap-4 p-4 lg:p-5 hover:bg-zinc-800/30 transition-colors"
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Date Badge */}
+                          <div className="hidden sm:flex flex-col items-center justify-center h-14 w-14 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                            <span className="text-xs text-amber-400 font-medium">
+                              {monthLabel.toUpperCase()}
                             </span>
-                            <span className="hidden sm:inline">
-                              {new Date(
-                                `${a.date}T12:00:00`,
-                              ).toLocaleDateString("pt-BR", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                              })}
-                            </span>
-                            <span
-                              className={cn(
-                                "text-xs px-2 py-0.5 rounded-full",
-                                a.startTime && a.endTime
-                                  ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20",
-                              )}
-                            >
-                              {a.startTime && a.endTime
-                                ? `${a.startTime}–${a.endTime}`
-                                : "Dia inteiro"}
+                            <span className="text-xl font-bold text-amber-500">
+                              {dayLabel}
                             </span>
                           </div>
-                          {a.reason && (
-                            <div className="text-sm text-zinc-400 mt-1 truncate max-w-xs lg:max-w-md">
-                              {a.reason}
-                            </div>
-                          )}
-                        </div>
-                      </div>
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteAbsence.mutate(a.id)}
-                        disabled={deleteAbsence.isPending}
-                        className="gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Remover</span>
-                      </Button>
-                    </div>
-                  ))}
+                          <div className="min-w-0">
+                            <div className="font-medium text-white flex items-center gap-2 flex-wrap">
+                              <span className="sm:hidden">{formattedDate}</span>
+                              <span className="hidden sm:inline">
+                                {new Date(
+                                  `${a.date}T12:00:00`,
+                                ).toLocaleDateString("pt-BR", {
+                                  weekday: "long",
+                                  day: "numeric",
+                                  month: "long",
+                                })}
+                              </span>
+                              <span
+                                className={cn(
+                                  "text-xs px-2 py-0.5 rounded-full",
+                                  a.startTime && a.endTime
+                                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+                                )}
+                              >
+                                {a.startTime && a.endTime
+                                  ? `${a.startTime}–${a.endTime}`
+                                  : "Dia inteiro"}
+                              </span>
+                            </div>
+                            {a.reason && (
+                              <div className="text-sm text-zinc-400 mt-1 truncate max-w-xs lg:max-w-md">
+                                {a.reason}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteAbsence.mutate(a.id)}
+                          disabled={deleteAbsence.isPending}
+                          className="gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Remover</span>
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

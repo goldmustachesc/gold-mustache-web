@@ -179,6 +179,56 @@
   /* Gold */
 }
 
+/*
+ * Private/auth routes still use many `zinc-*` utilities.
+ * Mapping neutral zinc tokens to semantic brand tokens lets these
+ * screens follow light/dark/system without forcing a full refactor now.
+ */
+.private-theme {
+  --color-zinc-950: var(--background);
+  --color-zinc-900: var(--background);
+  --color-zinc-800: var(--card);
+  --color-zinc-700: var(--border);
+  --color-zinc-600: var(--muted-foreground);
+  --color-zinc-500: var(--muted-foreground);
+  --color-zinc-400: var(--muted-foreground);
+  --color-zinc-300: var(--foreground);
+  --color-zinc-200: var(--foreground);
+  --color-zinc-100: var(--foreground);
+}
+
+/* Normalize legacy hardcoded white text in private/auth screens. */
+.private-theme
+:where(div, p, span, h1, h2, h3, h4, h5, h6, label, li).text-white {
+  color: var(--foreground);
+}
+
+.private-theme
+  :where(
+    div,
+    p,
+    span,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    label,
+    li
+  )[class*="text-white/"] {
+  color: var(--foreground);
+}
+
+.private-theme :where(input, textarea, select).text-white {
+  color: var(--foreground);
+}
+
+.private-theme .hover\:text-white:hover,
+.private-theme .focus\:text-white:focus {
+  color: var(--foreground);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

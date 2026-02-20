@@ -298,7 +298,7 @@ export default function MeuLinkPage() {
                   <Button
                     onClick={handleDownloadQR}
                     variant="outline"
-                    className="flex-1 border-zinc-700 hover:bg-zinc-800 text-white"
+                    className="flex-1 border-border hover:bg-accent text-foreground"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Baixar
@@ -306,7 +306,7 @@ export default function MeuLinkPage() {
                   <Button
                     onClick={() => setQrDialogOpen(true)}
                     variant="outline"
-                    className="flex-1 border-zinc-700 hover:bg-zinc-800 text-white"
+                    className="flex-1 border-border hover:bg-accent text-foreground"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Ampliar
@@ -397,9 +397,9 @@ export default function MeuLinkPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
+        <DialogContent className="sm:max-w-md bg-popover border-border text-popover-foreground">
           <DialogHeader>
-            <DialogTitle className="text-center text-white">
+            <DialogTitle className="text-center">
               QR Code do seu link
             </DialogTitle>
           </DialogHeader>
@@ -412,7 +412,7 @@ export default function MeuLinkPage() {
                 includeMargin={false}
               />
             </div>
-            <p className="text-sm text-center text-zinc-400 max-w-xs">
+            <p className="text-sm text-center text-muted-foreground max-w-xs">
               Mostre este QR Code para seus clientes escanearem e acessarem
               diretamente sua página de agendamento.
             </p>
@@ -420,7 +420,7 @@ export default function MeuLinkPage() {
               <Button
                 onClick={handleDownloadQR}
                 variant="outline"
-                className="flex-1 border-zinc-700 hover:bg-zinc-800 text-white"
+                className="flex-1 border-border hover:bg-accent text-foreground"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Baixar PNG

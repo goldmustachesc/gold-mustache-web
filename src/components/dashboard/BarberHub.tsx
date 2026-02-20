@@ -170,14 +170,14 @@ export function BarberHub({ locale }: BarberHubProps) {
 
   if (isLoading || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <BarberSidebar
         open={sidebarOpen}
@@ -186,7 +186,7 @@ export function BarberHub({ locale }: BarberHubProps) {
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-3">
@@ -215,7 +215,7 @@ export function BarberHub({ locale }: BarberHubProps) {
             </Link>
 
             {user?.email && (
-              <span className="text-sm text-zinc-400 hidden xl:inline">
+              <span className="text-sm text-muted-foreground hidden xl:inline">
                 {user.email}
               </span>
             )}
@@ -226,7 +226,7 @@ export function BarberHub({ locale }: BarberHubProps) {
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Menu className="h-6 w-6" />
             </Button>
@@ -241,7 +241,7 @@ export function BarberHub({ locale }: BarberHubProps) {
           <h1 className="text-2xl lg:text-3xl font-bold">
             {getGreeting()}, {barberProfile.name.split(" ")[0]}! 👋
           </h1>
-          <p className="text-zinc-400">
+          <p className="text-muted-foreground">
             Aqui está o resumo do seu dia na barbearia.
           </p>
         </div>
@@ -271,7 +271,9 @@ export function BarberHub({ locale }: BarberHubProps) {
 
         {/* Quick Actions */}
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-zinc-200">Acesso rápido</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Acesso rápido
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <QuickAction
               href={`/${locale}/dashboard`}
@@ -346,7 +348,7 @@ export function BarberHub({ locale }: BarberHubProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                  className="border-border hover:bg-accent text-foreground"
                 >
                   Compartilhar
                   <ChevronRight className="h-4 w-4 ml-1" />

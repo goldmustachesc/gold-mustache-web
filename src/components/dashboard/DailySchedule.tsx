@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type {
   AppointmentWithDetails,
+  BarberAbsenceData,
   BarberWorkingHoursDay,
 } from "@/types/booking";
 import {
   Bell,
   Calendar,
+  CalendarOff,
   Clock,
   Loader2,
   MoreHorizontal,
@@ -36,6 +38,9 @@ import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailShe
 interface DailyScheduleProps {
   date: Date;
   appointments: AppointmentWithDetails[];
+  absences?: BarberAbsenceData[];
+  onCreateAppointmentFromSlot?: (startTime: string) => void;
+  onCreateAbsenceFromSlot?: (startTime: string, endTime: string) => void;
   onCancelAppointment: (id: string, reason: string) => void;
   isCancelling?: boolean;
   cancellingId?: string | null;
@@ -56,6 +61,8 @@ interface ScheduleSlot {
   endTime: string;
   appointment: AppointmentWithDetails | null;
   isAvailable: boolean;
+  isBlockedByAbsence: boolean;
+  absenceReason: string | null;
 }
 
 function formatCurrency(value: number): string {
@@ -63,6 +70,10 @@ function formatCurrency(value: number): string {
     style: "currency",
     currency: "BRL",
   }).format(value);
+}
+
+function isFullDayAbsence(absence: BarberAbsenceData): boolean {
+  return !absence.startTime || !absence.endTime;
 }
 
 // Barber chair icon for empty state (decorative)
@@ -240,7 +251,7 @@ function AppointmentCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="bg-zinc-900 border-zinc-700"
+                className="bg-popover border-border text-popover-foreground shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
                 {canCancel && (
@@ -253,7 +264,7 @@ function AppointmentCard({
                       }
                     }}
                     disabled={isCancelling && cancellingId === appointment.id}
-                    className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-500/10"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancelar
@@ -268,7 +279,7 @@ function AppointmentCard({
                     disabled={
                       isMarkingNoShow && markingNoShowId === appointment.id
                     }
-                    className="text-amber-400 focus:text-amber-400 focus:bg-amber-500/10"
+                    className="text-amber-600 dark:text-amber-400 focus:text-amber-600 dark:focus:text-amber-400 focus:bg-amber-500/10"
                   >
                     Marcar não compareceu
                   </DropdownMenuItem>
@@ -334,6 +345,9 @@ function AppointmentCard({
 export function DailySchedule({
   date,
   appointments,
+  absences = [],
+  onCreateAppointmentFromSlot,
+  onCreateAbsenceFromSlot,
   onCancelAppointment,
   isCancelling,
   cancellingId,
@@ -351,9 +365,30 @@ export function DailySchedule({
   const [selectedAppointment, setSelectedAppointment] =
     useState<AppointmentWithDetails | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const fullDayAbsence = useMemo(
+    () => absences.find(isFullDayAbsence) ?? null,
+    [absences],
+  );
+  const partialDayAbsences = useMemo(
+    () =>
+      absences.filter(
+        (
+          absence,
+        ): absence is BarberAbsenceData & {
+          startTime: string;
+          endTime: string;
+        } => Boolean(absence.startTime && absence.endTime),
+      ),
+    [absences],
+  );
+  const hasFullDayAbsence = fullDayAbsence !== null;
 
   // Generate complete schedule with empty slots
   const scheduleSlots = useMemo((): ScheduleSlot[] => {
+    if (hasFullDayAbsence) {
+      return [];
+    }
+
     // If no working hours or not working, return empty
     if (
       !workingHours ||
@@ -402,6 +437,8 @@ export function DailySchedule({
           endTime: appointment.endTime,
           appointment,
           isAvailable: false,
+          isBlockedByAbsence: false,
+          absenceReason: null,
         });
 
         // Skip slots that are covered by this appointment's duration
@@ -421,12 +458,26 @@ export function DailySchedule({
         });
 
         if (!overlappingAppointment) {
+          const slotEndTime = addMinutesToTime(slot.time, SLOT_DURATION);
+          const slotStartMinutes = parseTimeToMinutes(slot.time);
+          const slotEndMinutes = parseTimeToMinutes(slotEndTime);
+          const blockingAbsence =
+            partialDayAbsences.find((absence) => {
+              const absenceStart = parseTimeToMinutes(absence.startTime);
+              const absenceEnd = parseTimeToMinutes(absence.endTime);
+              return (
+                slotStartMinutes < absenceEnd && absenceStart < slotEndMinutes
+              );
+            }) ?? null;
+
           // Empty slot
           schedule.push({
             time: slot.time,
-            endTime: addMinutesToTime(slot.time, SLOT_DURATION),
+            endTime: slotEndTime,
             appointment: null,
-            isAvailable: true,
+            isAvailable: !blockingAbsence,
+            isBlockedByAbsence: Boolean(blockingAbsence),
+            absenceReason: blockingAbsence?.reason ?? null,
           });
         }
         slotIndex++;
@@ -434,7 +485,7 @@ export function DailySchedule({
     }
 
     return schedule;
-  }, [workingHours, appointments]);
+  }, [workingHours, appointments, hasFullDayAbsence, partialDayAbsences]);
 
   const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
     setSelectedAppointment(appointment);
@@ -511,6 +562,8 @@ export function DailySchedule({
   if (variant === "compact") {
     // Check if it's a day off (not working)
     const isDayOff = workingHours && !workingHours.isWorking;
+    const hasPartialAbsences = partialDayAbsences.length > 0;
+    const fullDayAbsenceReason = fullDayAbsence?.reason?.trim() ?? null;
 
     // Group schedule slots by hour
     const slotsByHour = scheduleSlots.reduce(
@@ -532,7 +585,65 @@ export function DailySchedule({
 
     return (
       <div className="space-y-3">
-        {isDayOff ? (
+        {hasFullDayAbsence ? (
+          <>
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-4">
+              <div className="flex items-start gap-3">
+                <CalendarOff className="h-5 w-5 text-amber-400 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-800 dark:text-amber-200">
+                    Agenda bloqueada por ausência
+                  </p>
+                  <p className="text-sm mt-1 text-amber-700 dark:text-amber-100/80">
+                    Nenhum horário ficará disponível para este dia.
+                  </p>
+                  {fullDayAbsenceReason && (
+                    <p className="text-sm mt-2 text-amber-700 dark:text-amber-100/80">
+                      Motivo: {fullDayAbsenceReason}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+            {appointments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <BarberChairIcon className="h-16 w-16 text-zinc-600 mb-4" />
+                <p className="text-zinc-400 text-lg font-medium">
+                  Dia bloqueado
+                </p>
+                <p className="text-zinc-500 text-sm mt-1">
+                  Ausência de dia inteiro registrada.
+                </p>
+              </div>
+            ) : (
+              hours.map((hour) => (
+                <div key={hour} className="space-y-2">
+                  <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                    <span>{hour}:00</span>
+                    <div className="flex-1 h-px bg-zinc-800" />
+                  </div>
+                  {appointmentsByHour[hour].map((appointment) => (
+                    <AppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                      onOpenDetail={handleOpenAppointmentDetail}
+                      onSendReminder={handleSendReminder}
+                      sendingReminderId={sendingReminderId}
+                      onCancelAppointment={onCancelAppointment}
+                      isCancelling={isCancelling}
+                      cancellingId={cancellingId}
+                      onMarkNoShow={onMarkNoShow}
+                      isMarkingNoShow={isMarkingNoShow}
+                      markingNoShowId={markingNoShowId}
+                      hideValues={hideValues}
+                      maskedValue={maskedValue}
+                    />
+                  ))}
+                </div>
+              ))
+            )}
+          </>
+        ) : isDayOff ? (
           // Day off state
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <BarberChairIcon className="h-16 w-16 text-zinc-600 mb-4" />
@@ -579,56 +690,144 @@ export function DailySchedule({
           ))
         ) : (
           // Full schedule with empty slots
-          scheduleHours.map((hour) => (
-            <div key={hour} className="space-y-2">
-              {/* Hour marker */}
-              <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                <span>{hour}:00</span>
-                <div className="flex-1 h-px bg-zinc-800" />
+          <>
+            {hasPartialAbsences && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Existem horários bloqueados por ausência neste dia.
+                </p>
               </div>
+            )}
+            {scheduleHours.map((hour) => (
+              <div key={hour} className="space-y-2">
+                {/* Hour marker */}
+                <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                  <span>{hour}:00</span>
+                  <div className="flex-1 h-px bg-zinc-800" />
+                </div>
 
-              {/* Slots for this hour */}
-              {slotsByHour[hour].map((slot) => {
-                if (slot.appointment) {
-                  return (
-                    <AppointmentCard
-                      key={slot.appointment.id}
-                      appointment={slot.appointment}
-                      onOpenDetail={handleOpenAppointmentDetail}
-                      onSendReminder={handleSendReminder}
-                      sendingReminderId={sendingReminderId}
-                      onCancelAppointment={onCancelAppointment}
-                      isCancelling={isCancelling}
-                      cancellingId={cancellingId}
-                      onMarkNoShow={onMarkNoShow}
-                      isMarkingNoShow={isMarkingNoShow}
-                      markingNoShowId={markingNoShowId}
-                      hideValues={hideValues}
-                      maskedValue={maskedValue}
-                    />
-                  );
-                }
+                {/* Slots for this hour */}
+                {slotsByHour[hour].map((slot) => {
+                  if (slot.appointment) {
+                    return (
+                      <AppointmentCard
+                        key={slot.appointment.id}
+                        appointment={slot.appointment}
+                        onOpenDetail={handleOpenAppointmentDetail}
+                        onSendReminder={handleSendReminder}
+                        sendingReminderId={sendingReminderId}
+                        onCancelAppointment={onCancelAppointment}
+                        isCancelling={isCancelling}
+                        cancellingId={cancellingId}
+                        onMarkNoShow={onMarkNoShow}
+                        isMarkingNoShow={isMarkingNoShow}
+                        markingNoShowId={markingNoShowId}
+                        hideValues={hideValues}
+                        maskedValue={maskedValue}
+                      />
+                    );
+                  }
 
-                // Empty slot
-                return (
-                  <div
-                    key={`empty-${slot.time}`}
-                    className="relative overflow-hidden rounded-xl bg-zinc-800/30 border border-dashed border-zinc-700/50 px-4 py-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-500">
-                        {slot.time} - {slot.endTime}
-                      </span>
-                      <span className="text-xs text-zinc-600 uppercase tracking-wide">
-                        Disponível
-                      </span>
+                  // Empty slot
+                  const hasSlotActions =
+                    !slot.isBlockedByAbsence &&
+                    Boolean(onCreateAppointmentFromSlot) &&
+                    Boolean(onCreateAbsenceFromSlot);
+                  const slotContent = (
+                    <div
+                      className={cn(
+                        "relative overflow-hidden rounded-xl px-4 py-3 border",
+                        slot.isBlockedByAbsence
+                          ? "bg-amber-500/10 border-amber-500/30"
+                          : "bg-zinc-800/30 border-dashed border-zinc-700/50",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={cn(
+                            "text-sm",
+                            slot.isBlockedByAbsence
+                              ? "text-amber-800 dark:text-amber-100/90"
+                              : "text-zinc-500",
+                          )}
+                        >
+                          {slot.time} - {slot.endTime}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-xs uppercase tracking-wide",
+                            slot.isBlockedByAbsence
+                              ? "text-amber-700 dark:text-amber-300"
+                              : "text-zinc-600",
+                          )}
+                        >
+                          {slot.isBlockedByAbsence
+                            ? "Bloqueado por ausência"
+                            : "Disponível"}
+                        </span>
+                      </div>
+                      {slot.isBlockedByAbsence && slot.absenceReason && (
+                        <p className="text-xs mt-1 text-amber-700 dark:text-amber-100/80">
+                          {slot.absenceReason}
+                        </p>
+                      )}
+                      {!slot.isBlockedByAbsence && hasSlotActions && (
+                        <p className="text-xs text-zinc-600 mt-1">
+                          Toque para cadastrar atendimento ou ausência
+                        </p>
+                      )}
+                      <BarberChairIcon
+                        className={cn(
+                          "absolute -right-2 -bottom-2 h-12 w-12",
+                          slot.isBlockedByAbsence
+                            ? "text-amber-200/10"
+                            : "text-white/[0.02]",
+                        )}
+                      />
                     </div>
-                    <BarberChairIcon className="absolute -right-2 -bottom-2 h-12 w-12 text-white/[0.02]" />
-                  </div>
-                );
-              })}
-            </div>
-          ))
+                  );
+
+                  if (!hasSlotActions) {
+                    return <div key={`empty-${slot.time}`}>{slotContent}</div>;
+                  }
+
+                  return (
+                    <DropdownMenu key={`empty-${slot.time}`}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-xl"
+                          aria-label={`Ações para horário ${slot.time}`}
+                        >
+                          {slotContent}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-popover border-border text-popover-foreground shadow-lg"
+                      >
+                        <DropdownMenuItem
+                          onClick={() =>
+                            onCreateAppointmentFromSlot?.(slot.time)
+                          }
+                        >
+                          Cadastrar atendimento às {slot.time}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            onCreateAbsenceFromSlot?.(slot.time, slot.endTime)
+                          }
+                          className="text-amber-600 dark:text-amber-300 focus:text-amber-600 dark:focus:text-amber-300 focus:bg-amber-500/10"
+                        >
+                          Adicionar ausência neste horário
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                })}
+              </div>
+            ))}
+          </>
         )}
 
         {/* Appointment Detail Sheet */}
@@ -658,17 +857,30 @@ export function DailySchedule({
           <CardTitle className="capitalize">{formatDate(date)}</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground">
-          {appointments.length === 0
-            ? "Nenhum agendamento para este dia"
-            : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""}`}
+          {hasFullDayAbsence
+            ? "Agenda bloqueada por ausência"
+            : appointments.length === 0
+              ? "Nenhum agendamento para este dia"
+              : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""}`}
         </p>
       </CardHeader>
 
       <CardContent>
         {appointments.length === 0 ? (
           <div className="text-center py-8">
-            <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-            <p className="text-muted-foreground">Dia livre!</p>
+            {hasFullDayAbsence ? (
+              <>
+                <CalendarOff className="h-12 w-12 mx-auto text-amber-400/60 mb-3" />
+                <p className="text-muted-foreground">
+                  Agenda bloqueada por ausência.
+                </p>
+              </>
+            ) : (
+              <>
+                <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">Dia livre!</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-4">

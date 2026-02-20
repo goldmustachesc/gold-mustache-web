@@ -9,6 +9,7 @@ import { formatDateToString } from "@/utils/time-slots";
 interface WeeklyCalendarProps {
   weekStart: Date;
   appointments: AppointmentWithDetails[];
+  absenceDates?: string[];
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
   onWeekChange: (direction: "prev" | "next") => void;
@@ -36,6 +37,7 @@ function formatWeekRangeCompact(weekStart: Date): string {
 export function WeeklyCalendar({
   weekStart,
   appointments,
+  absenceDates = [],
   selectedDate,
   onDateSelect,
   onWeekChange,
@@ -54,6 +56,7 @@ export function WeeklyCalendar({
       .filter((apt) => apt.status === "CONFIRMED")
       .map((apt) => apt.date),
   );
+  const daysWithAbsences = new Set(absenceDates);
 
   const todayStr = formatDateToString(new Date());
   const selectedDateStr = formatDateToString(selectedDate);
@@ -94,6 +97,7 @@ export function WeeklyCalendar({
           {weekDays.map((date, index) => {
             const dateStr = formatDateToString(date);
             const hasAppointments = daysWithAppointments.has(dateStr);
+            const hasAbsence = daysWithAbsences.has(dateStr);
             const isSelected = dateStr === selectedDateStr;
             const isToday = dateStr === todayStr;
 
@@ -127,13 +131,23 @@ export function WeeklyCalendar({
                 >
                   {date.getDate().toString().padStart(2, "0")}
                 </span>
-                {/* Green indicator dot */}
-                <div className="h-2 mt-1">
+                {/* Day indicators: appointments (green) and absences (amber) */}
+                <div className="h-2 mt-1 flex items-center justify-center gap-1">
                   {hasAppointments && (
-                    <div
+                    <span
+                      data-testid="has-appointments-indicator"
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
                         isSelected ? "bg-emerald-400" : "bg-emerald-500",
+                      )}
+                    />
+                  )}
+                  {hasAbsence && (
+                    <span
+                      data-testid="has-absence-indicator"
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        isSelected ? "bg-amber-300" : "bg-amber-500",
                       )}
                     />
                   )}
@@ -194,6 +208,7 @@ export function WeeklyCalendar({
         {weekDays.map((date, index) => {
           const dateStr = formatDateToString(date);
           const count = appointmentCounts[dateStr] || 0;
+          const hasAbsence = daysWithAbsences.has(dateStr);
           const isSelected = dateStr === selectedDateStr;
           const isToday = dateStr === todayStr;
           const isPast = dateStr < todayStr;
@@ -226,6 +241,15 @@ export function WeeklyCalendar({
                 >
                   {count}
                 </span>
+              )}
+              {hasAbsence && (
+                <span
+                  data-testid="has-absence-indicator"
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full mt-1",
+                    isSelected ? "bg-amber-200" : "bg-amber-500",
+                  )}
+                />
               )}
             </button>
           );

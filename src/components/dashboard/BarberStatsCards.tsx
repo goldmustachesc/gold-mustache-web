@@ -87,15 +87,14 @@ export function BarberStatsCards({
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl p-4",
-          "bg-zinc-100 dark:bg-zinc-800/50",
-          "border border-zinc-200 dark:border-zinc-700",
+          "bg-card/90 border border-border shadow-sm",
         )}
       >
         <div className="relative z-10">
-          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm font-medium text-muted-foreground">
             Esta semana
           </p>
-          <div className="mt-1 flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+          <div className="mt-1 flex items-center gap-1.5 text-muted-foreground">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -110,13 +109,11 @@ export function BarberStatsCards({
               {hideValues ? maskedValue : formatCurrency(weekRevenue)}
             </span>
           </div>
-          <p className="mt-4 text-5xl font-bold text-zinc-900 dark:text-zinc-100">
-            {weekCount}
-          </p>
+          <p className="mt-4 text-5xl font-bold text-foreground">{weekCount}</p>
         </div>
 
         {/* Background icon */}
-        <BarberChairIcon className="absolute -right-2 -bottom-2 h-24 w-24 text-zinc-300/50 dark:text-zinc-600/30" />
+        <BarberChairIcon className="absolute -right-2 -bottom-2 h-24 w-24 text-muted-foreground/30" />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Sheet,
   SheetContent,
@@ -155,7 +156,7 @@ export function BarberSidebar({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-72 bg-[#1a1a1a] border-l border-zinc-800 p-0 flex h-full flex-col"
+        className="w-72 bg-background border-l border-border p-0 flex h-full flex-col"
       >
         <SheetHeader className="p-6 pb-4">
           <SheetTitle className="sr-only">Menu do Barbeiro</SheetTitle>
@@ -164,7 +165,7 @@ export function BarberSidebar({
               variant="ghost"
               size="icon"
               onClick={() => onOpenChange(false)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -189,6 +190,15 @@ export function BarberSidebar({
           </Link>
         </div>
 
+        <div className="px-6 pb-4">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-card/50 p-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Tema
+            </span>
+            <ThemeToggle />
+          </div>
+        </div>
+
         {/* Navigation */}
         <nav className="flex min-h-0 flex-1 flex-col gap-1 px-4 overflow-y-auto">
           {navItems.map((item) => {
@@ -200,8 +210,8 @@ export function BarberSidebar({
                 onClick={() => onOpenChange(false)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                  "text-zinc-300 hover:text-white hover:bg-zinc-800/50",
-                  isActive && "bg-zinc-800 text-white",
+                  "text-muted-foreground hover:text-foreground hover:bg-accent/60",
+                  isActive && "bg-accent text-foreground",
                 )}
               >
                 {item.icon}
@@ -214,7 +224,7 @@ export function BarberSidebar({
           {isAdmin && (
             <>
               <div className="mt-4 mb-2 px-4">
-                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Administração
                 </span>
               </div>
@@ -227,8 +237,8 @@ export function BarberSidebar({
                     onClick={() => onOpenChange(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                      "text-amber-400/80 hover:text-amber-400 hover:bg-zinc-800/50",
-                      isActive && "bg-zinc-800 text-amber-400",
+                      "text-amber-500/90 hover:text-amber-500 hover:bg-accent/60",
+                      isActive && "bg-accent text-amber-500",
                     )}
                   >
                     {item.icon}
@@ -246,7 +256,7 @@ export function BarberSidebar({
             variant="ghost"
             onClick={handleSignOut}
             disabled={signOutPending}
-            className="w-full justify-start gap-3 px-4 py-3 text-zinc-400 hover:text-red-400 hover:bg-zinc-800/50"
+            className="w-full justify-start gap-3 px-4 py-3 text-muted-foreground hover:text-red-500 hover:bg-accent/60"
           >
             <LogOut className="h-5 w-5" />
             <span className="font-medium">

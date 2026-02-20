@@ -129,7 +129,7 @@ export default function DashboardPage() {
   // Show loading while checking user and barber status
   if (userLoading || barberLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     );
@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
   // Otherwise, show the client/admin dashboard with new design
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <ClientSidebar
         open={sidebarOpen}
@@ -151,7 +151,7 @@ export default function DashboardPage() {
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-3">
@@ -185,7 +185,7 @@ export default function DashboardPage() {
             )}
 
             {user?.email && (
-              <span className="text-sm text-zinc-400 hidden xl:inline">
+              <span className="text-sm text-muted-foreground hidden xl:inline">
                 {user.email}
               </span>
             )}
@@ -196,7 +196,7 @@ export default function DashboardPage() {
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Menu className="h-6 w-6" />
             </Button>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
             {getGreeting()}
             {firstName ? `, ${firstName}` : ""}! 👋
           </h1>
-          <p className="text-zinc-400">
+          <p className="text-muted-foreground">
             Bem-vindo de volta! Confira seus agendamentos e novidades.
           </p>
         </div>
@@ -221,7 +221,7 @@ export default function DashboardPage() {
         {isLoading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-            <span className="ml-2 text-zinc-400">
+            <span className="ml-2 text-muted-foreground">
               Carregando informações...
             </span>
           </div>
@@ -249,7 +249,9 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-zinc-200">Acesso rápido</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Acesso rápido
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {shouldShowBooking && bookingHref && (
               <QuickAction
@@ -282,7 +284,7 @@ export default function DashboardPage() {
         {/* Admin Section - Shop Overview */}
         {!isLoading && isAdmin && stats?.admin && (
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-200 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Settings className="h-5 w-5 text-amber-400" />
               Visão Geral da Barbearia
             </h2>
@@ -293,7 +295,7 @@ export default function DashboardPage() {
         {/* Admin Quick Actions */}
         {isAdmin && (
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-zinc-200">
+            <h2 className="text-lg font-semibold text-foreground">
               Administração
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

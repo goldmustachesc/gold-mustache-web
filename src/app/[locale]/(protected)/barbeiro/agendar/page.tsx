@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useDeferredValue, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,10 +45,27 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDateToString, getBrazilDateString } from "@/utils/time-slots";
 
+function isValidDateParam(value: string | null): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+}
+
+function isValidTimeParam(value: string | null): value is string {
+  return Boolean(value && /^\d{2}:\d{2}$/.test(value));
+}
+
 export default function BarberAgendarPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = params.locale as string;
+  const prefilledDate = searchParams.get("date");
+  const prefilledTime = searchParams.get("time");
+  const initialSelectedDate = isValidDateParam(prefilledDate)
+    ? prefilledDate
+    : getBrazilDateString();
+  const initialSelectedTime = isValidTimeParam(prefilledTime)
+    ? prefilledTime
+    : "";
 
   const { data: user, isLoading: userLoading } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
@@ -56,12 +73,11 @@ export default function BarberAgendarPage() {
 
   // Form state
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>(
-    getBrazilDateString(),
-  );
-  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(initialSelectedDate);
+  const [selectedTime, setSelectedTime] = useState<string>(initialSelectedTime);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const hasMounted = useRef(false);
 
   // Client search state
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
@@ -104,6 +120,10 @@ export default function BarberAgendarPage() {
   // Reset time when date or service changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on date/service change
   useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
     setSelectedTime("");
   }, [selectedDate, selectedServiceId]);
 
@@ -553,10 +573,10 @@ export default function BarberAgendarPage() {
                     value={selectedServiceId}
                     onValueChange={setSelectedServiceId}
                   >
-                    <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white h-11">
+                    <SelectTrigger className="bg-card border-border text-foreground h-11">
                       <SelectValue placeholder="Selecione um serviço" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-700">
+                    <SelectContent className="bg-popover border-border">
                       {servicesLoading ? (
                         <div className="p-2 text-center text-zinc-400">
                           Carregando...
@@ -566,7 +586,7 @@ export default function BarberAgendarPage() {
                           <SelectItem
                             key={service.id}
                             value={service.id}
-                            className="text-white focus:bg-zinc-800 focus:text-white"
+                            className="text-foreground focus:bg-accent focus:text-accent-foreground"
                           >
                             <div className="flex items-center justify-between w-full">
                               <span>{service.name}</span>
@@ -616,10 +636,10 @@ export default function BarberAgendarPage() {
                     </div>
                   </div>
                   <Select value={selectedDate} onValueChange={setSelectedDate}>
-                    <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white h-11">
+                    <SelectTrigger className="bg-card border-border text-foreground h-11">
                       <SelectValue placeholder="Selecione uma data" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-700 max-h-60">
+                    <SelectContent className="bg-popover border-border max-h-60">
                       {dateOptions.map((date) => {
                         const [year, month, day] = date.split("-");
                         const displayDate = `${day}/${month}/${year}`;
@@ -636,7 +656,7 @@ export default function BarberAgendarPage() {
                           <SelectItem
                             key={date}
                             value={date}
-                            className="text-white focus:bg-zinc-800 focus:text-white"
+                            className="text-foreground focus:bg-accent focus:text-accent-foreground"
                           >
                             <div className="flex items-center gap-2">
                               <span>{displayDate}</span>
@@ -971,28 +991,6 @@ export default function BarberAgendarPage() {
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
         locale={locale}
-      />
-
-      <Toaster
-        position="bottom-center"
-        theme="dark"
-        closeButton
-        toastOptions={{
-          className:
-            "!bg-zinc-900/95 !backdrop-blur-xl !border !border-zinc-700/50 !shadow-2xl !shadow-black/20 !rounded-xl",
-          descriptionClassName: "!text-zinc-400",
-          style: {
-            padding: "16px",
-          },
-          classNames: {
-            success:
-              "!border-emerald-500/30 !text-emerald-50 [&>svg]:!text-emerald-400",
-            error: "!border-red-500/30 !text-red-50 [&>svg]:!text-red-400",
-            warning:
-              "!border-amber-500/30 !text-amber-50 [&>svg]:!text-amber-400",
-            info: "!border-blue-500/30 !text-blue-50 [&>svg]:!text-blue-400",
-          },
-        }}
       />
     </div>
   );

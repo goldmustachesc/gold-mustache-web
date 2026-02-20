@@ -509,15 +509,15 @@ export default function AdminServicesPage() {
                         }))
                       }
                     >
-                      <SelectTrigger className="w-full bg-zinc-900/50 border-zinc-700/50 text-white focus:border-amber-500/50 focus:ring-amber-500/20">
+                      <SelectTrigger className="w-full bg-card border-border text-foreground focus:border-amber-500/50 focus:ring-amber-500/20">
                         <SelectValue placeholder="Selecione a duração" />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
+                      <SelectContent className="bg-popover border-border">
                         {DURATION_OPTIONS.map((opt) => (
                           <SelectItem
                             key={opt.value}
                             value={String(opt.value)}
-                            className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                            className="text-foreground hover:bg-accent focus:bg-accent focus:text-accent-foreground"
                           >
                             {opt.label}
                           </SelectItem>
