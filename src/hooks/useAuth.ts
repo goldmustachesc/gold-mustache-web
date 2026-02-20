@@ -128,8 +128,10 @@ export function useSignOut() {
     mutationFn: () => authService.signOut(),
     onSuccess: () => {
       queryClient.clear();
+      queryClient.setQueryData(["user"], null);
+      queryClient.setQueryData(["session"], null);
       toast.success(t("toast.logoutSuccess"));
-      router.push(`/${locale}`);
+      router.replace(`/${locale}`);
       router.refresh();
     },
     onError: () => {

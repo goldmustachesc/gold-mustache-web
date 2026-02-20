@@ -2,13 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import { useSignInWithGoogle } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface GoogleButtonProps {
   text?: string;
+  className?: string;
 }
 
 export function GoogleButton({
   text = "Continuar com Google",
+  className,
 }: GoogleButtonProps) {
   const { mutate: signInWithGoogle, isPending } = useSignInWithGoogle();
 
@@ -16,7 +19,10 @@ export function GoogleButton({
     <Button
       type="button"
       variant="outline"
-      className="w-full py-6 border-zinc-300 bg-zinc-100/50 text-zinc-900 hover:bg-zinc-200/50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-100 dark:hover:bg-zinc-700/50"
+      className={cn(
+        "w-full border-border bg-card py-6 text-foreground hover:bg-muted",
+        className,
+      )}
       onClick={() => signInWithGoogle()}
       disabled={isPending}
     >
