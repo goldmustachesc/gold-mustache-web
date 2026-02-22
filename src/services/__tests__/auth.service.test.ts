@@ -1,5 +1,7 @@
+/* biome-ignore lint/suspicious/noExplicitAny: mock override */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { AuthError } from "@supabase/supabase-js";
+import * as supabaseClient from "@/lib/supabase/client";
 
 const supabaseAuthMock = vi.hoisted(() => ({
   signUp: vi.fn(),
@@ -60,7 +62,13 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     });
     expect(result.user).toEqual({ id: "u-1" });
     expect(result.session).toEqual({ access_token: "t" });
-    expect(result.error).toBeNull();
+  });
+
+  it("signUp handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    const result = await authService.signUp("a", "b", "c", "d");
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toBe("Supabase not configured");
   });
 
   it("signIn maps data.user/session + error", async () => {
@@ -79,6 +87,13 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     expect(result.error).toBeNull();
   });
 
+  it("signIn handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    const result = await authService.signIn("a", "b");
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toBe("Supabase not configured");
+  });
+
   it("signInWithGoogle uses redirectTo based on window.location.origin and throws on error", async () => {
     supabaseAuthMock.signInWithOAuth.mockResolvedValue({ error: null });
     await expect(authService.signInWithGoogle()).resolves.toBeUndefined();
@@ -95,6 +110,11 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.signInWithGoogle()).rejects.toThrow("oauth");
   });
 
+  it("signInWithGoogle handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(authService.signInWithGoogle()).resolves.toBeUndefined();
+  });
+
   it("signOut throws when supabase returns error", async () => {
     supabaseAuthMock.signOut.mockResolvedValue({ error: null });
     await expect(authService.signOut()).resolves.toBeUndefined();
@@ -105,6 +125,11 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.signOut()).rejects.toThrow("x");
   });
 
+  it("signOut handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(authService.signOut()).resolves.toBeUndefined();
+  });
+
   it("resetPassword uses redirectTo based on window.location.origin", async () => {
     supabaseAuthMock.resetPasswordForEmail.mockResolvedValue({ error: null });
     await expect(authService.resetPassword("a@b.com")).resolves.toBeUndefined();
@@ -112,6 +137,11 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
       "a@b.com",
       { redirectTo: "http://localhost:3001/reset-password/update" },
     );
+  });
+
+  it("resetPassword handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(authService.resetPassword("a@b.com")).resolves.toBeUndefined();
   });
 
   it("updatePassword throws when supabase returns error", async () => {
@@ -124,11 +154,21 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.updatePassword("pw")).rejects.toThrow("x");
   });
 
+  it("updatePassword handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(authService.updatePassword("pw")).resolves.toBeUndefined();
+  });
+
   it("getUser returns data.user", async () => {
     supabaseAuthMock.getUser.mockResolvedValue({
       data: { user: { id: "u-1" } },
     });
     await expect(authService.getUser()).resolves.toEqual({ id: "u-1" });
+  });
+
+  it("getUser handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(authService.getUser()).resolves.toBeNull();
   });
 
   it("getSession returns data.session", async () => {
@@ -138,6 +178,11 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.getSession()).resolves.toEqual({
       access_token: "t",
     });
+  });
+
+  it("getSession handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(authService.getSession()).resolves.toBeNull();
   });
 
   it("resendConfirmationEmail throws when supabase returns error", async () => {
@@ -156,5 +201,12 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(
       authService.resendConfirmationEmail("a@b.com"),
     ).rejects.toThrow("x");
+  });
+
+  it("resendConfirmationEmail handles null supabase client", async () => {
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    await expect(
+      authService.resendConfirmationEmail("a@b.com"),
+    ).resolves.toBeUndefined();
   });
 });
