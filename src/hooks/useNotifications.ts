@@ -87,7 +87,7 @@ export function useNotifications({
 
   // Subscribe to realtime notifications
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !supabase) return;
 
     let channel: RealtimeChannel | null = null;
 

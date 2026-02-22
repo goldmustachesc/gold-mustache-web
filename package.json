@@ -98,6 +98,17 @@
     "overrides": {
       "js-yaml": ">=4.1.1",
       "tmp": ">=0.2.4"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "core-js",
+      "esbuild",
+      "prisma",
+      "puppeteer",
+      "sharp"
+    ]
   }
 }

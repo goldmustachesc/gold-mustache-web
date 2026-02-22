@@ -1,15 +1,12 @@
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
-import { CookieBanner } from "@/components/cookies";
 import { Layout } from "@/components/layout/Layout";
-import { StagingBanner } from "@/components/layout/StagingBanner";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
-import { siteConfig } from "@/config/site";
 import { BRAND } from "@/constants/brand";
 import { locales } from "@/i18n/config";
-import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
 import { QueryProvider } from "@/providers/query-provider";
+import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
@@ -45,9 +42,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
 
-  const baseUrl = siteConfig.isProduction
-    ? siteConfig.productionUrl
-    : siteConfig.baseUrl;
+  const baseUrl = "https://www.goldmustachebarbearia.com.br";
 
   return {
     title: t("title"),
@@ -76,11 +71,11 @@ export async function generateMetadata({
       },
     },
     robots: {
-      index: siteConfig.isProduction,
-      follow: siteConfig.isProduction,
+      index: true,
+      follow: true,
       googleBot: {
-        index: siteConfig.isProduction,
-        follow: siteConfig.isProduction,
+        index: true,
+        follow: true,
         "max-video-preview": -1,
         "max-image-preview": "large",
         "max-snippet": -1,
@@ -182,7 +177,6 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
-  const barbershopSettings = await getBarbershopSettings();
 
   // Validate locale
   if (!locales.includes(locale as (typeof locales)[number])) {
@@ -190,6 +184,7 @@ export default async function LocaleLayout({
   }
 
   const messages = await getMessages();
+  const settings = await getBarbershopSettings();
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -199,9 +194,7 @@ export default async function LocaleLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
       >
-        {siteConfig.enableAnalytics && (
-          <GoogleAnalytics trackingId={BRAND.analytics.googleAnalyticsId} />
-        )}
+        <GoogleAnalytics trackingId={BRAND.analytics.googleAnalyticsId} />
         <LoadingElevatorWrapper />
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
@@ -212,13 +205,11 @@ export default async function LocaleLayout({
               disableTransitionOnChange
             >
               <BookingSettingsProvider
+                bookingEnabled={settings.bookingEnabled}
+                externalBookingUrl={settings.externalBookingUrl}
                 locale={locale}
-                bookingEnabled={barbershopSettings.bookingEnabled}
-                externalBookingUrl={barbershopSettings.externalBookingUrl}
               >
-                <StagingBanner />
                 <Layout>{children}</Layout>
-                <CookieBanner />
               </BookingSettingsProvider>
             </ThemeProvider>
           </QueryProvider>
