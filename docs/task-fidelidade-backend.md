@@ -1,6 +1,6 @@
 # Task: Implementação do Programa de Fidelidade (Fase 1 e 2 - Core & APIs)
 
-**Status:** A Fazer
+**Status:** Feito
 **Prioridade:** Alta
 **Estimativa:** 4-6 dias
 **Impacto Esperado:** Criação da base de dados e regras de negócio para retenção de clientes por pontos e níveis (Bronze, Prata, Ouro, Diamante).
@@ -33,12 +33,12 @@ Implementar a infraestrutura básica (Banco de Dados e Serviços Next.js) do Pro
 
 ## 🛠 Passos de Implementação (Checklist Base)
 
-- [ ] **1. Schema Prisma:** Adicionar os *enum* `LoyaltyTier` e `PointTransactionType`, e os *models* `LoyaltyAccount`, `PointTransaction`, `Reward` e `Redemption` no arquivo `prisma/schema.prisma`.
+- [x] **1. Schema Prisma:** Adicionar os *enum* `LoyaltyTier` e `PointTransactionType`, e os *models* `LoyaltyAccount`, `PointTransaction`, `Reward` e `Redemption` no arquivo `prisma/schema.prisma`.
 - [ ] **2. Prisma Migrate:** Rodar e aplicar as novas tabelas ao banco de dados `pnpm db:migrate:dev`.
-- [ ] **3. Configuração Constants:** Criar o arquivo de configurações mágicas em `src/config/loyalty.config.ts`.
-- [ ] **4. Services Camada de Negócios:** Criar pasta `src/services/loyalty` contendo `loyalty.service.ts` e `points.calculator.ts` rigorosamente tipados.
-- [ ] **5. Gatilho de Agendamento:** Interceptar o `payment.service.ts` ou `appointment.service.ts` atual para chamar `creditPoints` caso o status mude para finalizado.
-- [ ] **6. APIs Next:** Criar as rotas correspondentes na pasta `src/app/api/loyalty/` protegidas pelo middleware de autenticação (`auth.ts`).
+- [x] **3. Configuração Constants:** Criar o arquivo de configurações mágicas em `src/config/loyalty.config.ts`.
+- [x] **4. Services Camada de Negócios:** Criar pasta `src/services/loyalty` contendo `loyalty.service.ts` e `points.calculator.ts` rigorosamente tipados.
+- [x] **5. Gatilho de Agendamento:** Interceptar o `payment.service.ts` ou `appointment.service.ts` atual para chamar `creditPoints` caso o status mude para finalizado.
+- [x] **6. APIs Next:** Criar as rotas correspondentes na pasta `src/app/api/loyalty/` protegidas pelo middleware de autenticação (`auth.ts`).
 
 ## 📎 Referências / Arquivos Mapeados
 - **Documento mãe:** `docs/loyalty-system-plan.md`
