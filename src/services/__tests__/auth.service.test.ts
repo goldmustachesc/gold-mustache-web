@@ -1,4 +1,3 @@
-/* biome-ignore lint/suspicious/noExplicitAny: mock override */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { AuthError } from "@supabase/supabase-js";
 import * as supabaseClient from "@/lib/supabase/client";
@@ -65,7 +64,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("signUp handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     const result = await authService.signUp("a", "b", "c", "d");
     expect(result.error).toBeDefined();
     expect(result.error?.message).toBe("Supabase not configured");
@@ -88,7 +87,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("signIn handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     const result = await authService.signIn("a", "b");
     expect(result.error).toBeDefined();
     expect(result.error?.message).toBe("Supabase not configured");
@@ -111,7 +110,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("signInWithGoogle handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.signInWithGoogle()).resolves.toBeUndefined();
   });
 
@@ -126,7 +125,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("signOut handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.signOut()).resolves.toBeUndefined();
   });
 
@@ -140,7 +139,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("resetPassword handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.resetPassword("a@b.com")).resolves.toBeUndefined();
   });
 
@@ -155,7 +154,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("updatePassword handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.updatePassword("pw")).resolves.toBeUndefined();
   });
 
@@ -167,7 +166,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("getUser handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.getUser()).resolves.toBeNull();
   });
 
@@ -181,7 +180,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("getSession handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.getSession()).resolves.toBeNull();
   });
 
@@ -204,7 +203,7 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("resendConfirmationEmail handles null supabase client", async () => {
-    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as any);
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(
       authService.resendConfirmationEmail("a@b.com"),
     ).resolves.toBeUndefined();

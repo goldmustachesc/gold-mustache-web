@@ -7,7 +7,7 @@ import type {
 import { determineTier } from "./points.calculator";
 import { LOYALTY_CONFIG } from "@/config/loyalty.config";
 import { addMonths } from "date-fns";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 /**
  * Generates a unique 6-character referral code
