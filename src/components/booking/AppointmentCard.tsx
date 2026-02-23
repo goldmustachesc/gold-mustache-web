@@ -135,10 +135,10 @@ export function AppointmentCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl transition-all duration-200",
-        "bg-zinc-800/50 border hover:bg-zinc-800/70",
+        "bg-card dark:bg-zinc-800/50 border hover:bg-zinc-100 dark:hover:bg-zinc-800/70",
         isConfirmed
-          ? "border-zinc-700/50 hover:border-zinc-600/50"
-          : "border-zinc-800/50 opacity-70",
+          ? "border-border dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600/50"
+          : "border-border/50 dark:border-zinc-800/50 opacity-70",
       )}
     >
       {/* Status Indicator Bar */}
@@ -168,14 +168,16 @@ export function AppointmentCard({
               <Scissors className={cn("h-5 w-5", status.textClass)} />
             </div>
             <div>
-              <h3 className="font-semibold text-zinc-100 text-base">
+              <h3 className="font-semibold text-foreground dark:text-zinc-100 text-base">
                 {appointment.service.name}
               </h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-muted-foreground dark:text-zinc-500">
                   {appointment.service.duration} min
                 </span>
-                <span className="text-zinc-600">•</span>
+                <span className="text-muted-foreground dark:text-zinc-600">
+                  •
+                </span>
                 <span className="text-sm font-medium font-mono text-primary">
                   R$ {appointment.service.price.toFixed(2).replace(".", ",")}
                 </span>
@@ -196,25 +198,25 @@ export function AppointmentCard({
 
         {/* Details Grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-900/50">
-            <Calendar className="h-4 w-4 text-zinc-500" />
-            <span className="text-sm text-zinc-300">
+          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50">
+            <Calendar className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+            <span className="text-sm text-foreground dark:text-zinc-300">
               {formatDate(appointment.date)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-900/50">
-            <Clock className="h-4 w-4 text-zinc-500" />
-            <span className="text-sm text-zinc-300 font-mono">
+          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50">
+            <Clock className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+            <span className="text-sm text-foreground dark:text-zinc-300 font-mono">
               {appointment.startTime} - {appointment.endTime}
             </span>
           </div>
         </div>
 
         {/* Barber/Client Info */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-900/50 mb-4">
-          <User className="h-4 w-4 text-zinc-500" />
-          <span className="text-sm text-zinc-300">
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50 mb-4">
+          <User className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+          <span className="text-sm text-foreground dark:text-zinc-300">
             {showClientInfo ? (
               (appointment.client?.fullName ??
               appointment.guestClient?.fullName ??
@@ -222,7 +224,7 @@ export function AppointmentCard({
             ) : (
               <>
                 Com{" "}
-                <span className="font-medium text-zinc-100">
+                <span className="font-medium text-foreground dark:text-zinc-100">
                   {appointment.barber.name}
                 </span>
               </>
@@ -232,8 +234,8 @@ export function AppointmentCard({
 
         {/* Client Phone (for NO_SHOW) */}
         {showClientPhone && clientPhone && (
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-900/50 mb-4">
-            <Phone className="h-4 w-4 text-zinc-500" />
+          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50 mb-4">
+            <Phone className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
             <a
               href={`tel:${clientPhone}`}
               className="text-sm text-info hover:underline font-mono"
@@ -275,7 +277,7 @@ export function AppointmentCard({
         {((isCancellable && onCancel) ||
           (canMarkNoShow && onMarkNoShow) ||
           canReview) && (
-          <div className="flex gap-2 pt-2 border-t border-zinc-700/50">
+          <div className="flex gap-2 pt-2 border-t border-border dark:border-zinc-700/50">
             {isCancellable && onCancel && (
               <Button
                 variant="ghost"

@@ -133,13 +133,13 @@ function MeusAgendamentosContent() {
   const clientStats = stats?.client;
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-background dark:bg-zinc-950">
       {/* Header */}
-      <header className="border-b border-zinc-800/80 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/80 sticky top-0 z-40">
+      <header className="border-b border-border dark:border-zinc-800/80 bg-background/95 dark:bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:supports-[backdrop-filter]:bg-zinc-900/80 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link
             href={`/${locale}`}
-            className="flex items-center gap-3 text-zinc-100 hover:text-primary transition-colors"
+            className="flex items-center gap-3 text-foreground dark:text-zinc-100 hover:text-primary transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <Image
@@ -153,16 +153,16 @@ function MeusAgendamentosContent() {
               <h1 className="text-lg font-semibold">Meus Agendamentos</h1>
               <p className="text-xs text-zinc-500">Gold Mustache Barbearia</p>
             </div>
-            <h1 className="sm:hidden text-lg font-semibold">
+            <h1 className="sm:hidden text-lg font-semibold text-foreground dark:text-zinc-100">
               Meus Agendamentos
             </h1>
           </Link>
           <div className="flex items-center gap-3">
             {isUserLoading ? (
-              <div className="h-8 w-20 bg-zinc-800 animate-pulse rounded" />
+              <div className="h-8 w-20 bg-muted dark:bg-zinc-800 animate-pulse rounded" />
             ) : user ? (
               <div className="flex items-center gap-3">
-                <span className="hidden md:inline text-sm text-zinc-400">
+                <span className="hidden md:inline text-sm text-muted-foreground dark:text-zinc-400">
                   {user.email}
                 </span>
                 <Button
@@ -170,7 +170,7 @@ function MeusAgendamentosContent() {
                   size="sm"
                   onClick={() => signOut()}
                   disabled={signOutPending}
-                  className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                  className="text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-100 hover:bg-muted dark:hover:bg-zinc-800"
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline ml-2">Sair</span>
@@ -181,7 +181,7 @@ function MeusAgendamentosContent() {
                 variant="outline"
                 size="sm"
                 asChild
-                className="border-zinc-700 bg-zinc-800/50"
+                className="border-border dark:border-zinc-700 bg-muted/50 dark:bg-zinc-800/50"
               >
                 <Link
                   href={`/${locale}/login?redirect=/${locale}/meus-agendamentos`}
@@ -210,16 +210,16 @@ function MeusAgendamentosContent() {
             <aside className="hidden lg:block lg:col-span-4 xl:col-span-3">
               <div className="sticky top-24 space-y-6">
                 {/* New Appointment Card */}
-                <div className="rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 p-5">
+                <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 dark:from-amber-500/20 dark:to-amber-600/10 border border-amber-500/30 p-5">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-amber-400" />
+                      <Calendar className="h-5 w-5 text-amber-500 dark:text-amber-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-zinc-100">
+                      <h3 className="font-semibold text-foreground dark:text-zinc-100">
                         Novo Agendamento
                       </h3>
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-muted-foreground dark:text-zinc-400">
                         Agende seu próximo horário
                       </p>
                     </div>
@@ -237,29 +237,33 @@ function MeusAgendamentosContent() {
 
                 {/* Quick Stats */}
                 {clientStats && clientStats.totalVisits > 0 && (
-                  <div className="rounded-2xl bg-zinc-800/50 border border-zinc-700/50 p-5 space-y-4">
+                  <div className="rounded-2xl bg-card dark:bg-zinc-800/50 border border-border dark:border-zinc-700/50 p-5 space-y-4">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-amber-400" />
-                      <h3 className="font-semibold text-zinc-200">
+                      <TrendingUp className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                      <h3 className="font-semibold text-foreground dark:text-zinc-200">
                         Suas Estatísticas
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-zinc-900/50 p-3 text-center">
-                        <p className="text-2xl font-bold text-amber-400">
+                      <div className="rounded-xl bg-muted/50 dark:bg-zinc-900/50 p-3 text-center">
+                        <p className="text-2xl font-bold text-amber-500 dark:text-amber-400">
                           {clientStats.totalVisits}
                         </p>
-                        <p className="text-xs text-zinc-500">Visitas</p>
+                        <p className="text-xs text-muted-foreground dark:text-zinc-500">
+                          Visitas
+                        </p>
                       </div>
-                      <div className="rounded-xl bg-zinc-900/50 p-3 text-center">
-                        <p className="text-lg font-bold text-zinc-100">
+                      <div className="rounded-xl bg-muted/50 dark:bg-zinc-900/50 p-3 text-center">
+                        <p className="text-lg font-bold text-foreground dark:text-zinc-100">
                           R${" "}
                           {clientStats.totalSpent
                             .toFixed(0)
                             .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                         </p>
-                        <p className="text-xs text-zinc-500">Total Gasto</p>
+                        <p className="text-xs text-muted-foreground dark:text-zinc-500">
+                          Total Gasto
+                        </p>
                       </div>
                     </div>
 
@@ -269,22 +273,22 @@ function MeusAgendamentosContent() {
                       <div className="space-y-3 pt-2">
                         {clientStats.favoriteBarber && (
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-zinc-500 flex items-center gap-2">
+                            <span className="text-muted-foreground dark:text-zinc-500 flex items-center gap-2">
                               <Star className="h-3.5 w-3.5" />
                               Barbeiro favorito
                             </span>
-                            <span className="text-zinc-300 font-medium">
+                            <span className="text-foreground dark:text-zinc-300 font-medium">
                               {clientStats.favoriteBarber.name}
                             </span>
                           </div>
                         )}
                         {clientStats.favoriteService && (
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-zinc-500 flex items-center gap-2">
+                            <span className="text-muted-foreground dark:text-zinc-500 flex items-center gap-2">
                               <Scissors className="h-3.5 w-3.5" />
                               Serviço favorito
                             </span>
-                            <span className="text-zinc-300 font-medium">
+                            <span className="text-foreground dark:text-zinc-300 font-medium">
                               {clientStats.favoriteService.name}
                             </span>
                           </div>
@@ -295,16 +299,18 @@ function MeusAgendamentosContent() {
                 )}
 
                 {/* Location Card */}
-                <div className="rounded-2xl bg-zinc-800/30 border border-zinc-700/50 p-5">
+                <div className="rounded-2xl bg-card dark:bg-zinc-800/30 border border-border dark:border-zinc-700/50 p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <MapPin className="h-5 w-5 text-zinc-400" />
-                    <h3 className="font-semibold text-zinc-300">Localização</h3>
+                    <MapPin className="h-5 w-5 text-muted-foreground dark:text-zinc-400" />
+                    <h3 className="font-semibold text-foreground dark:text-zinc-300">
+                      Localização
+                    </h3>
                   </div>
                   <a
                     href={BRAND.contact.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-zinc-400 hover:text-amber-400 transition-colors"
+                    className="text-sm text-muted-foreground dark:text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
                   >
                     {BRAND.contact.address}
                   </a>
@@ -330,12 +336,12 @@ function MeusAgendamentosContent() {
               {/* Loading State */}
               {isLoading && (
                 <div className="space-y-4">
-                  <div className="h-12 bg-zinc-800 animate-pulse rounded-lg lg:hidden" />
+                  <div className="h-12 bg-muted dark:bg-zinc-800 animate-pulse rounded-lg lg:hidden" />
                   <div className="grid gap-4 md:grid-cols-2">
                     {[1, 2].map((i) => (
                       <div
                         key={i}
-                        className="h-48 bg-zinc-800 animate-pulse rounded-xl"
+                        className="h-48 bg-muted dark:bg-zinc-800 animate-pulse rounded-xl"
                       />
                     ))}
                   </div>
@@ -345,14 +351,14 @@ function MeusAgendamentosContent() {
               {/* Empty State */}
               {!isLoading && appointments && appointments.length === 0 && (
                 <div className="text-center py-16 space-y-6">
-                  <div className="p-6 bg-zinc-800/50 rounded-full w-fit mx-auto">
-                    <Calendar className="h-12 w-12 text-zinc-600" />
+                  <div className="p-6 bg-muted/50 dark:bg-zinc-800/50 rounded-full w-fit mx-auto">
+                    <Calendar className="h-12 w-12 text-muted-foreground dark:text-zinc-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-zinc-100">
+                    <h3 className="text-xl font-semibold text-foreground dark:text-zinc-100">
                       Nenhum agendamento ainda
                     </h3>
-                    <p className="text-zinc-500 mt-2 max-w-md mx-auto">
+                    <p className="text-muted-foreground dark:text-zinc-500 mt-2 max-w-md mx-auto">
                       Você ainda não tem agendamentos. Que tal marcar seu
                       primeiro horário?
                     </p>
@@ -373,14 +379,14 @@ function MeusAgendamentosContent() {
               {!isLoading && confirmedAppointments.length > 0 && (
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                      <CalendarCheck className="h-4 w-4 text-emerald-400" />
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center">
+                      <CalendarCheck className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
                     </div>
                     <div>
-                      <h2 className="font-semibold text-zinc-100">
+                      <h2 className="font-semibold text-foreground dark:text-zinc-100">
                         Próximos Agendamentos
                       </h2>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground dark:text-zinc-500">
                         {confirmedAppointments.length} agendamento
                         {confirmedAppointments.length > 1 ? "s" : ""} confirmado
                         {confirmedAppointments.length > 1 ? "s" : ""}
@@ -408,12 +414,14 @@ function MeusAgendamentosContent() {
               {!isLoading && otherAppointments.length > 0 && (
                 <section className="pt-4">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-zinc-700/50 flex items-center justify-center">
-                      <History className="h-4 w-4 text-zinc-400" />
+                    <div className="h-8 w-8 rounded-lg bg-muted dark:bg-zinc-700/50 flex items-center justify-center">
+                      <History className="h-4 w-4 text-muted-foreground dark:text-zinc-400" />
                     </div>
                     <div>
-                      <h2 className="font-semibold text-zinc-400">Histórico</h2>
-                      <p className="text-xs text-zinc-600">
+                      <h2 className="font-semibold text-muted-foreground dark:text-zinc-400">
+                        Histórico
+                      </h2>
+                      <p className="text-xs text-muted-foreground dark:text-zinc-600">
                         {otherAppointments.length} agendamento
                         {otherAppointments.length > 1 ? "s" : ""} anterior
                         {otherAppointments.length > 1 ? "es" : ""}
@@ -451,8 +459,8 @@ function MeusAgendamentosContent() {
         {/* Loading state for user check */}
         {isUserLoading && (
           <div className="max-w-lg mx-auto lg:max-w-none space-y-4">
-            <div className="h-12 bg-zinc-800 animate-pulse rounded-lg" />
-            <div className="h-48 bg-zinc-800 animate-pulse rounded-xl" />
+            <div className="h-12 bg-muted dark:bg-zinc-800 animate-pulse rounded-lg" />
+            <div className="h-48 bg-muted dark:bg-zinc-800 animate-pulse rounded-xl" />
           </div>
         )}
       </main>

@@ -110,7 +110,7 @@ export function GuestAppointmentsLookup({
                 Fazer novo agendamento
               </Link>
             </Button>
-            <div className="flex items-start gap-2 p-3 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm max-w-md mx-auto">
+            <div className="flex items-start gap-2 p-3 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm max-w-md mx-auto">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <p>
                 Dica: Crie uma conta para acessar seus agendamentos de qualquer
