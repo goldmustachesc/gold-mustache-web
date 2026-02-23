@@ -11,27 +11,29 @@ datasource db {
 }
 
 model Profile {
-  id             String   @id @default(uuid())
-  userId         String   @unique @map("user_id")
-  fullName       String?  @map("full_name")
-  avatarUrl      String?  @map("avatar_url")
-  phone          String?
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  fullName      String?  @map("full_name")
+  avatarUrl     String?  @map("avatar_url")
+  phone         String?
   // Address fields
-  street         String?
-  number         String?
-  complement     String?
-  neighborhood   String?
-  city           String?
-  state          String?
-  zipCode        String?  @map("zip_code")
+  street        String?
+  number        String?
+  complement    String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  zipCode       String?  @map("zip_code")
   // Account verification
-  emailVerified  Boolean  @default(false) @map("email_verified")
-  role           UserRole @default(CLIENT)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  role          UserRole @default(CLIENT)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  appointments Appointment[]
-  feedbacks    Feedback[]
+  appointments   Appointment[]
+  feedbacks      Feedback[]
+  birthDate      DateTime?       @map("birth_date") @db.Date // Para bônus de aniversário
+  loyaltyAccount LoyaltyAccount?
 
   @@map("profiles")
 }
@@ -65,7 +67,7 @@ model Service {
   slug        String   @unique
   name        String
   description String?
-  duration    Int      // em minutos
+  duration    Int // em minutos
   price       Decimal  @db.Decimal(10, 2)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
@@ -228,6 +230,12 @@ enum NotificationType {
   APPOINTMENT_CONFIRMED
   APPOINTMENT_CANCELLED
   APPOINTMENT_REMINDER
+  LOYALTY_POINTS_EARNED
+  LOYALTY_TIER_UPGRADE
+  LOYALTY_POINTS_EXPIRING
+  LOYALTY_REWARD_REDEEMED
+  LOYALTY_REFERRAL_BONUS
+  LOYALTY_BIRTHDAY_BONUS
 }
 
 // ============================================
@@ -235,14 +243,14 @@ enum NotificationType {
 // ============================================
 
 model BarbershopSettings {
-  id          String  @id @default("default")
-  
+  id String @id @default("default")
+
   // Business Identity
   name        String  @default("Gold Mustache Barbearia")
   shortName   String  @default("Gold Mustache") @map("short_name")
   tagline     String  @default("Tradição e Estilo Masculino")
   description String?
-  
+
   // Address
   street       String @default("R. 115")
   number       String @default("79")
@@ -251,28 +259,28 @@ model BarbershopSettings {
   state        String @default("SC")
   zipCode      String @default("88220-000") @map("zip_code")
   country      String @default("BR")
-  
+
   // Coordinates
   latitude  Decimal @default(-27.0923025919406) @db.Decimal(10, 8)
   longitude Decimal @default(-48.611896766062245) @db.Decimal(11, 8)
-  
+
   // Contact
   phone    String @default("47 98904-6178")
   whatsapp String @default("+5547989046178")
   email    String @default("contato@goldmustachebarbearia.com.br")
-  
+
   // Social Media
   instagramMain  String  @default("@goldmustachebarbearia") @map("instagram_main")
   instagramStore String? @map("instagram_store")
   googleMapsUrl  String? @map("google_maps_url")
-  
+
   // Booking
   bookingEnabled     Boolean @default(true) @map("booking_enabled")
   externalBookingUrl String? @map("external_booking_url")
-  
+
   // Branding
   foundingYear Int @default(2018) @map("founding_year")
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -305,32 +313,129 @@ model CookieConsent {
 // ============================================
 
 model Feedback {
-  id            String   @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Relacionamento com agendamento (1 feedback por agendamento)
-  appointmentId String   @unique @map("appointment_id")
+  appointmentId String      @unique @map("appointment_id")
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  
+
   // Barbeiro avaliado
-  barberId      String   @map("barber_id")
-  barber        Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  
+  barberId String @map("barber_id")
+  barber   Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
   // Cliente que avaliou (autenticado OU convidado)
-  clientId      String?  @map("client_id")
-  client        Profile? @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  guestClientId String?  @map("guest_client_id")
+  clientId      String?      @map("client_id")
+  client        Profile?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  guestClientId String?      @map("guest_client_id")
   guestClient   GuestClient? @relation(fields: [guestClientId], references: [id], onDelete: SetNull)
-  
+
   // Avaliação
-  rating        Int      // 1 a 5 estrelas
-  comment       String?  // Comentário opcional
-  
+  rating  Int // 1 a 5 estrelas
+  comment String? // Comentário opcional
+
   // Metadata
-  createdAt     DateTime @default(now()) @map("created_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+
   @@index([barberId])
   @@index([clientId])
   @@index([guestClientId])
   @@index([createdAt])
   @@map("feedbacks")
+}
+
+// ============================================
+// Loyalty System
+// ============================================
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  DIAMOND
+}
+
+enum PointTransactionType {
+  EARNED_APPOINTMENT // Ganhou por agendamento
+  EARNED_REFERRAL // Ganhou por indicação
+  EARNED_REVIEW // Ganhou por avaliação
+  EARNED_BIRTHDAY // Bônus aniversário
+  EARNED_BONUS // Bônus promocional
+  REDEEMED // Resgatou recompensa
+  EXPIRED // Pontos expirados
+  ADJUSTED // Ajuste manual (admin)
+}
+
+model LoyaltyAccount {
+  id             String      @id @default(uuid())
+  profileId      String      @unique @map("profile_id")
+  currentPoints  Int         @default(0) @map("current_points")
+  lifetimePoints Int         @default(0) @map("lifetime_points")
+  tier           LoyaltyTier @default(BRONZE)
+  referralCode   String      @unique @map("referral_code")
+  referredById   String?     @map("referred_by_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  profile      Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  referredBy   LoyaltyAccount?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals    LoyaltyAccount[]   @relation("Referrals")
+  transactions PointTransaction[]
+  redemptions  Redemption[]
+
+  @@map("loyalty_accounts")
+}
+
+model PointTransaction {
+  id               String               @id @default(uuid())
+  loyaltyAccountId String               @map("loyalty_account_id")
+  type             PointTransactionType
+  points           Int // positivo = ganho, negativo = gasto
+  description      String?
+  referenceId      String?              @map("reference_id") // appointmentId, visita, etc
+  expiresAt        DateTime?            @map("expires_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+
+  loyaltyAccount LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id], onDelete: Cascade)
+
+  @@index([loyaltyAccountId])
+  @@index([referenceId])
+  @@map("point_transactions")
+}
+
+model Reward {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  pointsCost  Int      @map("points_cost")
+  type        String // DISCOUNT, FREE_SERVICE, PRODUCT
+  value       Decimal? @db.Decimal(10, 2) // valor do desconto ou serviço
+  serviceId   String?  @map("service_id") // se for serviço grátis
+  imageUrl    String?  @map("image_url")
+  active      Boolean  @default(true)
+  stock       Int? // null = ilimitado
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  redemptions Redemption[]
+
+  @@map("rewards")
+}
+
+model Redemption {
+  id               String    @id @default(uuid())
+  loyaltyAccountId String    @map("loyalty_account_id")
+  rewardId         String    @map("reward_id")
+  pointsSpent      Int       @map("points_spent")
+  code             String    @unique // código para usar na barbearia
+  usedAt           DateTime? @map("used_at")
+  expiresAt        DateTime  @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  loyaltyAccount LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id], onDelete: Cascade)
+  reward         Reward         @relation(fields: [rewardId], references: [id], onDelete: Restrict)
+
+  @@index([loyaltyAccountId])
+  @@index([rewardId])
+  @@index([code])
+  @@map("redemptions")
 }

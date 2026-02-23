@@ -1344,6 +1344,130 @@ export async function markAppointmentAsNoShow(
   };
 }
 
+/**
+ * Mark an appointment as COMPLETED by barber
+ * Automatically triggers the Loyalty System to reward points
+ */
+export async function markAppointmentAsCompleted(
+  appointmentId: string,
+  barberId: string,
+): Promise<AppointmentWithDetails> {
+  const appointment = await prisma.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      barberId: barberId,
+    },
+    include: {
+      service: true,
+      client: true,
+    },
+  });
+
+  if (!appointment) {
+    throw new Error("APPOINTMENT_NOT_FOUND");
+  }
+
+  if (appointment.status !== AppointmentStatus.CONFIRMED) {
+    throw new Error("APPOINTMENT_NOT_MARKABLE");
+  }
+
+  const minutesUntil = getMinutesUntilAppointmentFromPrisma(
+    appointment.date,
+    appointment.startTime,
+  );
+
+  if (minutesUntil > 0) {
+    throw new Error("APPOINTMENT_NOT_STARTED");
+  }
+
+  const updated = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: {
+      status: AppointmentStatus.COMPLETED,
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
+      guestClient: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
+      barber: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          duration: true,
+          price: true,
+        },
+      },
+    },
+  });
+
+  // Integrar pontuação do sistema de fidelidade para clientes cadastrados
+  if (updated.clientId && updated.client) {
+    try {
+      // Import dinâmico para evitar circular dependency
+      const { LoyaltyService } = await import("./loyalty/loyalty.service");
+      const { calculateAppointmentPoints } = await import(
+        "./loyalty/points.calculator"
+      );
+
+      const account = await LoyaltyService.getOrCreateAccount(updated.clientId);
+      const pointsData = calculateAppointmentPoints(
+        Number(updated.service.price),
+        account.tier,
+      );
+
+      await LoyaltyService.creditPoints({
+        accountId: account.id,
+        type: "EARNED_APPOINTMENT",
+        points: pointsData.total,
+        description: `Agendamento concluído: ${updated.service.name}`,
+        referenceId: updated.id,
+      });
+    } catch (error) {
+      console.error("Falha ao registrar pontos de fidelidade", error);
+    }
+  }
+
+  return {
+    id: updated.id,
+    clientId: updated.clientId,
+    guestClientId: updated.guestClientId,
+    barberId: updated.barberId,
+    serviceId: updated.serviceId,
+    date: formatPrismaDateToString(updated.date),
+    startTime: updated.startTime,
+    endTime: updated.endTime,
+    status: updated.status,
+    cancelReason: updated.cancelReason,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+    client: updated.client,
+    guestClient: updated.guestClient,
+    barber: updated.barber,
+    service: {
+      ...updated.service,
+      price: Number(updated.service.price),
+    },
+  };
+}
+
 // ============================================
 // Guest Appointment Functions
 // ============================================
