@@ -5,6 +5,16 @@
  * Serviços, barbeiros e horários são gerenciados no banco de dados.
  */
 
+/**
+ * Validate GTM ID format (GTM-XXXXXXX)
+ */
+function validateGtmId(gtmId: string): boolean {
+  if (!gtmId) return false;
+  // GTM IDs should follow the format: GTM-XXXXXXX
+  const gtmPattern = /^GTM-[A-Z0-9]{7,}$/;
+  return gtmPattern.test(gtmId);
+}
+
 export const barbershopConfig = {
   // ============================================
   // Dados da Empresa (como no Inbarber)
@@ -124,6 +134,9 @@ export const barbershopConfig = {
   // ============================================
   analytics: {
     googleAnalyticsId: process.env.NEXT_PUBLIC_GA_ID || "",
+    googleTagManagerId: validateGtmId(process.env.NEXT_PUBLIC_GTM_ID || "")
+      ? process.env.NEXT_PUBLIC_GTM_ID
+      : "",
   },
 } as const;
 

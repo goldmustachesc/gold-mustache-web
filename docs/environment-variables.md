@@ -69,6 +69,20 @@ G-XXXXXXXXXX
 
 ---
 
+## Google Tag Manager
+
+### `NEXT_PUBLIC_GTM_ID`
+
+ID do contêiner do Google Tag Manager.
+
+```
+GTM-XXXXXXXXX
+```
+
+**Nota:** O GTM só é carregado com consentimento explícito do usuário (LGPD).
+
+---
+
 ## Instagram API
 
 ### `INSTAGRAM_ACCESS_TOKEN`
@@ -181,6 +195,7 @@ NEXT_PUBLIC_ENVIRONMENT=staging
 ```
 NEXT_PUBLIC_ENVIRONMENT=production
 NEXT_PUBLIC_SITE_URL=https://www.goldmustachebarbearia.com.br
+NEXT_PUBLIC_GTM_ID=GTM-MFC2V74P
 ```
 
 4. Selecione "Production" como o ambiente de destino

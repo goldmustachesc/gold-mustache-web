@@ -164,41 +164,56 @@ export function useConsent(): UseConsentReturn {
    */
   const acceptAll = useCallback(async () => {
     const newPreferences = { analytics: true, marketing: true };
-    setState((prev) => ({
-      ...prev,
-      preferences: newPreferences,
-      hasDecided: true,
-    }));
-    await saveConsent(newPreferences, state.anonymousId);
-  }, [state.anonymousId]);
+    let anonymousId: string | null = null;
+
+    setState((prev) => {
+      anonymousId = prev.anonymousId;
+      return {
+        ...prev,
+        preferences: newPreferences,
+        hasDecided: true,
+      };
+    });
+
+    await saveConsent(newPreferences, anonymousId);
+  }, []);
 
   /**
    * Reject all non-essential cookies.
    */
   const rejectNonEssential = useCallback(async () => {
     const newPreferences = { analytics: false, marketing: false };
-    setState((prev) => ({
-      ...prev,
-      preferences: newPreferences,
-      hasDecided: true,
-    }));
-    await saveConsent(newPreferences, state.anonymousId);
-  }, [state.anonymousId]);
+    let anonymousId: string | null = null;
+
+    setState((prev) => {
+      anonymousId = prev.anonymousId;
+      return {
+        ...prev,
+        preferences: newPreferences,
+        hasDecided: true,
+      };
+    });
+
+    await saveConsent(newPreferences, anonymousId);
+  }, []);
 
   /**
    * Update specific preferences.
    */
-  const updatePreferences = useCallback(
-    async (prefs: ConsentPreferences) => {
-      setState((prev) => ({
+  const updatePreferences = useCallback(async (prefs: ConsentPreferences) => {
+    let anonymousId: string | null = null;
+
+    setState((prev) => {
+      anonymousId = prev.anonymousId;
+      return {
         ...prev,
         preferences: prefs,
         hasDecided: true,
-      }));
-      await saveConsent(prefs, state.anonymousId);
-    },
-    [state.anonymousId],
-  );
+      };
+    });
+
+    await saveConsent(prefs, anonymousId);
+  }, []);
 
   /**
    * Open preferences modal (this is a placeholder - the actual modal

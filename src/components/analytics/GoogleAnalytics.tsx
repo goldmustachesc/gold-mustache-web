@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useConsent } from "@/hooks/useConsent";
+import "@/types/analytics";
 
 interface GoogleAnalyticsProps {
   trackingId: string;
@@ -14,8 +15,19 @@ interface GoogleAnalyticsProps {
 export function GoogleAnalytics({ trackingId }: GoogleAnalyticsProps) {
   const { hasConsent, isLoading } = useConsent();
 
-  // Don't render anything until we know the consent status
-  if (isLoading) return null;
+  // Show minimal placeholder during loading to avoid layout shifts
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          height: "1px",
+          width: "1px",
+          visibility: "hidden",
+        }}
+        aria-hidden="true"
+      />
+    );
+  }
 
   // Don't load GA if no tracking ID or no consent
   if (!trackingId || !hasConsent("analytics")) return null;
@@ -83,14 +95,3 @@ export const trackWhatsappClick = () => {
 export const trackServiceView = (serviceName: string) => {
   trackEvent("view", "service", serviceName);
 };
-
-// Type declarations for gtag
-declare global {
-  interface Window {
-    gtag: (
-      command: "config" | "event",
-      targetId: string,
-      config?: Record<string, unknown>,
-    ) => void;
-  }
-}

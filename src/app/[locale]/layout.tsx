@@ -1,9 +1,13 @@
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import {
+  GoogleTagManager,
+  GoogleTagManagerNoScript,
+} from "@/components/analytics/GoogleTagManager";
 import { Layout } from "@/components/layout/Layout";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
-import { BRAND } from "@/constants/brand";
+import { barbershopConfig } from "@/config/barbershop";
 import { locales } from "@/i18n/config";
 import { QueryProvider } from "@/providers/query-provider";
 import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
@@ -190,11 +194,19 @@ export default async function LocaleLayout({
     <html lang={locale} suppressHydrationWarning>
       <head>
         <SchemaMarkup />
+        <GoogleTagManager
+          gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
       >
-        <GoogleAnalytics trackingId={BRAND.analytics.googleAnalyticsId} />
+        <GoogleTagManagerNoScript
+          gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
+        />
+        <GoogleAnalytics
+          trackingId={barbershopConfig.analytics.googleAnalyticsId}
+        />
         <LoadingElevatorWrapper />
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
