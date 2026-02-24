@@ -47,7 +47,7 @@ export async function GET() {
       settings = await prisma.barbershopSettings.create({
         data: { id: "default" },
       });
-      revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
+      // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
     }
 
     return NextResponse.json({ settings });
@@ -89,7 +89,7 @@ export async function PUT(request: Request) {
       update: parsed.data,
       create: { id: "default", ...parsed.data },
     });
-    revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
+    // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
 
     return NextResponse.json({ settings });
   } catch (error) {

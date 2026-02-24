@@ -20,7 +20,6 @@ export async function POST(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      console.error("[Guest Cleanup] CRON_SECRET not configured");
       return NextResponse.json(
         { error: "Cron secret não configurado" },
         { status: 500 },
@@ -28,11 +27,8 @@ export async function POST(request: Request) {
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-      console.warn("[Guest Cleanup] Unauthorized access attempt");
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
-
-    console.log("[Guest Cleanup] Starting cleanup job...");
 
     // Calculate the cutoff date (2 years ago)
     const twoYearsAgo = new Date();
@@ -69,10 +65,6 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log(
-      `[Guest Cleanup] Found ${guestsToAnonymize.length} guests to anonymize`,
-    );
-
     if (guestsToAnonymize.length === 0) {
       return NextResponse.json({
         success: true,
@@ -102,14 +94,7 @@ export async function POST(request: Request) {
       );
 
       totalAnonymized += batch.length;
-      console.log(
-        `[Guest Cleanup] Processed batch ${Math.floor(i / BATCH_SIZE) + 1}, total: ${totalAnonymized}`,
-      );
     }
-
-    console.log(
-      `[Guest Cleanup] Cleanup completed. Anonymized ${totalAnonymized} guests.`,
-    );
 
     return NextResponse.json({
       success: true,
@@ -118,8 +103,7 @@ export async function POST(request: Request) {
       cutoffDate: twoYearsAgo.toISOString(),
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error("[Guest Cleanup] Error during cleanup:", error);
+  } catch {
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Erro durante a limpeza" },
       { status: 500 },

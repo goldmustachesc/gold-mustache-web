@@ -27,6 +27,7 @@ import {
   Users,
   X,
   XCircle,
+  Gift,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -144,6 +145,11 @@ export function BarberSidebar({
       href: `/${locale}/admin/feedbacks`,
       label: "Avaliações",
       icon: <Star className="h-5 w-5" />,
+    },
+    {
+      href: `/${locale}/admin/loyalty`,
+      label: "Fidelidade",
+      icon: <Gift className="h-5 w-5" />,
     },
   ];
 

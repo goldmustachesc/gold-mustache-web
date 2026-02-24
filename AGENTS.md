@@ -1,6 +1,10 @@
-# Repository Guidelines
+# Gold Mustache - AI Development Guidelines
 
-## Project Structure & Module Organization
+## Overview
+
+Este documento contém diretrizes e padrões para desenvolvimento de IA e agentes no projeto Gold Mustache Barbearia. Todos os agentes devem seguir estas diretrizes para garantir consistência e qualidade.
+
+## Repository Structure & Module Organization
 - `src/app` hosts the Next.js App Router entry points, layouts, and route handlers.
 - UI primitives live in `src/components/ui`; bespoke widgets stay in `src/components/custom` and reuse shared styles.
 - Shared logic is split between `src/hooks`, `src/utils`, `src/lib`, and service clients in `src/services` for external APIs like Instagram.
@@ -16,25 +20,47 @@
 - Tom de voz: direto, caloroso e profissional. Evite linguagem excessivamente informal ou corporativa.
 
 ## Build, Test, and Development Commands
-- `pnpm install` sets up dependencies; keep lockfile changes committed.
-- `pnpm dev` runs the local server with Turbopack at `http://localhost:3001`.
-- `pnpm build` validates the production bundle; run before shipping major changes.
-- `pnpm start` serves the compiled build for smoke testing production behavior.
-- `pnpm lint` runs Biome checks; `pnpm format` applies Biome formatting fixes.
+- `pnpm install` configura as dependências; mantenha as mudanças no lockfile commitadas.
+- `pnpm dev` executa o servidor local com Turbopack em `http://localhost:3001`.
+- `pnpm build` valida o bundle de produção; execute antes de enviar mudanças importantes.
+- `pnpm start` serve o build compilado para testes de comportamento em produção.
+- `pnpm lint` executa verificações do Biome; `pnpm format` aplica correções de formatação do Biome.
 
 ## Coding Style & Naming Conventions
-- Biome enforces 2-space indentation, import sorting, and the shared lint rules in `biome.json`.
-- Prefer TypeScript everywhere (`.ts`/`.tsx`); keep components PascalCase (`HeroBanner.tsx`), hooks prefixed with `use`, and utilities camelCase.
-- Compose UI with Tailwind utility classes; use `clsx`/`tailwind-merge` to manage conditional styles instead of manual string concatenation.
-- Keep data-fetching code inside `src/services` or server components, and expose configuration via strongly typed objects in `src/config`.
+- Biome enforce 2-space indentation, import sorting, and the shared lint rules in `biome.json`.
+- Prefira TypeScript em todo lugar (`.ts`/`.tsx`); mantenha components PascalCase (`HeroBanner.tsx`), hooks com prefixo `use`, e utilities camelCase.
+- Componha UI com Tailwind utility classes; use `clsx`/`tailwind-merge` para gerenciar estilos condicionais em vez de concatenação manual de strings.
+- Mantenha código de data-fetching dentro de `src/services` ou server components, e exponha configuração via objetos fortemente tipados em `src/config`.
 
 ## Testing Guidelines
-- No automated suite exists yet; at minimum run `pnpm lint` and exercise critical paths (landing page, Instagram feed, booking redirect) before opening a PR.
-- When introducing tests, colocate specs next to the feature with the `.test.ts(x)` suffix and favor React Testing Library or Playwright for UI flows.
-- Document any new fixtures or mocked services in `src/services` to keep API integrations deterministic.
+- Não existe suite automatizada ainda; no mínimo execute `pnpm lint` e exercite caminhos críticos (landing page, Instagram feed, booking redirect) antes de abrir PR.
+- Ao introduzir testes, coloque specs próximo da feature com sufixo `.test.ts(x)` e favoreça React Testing Library ou Playwright para UI flows.
+- Documente fixtures ou serviços mockados em `src/services` para manter integrações de API determinísticas.
 
 ## Commit & Pull Request Guidelines
-- Follow Conventional Commits enforced by Commitlint; use `pnpm commit` (Commitizen) for prompts. Allowed types include `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`, and `revert`.
-- Keep subjects under 72 characters, present tense, and skip trailing punctuation.
-- Open PRs with a concise summary, linked issue or ticket, screenshots for UI changes, and notes on manual verification or known gaps.
-- Ensure the branch is rebased on `main` and that lint/build steps pass in CI before requesting review.
+- Siga Conventional Commits enforced by Commitlint; use `pnpm commit` (Commitizen) para prompts. Tipos permitidos incluem `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`, e `revert`.
+- Mantenha assuntos abaixo de 72 caracteres, tempo presente, e sem pontuação final.
+- Abra PRs com resumo conciso, issue ou ticket linkado, screenshots para mudanças de UI, e notas sobre verificação manual ou gaps conhecidos.
+- Garanta que o branch esteja rebased em `main` e que passos de lint/build passem em CI antes de solicitar review.
+
+## AI Development Standards
+
+### Document Structure (.kiro/specs)
+- Cada feature deve ter três arquivos: `requirements.md`, `design.md`, `tasks.md`
+- Use os templates em `.kiro/SPECIFICATION_TEMPLATE.md`, `.kiro/DESIGN_TEMPLATE.md`, `.kiro/TASKS_TEMPLATE.md`
+- Mantenha todos os documentos em português, exceto quando especificamente requerido
+
+### Requirements Format
+- User Stories: "Como [tipo de usuário], quero [ação], para que [benefício]"
+- Acceptance Criteria: "WHEN [condição] THEN o [Feature_Name] SHALL [resultado]"
+- Inclua glossário com termos específicos da feature
+
+### Design Documents
+- Inclua arquitetura com diagramas Mermaid
+- Defina propriedades de corretude formais
+- Especifique estratégia de testes (unit, integration, property-based)
+
+### Implementation Tasks
+- Use formato de checklist com progresso
+- Referencie requirements específicos
+- Inclua testes de propriedades para validação formal

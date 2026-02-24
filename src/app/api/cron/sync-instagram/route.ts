@@ -24,7 +24,6 @@ export async function POST(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      console.error("[Instagram Cron] CRON_SECRET não configurado");
       return NextResponse.json(
         { error: "Cron secret não configurado" },
         { status: 500 },
@@ -32,18 +31,14 @@ export async function POST(request: Request) {
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-      console.warn("[Instagram Cron] Tentativa de acesso não autorizado");
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     // Validar configuração do Instagram
     const config = validateInstagramConfig();
     if (!config.isValid) {
-      console.error("[Instagram Cron] Configuração inválida:", config.error);
       return NextResponse.json({ error: config.error }, { status: 500 });
     }
-
-    console.log("[Instagram Cron] Iniciando sincronização...");
 
     // Buscar posts do Instagram com retry
     let posts: InstagramPost[] = [];
@@ -59,10 +54,6 @@ export async function POST(request: Request) {
         break;
       } catch (error) {
         retryCount++;
-        console.warn(
-          `[Instagram Cron] Tentativa ${retryCount}/${MAX_RETRIES} falhou:`,
-          error,
-        );
 
         if (retryCount >= MAX_RETRIES) {
           throw error;
@@ -76,7 +67,6 @@ export async function POST(request: Request) {
     }
 
     if (!posts || posts.length === 0) {
-      console.warn("[Instagram Cron] Nenhum post retornado da API");
       return NextResponse.json(
         {
           error: "Nenhum post encontrado",
@@ -101,10 +91,6 @@ export async function POST(request: Request) {
     const cacheFilePath = path.join(cacheDir, "instagram-cache.json");
     await writeFile(cacheFilePath, JSON.stringify(cacheData, null, 2), "utf-8");
 
-    console.log(
-      `[Instagram Cron] ✅ Sincronização concluída: ${posts.length} posts salvos`,
-    );
-
     return NextResponse.json({
       success: true,
       postsCount: posts.length,
@@ -112,8 +98,6 @@ export async function POST(request: Request) {
       message: "Posts sincronizados com sucesso",
     });
   } catch (error) {
-    console.error("[Instagram Cron] ❌ Erro na sincronização:", error);
-
     return NextResponse.json(
       {
         error: "Erro ao sincronizar posts",

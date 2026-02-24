@@ -27,30 +27,23 @@ async function main() {
 
   if (error) {
     console.error("Erro ao buscar usuários:", error.message);
-    console.log("\n⚠️  Certifique-se de ter SUPABASE_SERVICE_ROLE_KEY no .env");
-    console.log(
+    console.error(
+      "\n⚠️  Certifique-se de ter SUPABASE_SERVICE_ROLE_KEY no .env",
+    );
+    console.error(
       "   Você encontra no Supabase Dashboard → Settings → API → service_role key\n",
     );
     process.exit(1);
   }
 
   if (!authUsers.users.length) {
-    console.log("Nenhum usuário encontrado no Supabase Auth.");
-    console.log("Faça login no app primeiro para criar seu usuário.");
+    console.error("Nenhum usuário encontrado no Supabase Auth.");
+    console.error("Faça login no app primeiro para criar seu usuário.");
     process.exit(1);
   }
 
-  console.log("\n📋 Usuários encontrados:\n");
-  authUsers.users.forEach((user, index) => {
-    const name =
-      user.user_metadata?.name || user.user_metadata?.full_name || "-";
-    console.log(`${index + 1}. ${name} <${user.email}>`);
-  });
-
   // Se não passou email, mostra instruções
   if (!TARGET_EMAIL) {
-    console.log("\n💡 Para criar um barbeiro, rode:");
-    console.log('   npx tsx prisma/seed-barber.ts "email@exemplo.com"\n');
     process.exit(0);
   }
 
@@ -60,15 +53,9 @@ async function main() {
   );
 
   if (!targetUser) {
-    console.log(`\n❌ Usuário com email "${TARGET_EMAIL}" não encontrado.\n`);
+    console.error(`\n❌ Usuário com email "${TARGET_EMAIL}" não encontrado.\n`);
     process.exit(1);
   }
-
-  const userName =
-    targetUser.user_metadata?.name ||
-    targetUser.user_metadata?.full_name ||
-    targetUser.email?.split("@")[0];
-  console.log(`\n✅ Usando: ${userName} <${targetUser.email}>\n`);
 
   // Verifica se já existe como barbeiro
   const existing = await prisma.barber.findUnique({
@@ -76,7 +63,7 @@ async function main() {
   });
 
   if (existing) {
-    console.log("Barbeiro já cadastrado:", existing);
+    console.error("Barbeiro já cadastrado:", existing);
     return;
   }
 
@@ -91,8 +78,6 @@ async function main() {
       active: true,
     },
   });
-
-  console.log("🎉 Barbeiro criado:", barber);
 
   // Criar horários de trabalho (Segunda a Sábado, 9h-18h)
   const workingDays = [1, 2, 3, 4, 5, 6]; // Seg-Sáb
@@ -109,8 +94,6 @@ async function main() {
       },
     });
   }
-
-  console.log("📅 Horários de trabalho criados (Seg-Sáb, 9h-18h)");
 
   // Criar serviços básicos
   const services = [
@@ -151,11 +134,6 @@ async function main() {
       });
     }
   }
-
-  console.log("💈 Serviços criados:", services.map((s) => s.name).join(", "));
-  console.log(
-    "\n✨ Setup completo! Agora você pode acessar a área do barbeiro.\n",
-  );
 }
 
 main()

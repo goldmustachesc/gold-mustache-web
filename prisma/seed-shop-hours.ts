@@ -35,8 +35,6 @@ async function main() {
       }),
     ),
   );
-
-  console.log("✅ Horários globais da barbearia configurados (default).");
 }
 
 main()

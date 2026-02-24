@@ -29,19 +29,11 @@ async function main() {
   }
 
   if (!authUsers.users.length) {
-    console.log("Nenhum usuário encontrado no Supabase Auth.");
+    console.error("Nenhum usuário encontrado no Supabase Auth.");
     process.exit(1);
   }
 
   if (!TARGET_EMAIL) {
-    console.log("\n📋 Usuários encontrados:\n");
-    authUsers.users.forEach((user, index) => {
-      const name =
-        user.user_metadata?.name || user.user_metadata?.full_name || "-";
-      console.log(`${index + 1}. ${name} <${user.email}>`);
-    });
-    console.log("\n💡 Para promover a ADMIN, rode:");
-    console.log('   npx tsx prisma/seed-admin.ts "email@exemplo.com"\n');
     process.exit(0);
   }
 
@@ -50,7 +42,7 @@ async function main() {
   );
 
   if (!targetUser) {
-    console.log(`\n❌ Usuário com email "${TARGET_EMAIL}" não encontrado.\n`);
+    console.error(`\n❌ Usuário com email "${TARGET_EMAIL}" não encontrado.\n`);
     process.exit(1);
   }
 
@@ -71,15 +63,9 @@ async function main() {
     });
   }
 
-  const updated = await prisma.profile.update({
+  await prisma.profile.update({
     where: { id: profile.id },
     data: { role: UserRole.ADMIN },
-  });
-
-  console.log("✅ Perfil promovido para ADMIN:", {
-    id: updated.id,
-    userId: updated.userId,
-    role: updated.role,
   });
 }
 

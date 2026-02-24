@@ -78,10 +78,6 @@ export async function linkGuestAppointmentsToProfile(
       where: { id: guestClient.id },
     });
 
-    console.log(
-      `[Guest Link] Transferred ${updateResult.count} appointments from guest ${guestClient.id} to profile ${profileId}`,
-    );
-
     return {
       linked: true,
       appointmentsTransferred: updateResult.count,

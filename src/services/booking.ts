@@ -734,7 +734,7 @@ export async function createAppointmentByBarber(
       where: { phone: normalizedPhone },
       update: {
         fullName: clientName,
-        // Don't update accessToken - preserve existing if any
+        // Don't update accessToken - preserve existing token if present
       },
       create: {
         fullName: clientName,

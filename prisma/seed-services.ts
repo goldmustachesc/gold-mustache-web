@@ -120,87 +120,81 @@ const SERVICES_DATA = [
 ];
 
 async function main() {
-  console.log("\n🔄 Iniciando seed de serviços...\n");
-
-  // Primeiro, desativa serviços antigos que não estão na lista
-  const existingSlugs = SERVICES_DATA.map((s) => s.slug);
-  await prisma.service.updateMany({
-    where: {
-      slug: { notIn: existingSlugs },
-    },
-    data: { active: false },
-  });
-
-  // Busca o barbeiro existente para associação
-  const barbers = await prisma.barber.findMany();
-
-  for (const service of SERVICES_DATA) {
-    // Verifica se já existe
-    const existing = await prisma.service.findUnique({
-      where: { slug: service.slug },
+  try {
+    // Primeiro, desativa serviços antigos que não estão na lista
+    const existingSlugs = SERVICES_DATA.map((s) => s.slug);
+    await prisma.service.updateMany({
+      where: {
+        slug: { notIn: existingSlugs },
+      },
+      data: { active: false },
     });
 
-    if (existing) {
-      // Atualiza o serviço existente
-      await prisma.service.update({
+    // Busca o barbeiro existente para associação
+    const barbers = await prisma.barber.findMany();
+
+    for (const service of SERVICES_DATA) {
+      // Verifica se já existe
+      const existing = await prisma.service.findUnique({
         where: { slug: service.slug },
-        data: {
-          name: service.name,
-          description: service.description,
-          price: service.price,
-          duration: service.duration,
-          active: true,
-        },
-      });
-      console.log(`✏️  Serviço atualizado: ${service.name}`);
-    } else {
-      // Cria novo serviço
-      const created = await prisma.service.create({
-        data: {
-          slug: service.slug,
-          name: service.name,
-          description: service.description,
-          price: service.price,
-          duration: service.duration,
-          active: true,
-        },
       });
 
-      // Associa a todos os barbeiros
-      for (const barber of barbers) {
-        await prisma.barberService.create({
-          data: { barberId: barber.id, serviceId: created.id },
+      if (existing) {
+        // Atualiza o serviço existente
+        await prisma.service.update({
+          where: { slug: service.slug },
+          data: {
+            name: service.name,
+            description: service.description,
+            price: service.price,
+            duration: service.duration,
+            active: true,
+          },
         });
-      }
-
-      console.log(`✅ Serviço criado: ${service.name}`);
-    }
-  }
-
-  // Garante que todos os serviços estejam associados a todos os barbeiros
-  const allServices = await prisma.service.findMany({
-    where: { active: true },
-  });
-
-  for (const barber of barbers) {
-    for (const service of allServices) {
-      const link = await prisma.barberService.findFirst({
-        where: { barberId: barber.id, serviceId: service.id },
-      });
-
-      if (!link) {
-        await prisma.barberService.create({
-          data: { barberId: barber.id, serviceId: service.id },
+      } else {
+        // Cria novo serviço
+        const created = await prisma.service.create({
+          data: {
+            slug: service.slug,
+            name: service.name,
+            description: service.description,
+            price: service.price,
+            duration: service.duration,
+            active: true,
+          },
         });
-        console.log(
-          `   ↳ ${service.name} associado ao barbeiro ${barber.name}`,
-        );
+
+        // Associa a todos os barbeiros
+        for (const barber of barbers) {
+          await prisma.barberService.create({
+            data: { barberId: barber.id, serviceId: created.id },
+          });
+        }
       }
     }
-  }
 
-  const count = await prisma.service.count({ where: { active: true } });
-  console.log(`\n💈 ${count} serviços ativos configurados!\n`);
+    // Garante que todos os serviços estejam associados a todos os barbeiros
+    const allServices = await prisma.service.findMany({
+      where: { active: true },
+    });
+
+    for (const barber of barbers) {
+      for (const service of allServices) {
+        const link = await prisma.barberService.findFirst({
+          where: { barberId: barber.id, serviceId: service.id },
+        });
+
+        if (!link) {
+          await prisma.barberService.create({
+            data: { barberId: barber.id, serviceId: service.id },
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Erro durante configuração de serviços:", error);
+    throw error;
+  }
 }
 
 main()

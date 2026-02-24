@@ -25,6 +25,7 @@ import {
   User,
   Users,
   X,
+  Gift,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -88,6 +89,11 @@ export function ClientSidebar({
     ...bookingNavItems,
     ...appointmentsNavItems,
     {
+      href: `/${locale}/loyalty`,
+      label: "Fidelidade",
+      icon: <Gift className="h-5 w-5" />,
+    },
+    {
       href: `/${locale}/profile`,
       label: "Meu Perfil",
       icon: <User className="h-5 w-5" />,
@@ -120,6 +126,11 @@ export function ClientSidebar({
       href: `/${locale}/admin/faturamento`,
       label: "Faturamento Geral",
       icon: <DollarSign className="h-5 w-5" />,
+    },
+    {
+      href: `/${locale}/admin/loyalty`,
+      label: "Fidelidade",
+      icon: <Gift className="h-5 w-5" />,
     },
   ];
 

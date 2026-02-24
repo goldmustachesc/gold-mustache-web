@@ -8,6 +8,7 @@ import faq from "./faq.json";
 import footer from "./footer.json";
 import gallery from "./gallery.json";
 import hero from "./hero.json";
+import loyalty from "./loyalty.json";
 import metadata from "./metadata.json";
 import navigation from "./navigation.json";
 import privacy from "./privacy.json";
@@ -27,6 +28,7 @@ export default {
   footer,
   gallery,
   hero,
+  loyalty,
   metadata,
   navigation,
   privacy,

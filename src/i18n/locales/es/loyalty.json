@@ -1,0 +1,58 @@
+{
+  "dashboard": {
+    "title": "Programa de Lealtad",
+    "description": "Haz un seguimiento de tus puntos, nivel y recompensas exclusivas.",
+    "pointsBalance": "Saldo de Puntos",
+    "currentTier": "Tu Nivel Actual",
+    "benefits": "Tus Beneficios",
+    "howItWorks": "¿Cómo funciona?"
+  },
+  "tiers": {
+    "bronze": "Bronce",
+    "silver": "Plata",
+    "gold": "Oro",
+    "diamond": "Diamante",
+    "progress": {
+      "reached": "Estás en el nivel {{tier}}",
+      "next": "Faltan {{points}} puntos para el nivel {{nextTier}}",
+      "max": "¡Has alcanzado el nivel máximo!"
+    }
+  },
+  "rewards": {
+    "title": "Catálogo de Recompensas",
+    "description": "Canjea tus puntos por servicios y descuentos.",
+    "redeem": "Canjear",
+    "confirmRedeem": "Confirmar Canje",
+    "successRedeem": "¡Canje exitoso!",
+    "insufficientPoints": "Puntos insuficientes"
+  },
+  "history": {
+    "title": "Historial de Puntos",
+    "columns": {
+      "date": "Fecha",
+      "description": "Descripción",
+      "points": "Puntos",
+      "type": "Tipo"
+    },
+    "types": {
+      "EARNED": "Ganado",
+      "REDEEMED": "Canjeado",
+      "EXPIRED": "Expirado",
+      "ADJUSTED": "Ajustado"
+    }
+  },
+  "referral": {
+    "title": "Refiere y Gana",
+    "description": "Comparte tu código con amigos y ambos ganarán {{points}} puntos.",
+    "yourCode": "Tu Código de Referencia",
+    "copy": "Copiar",
+    "copied": "¡Copiado!"
+  },
+  "admin": {
+    "title": "Gestión de Lealtad",
+    "users": "Cuentas",
+    "catalog": "Catálogo",
+    "adjustPoints": "Ajustar Puntos",
+    "reason": "Razón del Ajuste"
+  }
+}
