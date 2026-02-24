@@ -2,8 +2,8 @@
 
 ## Status: ✅ PASS
 
-**Data:** 24/02/2026, 17:34:12
-**Score Geral:** 95/100
+**Data:** 24/02/2026, 17:51:36
+**Score Geral:** 91/100
 **Modo:** Normal
 
 ---
@@ -13,7 +13,7 @@
 | Categoria | Score | Status |
 |-----------|-------|--------|
 | 📦 Dependências | 100/100 | ✅ |
-| 📊 Qualidade | 80/100 | ✅ |
+| 📊 Qualidade | 65/100 | ❌ |
 | 🧪 Testes | 100/100 | ✅ |
 | ⚡ Performance | 100/100 | ✅ |
 | 🔒 Segurança | 100/100 | ✅ |
@@ -30,14 +30,13 @@
 ## 📊 Qualidade de Código
 
 ### Issues Críticas:
-- ❌ Arquivos com complexidade excessiva: prisma/seed-admin.ts (complexidade: 12), prisma/seed-barber.ts (complexidade: 15), src/app/[locale]/(protected)/admin/loyalty/page.tsx (complexidade: 21), src/app/api/admin/loyalty/rewards/[id]/route.ts (complexidade: 25), src/app/api/admin/loyalty/rewards/[id]/toggle/route.ts (complexidade: 11), src/app/api/admin/loyalty/rewards/route.ts (complexidade: 16), src/app/api/cron/sync-instagram/route.ts (complexidade: 11), src/components/loyalty/RewardForm.tsx (complexidade: 31), src/hooks/useAdminRewards.ts (complexidade: 12), src/services/booking.ts (complexidade: 68)
+- ❌ Arquivos com complexidade excessiva: src/components/loyalty/RewardForm.tsx (complexidade: 33), src/components/loyalty/RewardModal.tsx (complexidade: 15), src/hooks/useAdminLoyalty.ts (complexidade: 12), src/hooks/useAdminRewards.ts (complexidade: 12)
+- ❌ Complexidade média alta: 12.5
 
 
 ### Sugestões de Melhoria:
-- 💡 src/app/[locale]/(protected)/admin/loyalty/page.tsx: Considere dividir em componentes menores
-- 💡 src/components/dashboard/BarberSidebar.tsx: Considere dividir em componentes menores
-- 💡 src/components/dashboard/ClientSidebar.tsx: Considere dividir em componentes menores
 - 💡 src/components/loyalty/RewardForm.tsx: Considere dividir em componentes menores
+- 💡 src/components/loyalty/RewardModal.tsx: Considere dividir em componentes menores
 
 
 ---
@@ -85,4 +84,4 @@
 ---
 
 **Relatório gerado automaticamente pelo Pre-Commit Quality Check**
-**Gold Mustache Barbearia - 24/02/2026, 17:34:12**
+**Gold Mustache Barbearia - 24/02/2026, 17:51:36**

@@ -98,9 +98,6 @@ importers:
       jspdf-autotable:
         specifier: ^5.0.7
         version: 5.0.7(jspdf@4.2.0)
-      lucide-react:
-        specifier: ^0.542.0
-        version: 0.542.0(react@19.1.0)
       next:
         specifier: '>=15.5.10'
         version: 16.1.6(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -192,6 +189,9 @@ importers:
       jsdom:
         specifier: ^27.0.1
         version: 27.2.0
+      lucide-react:
+        specifier: ^0.542.0
+        version: 0.542.0(react@19.1.0)
       puppeteer:
         specifier: ^24.37.5
         version: 24.37.5(typescript@5.9.2)
@@ -5742,7 +5742,7 @@ snapshots:
   '@testing-library/dom@10.4.1':
     dependencies:
       '@babel/code-frame': 7.27.1
-      '@babel/runtime': 7.28.4
+      '@babel/runtime': 7.28.6
       '@types/aria-query': 5.0.4
       aria-query: 5.3.0
       dom-accessibility-api: 0.5.16

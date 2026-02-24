@@ -25,10 +25,15 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 export interface Reward {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   costInPoints: number;
   imageUrl?: string;
   active?: boolean;
+  type?: "DISCOUNT" | "FREE_SERVICE" | "PRODUCT";
+  value?: number;
+  stock?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface RewardCardProps {
@@ -48,6 +53,8 @@ export function RewardCard({
   const [open, setOpen] = useState(false);
 
   const canAfford = userPoints >= reward.costInPoints;
+  const isInStock = reward.stock === undefined || reward.stock > 0;
+  const canRedeem = canAfford && isInStock && reward.active !== false;
 
   const handleRedeem = async () => {
     await onRedeem(reward.id);
@@ -75,7 +82,7 @@ export function RewardCard({
             </span>
           </div>
         </div>
-        <CardDescription>{reward.description}</CardDescription>
+        <CardDescription>{reward.description || ""}</CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1" />
@@ -85,9 +92,15 @@ export function RewardCard({
           <DialogTrigger asChild>
             <Button
               className="w-full font-semibold"
-              disabled={!canAfford || isRedeeming}
+              disabled={!canRedeem || isRedeeming}
             >
-              {canAfford ? t("redeem") : t("insufficientPoints")}
+              {isRedeeming
+                ? "Processando..."
+                : !canRedeem && !isInStock
+                  ? "Sem Estoque"
+                  : !canRedeem && !canAfford
+                    ? t("insufficientPoints")
+                    : t("redeem")}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -103,6 +116,11 @@ export function RewardCard({
                 <p>
                   Seu Saldo atual: <strong>{userPoints} pontos</strong>
                 </p>
+                {reward.stock !== undefined && (
+                  <p>
+                    Estoque disponível: <strong>{reward.stock} unidades</strong>
+                  </p>
+                )}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-2">

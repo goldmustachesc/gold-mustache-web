@@ -47,7 +47,6 @@ export async function GET() {
       settings = await prisma.barbershopSettings.create({
         data: { id: "default" },
       });
-      // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
     }
 
     return NextResponse.json({ settings });
@@ -68,9 +67,29 @@ export async function PUT(request: Request) {
   try {
     // Verifica se o usuário é admin
     const admin = await requireAdmin();
-    if (!admin.ok) return admin.response;
+    if (!admin.ok) {
+      // Log failed admin attempt for security monitoring
+      console.warn("Failed admin settings update attempt", {
+        ip: request.headers.get("x-forwarded-for") || "unknown",
+        userAgent: request.headers.get("user-agent") || "unknown",
+        timestamp: new Date().toISOString(),
+      });
+      return admin.response;
+    }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (_error) {
+      return NextResponse.json(
+        {
+          error: "INVALID_JSON",
+          message: "Corpo da requisição inválido",
+        },
+        { status: 400 },
+      );
+    }
+
     const parsed = updateSettingsSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -89,7 +108,9 @@ export async function PUT(request: Request) {
       update: parsed.data,
       create: { id: "default", ...parsed.data },
     });
-    // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
+
+    // Invalidate cache only after successful database operation
+    // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG); // TODO: Fix revalidateTag type issue
 
     return NextResponse.json({ settings });
   } catch (error) {

@@ -1,13 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Reward } from "@/components/loyalty/RewardCard";
+import type { CreateRewardData } from "@/components/loyalty/RewardForm";
 
 export interface AdminReward extends Reward {
   totalRedemptions?: number;
   activeRedemptions?: number;
-  type?: string;
-  value?: number;
   serviceId?: string;
-  stock?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,11 +47,23 @@ export function useAdminCreateReward() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (rewardData: Partial<AdminReward>) => {
+    mutationFn: async (rewardData: CreateRewardData) => {
+      // Map CreateRewardData to backend format
+      const mappedData = {
+        name: rewardData.name,
+        description: rewardData.description,
+        costInPoints: rewardData.pointsCost, // Map pointsCost to costInPoints
+        type: rewardData.type,
+        value: rewardData.value,
+        imageUrl: rewardData.imageUrl,
+        stock: rewardData.stock,
+        active: rewardData.active,
+      };
+
       const response = await fetch("/api/admin/loyalty/rewards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(rewardData),
+        body: JSON.stringify(mappedData),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -62,9 +72,16 @@ export function useAdminCreateReward() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate both public and admin caches to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: ["loyalty", "rewards"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
       });
+    },
+    onError: (error) => {
+      console.error("Failed to create reward:", error);
     },
   });
 }
@@ -93,12 +110,16 @@ export function useAdminUpdateReward() {
       return response.json();
     },
     onSuccess: (_, { id }) => {
+      // Invalidate queries to ensure fresh data after mutations
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
       });
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards", id],
       });
+    },
+    onError: (error) => {
+      console.error("Failed to update reward:", error);
     },
   });
 }
@@ -119,9 +140,13 @@ export function useAdminDeleteReward() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate queries to ensure fresh data after mutations
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
       });
+    },
+    onError: (error) => {
+      console.error("Failed to delete reward:", error);
     },
   });
 }

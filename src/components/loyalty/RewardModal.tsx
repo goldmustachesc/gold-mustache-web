@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { RewardForm, type CreateRewardData } from "./RewardForm";
 import { useAdminCreateReward } from "@/hooks/useAdminRewards";
-import { useRewards } from "@/hooks/useLoyalty";
 import { CheckCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Reward } from "./RewardCard";
 
 interface RewardModalProps {
   open: boolean;
@@ -24,18 +24,41 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
   const [submitted, setSubmitted] = useState(false);
   const createRewardMut = useAdminCreateReward();
   const queryClient = useQueryClient();
-  const { data: rewards } = useRewards(); // Usar a mesma query da página
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
+  const tempRewardIdRef = useRef<string | null>(null);
+
+  const clearAutoCloseTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  // Cleanup timeout and mounted state on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      clearAutoCloseTimeout();
+    };
+  }, [clearAutoCloseTimeout]);
 
   const handleSubmit = async (data: CreateRewardData) => {
+    // Prevent multiple submissions
+    if (createRewardMut.isPending) {
+      return;
+    }
+
     try {
       // Optimistic update: adicionar o novo item à lista imediatamente
       const tempId = `temp-${Date.now()}`;
+      tempRewardIdRef.current = tempId; // Store for potential rollback
       const newReward = {
         id: tempId,
         name: data.name,
-        description: data.description,
+        description: data.description || "",
         costInPoints: data.pointsCost,
-        imageUrl: data.imageUrl,
+        imageUrl: data.imageUrl || undefined,
         active: data.active,
         type: data.type,
         value: data.value,
@@ -44,37 +67,74 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
         updatedAt: new Date().toISOString(),
       };
 
-      // Usar a mesma query key que a página usa
-      queryClient.setQueryData(["loyalty", "rewards"], (old: unknown[]) => {
-        if (!old) return [newReward];
-        return [...old, newReward];
-      });
+      // Update both public and admin query keys for consistency
+      queryClient.setQueryData(
+        ["loyalty", "rewards"],
+        (old: Reward[] | undefined) => {
+          if (!old) return [newReward];
+          return [...old, newReward];
+        },
+      );
+      queryClient.setQueryData(
+        ["admin", "loyalty", "rewards"],
+        (old: Reward[] | undefined) => {
+          if (!old) return [newReward];
+          return [...old, newReward];
+        },
+      );
 
       await createRewardMut.mutateAsync(data);
       setSubmitted(true);
 
-      // Auto close after success
-      setTimeout(() => {
-        onOpenChange(false);
-        setSubmitted(false);
+      // Auto close after success with proper cleanup
+      timeoutRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          onOpenChange(false);
+          setSubmitted(false);
+        }
+        timeoutRef.current = null;
       }, 2000);
     } catch (error) {
       console.error("Error creating reward:", error);
-      // Remover item temporário em caso de erro
-      queryClient.setQueryData(["loyalty", "rewards"], (old: unknown) => {
-        if (!old || !Array.isArray(old)) return old;
-        return (old as Array<{ id: string }>).filter(
-          (item: { id: string }) => !item.id.startsWith("temp-"),
+
+      // Remove specific temporary optimistic update from both caches
+      const tempIdToRemove = tempRewardIdRef.current;
+      if (tempIdToRemove) {
+        queryClient.setQueryData(
+          ["loyalty", "rewards"],
+          (old: Reward[] | undefined) => {
+            if (!old) return old;
+            return old.filter((item: Reward) => item.id !== tempIdToRemove);
+          },
         );
+        queryClient.setQueryData(
+          ["admin", "loyalty", "rewards"],
+          (old: Reward[] | undefined) => {
+            if (!old) return old;
+            return old.filter((item: Reward) => item.id !== tempIdToRemove);
+          },
+        );
+        tempRewardIdRef.current = null;
+      }
+
+      // Invalidate cache to ensure fresh data on retry
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "rewards"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "loyalty", "rewards"],
       });
+
       // Don't close modal on error, let user try again
     }
   };
 
   const handleClose = () => {
+    // Clear any pending timeout to prevent state updates on unmounted component
+    clearAutoCloseTimeout();
+
     if (!createRewardMut.isPending) {
       onOpenChange(false);
       setSubmitted(false);
+      tempRewardIdRef.current = null; // Clean up temp ID reference
     }
   };
 

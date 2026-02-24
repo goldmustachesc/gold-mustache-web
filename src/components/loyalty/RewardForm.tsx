@@ -155,9 +155,15 @@ export function RewardForm({
             placeholder="1000"
             min={1}
             value={formData.pointsCost}
-            onChange={(e) =>
-              updateField("pointsCost", parseInt(e.target.value, 10) || 0)
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || Number.isNaN(parseInt(value, 10))) {
+                updateField("pointsCost", 1);
+              } else {
+                const parsedValue = parseInt(value, 10);
+                updateField("pointsCost", parsedValue >= 1 ? parsedValue : 1);
+              }
+            }}
             disabled={isLoading || isSubmitting}
           />
           {errors.pointsCost && (
@@ -199,9 +205,14 @@ export function RewardForm({
             min={0.01}
             step={0.01}
             value={formData.value || ""}
-            onChange={(e) =>
-              updateField("value", parseFloat(e.target.value) || 0)
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || Number.isNaN(parseFloat(value))) {
+                updateField("value", 0);
+              } else {
+                updateField("value", parseFloat(value));
+              }
+            }}
             disabled={isLoading || isSubmitting}
           />
           <p className="text-sm text-muted-foreground">
@@ -241,7 +252,11 @@ export function RewardForm({
           onChange={(e) =>
             updateField(
               "stock",
-              e.target.value ? parseInt(e.target.value, 10) : undefined,
+              e.target.value
+                ? Number.isNaN(parseInt(e.target.value, 10))
+                  ? undefined
+                  : parseInt(e.target.value, 10)
+                : undefined,
             )
           }
           disabled={isLoading || isSubmitting}
