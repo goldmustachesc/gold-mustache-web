@@ -1,7 +1,6 @@
 "use client";
 
 import { useUser } from "@/hooks/useAuth";
-import { useProfileMe } from "@/hooks/useProfileMe";
 import {
   Loader2,
   ArrowLeft,
@@ -34,12 +33,11 @@ export default function LoyaltyLayout({
   children: React.ReactNode;
 }) {
   const { data: user, isLoading: userLoading } = useUser();
-  const { data: profile, isLoading: profileLoading } = useProfileMe();
   const params = useParams();
   const pathname = usePathname();
   const locale = params.locale as string;
 
-  const isLoading = userLoading || profileLoading;
+  const isLoading = userLoading;
 
   if (isLoading) {
     return (

@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Executa validação automática antes do commit
+echo "🔍 Executando validação pré-commit..."
+pnpm validate-commit

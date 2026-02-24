@@ -30,7 +30,7 @@ export default function LoyaltyHistoryPage() {
     const key = type.startsWith("ADJUSTED") ? "ADJUSTED" : type;
     // In next-intl, if a key doesn't exist it returns the key path, so we can check it.
     // For now, we assume the translations are mapped in `history.types.[type]`.
-    return t(`types.${key}` as any) || type;
+    return t(`types.${key}` as `types.${string}`) || type;
   };
 
   return (
@@ -105,7 +105,7 @@ export default function LoyaltyHistoryPage() {
                     colSpan={4}
                     className="px-6 py-12 text-center text-zinc-500"
                   >
-                    Nenhum histórico de pontos encontrado.
+                    {t("empty")}
                   </td>
                 </tr>
               )}
