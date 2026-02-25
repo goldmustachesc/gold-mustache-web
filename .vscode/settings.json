@@ -25,5 +25,20 @@
   "biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
   "eslint.enable": false,
   "prettier.enable": false,
-  "kiroAgent.configureMCP": "Disabled"
+  "kiroAgent.configureMCP": "Disabled",
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#B49A3E",
+    "titleBar.activeForeground": "#1A1A1A",
+    "titleBar.inactiveBackground": "#8C7830",
+    "titleBar.inactiveForeground": "#3D3D3D",
+    "activityBar.background": "#B49A3E",
+    "activityBar.foreground": "#1A1A1A",
+    "activityBar.inactiveForeground": "#4A3D1A",
+    "statusBar.background": "#8C7830",
+    "statusBar.foreground": "#F5F5F5",
+    "statusBar.debuggingBackground": "#B49A3E",
+    "statusBar.debuggingForeground": "#1A1A1A",
+    "statusBar.noFolderBackground": "#6B5A24",
+    "statusBar.noFolderForeground": "#F5F5F5"
+  }
 }
