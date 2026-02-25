@@ -9,6 +9,10 @@ vi.mock("@/lib/auth/requireAdmin", () => ({
   requireAdmin: () => mockRequireAdmin(),
 }));
 
+vi.mock("@/lib/api/verify-origin", () => ({
+  requireValidOrigin: () => null,
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     reward: {
