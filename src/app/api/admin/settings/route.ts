@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { z } from "zod";
 
 const updateSettingsSchema = z.object({
@@ -64,8 +65,10 @@ export async function GET() {
  * Atualiza as configurações da barbearia (apenas admin)
  */
 export async function PUT(request: Request) {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   try {
-    // Verifica se o usuário é admin
     const admin = await requireAdmin();
     if (!admin.ok) {
       // Log failed admin attempt for security monitoring

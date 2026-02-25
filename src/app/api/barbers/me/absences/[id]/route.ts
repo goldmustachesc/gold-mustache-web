@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const { id } = await params;
     const supabase = await createClient();
     const {

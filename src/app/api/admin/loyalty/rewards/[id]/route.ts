@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { z } from "zod";
 
 // Schema para validação de atualização de reward (todos campos opcionais)
@@ -92,6 +93,9 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireValidOrigin(req);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 
@@ -239,9 +243,12 @@ export async function PUT(
 
 // DELETE - Remover um reward
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireValidOrigin(req);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 

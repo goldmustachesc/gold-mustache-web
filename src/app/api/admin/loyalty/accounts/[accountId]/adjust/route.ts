@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ accountId: string }> },
 ) {
+  const originError = requireValidOrigin(req);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 

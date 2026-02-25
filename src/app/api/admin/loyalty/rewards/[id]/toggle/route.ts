@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { z } from "zod";
 
 // Schema para validação do request body
@@ -12,6 +13,9 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireValidOrigin(req);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 

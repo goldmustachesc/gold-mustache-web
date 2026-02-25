@@ -6,6 +6,7 @@ import {
   buildWorkingHoursResponse,
   upsertWorkingHoursInTransaction,
 } from "@/lib/working-hours";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 /**
  * GET /api/barbers/me/working-hours
@@ -60,6 +61,9 @@ export async function GET() {
  */
 export async function PUT(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

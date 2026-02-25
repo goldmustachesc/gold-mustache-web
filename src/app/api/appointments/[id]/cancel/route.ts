@@ -11,12 +11,16 @@ import {
 import { cancelAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const { id: appointmentId } = await params;
     const supabase = await createClient();
     const {

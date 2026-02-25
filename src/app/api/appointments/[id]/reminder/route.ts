@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAppointmentReminder } from "@/services/notification";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -12,8 +13,11 @@ interface RouteParams {
  * POST /api/appointments/[id]/reminder
  * Sends a reminder notification for an appointment
  */
-export async function POST(_request: Request, { params }: RouteParams) {
+export async function POST(request: Request, { params }: RouteParams) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

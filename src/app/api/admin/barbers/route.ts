@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { z } from "zod";
 
 const createBarberSchema = z.object({
@@ -52,6 +53,9 @@ export async function GET() {
  * Cria um novo barbeiro vinculado a um usuário existente (por email)
  */
 export async function POST(request: Request) {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   try {
     const admin = await requireAdmin();
     if (!admin.ok) return admin.response;

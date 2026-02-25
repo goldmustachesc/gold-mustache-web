@@ -15,7 +15,17 @@ vi.mock("@/services/notification", () => ({
   markAllAsRead: (...args: unknown[]) => mockMarkAllAsRead(...args),
 }));
 
+vi.mock("@/lib/api/verify-origin", () => ({
+  requireValidOrigin: () => null,
+}));
+
 import { PATCH } from "../route";
+
+function makeRequest(): Request {
+  return new Request("http://localhost:3001/api/notifications/mark-all-read", {
+    method: "PATCH",
+  });
+}
 
 describe("PATCH /api/notifications/mark-all-read", () => {
   beforeEach(() => {
@@ -25,7 +35,7 @@ describe("PATCH /api/notifications/mark-all-read", () => {
   it("returns 401 when not authenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const response = await PATCH();
+    const response = await PATCH(makeRequest());
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -36,7 +46,7 @@ describe("PATCH /api/notifications/mark-all-read", () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockMarkAllAsRead.mockResolvedValue(undefined);
 
-    const response = await PATCH();
+    const response = await PATCH(makeRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -49,7 +59,7 @@ describe("PATCH /api/notifications/mark-all-read", () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockMarkAllAsRead.mockRejectedValue(new Error("boom"));
 
-    const response = await PATCH();
+    const response = await PATCH(makeRequest());
     const body = await response.json();
 
     expect(response.status).toBe(500);

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 const updateClientSchema = z.object({
   fullName: z
@@ -32,6 +33,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

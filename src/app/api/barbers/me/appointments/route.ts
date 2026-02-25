@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createAppointmentByBarber } from "@/services/booking";
 import { createAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 /**
  * POST /api/barbers/me/appointments
@@ -11,6 +12,9 @@ import { Prisma } from "@prisma/client";
  */
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

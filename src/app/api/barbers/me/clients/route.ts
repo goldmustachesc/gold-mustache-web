@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { z } from "zod";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export interface ClientData {
   id: string;
@@ -170,6 +171,9 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

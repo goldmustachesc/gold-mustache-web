@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { createFeedback, getAppointmentFeedback } from "@/services/feedback";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -77,6 +78,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const { id: appointmentId } = await params;
 
     const supabase = await createClient();

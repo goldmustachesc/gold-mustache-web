@@ -15,6 +15,7 @@ import { Prisma } from "@prisma/client";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function GET(request: Request) {
   try {
@@ -93,6 +94,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const settings = await getBarbershopSettings();
     const mode = resolveBookingMode(settings);
     if (mode !== "internal") {

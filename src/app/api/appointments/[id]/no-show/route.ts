@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { markAppointmentAsNoShow } from "@/services/booking";
 import { prisma } from "@/lib/prisma";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const { id: appointmentId } = await params;
     const supabase = await createClient();
     const {

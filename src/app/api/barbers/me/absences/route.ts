@@ -8,6 +8,7 @@ import {
   formatPrismaDateToString,
 } from "@/utils/time-slots";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 function rangesOverlap(
   aStart: number,
@@ -92,6 +93,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

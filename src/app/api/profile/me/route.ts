@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/validations/profile";
 import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function GET() {
   try {
@@ -77,6 +78,9 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const supabase = await createClient();
     const {
       data: { user },

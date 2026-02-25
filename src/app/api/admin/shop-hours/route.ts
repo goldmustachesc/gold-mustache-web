@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { updateShopHoursSchema } from "@/lib/validations/booking";
 
 export async function GET() {
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 
