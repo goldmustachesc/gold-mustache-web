@@ -85,11 +85,19 @@ function getChangedFiles() {
 }
 
 function analyzeFile(filePath) {
-  if (!existsSync(join(PROJECT_ROOT, filePath))) {
+  const fullPath = join(PROJECT_ROOT, filePath);
+  if (!existsSync(fullPath)) {
     return null;
   }
 
-  const content = readFileSync(join(PROJECT_ROOT, filePath), "utf8");
+  let content;
+  try {
+    content = readFileSync(fullPath, "utf8");
+  } catch (_error) {
+    logWarning(`Não foi possível ler ${filePath}, pulando análise.`);
+    return null;
+  }
+
   const issues = [];
   const suggestions = [];
 
@@ -196,7 +204,16 @@ function generateReviewReport(
 
 Data: ${timestamp}
 Reviewer: AI Assistant
-Branch: ${execSync("git branch --show-current", { encoding: "utf8" }).trim()}
+Branch: ${(() => {
+    try {
+      return execSync("git branch --show-current", {
+        encoding: "utf8",
+        cwd: PROJECT_ROOT,
+      }).trim();
+    } catch {
+      return "unknown";
+    }
+  })()}
 
 ---
 

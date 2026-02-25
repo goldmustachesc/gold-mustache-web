@@ -200,4 +200,3 @@ Cada workflow segue o padrão:
 
 **Desenvolvido para Gold Mustache Barbearia**
 Seguindo os padrões definidos em `AGENTS.md` 🧔‍♂️✨
-Seguindo os padrões definidos em `AGENTS.md`

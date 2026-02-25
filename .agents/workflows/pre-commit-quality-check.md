@@ -13,13 +13,11 @@ Execute com o comando: `/pre-commit` ou `pnpm pre-commit-check`
 ## O que este workflow faz
 
 ### 1. Análise de Mudanças
-// turbo
 - Identifica todos os arquivos modificados (staged e unstaged)
 - Compara com o último commit
 - Gera lista completa de arquivos para análise
 
 ### 2. Verificações de Qualidade Obrigatórias
-// turbo
 - **Lint (Biome):** Verificação completa de estilo e padrões
 - **TypeScript:** Compilação e verificação de tipos
 - **Build Next.js:** Teste de build completo
@@ -27,21 +25,18 @@ Execute com o comando: `/pre-commit` ou `pnpm pre-commit-check`
 - **Coverage:** Verificação de cobertura mínima
 
 ### 3. Análise de Segurança
-// turbo
 - Scan de vulnerabilidades de dependências
 - Verificação de secrets/sensitive data
 - Análise de imports suspeitos
 - Validação de CSP e headers de segurança
 
 ### 4. Performance e Otimização
-// turbo
 - Análise de bundle size
 - Verificação de lazy loading
 - Otimização de imagens
 - Performance de componentes React
 
 ### 5. Padrões do Projeto (Gold Mustache)
-// turbo
 - Conformidade com `AGENTS.md`
 - Brand Book compliance para mudanças visuais
 - Padrões de nomenclatura
@@ -49,7 +44,6 @@ Execute com o comando: `/pre-commit` ou `pnpm pre-commit-check`
 - Uso adequado de design tokens
 
 ### 6. Qualidade de Código
-// turbo
 - Complexidade ciclomática
 - Duplicação de código
 - Code smell detection
@@ -57,21 +51,18 @@ Execute com o comando: `/pre-commit` ou `pnpm pre-commit-check`
 - Uso correto de hooks TypeScript
 
 ### 7. Internacionalização
-// turbo
 - Verificação de tradução missing
 - Consistência entre idiomas
 - Formatos de data/moeda
 - RTL support verification
 
 ### 8. Testes e Cobertura
-// turbo
 - Testes unitários executando
 - Testes de integração
 - Coverage mínimo por módulo
 - Testes E2E críticos
 
 ### 9. Documentação
-// turbo
 - README atualizado se necessário
 - JSDoc em funções críticas
 - Changelog atualizado

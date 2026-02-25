@@ -87,11 +87,15 @@ function getChangedFiles() {
     // Get both staged and unstaged changes
     const staged = execSync("git diff --cached --name-only", {
       encoding: "utf8",
+      cwd: PROJECT_ROOT,
     })
       .trim()
       .split("\n")
       .filter(Boolean);
-    const unstaged = execSync("git diff --name-only", { encoding: "utf8" })
+    const unstaged = execSync("git diff --name-only", {
+      encoding: "utf8",
+      cwd: PROJECT_ROOT,
+    })
       .trim()
       .split("\n")
       .filter(Boolean);
@@ -171,7 +175,10 @@ function checkDependencies() {
 
   // Check for outdated packages
   try {
-    const outdated = execSync("pnpm outdated --json", { encoding: "utf8" });
+    const outdated = execSync("pnpm outdated --json", {
+      encoding: "utf8",
+      cwd: PROJECT_ROOT,
+    });
     if (outdated.trim()) {
       score -= 10;
       issues.push("Dependências desatualizadas encontradas");
@@ -295,7 +302,7 @@ function checkPerformance() {
     if (existsSync(buildDir)) {
       const files = execSync(
         `find ${buildDir} -name "*.js" -exec ls -la {} \\;`,
-        { encoding: "utf8" },
+        { encoding: "utf8", cwd: PROJECT_ROOT },
       );
       const lines = files.trim().split("\n");
       lines.forEach((line) => {
@@ -365,6 +372,17 @@ function checkSecurity() {
   return { score, issues };
 }
 
+function hasCriticalCategoryFailure(results) {
+  const MIN_CATEGORY_SCORE = 70;
+  return [
+    results.dependencies.score,
+    results.codeQuality.score,
+    results.tests.score,
+    results.performance.score,
+    results.security.score,
+  ].some((score) => score < MIN_CATEGORY_SCORE);
+}
+
 function generateQualityReport(results) {
   const timestamp = new Date().toLocaleString("pt-BR");
   const overallScore = Math.round(
@@ -375,8 +393,14 @@ function generateQualityReport(results) {
       results.security.score * 0.15,
   );
 
+  const hasCriticalFailure = hasCriticalCategoryFailure(results);
+
   let status = "✅ PASS";
-  if (overallScore < 70 || (isStrict && overallScore < 90)) {
+  if (
+    overallScore < 70 ||
+    hasCriticalFailure ||
+    (isStrict && overallScore < 90)
+  ) {
     status = "❌ FAIL";
   } else if (overallScore < 85) {
     status = "⚠️ WARN";
@@ -537,11 +561,21 @@ function main() {
   );
   log(`Duração: ${duration}s`);
 
+  const hasCriticalFailure = hasCriticalCategoryFailure(results);
+
   let status = "✅ PASS";
-  if (overallScore < 70 || (isStrict && overallScore < 90)) {
+  if (
+    overallScore < 70 ||
+    hasCriticalFailure ||
+    (isStrict && overallScore < 90)
+  ) {
     status = "❌ FAIL";
   } else if (overallScore < 85) {
     status = "⚠️ WARN";
+  }
+
+  if (hasCriticalFailure) {
+    logWarning("Categoria com score abaixo de 70 detectada");
   }
 
   log(

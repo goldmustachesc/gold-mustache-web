@@ -13,13 +13,11 @@ Execute com o comando: `/code-review`
 ## O que este workflow faz
 
 ### 1. Análise de Mudanças
-// turbo
 - Identifica arquivos modificados no branch atual
 - Compara com branch main/base
 - Gera lista de arquivos para análise
 
 ### 2. Verificação de Qualidade Automática
-// turbo
 - Executa `pnpm lint` para verificar padrões de código
 - Executa `pnpm build` para validar compilação
 - Verifica erros de TypeScript
