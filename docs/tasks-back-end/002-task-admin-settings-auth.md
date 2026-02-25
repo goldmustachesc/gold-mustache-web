@@ -1,5 +1,7 @@
 # 002 - Adicionar autenticação no GET /api/admin/settings
 
+## Status: ✅ CONCLUÍDA
+
 ## Prioridade: 🔴 CRÍTICA (Segurança)
 
 ## Problema
@@ -39,6 +41,6 @@ Verificar se alguma parte do front-end público consome esse endpoint. Se sim, c
 - [x] Adicionar `requireAdmin()` no `GET`
 - [x] Verificar se front-end público depende desse endpoint (não depende — pages públicas usam `getBarbershopSettings()` server-side via Prisma)
 - [x] Se sim, criar endpoint público alternativo com dados limitados (não necessário)
-- [ ] Testar acesso sem auth (deve retornar 401)
-- [ ] Testar acesso com auth não-admin (deve retornar 403)
-- [ ] Testar acesso com auth admin (deve retornar 200)
+- [x] Testar acesso sem auth (deve retornar 401)
+- [x] Testar acesso com auth não-admin (deve retornar 403)
+- [x] Testar acesso com auth admin (deve retornar 200)

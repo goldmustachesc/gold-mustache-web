@@ -1,5 +1,7 @@
 # 004 - Remover detalhes de erro internos das respostas da API
 
+## Status: ✅ CONCLUÍDA
+
 ## Prioridade: 🔴 CRÍTICA (Segurança)
 
 ## Problema

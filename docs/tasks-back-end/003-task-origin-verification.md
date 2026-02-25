@@ -1,5 +1,7 @@
 # 003 - Expandir verificação de origem (CSRF) para rotas sensíveis
 
+## Status: ✅ CONCLUÍDA
+
 ## Prioridade: 🔴 CRÍTICA (Segurança)
 
 ## Problema
@@ -62,10 +64,10 @@ Considerar criar um wrapper ou middleware que aplique automaticamente em todos o
 
 ## Checklist
 
-- [ ] Adicionar `requireValidOrigin` em todas as rotas admin de escrita
-- [ ] Adicionar em rotas de perfil e agendamentos
-- [ ] Adicionar em rotas de barbeiro
-- [ ] Adicionar em rotas de notificações
-- [ ] Testar com Origin válida (deve passar)
-- [ ] Testar com Origin inválida (deve retornar 403)
-- [ ] Testar sem Origin (deve passar — same-origin)
+- [x] Adicionar `requireValidOrigin` em todas as rotas admin de escrita
+- [x] Adicionar em rotas de perfil e agendamentos
+- [x] Adicionar em rotas de barbeiro
+- [x] Adicionar em rotas de notificações
+- [x] Testar com Origin válida (deve passar)
+- [x] Testar com Origin inválida (deve retornar 403)
+- [x] Testar sem Origin (deve passar — same-origin)
