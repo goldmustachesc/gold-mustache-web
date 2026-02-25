@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { GET, POST } from "../route";
 import { Decimal } from "@prisma/client/runtime/library";
+import type { RequireAdminResult } from "@/lib/auth/requireAdmin";
 
-// Mock do Prisma
+const mockRequireAdmin = vi.fn<() => Promise<RequireAdminResult>>();
+
+vi.mock("@/lib/auth/requireAdmin", () => ({
+  requireAdmin: () => mockRequireAdmin(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     reward: {
@@ -15,6 +21,12 @@ vi.mock("@/lib/prisma", () => ({
 describe("/api/admin/loyalty/rewards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRequireAdmin.mockResolvedValue({
+      ok: true,
+      userId: "admin-user-id",
+      profileId: "admin-profile-id",
+      role: "ADMIN",
+    });
   });
 
   afterEach(() => {
