@@ -36,7 +36,9 @@ export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
  */
 export async function GET() {
   try {
-    // Busca as configurações ou cria com valores padrão
+    const admin = await requireAdmin();
+    if (!admin.ok) return admin.response;
+
     let settings = await prisma.barbershopSettings.findUnique({
       where: { id: "default" },
     });
