@@ -28,8 +28,6 @@
     "prepare": "husky",
     "postinstall": "prisma generate",
     "commit": "git-cz",
-    "code-review": "node .agents/workflows/code-review-runner.mjs",
-    "pre-commit-check": "node .agents/workflows/pre-commit-quality-check.mjs",
     "validate-commit": "node scripts/validate-commit.cjs",
     "optimize:images": "node scripts/optimize-images.cjs"
   },

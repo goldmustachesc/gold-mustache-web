@@ -67,13 +67,11 @@ export async function POST(request: Request) {
     }
 
     if (!posts || posts.length === 0) {
-      return NextResponse.json(
-        {
-          error: "Nenhum post encontrado",
-          postsCount: 0,
-        },
-        { status: 500 },
-      );
+      return NextResponse.json({
+        success: true,
+        postsCount: 0,
+        warning: "Nenhum post encontrado no Instagram",
+      });
     }
 
     // Preparar dados do cache
@@ -98,11 +96,9 @@ export async function POST(request: Request) {
       message: "Posts sincronizados com sucesso",
     });
   } catch (error) {
+    console.error("Error syncing Instagram posts:", error);
     return NextResponse.json(
-      {
-        error: "Erro ao sincronizar posts",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
+      { error: "Erro ao sincronizar posts" },
       { status: 500 },
     );
   }

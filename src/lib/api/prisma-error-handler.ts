@@ -7,7 +7,6 @@ import { NextResponse } from "next/server";
 interface ApiErrorResponse {
   error: string;
   message: string;
-  details?: Record<string, unknown>;
 }
 
 /**
@@ -61,8 +60,15 @@ export function handlePrismaError(
   error: unknown,
   fallbackMessage = "Erro interno do servidor",
 ): NextResponse<ApiErrorResponse> {
-  // Log the error for debugging
-  console.error("Database error:", error);
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error("Database error:", {
+      code: error.code,
+      message: error.message,
+      meta: error.meta,
+    });
+  } else {
+    console.error("Database error:", error);
+  }
 
   // Handle Prisma known errors
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -78,7 +84,6 @@ export function handlePrismaError(
           {
             error: `PRISMA_${error.code}`,
             message: `${errorConfig.message}: campo(s) ${field}`,
-            details: { code: error.code, field },
           },
           { status: errorConfig.status },
         );
@@ -88,7 +93,6 @@ export function handlePrismaError(
         {
           error: `PRISMA_${error.code}`,
           message: errorConfig.message,
-          details: { code: error.code },
         },
         { status: errorConfig.status },
       );
@@ -99,7 +103,6 @@ export function handlePrismaError(
       {
         error: `PRISMA_${error.code}`,
         message: fallbackMessage,
-        details: { code: error.code },
       },
       { status: 500 },
     );

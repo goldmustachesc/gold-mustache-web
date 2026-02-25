@@ -34,16 +34,11 @@ export async function GET() {
 
     return NextResponse.json({ barber });
   } catch (error) {
-    console.error(
-      "Error fetching barber profile:",
-      error instanceof Error ? error.message : error,
-    );
-    console.error("Stack:", error instanceof Error ? error.stack : "N/A");
+    console.error("Error fetching barber profile:", error);
     return NextResponse.json(
       {
         error: "INTERNAL_ERROR",
         message: "Erro ao buscar perfil",
-        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     );
