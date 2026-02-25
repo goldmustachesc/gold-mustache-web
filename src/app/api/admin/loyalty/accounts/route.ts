@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 export async function GET() {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     // Retornando mock data para exibição no frontend enquanto backend real não está finalizado.
     const mockAccounts = [

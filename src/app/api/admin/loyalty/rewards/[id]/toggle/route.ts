@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { z } from "zod";
 
 // Schema para validação do request body
@@ -11,6 +12,9 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const { id } = await params;
     const body = await req.json();

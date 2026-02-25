@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ accountId: string }> },
 ) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const { accountId } = await params;
     const body = await req.json();

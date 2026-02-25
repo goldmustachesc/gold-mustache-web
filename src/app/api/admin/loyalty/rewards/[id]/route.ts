@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { z } from "zod";
 
 // Schema para validação de atualização de reward (todos campos opcionais)
@@ -28,6 +29,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const { id } = await params;
 
@@ -88,6 +92,9 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -235,6 +242,9 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const { id } = await params;
 

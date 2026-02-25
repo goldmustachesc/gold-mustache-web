@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { z } from "zod";
 
 // Schema para validação de criação de reward
@@ -20,6 +21,9 @@ const createRewardSchema = z.object({
 
 // GET - Listar todos os rewards (incluindo inativos para admin)
 export async function GET() {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const rewards = await prisma.reward.findMany({
       orderBy: [
@@ -68,6 +72,9 @@ export async function GET() {
 
 // POST - Criar novo reward
 export async function POST(req: Request) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return admin.response;
+
   try {
     const body = await req.json();
 
