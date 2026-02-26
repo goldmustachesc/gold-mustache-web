@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGuestAppointmentsByToken } from "@/services/booking";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
  * GET /api/appointments/guest/lookup
@@ -10,6 +11,24 @@ import { getGuestAppointmentsByToken } from "@/services/booking";
  */
 export async function GET(request: Request) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const accessToken = request.headers.get("X-Guest-Token");
 
     if (!accessToken) {

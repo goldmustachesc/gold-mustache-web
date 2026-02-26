@@ -1,4 +1,5 @@
 import type { InstagramCacheData } from "@/types/instagram";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -39,8 +40,26 @@ const MOCK_POSTS = [
  * GET /api/instagram/posts
  * Retorna os posts do Instagram do cache local
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("api", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const cacheFilePath = path.join(
       process.cwd(),
       "public",

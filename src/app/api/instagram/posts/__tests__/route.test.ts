@@ -30,7 +30,8 @@ describe("GET /api/instagram/posts", () => {
       }),
     );
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/instagram/posts");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -44,7 +45,8 @@ describe("GET /api/instagram/posts", () => {
       JSON.stringify({ posts: [], lastUpdated: null, source: "cache" }),
     );
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/instagram/posts");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -56,7 +58,8 @@ describe("GET /api/instagram/posts", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     mockReadFile.mockRejectedValue(new Error("boom"));
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/instagram/posts");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);

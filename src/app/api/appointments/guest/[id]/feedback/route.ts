@@ -4,6 +4,7 @@ import {
   getAppointmentFeedback,
 } from "@/services/feedback";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,24 @@ type RouteParams = { params: Promise<{ id: string }> };
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const { id: appointmentId } = await params;
 
     // Get access token from header
@@ -77,6 +96,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const { id: appointmentId } = await params;
 
     // Get access token from header

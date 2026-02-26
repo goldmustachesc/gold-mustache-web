@@ -21,7 +21,8 @@ describe("GET /api/barbers", () => {
     const barbers = [{ id: "barber-1", name: "Barbeiro", avatarUrl: null }];
     mockFindMany.mockResolvedValue(barbers);
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/barbers");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -37,7 +38,8 @@ describe("GET /api/barbers", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockFindMany.mockRejectedValue(new Error("boom"));
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/barbers");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(500);

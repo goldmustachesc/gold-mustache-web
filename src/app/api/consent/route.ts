@@ -5,7 +5,7 @@ import {
   saveConsentSchema,
   getConsentQuerySchema,
 } from "@/lib/validations/consent";
-import { getClientIdentifier } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
  * GET /api/consent
@@ -18,6 +18,24 @@ import { getClientIdentifier } from "@/lib/rate-limit";
  */
 export async function GET(request: Request) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("api", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const anonymousId = searchParams.get("anonymousId");
 
@@ -107,6 +125,24 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("api", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const body = await request.json();
 
     // Validate input

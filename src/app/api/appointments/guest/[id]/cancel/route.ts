@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cancelAppointmentByGuestToken } from "@/services/booking";
 import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
  * PATCH /api/appointments/guest/[id]/cancel
@@ -12,6 +13,24 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITED",
+          message: "Muitas requisições. Tente novamente em 1 minuto.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": String(rateLimitResult.reset),
+          },
+        },
+      );
+    }
+
     const { id } = await params;
     const accessToken = request.headers.get("X-Guest-Token");
 
