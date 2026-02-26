@@ -282,7 +282,7 @@ export const getSlotsQuerySchema = z.object({
 
 export type GetSlotsQuery = z.infer<typeof getSlotsQuerySchema>;
 
-export const getAppointmentsQuerySchema = z.object({
+const dateRangeFields = {
   startDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD")
@@ -291,8 +291,33 @@ export const getAppointmentsQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD")
     .optional(),
-  barberId: z.string().uuid("ID do barbeiro inválido").optional(),
-});
+};
+
+const validateDateRange = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => !startDate || !endDate || startDate <= endDate;
+
+const dateRangeRefineOptions = {
+  message: "endDate deve ser igual ou posterior a startDate",
+  path: ["endDate"],
+};
+
+export const dateRangeQuerySchema = z
+  .object(dateRangeFields)
+  .refine(validateDateRange, dateRangeRefineOptions);
+
+export type DateRangeQuery = z.infer<typeof dateRangeQuerySchema>;
+
+export const getAppointmentsQuerySchema = z
+  .object({
+    ...dateRangeFields,
+    barberId: z.string().uuid("ID do barbeiro inválido").optional(),
+  })
+  .refine(validateDateRange, dateRangeRefineOptions);
 
 export type GetAppointmentsQuery = z.infer<typeof getAppointmentsQuerySchema>;
 

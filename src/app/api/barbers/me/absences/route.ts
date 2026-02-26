@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { barberAbsenceSchema } from "@/lib/validations/booking";
+import {
+  barberAbsenceSchema,
+  dateRangeQuerySchema,
+} from "@/lib/validations/booking";
 import {
   parseDateStringToUTC,
   parseTimeToMinutes,
@@ -46,8 +49,22 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const queryValidation = dateRangeQuerySchema.safeParse({
+      startDate: searchParams.get("startDate") ?? undefined,
+      endDate: searchParams.get("endDate") ?? undefined,
+    });
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        {
+          error: "VALIDATION_ERROR",
+          details: queryValidation.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    const { startDate, endDate } = queryValidation.data;
 
     const where: Prisma.BarberAbsenceWhereInput = {
       barberId: barber.id,

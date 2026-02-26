@@ -7,7 +7,10 @@ import {
 } from "@/services/booking";
 import { notifyAppointmentConfirmed } from "@/services/notification";
 import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
-import { createAppointmentSchema } from "@/lib/validations/booking";
+import {
+  createAppointmentSchema,
+  getAppointmentsQuerySchema,
+} from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
 import { parseDateStringToUTC, getTodayUTCMidnight } from "@/utils/time-slots";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
@@ -32,9 +35,23 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const barberId = searchParams.get("barberId");
+    const queryValidation = getAppointmentsQuerySchema.safeParse({
+      startDate: searchParams.get("startDate") ?? undefined,
+      endDate: searchParams.get("endDate") ?? undefined,
+      barberId: searchParams.get("barberId") ?? undefined,
+    });
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        {
+          error: "VALIDATION_ERROR",
+          details: queryValidation.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    const { startDate, endDate, barberId } = queryValidation.data;
 
     // Check if user is a barber
     const barber = await prisma.barber.findUnique({

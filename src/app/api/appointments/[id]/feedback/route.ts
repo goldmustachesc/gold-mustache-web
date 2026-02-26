@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { createFeedback, getAppointmentFeedback } from "@/services/feedback";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { feedbackSchema } from "@/lib/validations/feedback";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -13,6 +15,21 @@ type RouteParams = { params: Promise<{ id: string }> };
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id: appointmentId } = await params;
+
+    const appointmentIdValidation = z
+      .string()
+      .uuid("ID do agendamento inválido")
+      .safeParse(appointmentId);
+
+    if (!appointmentIdValidation.success) {
+      return NextResponse.json(
+        {
+          error: "INVALID_APPOINTMENT_ID",
+          message: "ID do agendamento inválido",
+        },
+        { status: 400 },
+      );
+    }
 
     const supabase = await createClient();
     const {
@@ -83,6 +100,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { id: appointmentId } = await params;
 
+    const appointmentIdValidation = z
+      .string()
+      .uuid("ID do agendamento inválido")
+      .safeParse(appointmentId);
+
+    if (!appointmentIdValidation.success) {
+      return NextResponse.json(
+        {
+          error: "INVALID_APPOINTMENT_ID",
+          message: "ID do agendamento inválido",
+        },
+        { status: 400 },
+      );
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -108,14 +140,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { rating, comment } = body;
+    const validation = feedbackSchema.safeParse(body);
 
-    if (!rating || typeof rating !== "number") {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "INVALID_INPUT", message: "Avaliação é obrigatória" },
-        { status: 400 },
+        {
+          error: "VALIDATION_ERROR",
+          details: validation.error.flatten().fieldErrors,
+        },
+        { status: 422 },
       );
     }
+
+    const { rating, comment } = validation.data;
 
     const feedback = await createFeedback(
       { appointmentId, rating, comment },

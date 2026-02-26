@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
-import { shopClosureSchema } from "@/lib/validations/booking";
+import {
+  shopClosureSchema,
+  dateRangeQuerySchema,
+} from "@/lib/validations/booking";
 import {
   formatPrismaDateToString,
   parseDateStringToUTC,
@@ -15,8 +18,22 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const queryValidation = dateRangeQuerySchema.safeParse({
+      startDate: searchParams.get("startDate") ?? undefined,
+      endDate: searchParams.get("endDate") ?? undefined,
+    });
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        {
+          error: "VALIDATION_ERROR",
+          details: queryValidation.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    const { startDate, endDate } = queryValidation.data;
 
     const where: Prisma.ShopClosureWhereInput = {};
 

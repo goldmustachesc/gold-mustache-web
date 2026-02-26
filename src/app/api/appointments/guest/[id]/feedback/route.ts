@@ -1,10 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   createGuestFeedback,
   getAppointmentFeedback,
 } from "@/services/feedback";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { feedbackSchema } from "@/lib/validations/feedback";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -33,6 +35,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: appointmentId } = await params;
+
+    const appointmentIdValidation = z
+      .string()
+      .uuid("ID do agendamento inválido")
+      .safeParse(appointmentId);
+
+    if (!appointmentIdValidation.success) {
+      return NextResponse.json(
+        {
+          error: "INVALID_APPOINTMENT_ID",
+          message: "ID do agendamento inválido",
+        },
+        { status: 400 },
+      );
+    }
 
     // Get access token from header
     const accessToken = request.headers.get("x-guest-token");
@@ -116,6 +133,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { id: appointmentId } = await params;
 
+    const appointmentIdValidation = z
+      .string()
+      .uuid("ID do agendamento inválido")
+      .safeParse(appointmentId);
+
+    if (!appointmentIdValidation.success) {
+      return NextResponse.json(
+        {
+          error: "INVALID_APPOINTMENT_ID",
+          message: "ID do agendamento inválido",
+        },
+        { status: 400 },
+      );
+    }
+
     // Get access token from header
     const accessToken = request.headers.get("x-guest-token");
 
@@ -127,14 +159,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { rating, comment } = body;
+    const validation = feedbackSchema.safeParse(body);
 
-    if (!rating || typeof rating !== "number") {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "INVALID_INPUT", message: "Avaliação é obrigatória" },
-        { status: 400 },
+        {
+          error: "VALIDATION_ERROR",
+          details: validation.error.flatten().fieldErrors,
+        },
+        { status: 422 },
       );
     }
+
+    const { rating, comment } = validation.data;
 
     const feedback = await createGuestFeedback(
       { appointmentId, rating, comment },
