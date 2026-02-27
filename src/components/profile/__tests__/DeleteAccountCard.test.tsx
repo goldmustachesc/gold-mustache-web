@@ -190,6 +190,7 @@ describe("DeleteAccountCard", () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith("/api/profile/delete", {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
       });
     });
 
@@ -215,7 +216,12 @@ describe("DeleteAccountCard", () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      json: () => Promise.resolve({ message: "Error deleting account" }),
+      status: 500,
+      json: () =>
+        Promise.resolve({
+          error: "INTERNAL_ERROR",
+          message: "Error deleting account",
+        }),
     });
 
     render(<DeleteAccountCard />);
@@ -232,9 +238,7 @@ describe("DeleteAccountCard", () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        "Erro ao excluir conta. Tente novamente.",
-      );
+      expect(toast.error).toHaveBeenCalledWith("Error deleting account");
     });
   });
 
@@ -268,6 +272,7 @@ describe("DeleteAccountCard", () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith("/api/profile/delete", {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
       });
     });
   });
