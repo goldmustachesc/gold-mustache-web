@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { createClient } from "@/lib/supabase/server";
 import {
   createAppointment,
@@ -29,10 +29,7 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const { searchParams } = new URL(request.url);
@@ -43,12 +40,11 @@ export async function GET(request: Request) {
     });
 
     if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: queryValidation.error.flatten().fieldErrors,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        queryValidation.error.flatten().fieldErrors,
       );
     }
 
@@ -73,7 +69,7 @@ export async function GET(request: Request) {
       };
 
       const appointments = await getBarberAppointments(barber.id, dateRange);
-      return NextResponse.json({ appointments });
+      return apiSuccess(appointments);
     }
 
     // Client viewing their appointments - get or create profile
@@ -100,7 +96,7 @@ export async function GET(request: Request) {
     }
 
     const appointments = await getClientAppointments(profile.id);
-    return NextResponse.json({ appointments });
+    return apiSuccess(appointments);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos");
   }
@@ -114,12 +110,10 @@ export async function POST(request: Request) {
     const settings = await getBarbershopSettings();
     const mode = resolveBookingMode(settings);
     if (mode !== "internal") {
-      return NextResponse.json(
-        {
-          error: "BOOKING_DISABLED",
-          message: "Agendamento interno indisponível no momento.",
-        },
-        { status: 403 },
+      return apiError(
+        "BOOKING_DISABLED",
+        "Agendamento interno indisponível no momento.",
+        403,
       );
     }
 
@@ -127,19 +121,17 @@ export async function POST(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("appointments", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const supabase = await createClient();
@@ -148,10 +140,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const body = await request.json();
@@ -160,12 +149,11 @@ export async function POST(request: Request) {
     const validation = createAppointmentSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -206,7 +194,7 @@ export async function POST(request: Request) {
       time: appointment.startTime,
     });
 
-    return NextResponse.json({ appointment }, { status: 201 });
+    return apiSuccess(appointment, 201);
   } catch (error) {
     if (error instanceof Error) {
       const domainErrors: Record<
@@ -242,10 +230,7 @@ export async function POST(request: Request) {
 
       const mapped = domainErrors[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 
@@ -253,10 +238,7 @@ export async function POST(request: Request) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return NextResponse.json(
-        { error: "SLOT_OCCUPIED", message: "Este horário já está ocupado" },
-        { status: 409 },
-      );
+      return apiError("SLOT_OCCUPIED", "Este horário já está ocupado", 409);
     }
 
     return handlePrismaError(error, "Erro ao criar agendamento");

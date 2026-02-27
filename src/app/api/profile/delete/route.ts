@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { apiMessage, apiError } from "@/lib/api/response";
 
 /**
  * DELETE /api/profile/delete
@@ -30,12 +30,10 @@ export async function DELETE(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("sensitive", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em alguns minutos.",
-        },
-        { status: 429 },
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em alguns minutos.",
+        429,
       );
     }
 
@@ -45,10 +43,7 @@ export async function DELETE(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     // Track deletion results for logging
@@ -125,10 +120,7 @@ export async function DELETE(request: Request) {
       timestamp: new Date().toISOString(),
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Conta deletada com sucesso",
-    });
+    return apiMessage("Conta deletada com sucesso");
   } catch (error) {
     return handlePrismaError(error, "Erro ao deletar conta");
   }

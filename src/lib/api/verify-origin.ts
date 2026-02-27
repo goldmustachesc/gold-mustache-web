@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
+import { apiError } from "@/lib/api/response";
 
 /**
  * List of allowed origins for CSRF protection.
@@ -60,16 +61,22 @@ export function verifyOrigin(request: Request): {
     // Check Referer as fallback
     const referer = request.headers.get("referer");
     if (referer) {
-      const refererOrigin = new URL(referer).origin;
+      let refererOrigin: string;
+      try {
+        refererOrigin = new URL(referer).origin;
+      } catch {
+        console.warn("[Origin Verify] Malformed referer:", referer);
+        return {
+          valid: false,
+          response: apiError("FORBIDDEN", "Origem não permitida", 403),
+        };
+      }
       const allowedOrigins = getAllowedOrigins();
       if (!allowedOrigins.includes(refererOrigin)) {
         console.warn("[Origin Verify] Invalid referer:", refererOrigin);
         return {
           valid: false,
-          response: NextResponse.json(
-            { error: "FORBIDDEN", message: "Origem não permitida" },
-            { status: 403 },
-          ),
+          response: apiError("FORBIDDEN", "Origem não permitida", 403),
         };
       }
     }
@@ -83,10 +90,7 @@ export function verifyOrigin(request: Request): {
     console.warn("[Origin Verify] Blocked request from:", origin);
     return {
       valid: false,
-      response: NextResponse.json(
-        { error: "FORBIDDEN", message: "Origem não permitida" },
-        { status: 403 },
-      ),
+      response: apiError("FORBIDDEN", "Origem não permitida", 403),
     };
   }
 

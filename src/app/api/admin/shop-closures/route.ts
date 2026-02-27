@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -25,12 +25,11 @@ export async function GET(request: Request) {
     });
 
     if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: queryValidation.error.flatten().fieldErrors,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        queryValidation.error.flatten().fieldErrors,
       );
     }
 
@@ -55,8 +54,8 @@ export async function GET(request: Request) {
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    return NextResponse.json({
-      closures: closures.map((c) => ({
+    return apiSuccess(
+      closures.map((c) => ({
         id: c.id,
         date: formatPrismaDateToString(c.date),
         startTime: c.startTime,
@@ -65,7 +64,7 @@ export async function GET(request: Request) {
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
       })),
-    });
+    );
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar fechamentos");
   }
@@ -82,12 +81,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validation = shopClosureSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -107,19 +105,17 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
+    return apiSuccess(
       {
-        closure: {
-          id: created.id,
-          date: formatPrismaDateToString(created.date),
-          startTime: created.startTime,
-          endTime: created.endTime,
-          reason: created.reason,
-          createdAt: created.createdAt.toISOString(),
-          updatedAt: created.updatedAt.toISOString(),
-        },
+        id: created.id,
+        date: formatPrismaDateToString(created.date),
+        startTime: created.startTime,
+        endTime: created.endTime,
+        reason: created.reason,
+        createdAt: created.createdAt.toISOString(),
+        updatedAt: created.updatedAt.toISOString(),
       },
-      { status: 201 },
+      201,
     );
   } catch (error) {
     return handlePrismaError(error, "Erro ao criar fechamento");

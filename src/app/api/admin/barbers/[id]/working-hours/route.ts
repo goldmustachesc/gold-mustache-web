@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -30,10 +30,7 @@ export async function GET(
     });
 
     if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
     const workingHours = await prisma.workingHours.findMany({
@@ -43,7 +40,7 @@ export async function GET(
 
     const days = buildWorkingHoursResponse(workingHours);
 
-    return NextResponse.json({ barber, days });
+    return apiSuccess({ barber, days });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar horários");
   }
@@ -73,10 +70,7 @@ export async function PUT(
     });
 
     if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
     // Parse JSON body with error handling
@@ -84,20 +78,16 @@ export async function PUT(
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "INVALID_JSON", message: "Corpo da requisição inválido" },
-        { status: 400 },
-      );
+      return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
     const validation = updateBarberWorkingHoursSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -116,7 +106,7 @@ export async function PUT(
 
     const result = buildWorkingHoursResponse(updatedHours);
 
-    return NextResponse.json({ barber, days: result });
+    return apiSuccess({ barber, days: result });
   } catch (error) {
     return handlePrismaError(error, "Erro ao salvar horários");
   }

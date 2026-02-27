@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { apiSuccess, apiMessage, apiError } from "@/lib/api/response";
 import { z } from "zod";
 
 const deleteRequestSchema = z.object({
@@ -29,12 +29,10 @@ export async function POST(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("sensitive", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em alguns minutos.",
-        },
-        { status: 429 },
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em alguns minutos.",
+        429,
       );
     }
 
@@ -43,12 +41,11 @@ export async function POST(request: Request) {
     // Validate input
     const validation = deleteRequestSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -62,23 +59,15 @@ export async function POST(request: Request) {
 
     if (!guestClient) {
       // Don't reveal if guest exists for security
-      return NextResponse.json({
-        success: true,
-        message:
-          "Se existir uma conta associada a este telefone, ela será processada para exclusão.",
-      });
+      return apiMessage(
+        "Se existir uma conta associada a este telefone, ela será processada para exclusão.",
+      );
     }
 
     // If access token provided, verify it matches
     if (accessToken) {
       if (guestClient.accessToken !== accessToken) {
-        return NextResponse.json(
-          {
-            error: "INVALID_TOKEN",
-            message: "Token de acesso inválido",
-          },
-          { status: 403 },
-        );
+        return apiError("INVALID_TOKEN", "Token de acesso inválido", 403);
       }
 
       // Immediate anonymization since token matches
@@ -96,8 +85,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString(),
       });
 
-      return NextResponse.json({
-        success: true,
+      return apiSuccess({
         message: "Seus dados foram removidos com sucesso.",
         immediate: true,
       });
@@ -114,8 +102,7 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
     });
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       message:
         "Sua solicitação foi recebida. Processaremos a exclusão em até 15 dias conforme a LGPD.",
       immediate: false,

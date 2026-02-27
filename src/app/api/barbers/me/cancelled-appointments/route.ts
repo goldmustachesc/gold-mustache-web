@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -71,7 +71,7 @@ export async function GET() {
       }),
     );
 
-    return NextResponse.json({ appointments });
+    return apiSuccess(appointments);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos cancelados");
   }

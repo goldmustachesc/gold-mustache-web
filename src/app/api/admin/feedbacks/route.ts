@@ -1,5 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getAllFeedbacks } from "@/services/feedback";
 import type { FeedbackFilters } from "@/types/feedback";
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     const result = await getAllFeedbacks(filters, page, pageSize);
 
-    return NextResponse.json(result);
+    return apiSuccess(result);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar avaliações");
   }

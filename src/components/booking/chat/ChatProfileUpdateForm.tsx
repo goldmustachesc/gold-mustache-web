@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { apiMutate } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { Loader2, UserCircle, Phone, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -114,16 +115,7 @@ export function ChatProfileUpdateForm({
         updateData.phone = getPhoneDigits(phone);
       }
 
-      const response = await fetch("/api/profile/me", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao atualizar perfil");
-      }
-
+      await apiMutate<unknown>("/api/profile/me", "PUT", updateData);
       await queryClient.invalidateQueries({ queryKey: ["profile-me"] });
       toast.success("Perfil atualizado com sucesso!");
       onSuccess();

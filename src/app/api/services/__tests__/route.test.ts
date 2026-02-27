@@ -25,7 +25,7 @@ describe("GET /api/services", () => {
 
     expect(response.status).toBe(200);
     expect(mockGetServices).toHaveBeenCalledWith("barber-1");
-    expect(body.services).toEqual(services);
+    expect(body.data).toEqual(services);
   });
 
   it("returns 500 on service failure", async () => {

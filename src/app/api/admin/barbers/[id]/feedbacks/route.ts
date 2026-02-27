@@ -1,4 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import {
@@ -27,10 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -50,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       stats = await getBarberFeedbackStats(barberId);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       barber,
       ...feedbacksResult,
       ...(stats && { stats }),

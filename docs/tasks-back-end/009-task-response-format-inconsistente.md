@@ -1,5 +1,7 @@
 # 009 - Padronizar formato de resposta das APIs
 
+## Status: ✅ CONCLUÍDA
+
 ## Prioridade: 🟠 ALTA (Arquitetura / DX)
 
 ## Problema
@@ -85,14 +87,59 @@ export function apiError(code: string, message: string, status: number, details?
 }
 ```
 
+## Solução implementada
+
+### 1. Helpers tipados (`src/lib/api/response.ts`)
+
+Quatro helpers criados:
+- `apiSuccess<T>(data, status?)` → `{ data: T }`
+- `apiCollection<T>(data[], meta?, status?)` → `{ data: T[], meta? }`
+- `apiMessage(message?, status?)` → `{ success: true, message? }`
+- `apiError(code, message, status, details?)` → `{ error, message, details? }`
+
+### 2. Tipos compartilhados (`src/types/api.ts`)
+
+Interfaces TypeScript para todas as formas de resposta:
+- `ApiSuccessResponse<T>`, `ApiCollectionResponse<T>`, `ApiMessageResponse`, `ApiErrorResponse`, `PaginationMeta`
+
+### 3. Helper frontend (`src/lib/api/client.ts`)
+
+- Classe `ApiError` com `code`, `status`, `details`
+- Funções `apiRequest<T>()`, `apiGet<T>()`, `apiMutate<T>()` para consumo tipado
+
+### 4. Migração de todas as rotas
+
+Todas as ~58 rotas migradas para usar os helpers:
+- **Admin** (19 rotas): settings, barbers, shop-closures, shop-hours, financial, feedbacks, loyalty, services
+- **Appointments** (9 rotas): CRUD, guest, cancel, feedback, no-show, reminder
+- **Barbers** (13 rotas): público, me, appointments, clients, feedbacks, absences, financial, working-hours
+- **Outros** (17 rotas): loyalty, profile, notifications, services, slots, dashboard, consent, cron, instagram, guest
+
+### 5. Atualização do frontend
+
+Todos os hooks e componentes atualizados:
+- ~19 hooks: `data.entityName` → `data.data`
+- Componentes: ProfileForm, DeleteAccountCard, InstagramSection, DailySchedule, AppointmentDetailSheet
+- 7 arquivos de teste atualizados (441 testes passando)
+
+### 6. Correção de inconsistências de erro
+
+- `loyalty/account`: `{ error: "Unauthorized" }` → `apiError("UNAUTHORIZED", "Não autorizado", 401)`
+- `loyalty/rewards` POST: `{ error: "Dados inválidos" }` → `apiError("VALIDATION_ERROR", "Dados inválidos", 400)`
+- `loyalty/rewards/[id]/toggle`: `"Invalid request body"` → `apiError("VALIDATION_ERROR", "Dados inválidos", 400)`
+- Todas as rotas com `{ error: "texto sem code" }` corrigidas para `apiError("ERROR_CODE", "texto", status)`
+
 ## Checklist
 
-- [ ] Definir padrão oficial de resposta (sucesso e erro)
-- [ ] Criar helpers `apiSuccess` e `apiError` em `src/lib/api/response.ts`
-- [ ] Migrar rotas admin para novo padrão
-- [ ] Migrar rotas de appointments para novo padrão
-- [ ] Migrar rotas de barbeiro para novo padrão
-- [ ] Migrar rotas de loyalty para novo padrão
-- [ ] Migrar rotas de perfil e notificações
-- [ ] Atualizar front-end para consumir formato padronizado
-- [ ] Documentar padrão de resposta para referência
+- [x] Definir padrão oficial de resposta (sucesso e erro)
+- [x] Criar helpers `apiSuccess` e `apiError` em `src/lib/api/response.ts`
+- [x] Migrar rotas admin para novo padrão
+- [x] Migrar rotas de appointments para novo padrão
+- [x] Migrar rotas de barbeiro para novo padrão
+- [x] Migrar rotas de loyalty para novo padrão
+- [x] Migrar rotas de perfil e notificações
+- [x] Atualizar front-end para consumir formato padronizado
+- [x] Documentar padrão de resposta para referência
+- [x] `pnpm lint` passa
+- [x] `pnpm test` passa (441 testes, 56 arquivos)
+- [x] `pnpm build` passa

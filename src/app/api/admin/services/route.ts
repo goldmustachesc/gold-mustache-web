@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import {
   createAdminServiceSchema,
   generateSlug,
@@ -21,8 +21,8 @@ export async function GET() {
       orderBy: [{ active: "desc" }, { name: "asc" }],
     });
 
-    return NextResponse.json({
-      services: services.map((s) => ({
+    return apiSuccess(
+      services.map((s) => ({
         id: s.id,
         slug: s.slug,
         name: s.name,
@@ -33,7 +33,7 @@ export async function GET() {
         createdAt: s.createdAt.toISOString(),
         updatedAt: s.updatedAt.toISOString(),
       })),
-    });
+    );
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar serviços");
   }
@@ -58,21 +58,17 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "INVALID_JSON", message: "Corpo da requisição inválido" },
-        { status: 400 },
-      );
+      return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
     const validation = createAdminServiceSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -87,12 +83,10 @@ export async function POST(request: Request) {
     let counter = 1;
     while (await prisma.service.findUnique({ where: { slug } })) {
       if (counter >= MAX_SLUG_ATTEMPTS) {
-        return NextResponse.json(
-          {
-            error: "SLUG_GENERATION_ERROR",
-            message: "Não foi possível gerar um identificador único",
-          },
-          { status: 500 },
+        return apiError(
+          "SLUG_GENERATION_ERROR",
+          "Não foi possível gerar um identificador único",
+          500,
         );
       }
       slug = `${baseSlug}-${counter}`;
@@ -110,21 +104,19 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
+    return apiSuccess(
       {
-        service: {
-          id: service.id,
-          slug: service.slug,
-          name: service.name,
-          description: service.description,
-          duration: service.duration,
-          price: Number(service.price),
-          active: service.active,
-          createdAt: service.createdAt.toISOString(),
-          updatedAt: service.updatedAt.toISOString(),
-        },
+        id: service.id,
+        slug: service.slug,
+        name: service.name,
+        description: service.description,
+        duration: service.duration,
+        price: Number(service.price),
+        active: service.active,
+        createdAt: service.createdAt.toISOString(),
+        updatedAt: service.updatedAt.toISOString(),
       },
-      { status: 201 },
+      201,
     );
   } catch (error) {
     return handlePrismaError(error, "Erro ao criar serviço");

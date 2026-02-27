@@ -11,172 +11,51 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateToString } from "@/utils/time-slots";
 import { getGuestToken, setGuestToken } from "@/lib/guest-session";
+import { apiGet, apiMutate, ApiError } from "@/lib/api/client";
 
-async function fetchBarbers(): Promise<BarberData[]> {
-  const res = await fetch("/api/barbers");
-  if (!res.ok) throw new Error("Erro ao carregar barbeiros");
-  const data = await res.json();
-  return data.barbers;
+const SLOT_ERROR_MESSAGES: Record<string, string> = {
+  SLOT_IN_PAST: "Este horário já passou. Por favor, escolha outro horário.",
+  SHOP_CLOSED:
+    "A barbearia não atende neste horário. Por favor, escolha outro.",
+  BARBER_UNAVAILABLE:
+    "Este barbeiro não atende neste horário. Por favor, escolha outro.",
+  SLOT_UNAVAILABLE:
+    "Este horário não está disponível. Por favor, escolha outro.",
+  SLOT_OCCUPIED: "Este horário já foi reservado. Por favor, escolha outro.",
+  BOOKING_DISABLED: "Agendamento online indisponível no momento.",
+};
+
+const BARBER_SLOT_ERROR_MESSAGES: Record<string, string> = {
+  ...SLOT_ERROR_MESSAGES,
+  BARBER_UNAVAILABLE:
+    "Você não atende neste horário. Por favor, escolha outro.",
+};
+
+function translateSlotError(
+  error: ApiError,
+  errorMap = SLOT_ERROR_MESSAGES,
+): Error {
+  return new Error(errorMap[error.code] ?? error.message);
 }
 
-async function fetchServices(barberId?: string): Promise<ServiceData[]> {
-  const url = barberId ? `/api/services?barberId=${barberId}` : "/api/services";
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Erro ao carregar serviços");
-  const data = await res.json();
-  return data.services;
-}
-
-async function fetchSlots(
-  date: string,
-  barberId: string,
-  serviceId: string,
-): Promise<TimeSlot[]> {
-  const res = await fetch(
-    `/api/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
-  );
-  if (!res.ok) throw new Error("Erro ao carregar horários");
-  const data = await res.json();
-  return data.slots;
-}
-
-async function createAppointment(
-  input: CreateAppointmentInput,
-): Promise<AppointmentWithDetails> {
-  const res = await fetch("/api/appointments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    if (error.error === "SLOT_IN_PAST") {
-      throw new Error(
-        "Este horário já passou. Por favor, escolha outro horário.",
-      );
-    }
-    if (error.error === "SHOP_CLOSED") {
-      throw new Error(
-        "A barbearia não atende neste horário. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "BARBER_UNAVAILABLE") {
-      throw new Error(
-        "Este barbeiro não atende neste horário. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "SLOT_UNAVAILABLE") {
-      throw new Error(
-        "Este horário não está disponível. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "SLOT_OCCUPIED") {
-      throw new Error(
-        "Este horário já foi reservado. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "BOOKING_DISABLED") {
-      throw new Error("Agendamento online indisponível no momento.");
-    }
-    throw new Error(error.message || "Erro ao criar agendamento");
-  }
-
-  const data = await res.json();
-  return data.appointment;
-}
-
-interface GuestAppointmentResponse {
-  appointment: AppointmentWithDetails;
-  accessToken: string;
-}
-
-async function createGuestAppointment(
-  input: CreateGuestAppointmentInput,
-): Promise<GuestAppointmentResponse> {
-  const res = await fetch("/api/appointments/guest", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    if (error.error === "SLOT_IN_PAST") {
-      throw new Error(
-        "Este horário já passou. Por favor, escolha outro horário.",
-      );
-    }
-    if (error.error === "SHOP_CLOSED") {
-      throw new Error(
-        "A barbearia não atende neste horário. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "BARBER_UNAVAILABLE") {
-      throw new Error(
-        "Este barbeiro não atende neste horário. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "SLOT_UNAVAILABLE") {
-      throw new Error(
-        "Este horário não está disponível. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "SLOT_OCCUPIED") {
-      throw new Error(
-        "Este horário já foi reservado. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "BOOKING_DISABLED") {
-      throw new Error("Agendamento online indisponível no momento.");
-    }
-    throw new Error(error.message || "Erro ao criar agendamento");
-  }
-
-  const data = await res.json();
-  return { appointment: data.appointment, accessToken: data.accessToken };
-}
-
-async function fetchClientAppointments(): Promise<AppointmentWithDetails[]> {
-  const res = await fetch("/api/appointments");
-  if (!res.ok) throw new Error("Erro ao carregar agendamentos");
-  const data = await res.json();
-  return data.appointments;
-}
+// ============================================
+// Public Queries
+// ============================================
 
 export function useBarbers() {
   return useQuery({
     queryKey: ["barbers"],
-    queryFn: fetchBarbers,
+    queryFn: () => apiGet<BarberData[]>("/api/barbers"),
   });
-}
-
-async function cancelAppointment(
-  appointmentId: string,
-  reason?: string,
-): Promise<AppointmentWithDetails> {
-  const res = await fetch(`/api/appointments/${appointmentId}/cancel`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    if (error.error === "APPOINTMENT_IN_PAST") {
-      throw new Error("Este agendamento já passou e não pode ser cancelado.");
-    }
-    throw new Error(error.message || "Erro ao cancelar agendamento");
-  }
-
-  const data = await res.json();
-  return data.appointment;
 }
 
 export function useServices(barberId?: string) {
   return useQuery({
     queryKey: ["services", barberId],
-    queryFn: () => fetchServices(barberId),
+    queryFn: () =>
+      apiGet<ServiceData[]>(
+        barberId ? `/api/services?barberId=${barberId}` : "/api/services",
+      ),
   });
 }
 
@@ -188,8 +67,21 @@ export function useSlots(
   return useQuery({
     queryKey: ["slots", date, barberId, serviceId],
     queryFn: () =>
-      fetchSlots(date as string, barberId as string, serviceId as string),
+      apiGet<TimeSlot[]>(
+        `/api/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
+      ),
     enabled: !!date && !!barberId && !!serviceId,
+  });
+}
+
+// ============================================
+// Client Appointment Hooks
+// ============================================
+
+export function useClientAppointments() {
+  return useQuery({
+    queryKey: ["appointments", "client"],
+    queryFn: () => apiGet<AppointmentWithDetails[]>("/api/appointments"),
   });
 }
 
@@ -197,10 +89,19 @@ export function useCreateAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createAppointment,
+    mutationFn: async (input: CreateAppointmentInput) => {
+      try {
+        return await apiMutate<AppointmentWithDetails>(
+          "/api/appointments",
+          "POST",
+          input,
+        );
+      } catch (error) {
+        if (error instanceof ApiError) throw translateSlotError(error);
+        throw error;
+      }
+    },
     onSuccess: () => {
-      // Use exact: false to invalidate all appointment-related queries
-      // e.g., ["appointments", "client"], ["appointments", "barber", ...]
       queryClient.invalidateQueries({
         queryKey: ["appointments"],
         exact: false,
@@ -210,13 +111,28 @@ export function useCreateAppointment() {
   });
 }
 
+interface GuestAppointmentResponse {
+  appointment: AppointmentWithDetails;
+  accessToken: string;
+}
+
 export function useCreateGuestAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createGuestAppointment,
+    mutationFn: async (input: CreateGuestAppointmentInput) => {
+      try {
+        return await apiMutate<GuestAppointmentResponse>(
+          "/api/appointments/guest",
+          "POST",
+          input,
+        );
+      } catch (error) {
+        if (error instanceof ApiError) throw translateSlotError(error);
+        throw error;
+      }
+    },
     onSuccess: (data) => {
-      // Save the access token to localStorage for future lookups/cancellations
       setGuestToken(data.accessToken);
 
       queryClient.invalidateQueries({
@@ -228,67 +144,46 @@ export function useCreateGuestAppointment() {
   });
 }
 
-export function useClientAppointments() {
-  return useQuery({
-    queryKey: ["appointments", "client"],
-    queryFn: fetchClientAppointments,
-  });
-}
-
 export function useCancelAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       appointmentId,
       reason,
     }: {
       appointmentId: string;
       reason?: string;
-    }) => cancelAppointment(appointmentId, reason),
+    }) => {
+      try {
+        return await apiMutate<AppointmentWithDetails>(
+          `/api/appointments/${appointmentId}/cancel`,
+          "PATCH",
+          { reason },
+        );
+      } catch (error) {
+        if (error instanceof ApiError && error.code === "APPOINTMENT_IN_PAST") {
+          throw new Error(
+            "Este agendamento já passou e não pode ser cancelado.",
+          );
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["appointments"],
         exact: false,
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
-      // Invalida a lista de cancelados para refletir o novo cancelamento
       queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
     },
   });
 }
 
-async function fetchBarberAppointments(
-  barberId: string,
-  startDate: string,
-  endDate: string,
-): Promise<AppointmentWithDetails[]> {
-  const res = await fetch(
-    `/api/appointments?barberId=${barberId}&startDate=${startDate}&endDate=${endDate}`,
-  );
-  if (!res.ok) throw new Error("Erro ao carregar agendamentos");
-  const data = await res.json();
-  return data.appointments;
-}
-
-async function cancelAppointmentByBarber(
-  appointmentId: string,
-  reason: string,
-): Promise<AppointmentWithDetails> {
-  const res = await fetch(`/api/appointments/${appointmentId}/cancel`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Erro ao cancelar agendamento");
-  }
-
-  const data = await res.json();
-  return data.appointment;
-}
+// ============================================
+// Barber Appointment Hooks
+// ============================================
 
 export function useBarberAppointments(
   barberId: string | null,
@@ -304,10 +199,8 @@ export function useBarberAppointments(
       endDate ? formatDateToString(endDate) : null,
     ],
     queryFn: () =>
-      fetchBarberAppointments(
-        barberId as string,
-        formatDateToString(startDate as Date),
-        formatDateToString(endDate as Date),
+      apiGet<AppointmentWithDetails[]>(
+        `/api/appointments?barberId=${barberId}&startDate=${formatDateToString(startDate as Date)}&endDate=${formatDateToString(endDate as Date)}`,
       ),
     enabled: !!barberId && !!startDate && !!endDate,
   });
@@ -323,50 +216,49 @@ export function useCancelAppointmentByBarber() {
     }: {
       appointmentId: string;
       reason: string;
-    }) => cancelAppointmentByBarber(appointmentId, reason),
+    }) =>
+      apiMutate<AppointmentWithDetails>(
+        `/api/appointments/${appointmentId}/cancel`,
+        "PATCH",
+        { reason },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["appointments"],
         exact: false,
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
-      // Invalida a lista de cancelados para refletir o novo cancelamento
       queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
     },
   });
-}
-
-async function markAppointmentNoShow(
-  appointmentId: string,
-): Promise<AppointmentWithDetails> {
-  const res = await fetch(`/api/appointments/${appointmentId}/no-show`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    if (error.error === "PRECONDITION_FAILED") {
-      throw new Error(
-        "Só é possível marcar ausência após o horário do agendamento.",
-      );
-    }
-    if (error.error === "CONFLICT") {
-      throw new Error("Este agendamento não pode ser marcado como ausência.");
-    }
-    throw new Error(error.message || "Erro ao marcar ausência");
-  }
-
-  const data = await res.json();
-  return data.appointment;
 }
 
 export function useMarkNoShow() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ appointmentId }: { appointmentId: string }) =>
-      markAppointmentNoShow(appointmentId),
+    mutationFn: async ({ appointmentId }: { appointmentId: string }) => {
+      try {
+        return await apiMutate<AppointmentWithDetails>(
+          `/api/appointments/${appointmentId}/no-show`,
+          "PATCH",
+        );
+      } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.code === "PRECONDITION_FAILED") {
+            throw new Error(
+              "Só é possível marcar ausência após o horário do agendamento.",
+            );
+          }
+          if (error.code === "CONFLICT") {
+            throw new Error(
+              "Este agendamento não pode ser marcado como ausência.",
+            );
+          }
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["appointments"],
@@ -375,10 +267,6 @@ export function useMarkNoShow() {
     },
   });
 }
-
-// ============================================
-// Barber Create Appointment Hooks
-// ============================================
 
 interface CreateAppointmentByBarberInput {
   serviceId: string;
@@ -388,54 +276,23 @@ interface CreateAppointmentByBarberInput {
   clientPhone: string;
 }
 
-async function createAppointmentByBarber(
-  input: CreateAppointmentByBarberInput,
-): Promise<AppointmentWithDetails> {
-  const res = await fetch("/api/barbers/me/appointments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    if (error.error === "SLOT_IN_PAST") {
-      throw new Error(
-        "Este horário já passou. Por favor, escolha outro horário.",
-      );
-    }
-    if (error.error === "SHOP_CLOSED") {
-      throw new Error(
-        "A barbearia não atende neste horário. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "BARBER_UNAVAILABLE") {
-      throw new Error(
-        "Você não atende neste horário. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "SLOT_UNAVAILABLE") {
-      throw new Error(
-        "Este horário não está disponível. Por favor, escolha outro.",
-      );
-    }
-    if (error.error === "SLOT_OCCUPIED") {
-      throw new Error(
-        "Este horário já foi reservado. Por favor, escolha outro.",
-      );
-    }
-    throw new Error(error.message || "Erro ao criar agendamento");
-  }
-
-  const data = await res.json();
-  return data.appointment;
-}
-
 export function useCreateAppointmentByBarber() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createAppointmentByBarber,
+    mutationFn: async (input: CreateAppointmentByBarberInput) => {
+      try {
+        return await apiMutate<AppointmentWithDetails>(
+          "/api/barbers/me/appointments",
+          "POST",
+          input,
+        );
+      } catch (error) {
+        if (error instanceof ApiError)
+          throw translateSlotError(error, BARBER_SLOT_ERROR_MESSAGES);
+        throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["appointments"],
@@ -454,58 +311,17 @@ export function useCreateAppointmentByBarber() {
 async function fetchGuestAppointmentsByToken(
   accessToken: string,
 ): Promise<AppointmentWithDetails[]> {
-  const res = await fetch("/api/appointments/guest/lookup", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Guest-Token": accessToken,
-    },
-  });
-  if (!res.ok) {
-    if (res.status === 401) {
-      // Token not found or invalid
-      return [];
-    }
-    throw new Error("Erro ao buscar agendamentos");
+  try {
+    return await apiGet<AppointmentWithDetails[]>(
+      "/api/appointments/guest/lookup",
+      { "X-Guest-Token": accessToken },
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return [];
+    throw error;
   }
-  const data = await res.json();
-  return data.appointments;
 }
 
-async function cancelGuestAppointmentByToken(
-  appointmentId: string,
-  accessToken: string,
-): Promise<AppointmentWithDetails> {
-  const res = await fetch(`/api/appointments/guest/${appointmentId}/cancel`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Guest-Token": accessToken,
-    },
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    if (error.error === "APPOINTMENT_IN_PAST") {
-      throw new Error("Este agendamento já passou e não pode ser cancelado.");
-    }
-    if (error.error === "UNAUTHORIZED") {
-      throw new Error("Você não tem permissão para cancelar este agendamento.");
-    }
-    if (error.error === "MISSING_TOKEN") {
-      throw new Error("Sessão expirada. Por favor, faça um novo agendamento.");
-    }
-    throw new Error(error.message || "Erro ao cancelar agendamento");
-  }
-
-  const data = await res.json();
-  return data.appointment;
-}
-
-/**
- * Hook to fetch guest appointments using the token from localStorage
- * Automatically reads the token - no need to pass phone number
- */
 export function useGuestAppointments() {
   const token = getGuestToken();
 
@@ -516,21 +332,45 @@ export function useGuestAppointments() {
   });
 }
 
-/**
- * Hook to cancel a guest appointment using the token from localStorage
- */
 export function useCancelGuestAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ appointmentId }: { appointmentId: string }) => {
+    mutationFn: async ({ appointmentId }: { appointmentId: string }) => {
       const token = getGuestToken();
       if (!token) {
         throw new Error(
           "Sessão expirada. Por favor, faça um novo agendamento.",
         );
       }
-      return cancelGuestAppointmentByToken(appointmentId, token);
+
+      try {
+        return await apiMutate<AppointmentWithDetails>(
+          `/api/appointments/guest/${appointmentId}/cancel`,
+          "PATCH",
+          undefined,
+          { "X-Guest-Token": token },
+        );
+      } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.code === "APPOINTMENT_IN_PAST") {
+            throw new Error(
+              "Este agendamento já passou e não pode ser cancelado.",
+            );
+          }
+          if (error.code === "UNAUTHORIZED") {
+            throw new Error(
+              "Você não tem permissão para cancelar este agendamento.",
+            );
+          }
+          if (error.code === "MISSING_TOKEN") {
+            throw new Error(
+              "Sessão expirada. Por favor, faça um novo agendamento.",
+            );
+          }
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -97,16 +97,11 @@ async function saveConsent(
 
   // Sync with server (fire and forget, don't block UI)
   try {
-    await fetch("/api/consent", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        analyticsConsent: preferences.analytics,
-        marketingConsent: preferences.marketing,
-        anonymousId,
-      }),
+    const { apiAction } = await import("@/lib/api/client");
+    await apiAction("/api/consent", "POST", {
+      analyticsConsent: preferences.analytics,
+      marketingConsent: preferences.marketing,
+      anonymousId,
     });
   } catch (error) {
     // Server sync failed, but localStorage is already updated

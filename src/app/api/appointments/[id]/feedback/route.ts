@@ -1,4 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
@@ -23,12 +24,10 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       .safeParse(appointmentId);
 
     if (!appointmentIdValidation.success) {
-      return NextResponse.json(
-        {
-          error: "INVALID_APPOINTMENT_ID",
-          message: "ID do agendamento inválido",
-        },
-        { status: 400 },
+      return apiError(
+        "INVALID_APPOINTMENT_ID",
+        "ID do agendamento inválido",
+        400,
       );
     }
 
@@ -38,10 +37,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autenticado", 401);
     }
 
     // Get profile
@@ -50,10 +46,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     });
 
     if (!profile) {
-      return NextResponse.json(
-        { error: "PROFILE_NOT_FOUND", message: "Perfil não encontrado" },
-        { status: 404 },
-      );
+      return apiError("PROFILE_NOT_FOUND", "Perfil não encontrado", 404);
     }
 
     // Verify appointment ownership
@@ -62,25 +55,20 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     });
 
     if (!appointment) {
-      return NextResponse.json(
-        {
-          error: "APPOINTMENT_NOT_FOUND",
-          message: "Agendamento não encontrado",
-        },
-        { status: 404 },
+      return apiError(
+        "APPOINTMENT_NOT_FOUND",
+        "Agendamento não encontrado",
+        404,
       );
     }
 
     if (appointment.clientId !== profile.id) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Sem permissão" },
-        { status: 403 },
-      );
+      return apiError("UNAUTHORIZED", "Sem permissão", 403);
     }
 
     const feedback = await getAppointmentFeedback(appointmentId);
 
-    return NextResponse.json({ feedback });
+    return apiSuccess(feedback);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar avaliação");
   }
@@ -103,12 +91,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .safeParse(appointmentId);
 
     if (!appointmentIdValidation.success) {
-      return NextResponse.json(
-        {
-          error: "INVALID_APPOINTMENT_ID",
-          message: "ID do agendamento inválido",
-        },
-        { status: 400 },
+      return apiError(
+        "INVALID_APPOINTMENT_ID",
+        "ID do agendamento inválido",
+        400,
       );
     }
 
@@ -118,10 +104,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autenticado", 401);
     }
 
     // Get profile
@@ -130,22 +113,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!profile) {
-      return NextResponse.json(
-        { error: "PROFILE_NOT_FOUND", message: "Perfil não encontrado" },
-        { status: 404 },
-      );
+      return apiError("PROFILE_NOT_FOUND", "Perfil não encontrado", 404);
     }
 
     const body = await request.json();
     const validation = feedbackSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -156,7 +135,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       profile.id,
     );
 
-    return NextResponse.json({ feedback }, { status: 201 });
+    return apiSuccess(feedback, 201);
   } catch (error) {
     if (error instanceof Error) {
       const errorMap: Record<
@@ -192,10 +171,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       const mapped = errorMap[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 

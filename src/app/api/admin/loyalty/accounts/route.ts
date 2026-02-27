@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { apiSuccess } from "@/lib/api/response";
 
 export async function GET() {
   const admin = await requireAdmin();
@@ -35,10 +35,7 @@ export async function GET() {
       },
     ];
 
-    return NextResponse.json({
-      success: true,
-      accounts: mockAccounts,
-    });
+    return apiSuccess(mockAccounts);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar contas de fidelidade");
   }

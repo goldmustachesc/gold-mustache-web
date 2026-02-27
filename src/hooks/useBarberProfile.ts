@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "./useAuth";
+import { apiGet, ApiError } from "@/lib/api/client";
 
 interface BarberProfile {
   id: string;
@@ -10,13 +11,12 @@ interface BarberProfile {
 }
 
 async function fetchBarberProfile(): Promise<BarberProfile | null> {
-  // Usa URL absoluta para evitar que o locale seja incluído no path
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const res = await fetch(`${baseUrl}/api/barbers/me`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Erro ao verificar perfil de barbeiro");
-  const data = await res.json();
-  return data.barber;
+  try {
+    return await apiGet<BarberProfile>("/api/barbers/me");
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 export function useBarberProfile() {
@@ -24,7 +24,7 @@ export function useBarberProfile() {
 
   return useQuery({
     queryKey: ["barber-profile", user?.id],
-    queryFn: () => fetchBarberProfile(),
+    queryFn: fetchBarberProfile,
     enabled: !!user?.id,
   });
 }

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { getGuestAppointmentsByToken } from "@/services/booking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
@@ -15,35 +15,27 @@ export async function GET(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const accessToken = request.headers.get("X-Guest-Token");
 
     if (!accessToken) {
-      return NextResponse.json(
-        {
-          error: "MISSING_TOKEN",
-          message: "Token de acesso não fornecido",
-        },
-        { status: 401 },
-      );
+      return apiError("MISSING_TOKEN", "Token de acesso não fornecido", 401);
     }
 
     const appointments = await getGuestAppointmentsByToken(accessToken);
-    return NextResponse.json({ appointments });
+    return apiSuccess(appointments);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos");
   }

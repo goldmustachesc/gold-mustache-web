@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { apiError, apiMessage, apiSuccess } from "@/lib/api/response";
 import { z } from "zod";
 
 // Schema para validação de atualização de reward (todos campos opcionais)
@@ -56,29 +56,23 @@ export async function GET(
     });
 
     if (!reward) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Recompensa não encontrada", 404);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: reward.id,
-        name: reward.name,
-        description: reward.description,
-        costInPoints: reward.pointsCost,
-        type: reward.type,
-        value: reward.value,
-        serviceId: reward.serviceId,
-        imageUrl: reward.imageUrl,
-        active: reward.active,
-        stock: reward.stock,
-        activeRedemptions: reward._count.redemptions,
-        createdAt: reward.createdAt,
-        updatedAt: reward.updatedAt,
-      },
+    return apiSuccess({
+      id: reward.id,
+      name: reward.name,
+      description: reward.description,
+      costInPoints: reward.pointsCost,
+      type: reward.type,
+      value: reward.value,
+      serviceId: reward.serviceId,
+      imageUrl: reward.imageUrl,
+      active: reward.active,
+      stock: reward.stock,
+      activeRedemptions: reward._count.redemptions,
+      createdAt: reward.createdAt,
+      updatedAt: reward.updatedAt,
     });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar recompensa");
@@ -103,12 +97,11 @@ export async function PUT(
     // Validar o request body
     const validation = updateRewardSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "Dados inválidos",
-          details: validation.error.issues,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        validation.error.issues,
       );
     }
 
@@ -134,10 +127,7 @@ export async function PUT(
     });
 
     if (!existingReward) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Recompensa não encontrada", 404);
     }
 
     // Validações de negócio
@@ -146,9 +136,10 @@ export async function PUT(
       data.value !== undefined &&
       data.value <= 0
     ) {
-      return NextResponse.json(
-        { error: "Descontos devem ter um valor positivo" },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Descontos devem ter um valor positivo",
+        400,
       );
     }
 
@@ -158,21 +149,17 @@ export async function PUT(
         where: { id: data.serviceId },
       });
       if (!service) {
-        return NextResponse.json(
-          { error: "Serviço não encontrado" },
-          { status: 404 },
-        );
+        return apiError("NOT_FOUND", "Serviço não encontrado", 404);
       }
     }
 
     // Regra: não permitir desativar se tiver resgates ativos
     if (data.active === false && existingReward._count.redemptions > 0) {
-      return NextResponse.json(
-        {
-          error: "Não é possível desativar esta recompensa",
-          details: `Existem ${existingReward._count.redemptions} resgates ativos pendentes`,
-        },
-        { status: 409 },
+      return apiError(
+        "ACTIVE_REDEMPTIONS",
+        "Não é possível desativar esta recompensa",
+        409,
+        `Existem ${existingReward._count.redemptions} resgates ativos pendentes`,
       );
     }
 
@@ -187,34 +174,24 @@ export async function PUT(
     });
 
     // Log de auditoria
-    console.log(`[AUDIT] Reward ${id} updated by admin`);
+    console.info(`[AUDIT] Reward ${id} updated by admin`);
 
-    return NextResponse.json({
-      success: true,
-      message: "Recompensa atualizada com sucesso",
-      data: {
-        id: updatedReward.id,
-        name: updatedReward.name,
-        description: updatedReward.description,
-        costInPoints: updatedReward.pointsCost,
-        type: updatedReward.type,
-        value: updatedReward.value,
-        serviceId: updatedReward.serviceId,
-        imageUrl: updatedReward.imageUrl,
-        active: updatedReward.active,
-        stock: updatedReward.stock,
-        updatedAt: updatedReward.updatedAt,
-      },
+    return apiSuccess({
+      id: updatedReward.id,
+      name: updatedReward.name,
+      description: updatedReward.description,
+      costInPoints: updatedReward.pointsCost,
+      type: updatedReward.type,
+      value: updatedReward.value,
+      serviceId: updatedReward.serviceId,
+      imageUrl: updatedReward.imageUrl,
+      active: updatedReward.active,
+      stock: updatedReward.stock,
+      updatedAt: updatedReward.updatedAt,
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: "Dados inválidos",
-          details: error.issues,
-        },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_ERROR", "Dados inválidos", 400, error.issues);
     }
     return handlePrismaError(error, "Erro ao atualizar recompensa");
   }
@@ -247,20 +224,16 @@ export async function DELETE(
     });
 
     if (!existingReward) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Recompensa não encontrada", 404);
     }
 
     // Não permitir deletar se tiver resgates (mesmo que expirados)
     if (existingReward._count.redemptions > 0) {
-      return NextResponse.json(
-        {
-          error: "Não é possível remover esta recompensa",
-          details: `Existem ${existingReward._count.redemptions} resgates associados`,
-        },
-        { status: 409 },
+      return apiError(
+        "ACTIVE_REDEMPTIONS",
+        "Não é possível remover esta recompensa",
+        409,
+        `Existem ${existingReward._count.redemptions} resgates associados`,
       );
     }
 
@@ -270,12 +243,9 @@ export async function DELETE(
     });
 
     // Log de auditoria
-    console.log(`[AUDIT] Reward ${id} deleted by admin`);
+    console.info(`[AUDIT] Reward ${id} deleted by admin`);
 
-    return NextResponse.json({
-      success: true,
-      message: "Recompensa removida com sucesso",
-    });
+    return apiMessage("Recompensa removida com sucesso");
   } catch (error) {
     return handlePrismaError(error, "Erro ao remover recompensa");
   }

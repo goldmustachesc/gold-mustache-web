@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { createClient } from "@/lib/supabase/server";
 import {
   cancelAppointmentByClient,
@@ -29,10 +29,7 @@ export async function PATCH(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const body = await request.json();
@@ -45,10 +42,7 @@ export async function PATCH(
     });
 
     if (!appointmentToCancel) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Agendamento não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Agendamento não encontrado", 404);
     }
 
     // Check if user is a barber and is THE barber of this specific appointment
@@ -67,12 +61,11 @@ export async function PATCH(
       });
 
       if (!validation.success) {
-        return NextResponse.json(
-          {
-            error: "VALIDATION_ERROR",
-            details: validation.error.flatten().fieldErrors,
-          },
-          { status: 422 },
+        return apiError(
+          "VALIDATION_ERROR",
+          "Dados inválidos",
+          422,
+          validation.error.flatten().fieldErrors,
         );
       }
 
@@ -102,7 +95,7 @@ export async function PATCH(
         }
       }
 
-      return NextResponse.json({ appointment });
+      return apiSuccess(appointment);
     }
 
     // Client cancellation (including barbers who are clients of other barbers)
@@ -111,10 +104,7 @@ export async function PATCH(
     });
 
     if (!profile) {
-      return NextResponse.json(
-        { error: "PROFILE_NOT_FOUND", message: "Perfil não encontrado" },
-        { status: 404 },
-      );
+      return apiError("PROFILE_NOT_FOUND", "Perfil não encontrado", 404);
     }
 
     const appointment = await cancelAppointmentByClient(
@@ -124,7 +114,7 @@ export async function PATCH(
 
     await notifyBarberOfAppointmentCancelledByClient(appointment);
 
-    return NextResponse.json({ appointment });
+    return apiSuccess(appointment);
   } catch (error) {
     if (error instanceof Error) {
       const domainErrors: Record<
@@ -160,10 +150,7 @@ export async function PATCH(
 
       const mapped = domainErrors[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 

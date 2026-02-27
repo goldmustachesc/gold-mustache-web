@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { apiError } from "@/lib/api/response";
 
 export type RequireAdminResult =
   | {
@@ -24,10 +25,7 @@ export async function requireAdmin(): Promise<RequireAdminResult> {
   if (!user) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      ),
+      response: apiError("UNAUTHORIZED", "Não autorizado", 401),
     };
   }
 
@@ -51,10 +49,7 @@ export async function requireAdmin(): Promise<RequireAdminResult> {
   if (profile.role !== UserRole.ADMIN) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a administradores" },
-        { status: 403 },
-      ),
+      response: apiError("FORBIDDEN", "Acesso restrito a administradores", 403),
     };
   }
 

@@ -74,7 +74,7 @@ describe("PATCH /api/appointments/[id]/no-show", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.appointment).toEqual({ id: "apt-1" });
+    expect(body.data).toEqual({ id: "apt-1" });
     expect(mockMarkAppointmentAsNoShow).toHaveBeenCalledWith(
       "apt-1",
       "barber-1",

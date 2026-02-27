@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { NotificationData } from "@/types/booking";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { apiGet, apiAction } from "@/lib/api/client";
 
 interface UseNotificationsOptions {
   userId: string | null;
@@ -25,30 +26,28 @@ export function useNotifications({
   onNewNotification,
 }: UseNotificationsOptions): UseNotificationsReturn {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Memoize Supabase client to prevent recreation on every render
-  // This ensures the realtime subscription remains stable
   const supabase = useMemo(() => createClient(), []);
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) {
       setNotifications([]);
+      setUnreadCount(0);
       setIsLoading(false);
       return;
     }
 
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/notifications?userId=${userId}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch notifications");
-      }
-
-      const data = await response.json();
+      const data = await apiGet<{
+        notifications: NotificationData[];
+        unreadCount: number;
+      }>("/api/notifications");
       setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Unknown error"));
@@ -59,12 +58,16 @@ export function useNotifications({
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await fetch(`/api/notifications/${notificationId}/read`, {
-        method: "PATCH",
-      });
+      await apiAction(`/api/notifications/${notificationId}/read`, "PATCH");
 
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
+        prev.map((n) => {
+          if (n.id === notificationId && !n.read) {
+            setUnreadCount((c) => Math.max(0, c - 1));
+            return { ...n, read: true };
+          }
+          return n;
+        }),
       );
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
@@ -75,17 +78,15 @@ export function useNotifications({
     if (!userId) return;
 
     try {
-      await fetch(`/api/notifications/mark-all-read`, {
-        method: "PATCH",
-      });
+      await apiAction("/api/notifications/mark-all-read", "PATCH");
 
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
     } catch (err) {
       console.error("Failed to mark all notifications as read:", err);
     }
   }, [userId]);
 
-  // Subscribe to realtime notifications
   useEffect(() => {
     if (!userId || !supabase) return;
 
@@ -115,6 +116,9 @@ export function useNotifications({
             };
 
             setNotifications((prev) => [newNotification, ...prev]);
+            if (!newNotification.read) {
+              setUnreadCount((c) => c + 1);
+            }
             onNewNotification?.(newNotification);
           },
         )
@@ -130,12 +134,9 @@ export function useNotifications({
     };
   }, [userId, supabase, onNewNotification]);
 
-  // Initial fetch
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return {
     notifications,

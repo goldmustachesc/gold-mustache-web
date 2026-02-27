@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UpdateSettingsInput } from "@/app/api/admin/settings/route";
+import { apiGet, apiMutate } from "@/lib/api/client";
 
 interface BarbershopSettingsResponse {
   id: string;
@@ -31,42 +32,10 @@ interface BarbershopSettingsResponse {
   updatedAt: string;
 }
 
-function getBaseUrl(): string {
-  return typeof window !== "undefined" ? window.location.origin : "";
-}
-
-async function fetchSettings(): Promise<BarbershopSettingsResponse> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/admin/settings`);
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || "Erro ao buscar configurações");
-  }
-  const data = await res.json();
-  return data.settings;
-}
-
-async function updateSettings(
-  input: UpdateSettingsInput,
-): Promise<BarbershopSettingsResponse> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/admin/settings`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || "Erro ao salvar configurações");
-  }
-  const data = await res.json();
-  return data.settings;
-}
-
 export function useAdminSettings() {
   return useQuery({
     queryKey: ["admin", "settings"],
-    queryFn: fetchSettings,
+    queryFn: () => apiGet<BarbershopSettingsResponse>("/api/admin/settings"),
     staleTime: 30000,
   });
 }
@@ -75,7 +44,12 @@ export function useUpdateAdminSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateSettings,
+    mutationFn: (input: UpdateSettingsInput) =>
+      apiMutate<BarbershopSettingsResponse>(
+        "/api/admin/settings",
+        "PUT",
+        input,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
     },

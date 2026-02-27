@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -13,13 +13,12 @@ export async function GET() {
       select: { avatarUrl: true },
     });
 
-    return NextResponse.json({
-      barber: {
-        id: auth.barberId,
-        name: auth.barberName,
-        avatarUrl: barberExtra?.avatarUrl ?? null,
-      },
-    });
+    const barber = {
+      id: auth.barberId,
+      name: auth.barberName,
+      avatarUrl: barberExtra?.avatarUrl ?? null,
+    };
+    return apiSuccess(barber);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar perfil");
   }

@@ -1,13 +1,7 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
-
-/**
- * Error response structure for API endpoints
- */
-interface ApiErrorResponse {
-  error: string;
-  message: string;
-}
+import type { NextResponse } from "next/server";
+import { apiError } from "@/lib/api/response";
+import type { ApiErrorResponse } from "@/types/api";
 
 /**
  * Maps Prisma error codes to user-friendly messages
@@ -80,73 +74,43 @@ export function handlePrismaError(
         const field = Array.isArray(error.meta.target)
           ? error.meta.target.join(", ")
           : String(error.meta.target);
-        return NextResponse.json(
-          {
-            error: `PRISMA_${error.code}`,
-            message: `${errorConfig.message}: campo(s) ${field}`,
-          },
-          { status: errorConfig.status },
+        return apiError(
+          `PRISMA_${error.code}`,
+          `${errorConfig.message}: campo(s) ${field}`,
+          errorConfig.status,
         );
       }
 
-      return NextResponse.json(
-        {
-          error: `PRISMA_${error.code}`,
-          message: errorConfig.message,
-        },
-        { status: errorConfig.status },
+      return apiError(
+        `PRISMA_${error.code}`,
+        errorConfig.message,
+        errorConfig.status,
       );
     }
 
     // Unknown Prisma error code
-    return NextResponse.json(
-      {
-        error: `PRISMA_${error.code}`,
-        message: fallbackMessage,
-      },
-      { status: 500 },
-    );
+    return apiError(`PRISMA_${error.code}`, fallbackMessage, 500);
   }
 
   // Handle Prisma validation errors
   if (error instanceof Prisma.PrismaClientValidationError) {
-    return NextResponse.json(
-      {
-        error: "PRISMA_VALIDATION",
-        message: "Dados inválidos fornecidos",
-      },
-      { status: 400 },
-    );
+    return apiError("PRISMA_VALIDATION", "Dados inválidos fornecidos", 400);
   }
 
   // Handle connection errors
   if (error instanceof Prisma.PrismaClientInitializationError) {
-    return NextResponse.json(
-      {
-        error: "DATABASE_CONNECTION",
-        message: "Não foi possível conectar ao banco de dados",
-      },
-      { status: 503 },
+    return apiError(
+      "DATABASE_CONNECTION",
+      "Não foi possível conectar ao banco de dados",
+      503,
     );
   }
 
   // Handle generic errors
   if (error instanceof Error) {
-    return NextResponse.json(
-      {
-        error: "INTERNAL_ERROR",
-        message: fallbackMessage,
-      },
-      { status: 500 },
-    );
+    return apiError("INTERNAL_ERROR", fallbackMessage, 500);
   }
 
   // Unknown error type
-  return NextResponse.json(
-    {
-      error: "UNKNOWN_ERROR",
-      message: fallbackMessage,
-    },
-    { status: 500 },
-  );
+  return apiError("UNKNOWN_ERROR", fallbackMessage, 500);
 }

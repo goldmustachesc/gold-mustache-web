@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { formatPrismaDateToString } from "@/utils/time-slots";
 import type { DashboardStats } from "@/types/dashboard";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 /**
  * GET /api/dashboard/stats
@@ -21,7 +21,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     // Get user profile and role
@@ -30,10 +30,7 @@ export async function GET() {
     });
 
     if (!profile) {
-      return NextResponse.json(
-        { error: "Perfil não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Perfil não encontrado", 404);
     }
 
     // Get barber profile if exists
@@ -314,7 +311,7 @@ export async function GET() {
       };
     }
 
-    return NextResponse.json({ stats });
+    return apiSuccess(stats);
   } catch (error) {
     return handlePrismaError(error, "Erro ao carregar estatísticas");
   }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { LoyaltyTier } from "@/components/loyalty/TierBadge";
 import type { Reward } from "@/components/loyalty/RewardCard";
+import { apiGet, apiMutate } from "@/lib/api/client";
 
 export interface LoyaltyAccount {
   id: string;
@@ -13,66 +14,48 @@ export interface LoyaltyAccount {
 export function useLoyaltyAccount() {
   return useQuery({
     queryKey: ["loyalty", "account"],
-    queryFn: async () => {
-      const response = await fetch("/api/loyalty/account");
-      if (!response.ok) {
-        throw new Error("Failed to fetch loyalty account");
-      }
-      const data = await response.json();
-      return data.account as LoyaltyAccount;
-    },
+    queryFn: () => apiGet<LoyaltyAccount>("/api/loyalty/account"),
   });
 }
 
-// Hook para rewards - agora conectado ao backend real
 export function useRewards() {
   return useQuery({
     queryKey: ["loyalty", "rewards"],
-    queryFn: async () => {
-      const response = await fetch("/api/loyalty/rewards");
-      if (!response.ok) {
-        throw new Error("Failed to fetch rewards");
-      }
-      const data = await response.json();
-      return data.rewards as Reward[];
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    queryFn: () => apiGet<Reward[]>("/api/loyalty/rewards"),
+    staleTime: 5 * 60 * 1000,
   });
+}
+
+interface RedemptionResult {
+  redemption?: { code: string };
 }
 
 export function useRedeemReward() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (rewardId: string) => {
-      const response = await fetch("/api/loyalty/redemptions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rewardId }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to redeem reward");
-      }
-      return response.json();
-    },
+    mutationFn: (rewardId: string) =>
+      apiMutate<RedemptionResult>("/api/loyalty/redemptions", "POST", {
+        rewardId,
+      }),
     onSuccess: () => {
-      // Invalidate both account points and rewards or transactions
       queryClient.invalidateQueries({ queryKey: ["loyalty", "account"] });
       queryClient.invalidateQueries({ queryKey: ["loyalty", "transactions"] });
     },
   });
 }
 
+interface LoyaltyTransaction {
+  id: string;
+  createdAt: string;
+  description: string;
+  type: string;
+  points: number;
+}
+
 export function useLoyaltyTransactions() {
   return useQuery({
     queryKey: ["loyalty", "transactions"],
-    queryFn: async () => {
-      const response = await fetch("/api/loyalty/transactions");
-      if (!response.ok) {
-        throw new Error("Failed to fetch transactions");
-      }
-      const data = await response.json();
-      return data.transactions;
-    },
+    queryFn: () => apiGet<LoyaltyTransaction[]>("/api/loyalty/transactions"),
   });
 }

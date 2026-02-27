@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { z } from "zod";
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
 
     clients.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-    return NextResponse.json({ clients });
+    return apiSuccess(clients);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar clientes");
   }
@@ -152,12 +152,10 @@ export async function POST(request: Request) {
     const validation = createClientSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: validation.error.issues[0]?.message || "Dados inválidos",
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        validation.error.issues[0]?.message || "Dados inválidos",
+        400,
       );
     }
 
@@ -169,13 +167,7 @@ export async function POST(request: Request) {
     });
 
     if (existingGuest) {
-      return NextResponse.json(
-        {
-          error: "PHONE_EXISTS",
-          message: "Este telefone já está cadastrado",
-        },
-        { status: 409 },
-      );
+      return apiError("PHONE_EXISTS", "Este telefone já está cadastrado", 409);
     }
 
     const existingProfile = await prisma.profile.findFirst({
@@ -183,12 +175,10 @@ export async function POST(request: Request) {
     });
 
     if (existingProfile) {
-      return NextResponse.json(
-        {
-          error: "PHONE_EXISTS",
-          message: "Este telefone já está cadastrado para um cliente",
-        },
-        { status: 409 },
+      return apiError(
+        "PHONE_EXISTS",
+        "Este telefone já está cadastrado para um cliente",
+        409,
       );
     }
 
@@ -213,7 +203,7 @@ export async function POST(request: Request) {
       lastAppointment: null,
     };
 
-    return NextResponse.json({ client: clientData }, { status: 201 });
+    return apiSuccess(clientData, 201);
   } catch (error) {
     return handlePrismaError(error, "Erro ao criar cliente");
   }

@@ -64,9 +64,8 @@ describe("/api/admin/loyalty/rewards", () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.success).toBe(true);
-      expect(data.rewards).toHaveLength(1);
-      expect(data.rewards[0]).toMatchObject({
+      expect(data.data).toHaveLength(1);
+      expect(data.data[0]).toMatchObject({
         id: "1",
         name: "Corte Grátis",
         costInPoints: 1000,
@@ -131,8 +130,6 @@ describe("/api/admin/loyalty/rewards", () => {
       const data = await response.json();
 
       expect(response.status).toBe(201);
-      expect(data.success).toBe(true);
-      expect(data.message).toBe("Recompensa criada com sucesso");
       expect(data.data).toMatchObject({
         name: "Novo Reward",
         costInPoints: 500,
@@ -161,8 +158,8 @@ describe("/api/admin/loyalty/rewards", () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Dados inválidos");
-      expect(data.details).toBeDefined();
+      expect(data.error).toBe("VALIDATION_ERROR");
+      expect(data.message).toBeDefined();
 
       // Restaurar console.error
       consoleSpy.mockRestore();

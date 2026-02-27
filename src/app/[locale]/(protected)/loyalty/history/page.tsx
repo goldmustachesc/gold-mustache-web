@@ -54,7 +54,7 @@ export default function LoyaltyHistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {transactions?.length > 0 ? (
+              {transactions && transactions.length > 0 ? (
                 transactions.map(
                   (tx: {
                     id: string;

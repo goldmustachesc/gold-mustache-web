@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { apiError } from "@/lib/api/response";
 
 export type RequireBarberResult =
   | {
@@ -23,10 +24,7 @@ export async function requireBarber(): Promise<RequireBarberResult> {
   if (!user) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      ),
+      response: apiError("UNAUTHORIZED", "Não autorizado", 401),
     };
   }
 
@@ -38,20 +36,14 @@ export async function requireBarber(): Promise<RequireBarberResult> {
   if (!barber) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      ),
+      response: apiError("FORBIDDEN", "Acesso restrito a barbeiros", 403),
     };
   }
 
   if (!barber.active) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "FORBIDDEN", message: "Barbeiro inativo" },
-        { status: 403 },
-      ),
+      response: apiError("FORBIDDEN", "Barbeiro inativo", 403),
     };
   }
 

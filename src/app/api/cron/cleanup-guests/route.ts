@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 /**
  * POST /api/cron/cleanup-guests
@@ -21,14 +21,11 @@ export async function POST(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      return NextResponse.json(
-        { error: "Cron secret não configurado" },
-        { status: 500 },
-      );
+      return apiError("CONFIG_ERROR", "Cron secret não configurado", 500);
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     // Calculate the cutoff date (2 years ago)
@@ -67,8 +64,7 @@ export async function POST(request: Request) {
     });
 
     if (guestsToAnonymize.length === 0) {
-      return NextResponse.json({
-        success: true,
+      return apiSuccess({
         message: "Nenhum guest para limpar",
         anonymized: 0,
       });
@@ -97,9 +93,8 @@ export async function POST(request: Request) {
       totalAnonymized += batch.length;
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Limpeza concluída com sucesso`,
+    return apiSuccess({
+      message: "Limpeza concluída com sucesso",
       anonymized: totalAnonymized,
       cutoffDate: twoYearsAgo.toISOString(),
       timestamp: new Date().toISOString(),

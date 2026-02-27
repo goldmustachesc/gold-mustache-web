@@ -26,7 +26,7 @@ describe("GET /api/barbers", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.barbers).toEqual(barbers);
+    expect(body.data).toEqual(barbers);
     expect(mockFindMany).toHaveBeenCalledWith({
       where: { active: true },
       select: { id: true, name: true, avatarUrl: true },

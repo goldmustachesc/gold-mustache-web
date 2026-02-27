@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -38,10 +38,7 @@ export async function GET(
     });
 
     if (!profile && !guestClient) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Cliente não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Cliente não encontrado", 404);
     }
 
     const appointments = await prisma.appointment.findMany({
@@ -77,7 +74,7 @@ export async function GET(
       }),
     );
 
-    return NextResponse.json({ appointments: formattedAppointments });
+    return apiSuccess(formattedAppointments);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos");
   }

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { createGuestAppointment } from "@/services/booking";
 import { createGuestAppointmentSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
@@ -12,12 +12,10 @@ export async function POST(request: Request) {
     const settings = await getBarbershopSettings();
     const mode = resolveBookingMode(settings);
     if (mode !== "internal") {
-      return NextResponse.json(
-        {
-          error: "BOOKING_DISABLED",
-          message: "Agendamento interno indisponível no momento.",
-        },
-        { status: 403 },
+      return apiError(
+        "BOOKING_DISABLED",
+        "Agendamento interno indisponível no momento.",
+        403,
       );
     }
 
@@ -25,19 +23,17 @@ export async function POST(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const body = await request.json();
@@ -46,12 +42,11 @@ export async function POST(request: Request) {
     const validation = createGuestAppointmentSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -61,7 +56,7 @@ export async function POST(request: Request) {
     );
 
     // Return both the appointment and the access token for localStorage
-    return NextResponse.json({ appointment, accessToken }, { status: 201 });
+    return apiSuccess({ appointment, accessToken }, 201);
   } catch (error) {
     if (error instanceof Error) {
       const domainErrors: Record<
@@ -97,10 +92,7 @@ export async function POST(request: Request) {
 
       const mapped = domainErrors[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 
@@ -108,10 +100,7 @@ export async function POST(request: Request) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return NextResponse.json(
-        { error: "SLOT_OCCUPIED", message: "Este horário já está ocupado" },
-        { status: 409 },
-      );
+      return apiError("SLOT_OCCUPIED", "Este horário já está ocupado", 409);
     }
 
     return handlePrismaError(error, "Erro ao criar agendamento");

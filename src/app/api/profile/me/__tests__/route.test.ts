@@ -74,8 +74,8 @@ describe("GET /api/profile/me", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.profile.id).toBe("profile-1");
-    expect(body.email).toBe("user@test.com");
+    expect(body.data.profile.id).toBe("profile-1");
+    expect(body.data.email).toBe("user@test.com");
   });
 
   it("creates profile when missing and links guest appointments", async () => {
@@ -113,7 +113,7 @@ describe("GET /api/profile/me", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.profile.id).toBe("profile-1");
+    expect(body.data.profile.id).toBe("profile-1");
     expect(mockLinkGuestAppointments).toHaveBeenCalledWith(
       "profile-1",
       "11999998888",
@@ -187,7 +187,7 @@ describe("PUT /api/profile/me", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.profile.id).toBe("profile-1");
+    expect(body.data.profile.id).toBe("profile-1");
     expect(mockProfileUpdate).toHaveBeenCalledWith({
       where: { userId: "user-1" },
       data: { phone: "11999998888" },

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
@@ -8,19 +8,17 @@ export async function GET(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("api", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const barbers = await prisma.barber.findMany({
@@ -33,7 +31,7 @@ export async function GET(request: Request) {
       orderBy: { name: "asc" },
     });
 
-    return NextResponse.json({ barbers });
+    return apiSuccess(barbers);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar barbeiros");
   }

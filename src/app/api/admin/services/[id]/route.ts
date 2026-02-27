@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import {
   updateAdminServiceSchema,
   generateSlug,
@@ -28,24 +28,19 @@ export async function GET(_request: Request, { params }: RouteParams) {
     });
 
     if (!service) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Serviço não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Serviço não encontrado", 404);
     }
 
-    return NextResponse.json({
-      service: {
-        id: service.id,
-        slug: service.slug,
-        name: service.name,
-        description: service.description,
-        duration: service.duration,
-        price: Number(service.price),
-        active: service.active,
-        createdAt: service.createdAt.toISOString(),
-        updatedAt: service.updatedAt.toISOString(),
-      },
+    return apiSuccess({
+      id: service.id,
+      slug: service.slug,
+      name: service.name,
+      description: service.description,
+      duration: service.duration,
+      price: Number(service.price),
+      active: service.active,
+      createdAt: service.createdAt.toISOString(),
+      updatedAt: service.updatedAt.toISOString(),
     });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar serviço");
@@ -74,10 +69,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     });
 
     if (!existingService) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Serviço não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Serviço não encontrado", 404);
     }
 
     // Parse JSON body with error handling
@@ -85,21 +77,17 @@ export async function PUT(request: Request, { params }: RouteParams) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "INVALID_JSON", message: "Corpo da requisição inválido" },
-        { status: 400 },
-      );
+      return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
     const validation = updateAdminServiceSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -127,12 +115,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const existing = await prisma.service.findUnique({ where: { slug } });
         if (!existing || existing.id === id) break;
         if (counter >= MAX_SLUG_ATTEMPTS) {
-          return NextResponse.json(
-            {
-              error: "SLUG_GENERATION_ERROR",
-              message: "Não foi possível gerar um identificador único",
-            },
-            { status: 500 },
+          return apiError(
+            "SLUG_GENERATION_ERROR",
+            "Não foi possível gerar um identificador único",
+            500,
           );
         }
         slug = `${baseSlug}-${counter}`;
@@ -164,18 +150,16 @@ export async function PUT(request: Request, { params }: RouteParams) {
       data: updateData,
     });
 
-    return NextResponse.json({
-      service: {
-        id: service.id,
-        slug: service.slug,
-        name: service.name,
-        description: service.description,
-        duration: service.duration,
-        price: Number(service.price),
-        active: service.active,
-        createdAt: service.createdAt.toISOString(),
-        updatedAt: service.updatedAt.toISOString(),
-      },
+    return apiSuccess({
+      id: service.id,
+      slug: service.slug,
+      name: service.name,
+      description: service.description,
+      duration: service.duration,
+      price: Number(service.price),
+      active: service.active,
+      createdAt: service.createdAt.toISOString(),
+      updatedAt: service.updatedAt.toISOString(),
     });
   } catch (error) {
     return handlePrismaError(error, "Erro ao atualizar serviço");
@@ -205,10 +189,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     });
 
     if (!existingService) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Serviço não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Serviço não encontrado", 404);
     }
 
     // Soft delete by setting active to false
@@ -217,19 +198,16 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       data: { active: false },
     });
 
-    return NextResponse.json({
-      service: {
-        id: service.id,
-        slug: service.slug,
-        name: service.name,
-        description: service.description,
-        duration: service.duration,
-        price: Number(service.price),
-        active: service.active,
-        createdAt: service.createdAt.toISOString(),
-        updatedAt: service.updatedAt.toISOString(),
-      },
-      message: "Serviço desativado com sucesso",
+    return apiSuccess({
+      id: service.id,
+      slug: service.slug,
+      name: service.name,
+      description: service.description,
+      duration: service.duration,
+      price: Number(service.price),
+      active: service.active,
+      createdAt: service.createdAt.toISOString(),
+      updatedAt: service.updatedAt.toISOString(),
     });
   } catch (error) {
     return handlePrismaError(error, "Erro ao desativar serviço");

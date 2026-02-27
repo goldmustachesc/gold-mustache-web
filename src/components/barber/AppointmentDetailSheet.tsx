@@ -19,6 +19,7 @@ import {
   X,
   UserX,
 } from "lucide-react";
+import { ApiError, apiMutate } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
@@ -199,30 +200,25 @@ export function AppointmentDetailSheet({
   const handleSendReminder = async () => {
     setSendingReminder(true);
     try {
-      const baseUrl =
-        typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(
-        `${baseUrl}/api/appointments/${appointment.id}/reminder`,
-        { method: "POST" },
-      );
-      const data = await res.json();
+      const payload = await apiMutate<{
+        type: string;
+        message: string;
+        whatsappUrl?: string;
+      }>(`/api/appointments/${appointment.id}/reminder`, "POST");
 
-      if (!res.ok) {
-        toast.error(data.message || "Erro ao enviar lembrete");
-        return;
-      }
-
-      if (data.type === "notification_and_whatsapp" && data.whatsappUrl) {
+      if (payload.type === "notification_and_whatsapp" && payload.whatsappUrl) {
         toast.success("Notificação enviada! Abrindo WhatsApp...");
-        window.open(data.whatsappUrl, "_blank");
-      } else if (data.type === "whatsapp" && data.whatsappUrl) {
-        window.open(data.whatsappUrl, "_blank");
+        window.open(payload.whatsappUrl, "_blank");
+      } else if (payload.type === "whatsapp" && payload.whatsappUrl) {
+        window.open(payload.whatsappUrl, "_blank");
         toast.success("WhatsApp aberto com mensagem de lembrete");
-      } else if (data.type === "notification") {
+      } else if (payload.type === "notification") {
         toast.success("Lembrete enviado para o cliente!");
       }
-    } catch {
-      toast.error("Erro ao enviar lembrete");
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : "Erro ao enviar lembrete";
+      toast.error(message);
     } finally {
       setSendingReminder(false);
     }

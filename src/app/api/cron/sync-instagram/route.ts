@@ -3,7 +3,7 @@ import {
   validateInstagramConfig,
 } from "@/services/instagram";
 import type { InstagramCacheData, InstagramPost } from "@/types/instagram";
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -24,20 +24,21 @@ export async function POST(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      return NextResponse.json(
-        { error: "Cron secret não configurado" },
-        { status: 500 },
-      );
+      return apiError("CONFIG_ERROR", "Cron secret não configurado", 500);
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     // Validar configuração do Instagram
     const config = validateInstagramConfig();
     if (!config.isValid) {
-      return NextResponse.json({ error: config.error }, { status: 500 });
+      return apiError(
+        "CONFIG_ERROR",
+        config.error ?? "Configuração inválida",
+        500,
+      );
     }
 
     // Buscar posts do Instagram com retry
@@ -67,8 +68,7 @@ export async function POST(request: Request) {
     }
 
     if (!posts || posts.length === 0) {
-      return NextResponse.json({
-        success: true,
+      return apiSuccess({
         postsCount: 0,
         warning: "Nenhum post encontrado no Instagram",
       });
@@ -89,18 +89,14 @@ export async function POST(request: Request) {
     const cacheFilePath = path.join(cacheDir, "instagram-cache.json");
     await writeFile(cacheFilePath, JSON.stringify(cacheData, null, 2), "utf-8");
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       postsCount: posts.length,
       lastUpdated: cacheData.lastUpdated,
       message: "Posts sincronizados com sucesso",
     });
   } catch (error) {
     console.error("Error syncing Instagram posts:", error);
-    return NextResponse.json(
-      { error: "Erro ao sincronizar posts" },
-      { status: 500 },
-    );
+    return apiError("SYNC_ERROR", "Erro ao sincronizar posts", 500);
   }
 }
 
@@ -110,14 +106,15 @@ export async function POST(request: Request) {
  */
 export async function GET() {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json(
-      { error: "Método não permitido em produção" },
-      { status: 405 },
+    return apiError(
+      "METHOD_NOT_ALLOWED",
+      "Método não permitido em produção",
+      405,
     );
   }
 
   // Em desenvolvimento, redireciona para POST
-  return NextResponse.json({
+  return apiSuccess({
     message:
       "Use POST com Authorization: Bearer {CRON_SECRET} para sincronizar",
     dev: "Em dev, você pode testar: curl -X POST http://localhost:3001/api/cron/sync-instagram -H 'Authorization: Bearer {seu_cron_secret}'",

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { cancelAppointmentByGuestToken } from "@/services/booking";
 import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -17,39 +17,31 @@ export async function PATCH(
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const { id } = await params;
     const accessToken = request.headers.get("X-Guest-Token");
 
     if (!accessToken) {
-      return NextResponse.json(
-        {
-          error: "MISSING_TOKEN",
-          message: "Token de acesso não fornecido",
-        },
-        { status: 401 },
-      );
+      return apiError("MISSING_TOKEN", "Token de acesso não fornecido", 401);
     }
 
     const appointment = await cancelAppointmentByGuestToken(id, accessToken);
 
     await notifyBarberOfAppointmentCancelledByClient(appointment);
 
-    return NextResponse.json({ appointment });
+    return apiSuccess(appointment);
   } catch (error) {
     if (error instanceof Error) {
       const domainErrors: Record<
@@ -85,10 +77,7 @@ export async function PATCH(
 
       const mapped = domainErrors[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 

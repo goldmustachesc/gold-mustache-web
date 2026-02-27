@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -39,7 +39,7 @@ export async function GET() {
       orderBy: { name: "asc" },
     });
 
-    return NextResponse.json({ barbers });
+    return apiSuccess(barbers);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar barbeiros");
   }
@@ -61,13 +61,11 @@ export async function POST(request: Request) {
     const parsed = createBarberSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: "Dados inválidos",
-          details: parsed.error.flatten(),
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        parsed.error.flatten(),
       );
     }
 
@@ -80,10 +78,7 @@ export async function POST(request: Request) {
     });
 
     if (existingBarber) {
-      return NextResponse.json(
-        { error: "DUPLICATE", message: "Já existe um barbeiro com esse nome" },
-        { status: 409 },
-      );
+      return apiError("DUPLICATE", "Já existe um barbeiro com esse nome", 409);
     }
 
     // Busca o perfil do usuário pelo email no Supabase Auth
@@ -108,7 +103,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ barber }, { status: 201 });
+    return apiSuccess(barber, 201);
   } catch (error) {
     return handlePrismaError(error, "Erro ao criar barbeiro");
   }

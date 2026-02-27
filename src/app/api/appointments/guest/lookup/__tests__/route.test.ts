@@ -37,7 +37,7 @@ describe("GET /api/appointments/guest/lookup", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.appointments).toEqual([{ id: "apt-1" }]);
+    expect(body.data).toEqual([{ id: "apt-1" }]);
     expect(mockGetGuestAppointments).toHaveBeenCalledWith("token-123");
   });
 

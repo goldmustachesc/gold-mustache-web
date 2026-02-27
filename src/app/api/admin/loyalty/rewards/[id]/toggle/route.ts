@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { z } from "zod";
 
 // Schema para validação do request body
@@ -27,12 +27,11 @@ export async function PUT(
     // Validar o request body
     const validation = toggleSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid request body",
-          details: validation.error.issues,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        validation.error.issues,
       );
     }
 
@@ -58,20 +57,16 @@ export async function PUT(
     });
 
     if (!existingReward) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Recompensa não encontrada", 404);
     }
 
     // Regras de negócio para desativar
     if (!active && existingReward._count.redemptions > 0) {
-      return NextResponse.json(
-        {
-          error: "Não é possível desativar esta recompensa",
-          details: `Existem ${existingReward._count.redemptions} resgates ativos pendentes`,
-        },
-        { status: 409 },
+      return apiError(
+        "ACTIVE_REDEMPTIONS",
+        "Não é possível desativar esta recompensa",
+        409,
+        `Existem ${existingReward._count.redemptions} resgates ativos pendentes`,
       );
     }
 
@@ -85,29 +80,19 @@ export async function PUT(
     });
 
     // Log de auditoria (poderia ser salvo em uma tabela de auditoria)
-    console.log(
+    console.info(
       `[AUDIT] Reward ${id} toggled to ${active ? "ACTIVE" : "INACTIVE"} by admin`,
     );
 
-    return NextResponse.json({
-      success: true,
-      message: `Recompensa ${updatedReward.name} ${active ? "ativada" : "desativada"} com sucesso`,
-      data: {
-        id: updatedReward.id,
-        name: updatedReward.name,
-        active: updatedReward.active,
-        updatedAt: updatedReward.updatedAt,
-      },
+    return apiSuccess({
+      id: updatedReward.id,
+      name: updatedReward.name,
+      active: updatedReward.active,
+      updatedAt: updatedReward.updatedAt,
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: "Dados inválidos",
-          details: error.issues,
-        },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_ERROR", "Dados inválidos", 400, error.issues);
     }
     return handlePrismaError(error, "Erro ao alterar status da recompensa");
   }

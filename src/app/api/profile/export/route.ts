@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
@@ -21,12 +22,10 @@ export async function GET(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("sensitive", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em alguns minutos.",
-        },
-        { status: 429 },
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em alguns minutos.",
+        429,
       );
     }
 
@@ -37,10 +36,7 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     // Fetch profile
@@ -49,10 +45,7 @@ export async function GET(request: Request) {
     });
 
     if (!profile) {
-      return NextResponse.json(
-        { error: "PROFILE_NOT_FOUND", message: "Perfil não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Perfil não encontrado", 404);
     }
 
     // Fetch all appointments (including past ones)
@@ -151,10 +144,11 @@ export async function GET(request: Request) {
       },
     };
 
-    // Return as downloadable JSON file
+    // Return as downloadable JSON file with standardized envelope
     const fileName = `gold-mustache-dados-${user.id.slice(0, 8)}-${new Date().toISOString().split("T")[0]}.json`;
+    const wrappedData = { data: exportData };
 
-    return new NextResponse(JSON.stringify(exportData, null, 2), {
+    return new NextResponse(JSON.stringify(wrappedData, null, 2), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

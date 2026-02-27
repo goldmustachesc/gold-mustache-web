@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { FinancialStats } from "@/types/financial";
+import { apiGet } from "@/lib/api/client";
 
 interface BarberOption {
   id: string;
@@ -19,84 +20,40 @@ interface AdminFinancialResponse {
   barbers: BarberOption[];
 }
 
-function getBaseUrl(): string {
-  return typeof window !== "undefined" ? window.location.origin : "";
-}
-
-async function fetchBarberFinancialStats(
-  month: number,
-  year: number,
-): Promise<BarberFinancialResponse> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(
-    `${baseUrl}/api/barbers/me/financial?month=${month}&year=${year}`,
-  );
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Erro ao carregar estatísticas");
-  }
-
-  return res.json();
-}
-
-async function fetchAdminFinancialStats(
-  month: number,
-  year: number,
-  barberId?: string,
-): Promise<AdminFinancialResponse> {
-  const baseUrl = getBaseUrl();
-  const params = new URLSearchParams({
-    month: String(month),
-    year: String(year),
-  });
-  if (barberId) {
-    params.append("barberId", barberId);
-  }
-
-  const res = await fetch(
-    `${baseUrl}/api/admin/financial?${params.toString()}`,
-  );
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Erro ao carregar estatísticas");
-  }
-
-  return res.json();
-}
-
-/**
- * Hook for barbers to fetch their own financial stats
- */
 export function useBarberFinancialStats(month: number, year: number) {
   return useQuery({
     queryKey: ["financial-stats", "barber", month, year],
-    queryFn: () => fetchBarberFinancialStats(month, year),
-    staleTime: 5 * 60 * 1000, // 5 minutes - historical data rarely changes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
-}
-
-/**
- * Hook for admins to fetch financial stats (all barbers or specific barber)
- */
-export function useAdminFinancialStats(
-  month: number,
-  year: number,
-  barberId?: string,
-) {
-  return useQuery({
-    queryKey: ["financial-stats", "admin", month, year, barberId],
-    queryFn: () => fetchAdminFinancialStats(month, year, barberId),
+    queryFn: () =>
+      apiGet<BarberFinancialResponse>(
+        `/api/barbers/me/financial?month=${month}&year=${year}`,
+      ),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
 
-/**
- * Utility to get the last N months for the month selector
- */
+export function useAdminFinancialStats(
+  month: number,
+  year: number,
+  barberId?: string,
+) {
+  const params = new URLSearchParams({
+    month: String(month),
+    year: String(year),
+  });
+  if (barberId) params.append("barberId", barberId);
+
+  return useQuery({
+    queryKey: ["financial-stats", "admin", month, year, barberId],
+    queryFn: () =>
+      apiGet<AdminFinancialResponse>(
+        `/api/admin/financial?${params.toString()}`,
+      ),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
 export function getLastMonths(
   count: number = 4,
 ): Array<{ month: number; year: number; label: string }> {

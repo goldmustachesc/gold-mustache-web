@@ -29,9 +29,10 @@ src/app/api/
 ### Template de Route Handler
 
 ```typescript
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -46,33 +47,23 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const body = await request.json();
     const parsed = requestSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_ERROR", "Dados inválidos", 400, parsed.error.flatten());
     }
 
     const result = await prisma.model.create({
       data: { ...parsed.data },
     });
 
-    return NextResponse.json(result, { status: 201 });
+    return apiSuccess(result, 201);
   } catch (error) {
-    console.error("[API] Erro:", error);
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 }
-    );
+    return handlePrismaError(error, "Erro ao criar recurso");
   }
 }
 ```
@@ -87,7 +78,7 @@ Toda rota protegida deve verificar a sessão Supabase:
 const supabase = await createClient();
 const { data: { user } } = await supabase.auth.getUser();
 if (!user) {
-  return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  return apiError("UNAUTHORIZED", "Não autorizado", 401);
 }
 ```
 
@@ -102,7 +93,7 @@ const profile = await prisma.profile.findUnique({
 });
 
 if (profile?.role !== "ADMIN") {
-  return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  return apiError("FORBIDDEN", "Acesso negado", 403);
 }
 ```
 
@@ -119,10 +110,7 @@ const schema = z.object({
 
 const parsed = schema.safeParse(body);
 if (!parsed.success) {
-  return NextResponse.json(
-    { error: "Dados inválidos", details: parsed.error.flatten() },
-    { status: 400 }
-  );
+  return apiError("VALIDATION_ERROR", "Dados inválidos", 400, parsed.error.flatten());
 }
 ```
 
@@ -175,6 +163,33 @@ const barber = await prisma.barber.findUnique({
 | `429` | Rate limit excedido |
 | `500` | Erro interno |
 
+### Formato de Resposta Padronizado
+
+**OBRIGATÓRIO**: Use os helpers de `src/lib/api/response.ts` para todas as respostas.
+
+```typescript
+import { apiSuccess, apiError, apiMessage, apiCollection } from "@/lib/api/response";
+
+// Sucesso com dados
+return apiSuccess(barber);           // → { data: {...} }
+return apiSuccess(barbers);          // → { data: [...] }
+return apiSuccess(barber, 201);      // → { data: {...} } com status 201
+
+// Sucesso com paginação
+return apiCollection(items, { total, page, limit }); // → { data: [...], meta: {...} }
+
+// Sucesso sem corpo (delete, toggle, mark-read)
+return apiMessage();                               // → { success: true }
+return apiMessage("Recurso removido com sucesso"); // → { success: true, message: "..." }
+
+// Erro
+return apiError("UNAUTHORIZED", "Não autorizado", 401);
+return apiError("VALIDATION_ERROR", "Dados inválidos", 400, parsed.error.flatten());
+return apiError("NOT_FOUND", "Recurso não encontrado", 404);
+```
+
+**NÃO use** `NextResponse.json()` diretamente para respostas de sucesso ou erro.
+
 ### Rotas de CRON
 
 Para jobs agendados em `src/app/api/cron/`:
@@ -183,7 +198,7 @@ Para jobs agendados em `src/app/api/cron/`:
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    return apiError("UNAUTHORIZED", "Não autorizado", 401);
   }
   // lógica do cron
 }

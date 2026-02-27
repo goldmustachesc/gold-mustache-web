@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createAppointmentByBarber } from "@/services/booking";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { createAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -23,12 +23,11 @@ export async function POST(request: Request) {
     const validation = createAppointmentByBarberSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
       auth.barberId,
     );
 
-    return NextResponse.json({ appointment }, { status: 201 });
+    return apiSuccess(appointment, 201);
   } catch (error) {
     if (error instanceof Error) {
       const domainErrors: Record<
@@ -73,10 +72,7 @@ export async function POST(request: Request) {
 
       const mapped = domainErrors[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 
@@ -84,10 +80,7 @@ export async function POST(request: Request) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return NextResponse.json(
-        { error: "SLOT_OCCUPIED", message: "Este horário já está ocupado" },
-        { status: 409 },
-      );
+      return apiError("SLOT_OCCUPIED", "Este horário já está ocupado", 409);
     }
 
     return handlePrismaError(error, "Erro ao criar agendamento");

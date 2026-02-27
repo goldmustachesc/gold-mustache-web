@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
@@ -23,10 +23,7 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autenticado", 401);
     }
 
     // Verify user is admin
@@ -36,10 +33,7 @@ export async function GET(request: Request) {
     });
 
     if (!profile || profile.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a administradores" },
-        { status: 403 },
-      );
+      return apiError("FORBIDDEN", "Acesso restrito a administradores", 403);
     }
 
     // Parse query params
@@ -51,12 +45,10 @@ export async function GET(request: Request) {
     });
 
     if (!query.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: "Parâmetros inválidos. Use ?month=1&year=2026",
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Parâmetros inválidos. Use ?month=1&year=2026",
+        400,
       );
     }
 
@@ -74,19 +66,16 @@ export async function GET(request: Request) {
     if (barberId) {
       const barber = barbers.find((b) => b.id === barberId);
       if (!barber) {
-        return NextResponse.json(
-          { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-          { status: 404 },
-        );
+        return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
       }
 
       const stats = await calculateFinancialStats(barberId, month, year);
-      return NextResponse.json({ stats, barberName: barber.name, barbers });
+      return apiSuccess({ stats, barberName: barber.name, barbers });
     }
 
     // Calculate aggregate stats for all barbers
     const stats = await calculateAggregateStats(month, year);
-    return NextResponse.json({
+    return apiSuccess({
       stats,
       barberName: "Todos os Barbeiros",
       barbers,

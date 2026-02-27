@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getNotifications, getUnreadCount } from "@/services/notification";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 export async function GET(_request: Request) {
   try {
@@ -11,16 +11,13 @@ export async function GET(_request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const notifications = await getNotifications(user.id);
     const unreadCount = await getUnreadCount(user.id);
 
-    return NextResponse.json({ notifications, unreadCount });
+    return apiSuccess({ notifications, unreadCount });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar notificações");
   }

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import {
   barberAbsenceSchema,
   dateRangeQuerySchema,
@@ -35,12 +35,11 @@ export async function GET(request: Request) {
     });
 
     if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: queryValidation.error.flatten().fieldErrors,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        queryValidation.error.flatten().fieldErrors,
       );
     }
 
@@ -67,18 +66,17 @@ export async function GET(request: Request) {
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    return NextResponse.json({
-      absences: absences.map((a) => ({
-        id: a.id,
-        barberId: a.barberId,
-        date: formatPrismaDateToString(a.date),
-        startTime: a.startTime,
-        endTime: a.endTime,
-        reason: a.reason,
-        createdAt: a.createdAt.toISOString(),
-        updatedAt: a.updatedAt.toISOString(),
-      })),
-    });
+    const absencesList = absences.map((a) => ({
+      id: a.id,
+      barberId: a.barberId,
+      date: formatPrismaDateToString(a.date),
+      startTime: a.startTime,
+      endTime: a.endTime,
+      reason: a.reason,
+      createdAt: a.createdAt.toISOString(),
+      updatedAt: a.updatedAt.toISOString(),
+    }));
+    return apiSuccess(absencesList);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar ausências");
   }
@@ -95,12 +93,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validation = barberAbsenceSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -138,20 +135,17 @@ export async function POST(request: Request) {
     }
 
     if (conflicts.length > 0) {
-      return NextResponse.json(
-        {
-          error: "ABSENCE_CONFLICT",
-          message: "Existem agendamentos confirmados no período informado.",
-          conflicts: conflicts.map((apt) => ({
-            id: apt.id,
-            startTime: apt.startTime,
-            endTime: apt.endTime,
-            serviceName: apt.service.name,
-            clientName:
-              apt.client?.fullName ?? apt.guestClient?.fullName ?? null,
-          })),
-        },
-        { status: 409 },
+      return apiError(
+        "ABSENCE_CONFLICT",
+        "Existem agendamentos confirmados no período informado.",
+        409,
+        conflicts.map((apt) => ({
+          id: apt.id,
+          startTime: apt.startTime,
+          endTime: apt.endTime,
+          serviceName: apt.service.name,
+          clientName: apt.client?.fullName ?? apt.guestClient?.fullName ?? null,
+        })),
       );
     }
 
@@ -165,21 +159,17 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
-      {
-        absence: {
-          id: created.id,
-          barberId: created.barberId,
-          date: formatPrismaDateToString(created.date),
-          startTime: created.startTime,
-          endTime: created.endTime,
-          reason: created.reason,
-          createdAt: created.createdAt.toISOString(),
-          updatedAt: created.updatedAt.toISOString(),
-        },
-      },
-      { status: 201 },
-    );
+    const absence = {
+      id: created.id,
+      barberId: created.barberId,
+      date: formatPrismaDateToString(created.date),
+      startTime: created.startTime,
+      endTime: created.endTime,
+      reason: created.reason,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    };
+    return apiSuccess(absence, 201);
   } catch (error) {
     return handlePrismaError(error, "Erro ao criar ausência");
   }

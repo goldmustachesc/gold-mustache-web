@@ -1,5 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { getBarberFeedbacks } from "@/services/feedback";
+import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const result = await getBarberFeedbacks(auth.barberId, page, pageSize);
 
-    return NextResponse.json(result);
+    return apiSuccess(result);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar avaliações");
   }

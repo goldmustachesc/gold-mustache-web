@@ -11,6 +11,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { BRAND } from "@/constants/brand";
+import { apiGet } from "@/lib/api/client";
 import type { InstagramPost } from "@/types/instagram";
 import { ExternalLink, Heart, Instagram, MessageCircle } from "lucide-react";
 import Image from "next/image";
@@ -54,15 +55,9 @@ export function InstagramSection() {
   useEffect(() => {
     async function loadInstagramPosts() {
       try {
-        const response = await fetch("/api/instagram/posts");
-
-        if (!response.ok) {
-          console.warn("Erro ao buscar posts do Instagram, usando fallback");
-          setPosts(mockInstagramPosts);
-          return;
-        }
-
-        const data = await response.json();
+        const data = await apiGet<{ posts: InstagramPost[] }>(
+          "/api/instagram/posts",
+        );
 
         if (data.posts && data.posts.length > 0) {
           setPosts(data.posts);

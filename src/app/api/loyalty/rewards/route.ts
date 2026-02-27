@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { apiSuccess } from "@/lib/api/response";
 
 export async function GET() {
   try {
@@ -40,10 +40,7 @@ export async function GET() {
       stock: reward.stock,
     }));
 
-    return NextResponse.json({
-      success: true,
-      rewards: formattedRewards,
-    });
+    return apiSuccess(formattedRewards);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar recompensas");
   }

@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ApiError, apiMutate } from "@/lib/api/client";
 import { toast } from "sonner";
 import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailSheet";
 
@@ -507,33 +508,25 @@ export function DailySchedule({
   const handleSendReminder = async (appointmentId: string) => {
     setSendingReminderId(appointmentId);
     try {
-      const baseUrl =
-        typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(
-        `${baseUrl}/api/appointments/${appointmentId}/reminder`,
-        { method: "POST" },
-      );
-      const data = await res.json();
+      const payload = await apiMutate<{
+        type: string;
+        message: string;
+        whatsappUrl?: string;
+      }>(`/api/appointments/${appointmentId}/reminder`, "POST");
 
-      if (!res.ok) {
-        toast.error(data.message || "Erro ao enviar lembrete");
-        return;
-      }
-
-      if (data.type === "notification_and_whatsapp" && data.whatsappUrl) {
-        // Registered client: notification sent + open WhatsApp
+      if (payload.type === "notification_and_whatsapp" && payload.whatsappUrl) {
         toast.success("Notificação enviada! Abrindo WhatsApp...");
-        window.open(data.whatsappUrl, "_blank");
-      } else if (data.type === "whatsapp" && data.whatsappUrl) {
-        // Guest client: open WhatsApp
-        window.open(data.whatsappUrl, "_blank");
+        window.open(payload.whatsappUrl, "_blank");
+      } else if (payload.type === "whatsapp" && payload.whatsappUrl) {
+        window.open(payload.whatsappUrl, "_blank");
         toast.success("WhatsApp aberto com mensagem de lembrete");
-      } else if (data.type === "notification") {
-        // Registered client without phone: notification only
+      } else if (payload.type === "notification") {
         toast.success("Lembrete enviado para o cliente!");
       }
-    } catch {
-      toast.error("Erro ao enviar lembrete");
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : "Erro ao enviar lembrete";
+      toast.error(message);
     } finally {
       setSendingReminderId(null);
     }

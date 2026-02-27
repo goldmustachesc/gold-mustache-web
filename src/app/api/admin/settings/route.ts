@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -51,7 +51,7 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ settings });
+    return apiSuccess(settings);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar configurações");
   }
@@ -81,25 +81,17 @@ export async function PUT(request: Request) {
     try {
       body = await request.json();
     } catch (_error) {
-      return NextResponse.json(
-        {
-          error: "INVALID_JSON",
-          message: "Corpo da requisição inválido",
-        },
-        { status: 400 },
-      );
+      return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
     const parsed = updateSettingsSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: "Dados inválidos",
-          details: parsed.error.flatten(),
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        parsed.error.flatten(),
       );
     }
 
@@ -113,7 +105,7 @@ export async function PUT(request: Request) {
     // Note: revalidateTag requires 2 arguments in Next.js 16+, but we'll skip cache invalidation for now
     // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG, "force");
 
-    return NextResponse.json({ settings });
+    return apiSuccess(settings);
   } catch (error) {
     return handlePrismaError(error, "Erro ao atualizar configurações");
   }

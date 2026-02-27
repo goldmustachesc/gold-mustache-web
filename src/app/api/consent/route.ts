@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import {
@@ -7,6 +6,7 @@ import {
 } from "@/lib/validations/consent";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 /**
  * GET /api/consent
@@ -22,19 +22,17 @@ export async function GET(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("api", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const { searchParams } = new URL(request.url);
@@ -43,12 +41,11 @@ export async function GET(request: Request) {
     // Validate query params
     const validation = getConsentQuerySchema.safeParse({ anonymousId });
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Parâmetros inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -70,7 +67,7 @@ export async function GET(request: Request) {
     }
 
     if (whereConditions.length === 0) {
-      return NextResponse.json({
+      return apiSuccess({
         consent: null,
         message: "Nenhum identificador fornecido",
       });
@@ -87,13 +84,13 @@ export async function GET(request: Request) {
     });
 
     if (!consent) {
-      return NextResponse.json({
+      return apiSuccess({
         consent: null,
         hasConsent: false,
       });
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       consent: {
         id: consent.id,
         analyticsConsent: consent.analyticsConsent,
@@ -125,19 +122,17 @@ export async function POST(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("api", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const body = await request.json();
@@ -145,12 +140,11 @@ export async function POST(request: Request) {
     // Validate input
     const validation = saveConsentSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -164,12 +158,10 @@ export async function POST(request: Request) {
 
     // Ensure we have at least one identifier
     if (!user && !anonymousId) {
-      return NextResponse.json(
-        {
-          error: "MISSING_IDENTIFIER",
-          message: "É necessário estar autenticado ou fornecer um ID anônimo",
-        },
-        { status: 400 },
+      return apiError(
+        "MISSING_IDENTIFIER",
+        "É necessário estar autenticado ou fornecer um ID anônimo",
+        400,
       );
     }
 
@@ -212,7 +204,7 @@ export async function POST(request: Request) {
       });
     });
 
-    return NextResponse.json(
+    return apiSuccess(
       {
         consent: {
           id: consent.id,
@@ -223,7 +215,7 @@ export async function POST(request: Request) {
         },
         message: "Preferências de cookies salvas com sucesso",
       },
-      { status: 201 },
+      201,
     );
   } catch (error) {
     return handlePrismaError(error, "Erro ao salvar consentimento");

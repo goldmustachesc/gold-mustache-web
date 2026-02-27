@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { getAvailableSlots } from "@/services/booking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getSlotsQuerySchema } from "@/lib/validations/booking";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 
 export async function GET(request: Request) {
@@ -10,19 +10,17 @@ export async function GET(request: Request) {
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("api", clientId);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "RATE_LIMITED",
-          message: "Muitas requisições. Tente novamente em 1 minuto.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        },
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
     const { searchParams } = new URL(request.url);
@@ -38,12 +36,11 @@ export async function GET(request: Request) {
     });
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Parâmetros inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -53,7 +50,7 @@ export async function GET(request: Request) {
       validation.data.serviceId,
     );
 
-    return NextResponse.json({ slots });
+    return apiSuccess(slots);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar horários");
   }

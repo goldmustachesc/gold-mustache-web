@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/validations/profile";
 import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 export async function GET() {
   try {
@@ -14,10 +14,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     let profile = await prisma.profile.findUnique({
@@ -47,7 +44,7 @@ export async function GET() {
     // Do NOT use user.email_confirmed_at as Supabase may auto-set it
     const emailVerified = profile.emailVerified;
 
-    return NextResponse.json({
+    return apiSuccess({
       profile: {
         id: profile.id,
         userId: profile.userId,
@@ -84,10 +81,7 @@ export async function PUT(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const body = await request.json();
@@ -97,13 +91,11 @@ export async function PUT(request: Request) {
 
     if (!validationResult.success) {
       const firstError = validationResult.error.issues[0];
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: firstError?.message || "Dados inválidos",
-          details: validationResult.error.issues,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        firstError?.message || "Dados inválidos",
+        400,
+        validationResult.error.issues,
       );
     }
 
@@ -140,7 +132,7 @@ export async function PUT(request: Request) {
       await linkGuestAppointmentsToProfile(profile.id, profile.phone);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       profile: {
         id: profile.id,
         userId: profile.userId,

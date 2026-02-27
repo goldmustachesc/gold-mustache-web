@@ -47,8 +47,8 @@ describe("GET /api/notifications", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.notifications).toEqual([{ id: "n-1" }]);
-    expect(body.unreadCount).toBe(2);
+    expect(body.data.notifications).toEqual([{ id: "n-1" }]);
+    expect(body.data.unreadCount).toBe(2);
   });
 
   it("returns 500 on service error", async () => {

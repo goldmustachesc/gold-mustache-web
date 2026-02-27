@@ -2,21 +2,13 @@
 
 import type { DashboardStats } from "@/types/dashboard";
 import { useQuery } from "@tanstack/react-query";
-
-async function fetchDashboardStats(): Promise<DashboardStats> {
-  const res = await fetch("/api/dashboard/stats");
-  if (!res.ok) {
-    throw new Error("Erro ao carregar estatísticas");
-  }
-  const data = await res.json();
-  return data.stats;
-}
+import { apiGet } from "@/lib/api/client";
 
 export function useDashboardStats() {
   return useQuery({
     queryKey: ["dashboard", "stats"],
-    queryFn: fetchDashboardStats,
-    refetchInterval: 60000, // Refresh every minute
-    staleTime: 30000, // Consider data stale after 30 seconds
+    queryFn: () => apiGet<DashboardStats>("/api/dashboard/stats"),
+    refetchInterval: 60000,
+    staleTime: 30000,
   });
 }

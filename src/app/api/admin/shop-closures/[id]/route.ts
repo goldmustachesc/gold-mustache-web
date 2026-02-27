@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiMessage, apiError } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -18,14 +18,11 @@ export async function DELETE(
     const { id } = await params;
     const existing = await prisma.shopClosure.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Fechamento não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Fechamento não encontrado", 404);
     }
 
     await prisma.shopClosure.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+    return apiMessage();
   } catch (error) {
     return handlePrismaError(error, "Erro ao remover fechamento");
   }

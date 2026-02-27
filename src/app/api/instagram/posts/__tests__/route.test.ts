@@ -35,8 +35,8 @@ describe("GET /api/instagram/posts", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.posts).toEqual([{ id: "p-1" }]);
-    expect(body.source).toBe("cache");
+    expect(body.data.posts).toEqual([{ id: "p-1" }]);
+    expect(body.data.source).toBe("cache");
   });
 
   it("returns mock posts when cache is empty", async () => {
@@ -50,8 +50,8 @@ describe("GET /api/instagram/posts", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.source).toBe("mock");
-    expect(Array.isArray(body.posts)).toBe(true);
+    expect(body.data.source).toBe("mock");
+    expect(Array.isArray(body.data.posts)).toBe(true);
   });
 
   it("returns mock posts when cache read fails", async () => {
@@ -63,7 +63,7 @@ describe("GET /api/instagram/posts", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.source).toBe("mock");
-    expect(Array.isArray(body.posts)).toBe(true);
+    expect(body.data.source).toBe("mock");
+    expect(Array.isArray(body.data.posts)).toBe(true);
   });
 });

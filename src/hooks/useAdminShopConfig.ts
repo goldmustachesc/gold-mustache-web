@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ShopClosureData, ShopHoursData } from "@/types/booking";
+import { apiGet, apiMutate, apiAction } from "@/lib/api/client";
 
 type UpdateShopHoursInput = {
   days: Array<{
@@ -15,86 +16,24 @@ type UpdateShopHoursInput = {
 };
 
 type CreateShopClosureInput = {
-  date: string; // YYYY-MM-DD
+  date: string;
   startTime?: string | null;
   endTime?: string | null;
   reason?: string | null;
 };
 
-function getBaseUrl(): string {
-  return typeof window !== "undefined" ? window.location.origin : "";
-}
-
-async function fetchShopHours(): Promise<ShopHoursData[]> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/admin/shop-hours`);
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || "Erro ao carregar horários");
-  return data.days;
-}
-
-async function updateShopHours(
-  input: UpdateShopHoursInput,
-): Promise<ShopHoursData[]> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/admin/shop-hours`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || "Erro ao salvar horários");
-  return data.days;
-}
-
-async function fetchShopClosures(
-  startDate?: string,
-  endDate?: string,
-): Promise<ShopClosureData[]> {
-  const baseUrl = getBaseUrl();
-  const url = new URL(`${baseUrl}/api/admin/shop-closures`);
-  if (startDate) url.searchParams.set("startDate", startDate);
-  if (endDate) url.searchParams.set("endDate", endDate);
-  const res = await fetch(url.toString());
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || "Erro ao carregar fechamentos");
-  return data.closures;
-}
-
-async function createShopClosure(
-  input: CreateShopClosureInput,
-): Promise<ShopClosureData> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/admin/shop-closures`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || "Erro ao criar fechamento");
-  return data.closure;
-}
-
-async function deleteShopClosure(id: string): Promise<void> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/admin/shop-closures/${id}`, {
-    method: "DELETE",
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || "Erro ao remover fechamento");
-}
-
 export function useAdminShopHours() {
   return useQuery({
     queryKey: ["admin-shop-hours"],
-    queryFn: fetchShopHours,
+    queryFn: () => apiGet<ShopHoursData[]>("/api/admin/shop-hours"),
   });
 }
 
 export function useUpdateAdminShopHours() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: updateShopHours,
+    mutationFn: (input: UpdateShopHoursInput) =>
+      apiMutate<ShopHoursData[]>("/api/admin/shop-hours", "PUT", input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-shop-hours"] });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
@@ -103,16 +42,25 @@ export function useUpdateAdminShopHours() {
 }
 
 export function useAdminShopClosures(startDate?: string, endDate?: string) {
+  const params = new URLSearchParams();
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
+  const query = params.toString();
+
   return useQuery({
     queryKey: ["admin-shop-closures", startDate ?? null, endDate ?? null],
-    queryFn: () => fetchShopClosures(startDate, endDate),
+    queryFn: () =>
+      apiGet<ShopClosureData[]>(
+        `/api/admin/shop-closures${query ? `?${query}` : ""}`,
+      ),
   });
 }
 
 export function useCreateAdminShopClosure() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: createShopClosure,
+    mutationFn: (input: CreateShopClosureInput) =>
+      apiMutate<ShopClosureData>("/api/admin/shop-closures", "POST", input),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["admin-shop-closures"],
@@ -126,7 +74,8 @@ export function useCreateAdminShopClosure() {
 export function useDeleteAdminShopClosure() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteShopClosure,
+    mutationFn: (id: string) =>
+      apiAction(`/api/admin/shop-closures/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["admin-shop-closures"],

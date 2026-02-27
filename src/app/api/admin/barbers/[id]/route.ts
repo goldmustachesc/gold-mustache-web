@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -44,13 +44,10 @@ export async function GET(
     });
 
     if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
-    return NextResponse.json({ barber });
+    return apiSuccess(barber);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar barbeiro");
   }
@@ -76,13 +73,11 @@ export async function PUT(
     const parsed = updateBarberSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: "Dados inválidos",
-          details: parsed.error.flatten(),
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        parsed.error.flatten(),
       );
     }
 
@@ -91,10 +86,7 @@ export async function PUT(
     });
 
     if (!existingBarber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
     const barber = await prisma.barber.update({
@@ -102,7 +94,7 @@ export async function PUT(
       data: parsed.data,
     });
 
-    return NextResponse.json({ barber });
+    return apiSuccess(barber);
   } catch (error) {
     return handlePrismaError(error, "Erro ao atualizar barbeiro");
   }
@@ -138,10 +130,7 @@ export async function DELETE(
     });
 
     if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Barbeiro não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
     // Se tem agendamentos, apenas desativa (soft delete)
@@ -151,8 +140,7 @@ export async function DELETE(
         data: { active: false },
       });
 
-      return NextResponse.json({
-        success: true,
+      return apiSuccess({
         softDelete: true,
         message:
           "Barbeiro desativado (mantido no histórico devido aos agendamentos)",
@@ -168,8 +156,7 @@ export async function DELETE(
       prisma.barber.delete({ where: { id } }),
     ]);
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       softDelete: false,
       message: "Barbeiro removido com sucesso",
     });

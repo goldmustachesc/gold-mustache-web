@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiMessage } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { requireBarber } from "@/lib/auth/requireBarber";
@@ -23,14 +23,11 @@ export async function DELETE(
     });
 
     if (!absence || absence.barberId !== auth.barberId) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Ausência não encontrada" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Ausência não encontrada", 404);
     }
 
     await prisma.barberAbsence.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+    return apiMessage();
   } catch (error) {
     return handlePrismaError(error, "Erro ao remover ausência");
   }

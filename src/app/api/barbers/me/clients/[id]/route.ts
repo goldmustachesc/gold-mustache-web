@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
@@ -52,32 +52,24 @@ export async function PATCH(
       });
 
       if (profile) {
-        return NextResponse.json(
-          {
-            error: "CANNOT_EDIT_REGISTERED",
-            message:
-              "Clientes cadastrados gerenciam seus próprios dados pelo perfil",
-          },
-          { status: 400 },
+        return apiError(
+          "CANNOT_EDIT_REGISTERED",
+          "Clientes cadastrados gerenciam seus próprios dados pelo perfil",
+          400,
         );
       }
 
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Cliente não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Cliente não encontrado", 404);
     }
 
     const body = await request.json();
     const validation = updateClientSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: validation.error.issues[0]?.message || "Dados inválidos",
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        validation.error.issues[0]?.message || "Dados inválidos",
+        400,
       );
     }
 
@@ -93,12 +85,10 @@ export async function PATCH(
       });
 
       if (existingGuest) {
-        return NextResponse.json(
-          {
-            error: "PHONE_EXISTS",
-            message: "Este telefone já está cadastrado para outro cliente",
-          },
-          { status: 409 },
+        return apiError(
+          "PHONE_EXISTS",
+          "Este telefone já está cadastrado para outro cliente",
+          409,
         );
       }
 
@@ -107,12 +97,10 @@ export async function PATCH(
       });
 
       if (existingProfile) {
-        return NextResponse.json(
-          {
-            error: "PHONE_EXISTS",
-            message: "Este telefone já está cadastrado para um cliente",
-          },
-          { status: 409 },
+        return apiError(
+          "PHONE_EXISTS",
+          "Este telefone já está cadastrado para um cliente",
+          409,
         );
       }
     }
@@ -125,14 +113,13 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({
-      client: {
-        id: updatedClient.id,
-        fullName: updatedClient.fullName,
-        phone: updatedClient.phone,
-        type: "guest",
-      },
-    });
+    const client = {
+      id: updatedClient.id,
+      fullName: updatedClient.fullName,
+      phone: updatedClient.phone,
+      type: "guest" as const,
+    };
+    return apiSuccess(client);
   } catch (error) {
     return handlePrismaError(error, "Erro ao atualizar cliente");
   }

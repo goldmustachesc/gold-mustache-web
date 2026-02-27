@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -13,7 +13,7 @@ export async function GET() {
     orderBy: { dayOfWeek: "asc" },
   });
 
-  return NextResponse.json({ days });
+  return apiSuccess(days);
 }
 
 export async function PUT(request: Request) {
@@ -27,12 +27,11 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const validation = updateShopHoursSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -61,7 +60,7 @@ export async function PUT(request: Request) {
       ),
     );
 
-    return NextResponse.json({ days: results });
+    return apiSuccess(results);
   } catch (error) {
     return handlePrismaError(error, "Erro ao salvar horários");
   }

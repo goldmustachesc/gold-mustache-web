@@ -41,7 +41,7 @@ describe("GET /api/slots", () => {
       barberId,
       serviceId,
     );
-    expect(body.slots).toEqual(slots);
+    expect(body.data).toEqual(slots);
   });
 
   it("returns 500 when service throws", async () => {

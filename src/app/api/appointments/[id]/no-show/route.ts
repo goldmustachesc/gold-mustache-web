@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { createClient } from "@/lib/supabase/server";
 import { markAppointmentAsNoShow } from "@/services/booking";
 import { prisma } from "@/lib/prisma";
@@ -20,10 +20,7 @@ export async function PATCH(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     // Check if user is a barber
@@ -32,18 +29,16 @@ export async function PATCH(
     });
 
     if (!barber) {
-      return NextResponse.json(
-        {
-          error: "FORBIDDEN",
-          message: "Apenas barbeiros podem marcar ausência",
-        },
-        { status: 403 },
+      return apiError(
+        "FORBIDDEN",
+        "Apenas barbeiros podem marcar ausência",
+        403,
       );
     }
 
     const appointment = await markAppointmentAsNoShow(appointmentId, barber.id);
 
-    return NextResponse.json({ appointment });
+    return apiSuccess(appointment);
   } catch (error) {
     if (error instanceof Error) {
       const domainErrors: Record<
@@ -76,10 +71,7 @@ export async function PATCH(
 
       const mapped = domainErrors[error.message];
       if (mapped) {
-        return NextResponse.json(
-          { error: mapped.error, message: mapped.message },
-          { status: mapped.status },
-        );
+        return apiError(mapped.error, mapped.message, mapped.status);
       }
     }
 

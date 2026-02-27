@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getBarberRanking } from "@/services/feedback";
@@ -14,7 +14,7 @@ export async function GET() {
 
     const ranking = await getBarberRanking();
 
-    return NextResponse.json({ ranking });
+    return apiSuccess(ranking);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar ranking");
   }

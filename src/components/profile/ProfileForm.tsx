@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { User, MapPin, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { apiMutate } from "@/lib/api/client";
 import type { ProfileMeData, ProfileUpdateInput } from "@/types/profile";
 import { maskPhone, maskZipCode } from "@/utils/masks";
 import { cn } from "@/lib/utils";
@@ -54,16 +55,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/profile/me", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao atualizar perfil");
-      }
-
+      await apiMutate<unknown>("/api/profile/me", "PUT", formData);
       await queryClient.invalidateQueries({ queryKey: ["profile-me"] });
       toast.success(t("save.success"));
     } catch (error) {

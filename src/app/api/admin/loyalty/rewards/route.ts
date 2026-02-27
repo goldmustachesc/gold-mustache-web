@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { z } from "zod";
 
 // Schema para validação de criação de reward
@@ -56,10 +56,7 @@ export async function GET() {
       updatedAt: reward.updatedAt,
     }));
 
-    return NextResponse.json({
-      success: true,
-      rewards: formattedRewards,
-    });
+    return apiSuccess(formattedRewards);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar recompensas");
   }
@@ -79,12 +76,11 @@ export async function POST(req: Request) {
     // Validar o request body
     const validation = createRewardSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "Dados inválidos",
-          details: validation.error.issues,
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        400,
+        validation.error.issues,
       );
     }
 
@@ -92,9 +88,10 @@ export async function POST(req: Request) {
 
     // Validações de negócio
     if (data.type === "DISCOUNT" && (!data.value || data.value <= 0)) {
-      return NextResponse.json(
-        { error: "Descontos devem ter um valor positivo" },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Descontos devem ter um valor positivo",
+        400,
       );
     }
 
@@ -104,10 +101,7 @@ export async function POST(req: Request) {
         where: { id: data.serviceId },
       });
       if (!service) {
-        return NextResponse.json(
-          { error: "Serviço não encontrado" },
-          { status: 404 },
-        );
+        return apiError("NOT_FOUND", "Serviço não encontrado", 404);
       }
     }
 
@@ -127,37 +121,27 @@ export async function POST(req: Request) {
     });
 
     // Log de auditoria
-    console.log(`[AUDIT] Reward ${newReward.id} created by admin`);
+    console.info(`[AUDIT] Reward ${newReward.id} created by admin`);
 
-    return NextResponse.json(
+    return apiSuccess(
       {
-        success: true,
-        message: "Recompensa criada com sucesso",
-        data: {
-          id: newReward.id,
-          name: newReward.name,
-          description: newReward.description,
-          costInPoints: newReward.pointsCost,
-          type: newReward.type,
-          value: newReward.value,
-          serviceId: newReward.serviceId,
-          imageUrl: newReward.imageUrl,
-          active: newReward.active,
-          stock: newReward.stock,
-          createdAt: newReward.createdAt,
-        },
+        id: newReward.id,
+        name: newReward.name,
+        description: newReward.description,
+        costInPoints: newReward.pointsCost,
+        type: newReward.type,
+        value: newReward.value,
+        serviceId: newReward.serviceId,
+        imageUrl: newReward.imageUrl,
+        active: newReward.active,
+        stock: newReward.stock,
+        createdAt: newReward.createdAt,
       },
-      { status: 201 },
+      201,
     );
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: "Dados inválidos",
-          details: error.issues,
-        },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_ERROR", "Dados inválidos", 400, error.issues);
     }
     return handlePrismaError(error, "Erro ao criar recompensa");
   }

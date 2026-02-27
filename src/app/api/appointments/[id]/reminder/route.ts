@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -25,10 +25,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     const { id: appointmentId } = await params;
@@ -47,29 +44,20 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
 
     if (!appointment) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Agendamento não encontrado" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", "Agendamento não encontrado", 404);
     }
 
     // Verify that the current user is the barber for this appointment
     if (appointment.barber.userId !== user.id) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Sem permissão para este agendamento" },
-        { status: 403 },
-      );
+      return apiError("FORBIDDEN", "Sem permissão para este agendamento", 403);
     }
 
     // Check if appointment is still active
     if (appointment.status !== "CONFIRMED") {
-      return NextResponse.json(
-        {
-          error: "INVALID_STATUS",
-          message:
-            "Só é possível enviar lembrete para agendamentos confirmados",
-        },
-        { status: 400 },
+      return apiError(
+        "INVALID_STATUS",
+        "Só é possível enviar lembrete para agendamentos confirmados",
+        400,
       );
     }
 
@@ -111,19 +99,17 @@ export async function POST(request: Request, { params }: RouteParams) {
       if (appointment.client.phone) {
         const clientName =
           (appointment.client.fullName || "").split(" ")[0] || "Cliente";
-        return NextResponse.json({
-          success: true,
+        return apiSuccess({
+          message: "Notificação enviada! Deseja também enviar via WhatsApp?",
           type: "notification_and_whatsapp",
           whatsappUrl: generateWhatsAppUrl(
             appointment.client.phone,
             clientName,
           ),
-          message: "Notificação enviada! Deseja também enviar via WhatsApp?",
         });
       }
 
-      return NextResponse.json({
-        success: true,
+      return apiSuccess({
         type: "notification",
         message: "Lembrete enviado com sucesso!",
       });
@@ -132,23 +118,20 @@ export async function POST(request: Request, { params }: RouteParams) {
     // For guest clients, return WhatsApp link
     if (appointment.guestClient?.phone) {
       const clientName = appointment.guestClient.fullName.split(" ")[0];
-      return NextResponse.json({
-        success: true,
+      return apiSuccess({
+        message: "Link do WhatsApp gerado",
         type: "whatsapp",
         whatsappUrl: generateWhatsAppUrl(
           appointment.guestClient.phone,
           clientName,
         ),
-        message: "Link do WhatsApp gerado",
       });
     }
 
-    return NextResponse.json(
-      {
-        error: "NO_CONTACT",
-        message: "Cliente não possui contato para enviar lembrete",
-      },
-      { status: 400 },
+    return apiError(
+      "NO_CONTACT",
+      "Cliente não possui contato para enviar lembrete",
+      400,
     );
   } catch (error) {
     return handlePrismaError(error, "Erro ao enviar lembrete");

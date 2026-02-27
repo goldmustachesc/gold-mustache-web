@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 import type { FinancialStats } from "@/types/financial";
@@ -26,19 +26,17 @@ export async function GET(request: Request) {
     });
 
     if (!query.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          message: "Parâmetros inválidos. Use ?month=1&year=2026",
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Parâmetros inválidos. Use ?month=1&year=2026",
+        400,
       );
     }
 
     const { month, year } = query.data;
     const stats = await calculateFinancialStats(auth.barberId, month, year);
 
-    return NextResponse.json({ stats, barberName: auth.barberName });
+    return apiSuccess({ stats, barberName: auth.barberName });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar estatísticas");
   }

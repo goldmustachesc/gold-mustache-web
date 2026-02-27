@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getBarberFeedbackStats } from "@/services/feedback";
+import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -14,7 +14,7 @@ export async function GET() {
 
     const stats = await getBarberFeedbackStats(auth.barberId);
 
-    return NextResponse.json({ stats });
+    return apiSuccess(stats);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar estatísticas");
   }

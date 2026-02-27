@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { markAsRead } from "@/services/notification";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { apiMessage, apiError } from "@/lib/api/response";
 
 export async function PATCH(
   request: Request,
@@ -19,15 +19,12 @@ export async function PATCH(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
     await markAsRead(notificationId, user.id);
 
-    return NextResponse.json({ success: true });
+    return apiMessage();
   } catch (error) {
     return handlePrismaError(error, "Erro ao marcar notificação como lida");
   }

@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ApiError, apiAction } from "@/lib/api/client";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth";
@@ -39,26 +40,18 @@ export function DeleteAccountCard() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/profile/delete", {
-        method: "DELETE",
-      });
+      await apiAction("/api/profile/delete", "DELETE");
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to delete account");
-      }
-
-      // Sign out the user
       await authService.signOut();
 
       toast.success(t("success"));
 
-      // Redirect to home page
       router.push(`/${locale}`);
       router.refresh();
     } catch (error) {
       console.error("Error deleting account:", error);
-      toast.error(t("error"));
+      const message = error instanceof ApiError ? error.message : t("error");
+      toast.error(message);
     } finally {
       setIsLoading(false);
       setIsDialogOpen(false);

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { updateBarberWorkingHoursSchema } from "@/lib/validations/booking";
 import {
   buildWorkingHoursResponse,
@@ -25,7 +25,7 @@ export async function GET() {
 
     const days = buildWorkingHoursResponse(workingHours);
 
-    return NextResponse.json({ days });
+    return apiSuccess(days);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar horários");
   }
@@ -47,20 +47,16 @@ export async function PUT(request: Request) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "INVALID_JSON", message: "Corpo da requisição inválido" },
-        { status: 400 },
-      );
+      return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
     const validation = updateBarberWorkingHoursSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: "VALIDATION_ERROR",
-          details: validation.error.flatten().fieldErrors,
-        },
-        { status: 422 },
+      return apiError(
+        "VALIDATION_ERROR",
+        "Dados inválidos",
+        422,
+        validation.error.flatten().fieldErrors,
       );
     }
 
@@ -77,7 +73,7 @@ export async function PUT(request: Request) {
 
     const result = buildWorkingHoursResponse(updatedHours);
 
-    return NextResponse.json({ days: result });
+    return apiSuccess(result);
   } catch (error) {
     return handlePrismaError(error, "Erro ao salvar horários");
   }
