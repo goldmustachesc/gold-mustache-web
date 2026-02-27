@@ -72,8 +72,8 @@ for (const barber of allBarbers) {
 
 ## Checklist
 
-- [ ] Refatorar para buscar workingHours em batch com `{ in: barberIds }`
-- [ ] Refatorar para buscar absences em batch com `{ in: barberIds }`
-- [ ] Agrupar resultados por barbeiro em memória
-- [ ] Testar que o cálculo financeiro retorna os mesmos valores
-- [ ] Verificar se há N+1 semelhante em outros endpoints (barber ranking, feedbacks stats)
+- [x] Refatorar para buscar workingHours em batch com `{ in: barberIds }`
+- [x] Refatorar para buscar absences em batch com `{ in: barberIds }`
+- [x] Agrupar resultados por barbeiro em memória
+- [x] Testar que o cálculo financeiro retorna os mesmos valores
+- [x] Verificar se há N+1 semelhante em outros endpoints (barber ranking, feedbacks stats)

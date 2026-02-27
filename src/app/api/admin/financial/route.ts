@@ -299,26 +299,34 @@ async function buildStats(
     availableMinutes = result.availableMinutes;
     closedMinutes = result.closedMinutes;
   } else {
-    // All barbers - sum up working hours
+    // All barbers - batch fetch working hours and absences (avoids N+1)
     const allBarbers = await prisma.barber.findMany({
       where: { active: true },
       select: { id: true },
     });
 
-    for (const barber of allBarbers) {
-      const workingHours = await prisma.workingHours.findMany({
-        where: { barberId: barber.id },
-      });
+    const barberIds = allBarbers.map((b) => b.id);
 
-      const absences = await prisma.barberAbsence.findMany({
+    const [allWorkingHours, allAbsences] = await Promise.all([
+      prisma.workingHours.findMany({
+        where: { barberId: { in: barberIds } },
+      }),
+      prisma.barberAbsence.findMany({
         where: {
-          barberId: barber.id,
+          barberId: { in: barberIds },
           date: {
             gte: new Date(year, month - 1, 1),
             lte: endDate,
           },
         },
-      });
+      }),
+    ]);
+
+    for (const barber of allBarbers) {
+      const workingHours = allWorkingHours.filter(
+        (wh) => wh.barberId === barber.id,
+      );
+      const absences = allAbsences.filter((a) => a.barberId === barber.id);
 
       const result = calculateAvailableHours(
         workingHours,
