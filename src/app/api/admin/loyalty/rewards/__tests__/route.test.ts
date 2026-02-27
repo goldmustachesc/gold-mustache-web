@@ -90,8 +90,8 @@ describe("/api/admin/loyalty/rewards", () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.success).toBe(false);
-      expect(data.error).toBe("Erro interno do servidor");
+      expect(data.error).toBe("INTERNAL_ERROR");
+      expect(data.message).toBe("Erro ao buscar recompensas");
 
       // Restaurar console.error
       consoleSpy.mockRestore();

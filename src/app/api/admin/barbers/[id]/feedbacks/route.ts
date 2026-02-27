@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import {
   getBarberFeedbacksAdmin,
   getBarberFeedbackStats,
@@ -55,13 +56,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       ...(stats && { stats }),
     });
   } catch (error) {
-    console.error("Error fetching barber feedbacks:", error);
-    return NextResponse.json(
-      {
-        error: "INTERNAL_ERROR",
-        message: "Erro ao buscar avaliações do barbeiro",
-      },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar avaliações do barbeiro");
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 const createBarberSchema = z.object({
@@ -40,11 +41,7 @@ export async function GET() {
 
     return NextResponse.json({ barbers });
   } catch (error) {
-    console.error("Error fetching barbers:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar barbeiros" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar barbeiros");
   }
 }
 
@@ -113,10 +110,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ barber }, { status: 201 });
   } catch (error) {
-    console.error("Error creating barber:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar barbeiro" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar barbeiro");
   }
 }

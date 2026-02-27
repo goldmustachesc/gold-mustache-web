@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { z } from "zod";
 
@@ -120,13 +121,9 @@ export async function POST(request: Request) {
       immediate: false,
     });
   } catch (error) {
-    console.error("[Guest Delete] Error processing deletion request:", error);
-    return NextResponse.json(
-      {
-        error: "INTERNAL_ERROR",
-        message: "Erro ao processar solicitação de exclusão",
-      },
-      { status: 500 },
+    return handlePrismaError(
+      error,
+      "Erro ao processar solicitação de exclusão",
     );
   }
 }

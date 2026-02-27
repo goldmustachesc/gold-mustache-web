@@ -10,6 +10,7 @@ import {
   formatPrismaDateToString,
 } from "@/utils/time-slots";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -79,11 +80,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Error fetching barber absences:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar ausências" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar ausências");
   }
 }
 
@@ -184,10 +181,6 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Error creating barber absence:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar ausência" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar ausência");
   }
 }

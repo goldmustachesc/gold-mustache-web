@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAppointmentByBarber } from "@/services/booking";
 import { createAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -38,53 +39,45 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ appointment }, { status: 201 });
   } catch (error) {
-    console.error("Error creating appointment by barber:", error);
-
-    if (error instanceof Error && error.message === "SLOT_IN_PAST") {
-      return NextResponse.json(
-        {
+    if (error instanceof Error) {
+      const domainErrors: Record<
+        string,
+        { status: number; error: string; message: string }
+      > = {
+        SLOT_IN_PAST: {
+          status: 400,
           error: "SLOT_IN_PAST",
           message: "Não é possível agendar em horários que já passaram",
         },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === "SHOP_CLOSED") {
-      return NextResponse.json(
-        {
+        SHOP_CLOSED: {
+          status: 400,
           error: "SHOP_CLOSED",
           message: "A barbearia não atende neste horário",
         },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === "BARBER_UNAVAILABLE") {
-      return NextResponse.json(
-        {
+        BARBER_UNAVAILABLE: {
+          status: 400,
           error: "BARBER_UNAVAILABLE",
           message: "Você não atende neste horário",
         },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === "SLOT_UNAVAILABLE") {
-      return NextResponse.json(
-        {
+        SLOT_UNAVAILABLE: {
+          status: 400,
           error: "SLOT_UNAVAILABLE",
           message: "Este horário não está disponível para agendamento",
         },
-        { status: 400 },
-      );
-    }
+        SLOT_OCCUPIED: {
+          status: 409,
+          error: "SLOT_OCCUPIED",
+          message: "Este horário já está ocupado",
+        },
+      };
 
-    if (error instanceof Error && error.message === "SLOT_OCCUPIED") {
-      return NextResponse.json(
-        { error: "SLOT_OCCUPIED", message: "Este horário já está ocupado" },
-        { status: 409 },
-      );
+      const mapped = domainErrors[error.message];
+      if (mapped) {
+        return NextResponse.json(
+          { error: mapped.error, message: mapped.message },
+          { status: mapped.status },
+        );
+      }
     }
 
     if (
@@ -97,9 +90,6 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar agendamento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar agendamento");
   }
 }

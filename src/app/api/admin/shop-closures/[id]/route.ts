@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 
 export async function DELETE(
   request: Request,
@@ -26,10 +27,6 @@ export async function DELETE(
     await prisma.shopClosure.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Error deleting shop closure:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao remover fechamento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao remover fechamento");
   }
 }

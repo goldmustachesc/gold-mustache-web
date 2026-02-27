@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 
 export async function GET(request: Request) {
@@ -53,7 +54,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("[LOYALTY_TRANSACTIONS_GET]", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return handlePrismaError(error, "Erro ao buscar transações de fidelidade");
   }
 }

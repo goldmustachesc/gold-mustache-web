@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { markAppointmentAsNoShow } from "@/services/booking";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function PATCH(
@@ -44,47 +45,44 @@ export async function PATCH(
 
     return NextResponse.json({ appointment });
   } catch (error) {
-    console.error("Error marking appointment as no-show:", error);
-
     if (error instanceof Error) {
-      switch (error.message) {
-        case "APPOINTMENT_NOT_FOUND":
-          return NextResponse.json(
-            { error: "NOT_FOUND", message: "Agendamento não encontrado" },
-            { status: 404 },
-          );
-        case "UNAUTHORIZED":
-          return NextResponse.json(
-            {
-              error: "FORBIDDEN",
-              message: "Você não tem permissão para marcar este agendamento",
-            },
-            { status: 403 },
-          );
-        case "APPOINTMENT_NOT_MARKABLE":
-          return NextResponse.json(
-            {
-              error: "CONFLICT",
-              message:
-                "Este agendamento não pode ser marcado como ausência (status inválido)",
-            },
-            { status: 409 },
-          );
-        case "APPOINTMENT_NOT_STARTED":
-          return NextResponse.json(
-            {
-              error: "PRECONDITION_FAILED",
-              message:
-                "Só é possível marcar ausência após o horário do agendamento",
-            },
-            { status: 412 },
-          );
+      const domainErrors: Record<
+        string,
+        { status: number; error: string; message: string }
+      > = {
+        APPOINTMENT_NOT_FOUND: {
+          status: 404,
+          error: "NOT_FOUND",
+          message: "Agendamento não encontrado",
+        },
+        UNAUTHORIZED: {
+          status: 403,
+          error: "FORBIDDEN",
+          message: "Você não tem permissão para marcar este agendamento",
+        },
+        APPOINTMENT_NOT_MARKABLE: {
+          status: 409,
+          error: "CONFLICT",
+          message:
+            "Este agendamento não pode ser marcado como ausência (status inválido)",
+        },
+        APPOINTMENT_NOT_STARTED: {
+          status: 412,
+          error: "PRECONDITION_FAILED",
+          message:
+            "Só é possível marcar ausência após o horário do agendamento",
+        },
+      };
+
+      const mapped = domainErrors[error.message];
+      if (mapped) {
+        return NextResponse.json(
+          { error: mapped.error, message: mapped.message },
+          { status: mapped.status },
+        );
       }
     }
 
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro interno do servidor" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao marcar ausência");
   }
 }

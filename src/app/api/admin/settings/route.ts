@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 const updateSettingsSchema = z.object({
@@ -52,11 +53,7 @@ export async function GET() {
 
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error("Error fetching barbershop settings:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar configurações" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar configurações");
   }
 }
 
@@ -118,10 +115,6 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error("Error updating barbershop settings:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao atualizar configurações" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao atualizar configurações");
   }
 }

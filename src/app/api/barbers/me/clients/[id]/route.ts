@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -133,10 +134,6 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error("Error updating client:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao atualizar cliente" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao atualizar cliente");
   }
 }

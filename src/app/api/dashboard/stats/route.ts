@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { formatPrismaDateToString } from "@/utils/time-slots";
 import type { DashboardStats } from "@/types/dashboard";
 
@@ -315,10 +316,6 @@ export async function GET() {
 
     return NextResponse.json({ stats });
   } catch (error) {
-    console.error("Dashboard stats error:", error);
-    return NextResponse.json(
-      { error: "Erro ao carregar estatísticas" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao carregar estatísticas");
   }
 }

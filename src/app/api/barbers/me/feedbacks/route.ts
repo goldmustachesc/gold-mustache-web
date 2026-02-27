@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getBarberFeedbacks } from "@/services/feedback";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
 /**
@@ -19,10 +20,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching barber feedbacks:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar avaliações" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar avaliações");
   }
 }

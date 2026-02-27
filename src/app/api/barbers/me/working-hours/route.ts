@@ -5,6 +5,7 @@ import {
   buildWorkingHoursResponse,
   upsertWorkingHoursInTransaction,
 } from "@/lib/working-hours";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
@@ -26,11 +27,7 @@ export async function GET() {
 
     return NextResponse.json({ days });
   } catch (error) {
-    console.error("Error fetching barber working hours:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar horários" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar horários");
   }
 }
 
@@ -82,10 +79,6 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ days: result });
   } catch (error) {
-    console.error("Error updating barber working hours:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao salvar horários" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao salvar horários");
   }
 }

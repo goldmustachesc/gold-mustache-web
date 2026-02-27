@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import {
   shopClosureSchema,
   dateRangeQuerySchema,
@@ -66,11 +67,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Error fetching shop closures:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar fechamentos" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar fechamentos");
   }
 }
 
@@ -125,10 +122,6 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Error creating shop closure:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar fechamento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar fechamento");
   }
 }

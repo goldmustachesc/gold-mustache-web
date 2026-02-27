@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getAllFeedbacks } from "@/services/feedback";
 import type { FeedbackFilters } from "@/types/feedback";
 
@@ -42,10 +43,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching admin feedbacks:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar avaliações" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar avaliações");
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cancelAppointmentByGuestToken } from "@/services/booking";
 import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
@@ -50,53 +51,47 @@ export async function PATCH(
 
     return NextResponse.json({ appointment });
   } catch (error) {
-    console.error("Error cancelling guest appointment:", error);
-
     if (error instanceof Error) {
-      switch (error.message) {
-        case "GUEST_NOT_FOUND":
-          return NextResponse.json(
-            { error: "GUEST_NOT_FOUND", message: "Cliente não encontrado" },
-            { status: 404 },
-          );
-        case "APPOINTMENT_NOT_FOUND":
-          return NextResponse.json(
-            {
-              error: "APPOINTMENT_NOT_FOUND",
-              message: "Agendamento não encontrado",
-            },
-            { status: 404 },
-          );
-        case "UNAUTHORIZED":
-          return NextResponse.json(
-            {
-              error: "UNAUTHORIZED",
-              message: "Você não tem permissão para cancelar este agendamento",
-            },
-            { status: 403 },
-          );
-        case "APPOINTMENT_NOT_CANCELLABLE":
-          return NextResponse.json(
-            {
-              error: "APPOINTMENT_NOT_CANCELLABLE",
-              message: "Este agendamento não pode ser cancelado",
-            },
-            { status: 400 },
-          );
-        case "APPOINTMENT_IN_PAST":
-          return NextResponse.json(
-            {
-              error: "APPOINTMENT_IN_PAST",
-              message: "Este agendamento já passou e não pode ser cancelado",
-            },
-            { status: 400 },
-          );
+      const domainErrors: Record<
+        string,
+        { status: number; error: string; message: string }
+      > = {
+        GUEST_NOT_FOUND: {
+          status: 404,
+          error: "GUEST_NOT_FOUND",
+          message: "Cliente não encontrado",
+        },
+        APPOINTMENT_NOT_FOUND: {
+          status: 404,
+          error: "APPOINTMENT_NOT_FOUND",
+          message: "Agendamento não encontrado",
+        },
+        UNAUTHORIZED: {
+          status: 403,
+          error: "UNAUTHORIZED",
+          message: "Você não tem permissão para cancelar este agendamento",
+        },
+        APPOINTMENT_NOT_CANCELLABLE: {
+          status: 400,
+          error: "APPOINTMENT_NOT_CANCELLABLE",
+          message: "Este agendamento não pode ser cancelado",
+        },
+        APPOINTMENT_IN_PAST: {
+          status: 400,
+          error: "APPOINTMENT_IN_PAST",
+          message: "Este agendamento já passou e não pode ser cancelado",
+        },
+      };
+
+      const mapped = domainErrors[error.message];
+      if (mapped) {
+        return NextResponse.json(
+          { error: mapped.error, message: mapped.message },
+          { status: mapped.status },
+        );
       }
     }
 
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao cancelar agendamento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao cancelar agendamento");
   }
 }

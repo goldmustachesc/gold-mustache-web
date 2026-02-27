@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { updateShopHoursSchema } from "@/lib/validations/booking";
 
 export async function GET() {
@@ -62,10 +63,6 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ days: results });
   } catch (error) {
-    console.error("Error updating shop hours:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao salvar horários" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao salvar horários");
   }
 }

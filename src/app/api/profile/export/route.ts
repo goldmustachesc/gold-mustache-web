@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
@@ -162,10 +163,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("[Data Export] Error exporting user data:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao exportar dados" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao exportar dados");
   }
 }

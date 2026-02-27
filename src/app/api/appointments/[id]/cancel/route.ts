@@ -10,6 +10,7 @@ import {
 } from "@/services/notification";
 import { cancelAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 
@@ -125,57 +126,47 @@ export async function PATCH(
 
     return NextResponse.json({ appointment });
   } catch (error) {
-    console.error("Error cancelling appointment:", error);
-
     if (error instanceof Error) {
-      if (error.message === "APPOINTMENT_IN_PAST") {
-        return NextResponse.json(
-          {
-            error: "APPOINTMENT_IN_PAST",
-            message: "Este agendamento já passou e não pode ser cancelado",
-          },
-          { status: 400 },
-        );
-      }
+      const domainErrors: Record<
+        string,
+        { status: number; error: string; message: string }
+      > = {
+        APPOINTMENT_IN_PAST: {
+          status: 400,
+          error: "APPOINTMENT_IN_PAST",
+          message: "Este agendamento já passou e não pode ser cancelado",
+        },
+        CANCELLATION_REASON_REQUIRED: {
+          status: 400,
+          error: "CANCELLATION_REASON_REQUIRED",
+          message: "Motivo do cancelamento é obrigatório",
+        },
+        APPOINTMENT_NOT_CANCELLABLE: {
+          status: 400,
+          error: "APPOINTMENT_NOT_CANCELLABLE",
+          message: "Este agendamento não pode ser cancelado",
+        },
+        APPOINTMENT_NOT_FOUND: {
+          status: 404,
+          error: "NOT_FOUND",
+          message: "Agendamento não encontrado",
+        },
+        UNAUTHORIZED: {
+          status: 401,
+          error: "UNAUTHORIZED",
+          message: "Não autorizado",
+        },
+      };
 
-      if (error.message === "CANCELLATION_REASON_REQUIRED") {
+      const mapped = domainErrors[error.message];
+      if (mapped) {
         return NextResponse.json(
-          {
-            error: "CANCELLATION_REASON_REQUIRED",
-            message: "Motivo do cancelamento é obrigatório",
-          },
-          { status: 400 },
-        );
-      }
-
-      if (error.message === "APPOINTMENT_NOT_CANCELLABLE") {
-        return NextResponse.json(
-          {
-            error: "APPOINTMENT_NOT_CANCELLABLE",
-            message: "Este agendamento não pode ser cancelado",
-          },
-          { status: 400 },
-        );
-      }
-
-      if (error.message === "APPOINTMENT_NOT_FOUND") {
-        return NextResponse.json(
-          { error: "NOT_FOUND", message: "Agendamento não encontrado" },
-          { status: 404 },
-        );
-      }
-
-      if (error.message === "UNAUTHORIZED") {
-        return NextResponse.json(
-          { error: "UNAUTHORIZED", message: "Não autorizado" },
-          { status: 401 },
+          { error: mapped.error, message: mapped.message },
+          { status: mapped.status },
         );
       }
     }
 
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao cancelar agendamento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao cancelar agendamento");
   }
 }

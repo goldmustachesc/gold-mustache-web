@@ -5,6 +5,7 @@ import {
   saveConsentSchema,
   getConsentQuerySchema,
 } from "@/lib/validations/consent";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
@@ -103,11 +104,7 @@ export async function GET(request: Request) {
       hasConsent: true,
     });
   } catch (error) {
-    console.error("Error fetching consent:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar consentimento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar consentimento");
   }
 }
 
@@ -229,10 +226,6 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Error saving consent:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao salvar consentimento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao salvar consentimento");
   }
 }

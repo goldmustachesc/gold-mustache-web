@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 // Schema para validação de criação de reward
@@ -60,14 +61,7 @@ export async function GET() {
       rewards: formattedRewards,
     });
   } catch (error) {
-    console.error("[ADMIN_REWARDS_GET]", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Erro interno do servidor",
-      },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar recompensas");
   }
 }
 
@@ -156,8 +150,6 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (error: unknown) {
-    console.error("[ADMIN_REWARDS_POST]", error);
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -167,23 +159,6 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-
-    // Verificar erro de constraint unique (se houver)
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "P2002"
-    ) {
-      return NextResponse.json(
-        { error: "Já existe uma recompensa com esses dados" },
-        { status: 409 },
-      );
-    }
-
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar recompensa");
   }
 }

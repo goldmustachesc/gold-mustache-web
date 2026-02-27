@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { markAsRead } from "@/services/notification";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 
@@ -28,13 +29,6 @@ export async function PATCH(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error marking notification as read:", error);
-    return NextResponse.json(
-      {
-        error: "INTERNAL_ERROR",
-        message: "Erro ao marcar notificação como lida",
-      },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao marcar notificação como lida");
   }
 }

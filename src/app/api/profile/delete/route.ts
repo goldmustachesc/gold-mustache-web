@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
@@ -129,10 +130,6 @@ export async function DELETE(request: Request) {
       message: "Conta deletada com sucesso",
     });
   } catch (error) {
-    console.error("[Account Delete] Error deleting account:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao deletar conta" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao deletar conta");
   }
 }

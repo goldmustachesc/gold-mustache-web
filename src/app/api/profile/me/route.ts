@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/validations/profile";
 import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function GET() {
@@ -68,11 +69,7 @@ export async function GET() {
       email: user.email,
     });
   } catch (error) {
-    console.error("Error fetching profile:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar perfil" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar perfil");
   }
 }
 
@@ -164,10 +161,6 @@ export async function PUT(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error updating profile:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao atualizar perfil" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao atualizar perfil");
   }
 }

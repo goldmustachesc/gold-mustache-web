@@ -4,6 +4,7 @@ import {
   createGuestFeedback,
   getAppointmentFeedback,
 } from "@/services/feedback";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { feedbackSchema } from "@/lib/validations/feedback";
@@ -99,11 +100,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ feedback });
   } catch (error) {
-    console.error("Error fetching guest feedback:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar avaliação" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar avaliação");
   }
 }
 
@@ -180,40 +177,52 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ feedback }, { status: 201 });
   } catch (error) {
-    console.error("Error creating guest feedback:", error);
+    if (error instanceof Error) {
+      const errorMap: Record<
+        string,
+        { status: number; error: string; message: string }
+      > = {
+        INVALID_RATING: {
+          status: 400,
+          error: "INVALID_RATING",
+          message: "Avaliação deve ser de 1 a 5",
+        },
+        GUEST_NOT_FOUND: {
+          status: 404,
+          error: "GUEST_NOT_FOUND",
+          message: "Cliente não encontrado",
+        },
+        APPOINTMENT_NOT_FOUND: {
+          status: 404,
+          error: "APPOINTMENT_NOT_FOUND",
+          message: "Agendamento não encontrado",
+        },
+        UNAUTHORIZED: {
+          status: 403,
+          error: "UNAUTHORIZED",
+          message: "Sem permissão",
+        },
+        APPOINTMENT_NOT_COMPLETED: {
+          status: 400,
+          error: "APPOINTMENT_NOT_COMPLETED",
+          message: "Apenas agendamentos concluídos podem ser avaliados",
+        },
+        FEEDBACK_ALREADY_EXISTS: {
+          status: 409,
+          error: "FEEDBACK_ALREADY_EXISTS",
+          message: "Este agendamento já foi avaliado",
+        },
+      };
 
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-
-    const errorMap: Record<string, { status: number; message: string }> = {
-      INVALID_RATING: { status: 400, message: "Avaliação deve ser de 1 a 5" },
-      GUEST_NOT_FOUND: { status: 404, message: "Cliente não encontrado" },
-      APPOINTMENT_NOT_FOUND: {
-        status: 404,
-        message: "Agendamento não encontrado",
-      },
-      UNAUTHORIZED: { status: 403, message: "Sem permissão" },
-      APPOINTMENT_NOT_COMPLETED: {
-        status: 400,
-        message: "Apenas agendamentos concluídos podem ser avaliados",
-      },
-      FEEDBACK_ALREADY_EXISTS: {
-        status: 409,
-        message: "Este agendamento já foi avaliado",
-      },
-    };
-
-    const mapped = errorMap[errorMessage];
-    if (mapped) {
-      return NextResponse.json(
-        { error: errorMessage, message: mapped.message },
-        { status: mapped.status },
-      );
+      const mapped = errorMap[error.message];
+      if (mapped) {
+        return NextResponse.json(
+          { error: mapped.error, message: mapped.message },
+          { status: mapped.status },
+        );
+      }
     }
 
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar avaliação" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar avaliação");
   }
 }

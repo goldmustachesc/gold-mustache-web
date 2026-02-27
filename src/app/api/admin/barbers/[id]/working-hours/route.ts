@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { updateBarberWorkingHoursSchema } from "@/lib/validations/booking";
 import {
   buildWorkingHoursResponse,
@@ -44,11 +45,7 @@ export async function GET(
 
     return NextResponse.json({ barber, days });
   } catch (error) {
-    console.error("Error fetching barber working hours:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar horários" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar horários");
   }
 }
 
@@ -121,10 +118,6 @@ export async function PUT(
 
     return NextResponse.json({ barber, days: result });
   } catch (error) {
-    console.error("Error updating barber working hours:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao salvar horários" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao salvar horários");
   }
 }

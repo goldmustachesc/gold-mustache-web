@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 
 /**
  * POST /api/cron/cleanup-guests
@@ -103,10 +104,7 @@ export async function POST(request: Request) {
       cutoffDate: twoYearsAgo.toISOString(),
       timestamp: new Date().toISOString(),
     });
-  } catch {
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro durante a limpeza" },
-      { status: 500 },
-    );
+  } catch (error) {
+    return handlePrismaError(error, "Erro durante a limpeza");
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import {
   accountIdSchema,
   loyaltyAdjustSchema,
@@ -49,10 +50,6 @@ export async function POST(
       message: `Points adjusted for account ${accountId}: ${points} (${reason})`,
     });
   } catch (error) {
-    console.error(`[ADMIN_LOYALTY_ACCOUNTS_ADJUST_POST]`, error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro interno do servidor" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao ajustar pontos de fidelidade");
   }
 }

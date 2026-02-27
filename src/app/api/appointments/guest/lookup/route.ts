@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGuestAppointmentsByToken } from "@/services/booking";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 /**
@@ -44,10 +45,6 @@ export async function GET(request: Request) {
     const appointments = await getGuestAppointmentsByToken(accessToken);
     return NextResponse.json({ appointments });
   } catch (error) {
-    console.error("Error fetching guest appointments:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar agendamentos" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar agendamentos");
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
 export async function GET() {
@@ -20,13 +21,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Error fetching barber profile:", error);
-    return NextResponse.json(
-      {
-        error: "INTERNAL_ERROR",
-        message: "Erro ao buscar perfil",
-      },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar perfil");
   }
 }

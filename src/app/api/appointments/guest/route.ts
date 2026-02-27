@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createGuestAppointment } from "@/services/booking";
 import { createGuestAppointmentSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
@@ -62,58 +63,47 @@ export async function POST(request: Request) {
     // Return both the appointment and the access token for localStorage
     return NextResponse.json({ appointment, accessToken }, { status: 201 });
   } catch (error) {
-    console.error("Error creating guest appointment:", error);
-
-    // Handle slot in the past
-    if (error instanceof Error && error.message === "SLOT_IN_PAST") {
-      return NextResponse.json(
-        {
+    if (error instanceof Error) {
+      const domainErrors: Record<
+        string,
+        { status: number; error: string; message: string }
+      > = {
+        SLOT_IN_PAST: {
+          status: 400,
           error: "SLOT_IN_PAST",
           message: "Não é possível agendar em horários que já passaram",
         },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === "SHOP_CLOSED") {
-      return NextResponse.json(
-        {
+        SHOP_CLOSED: {
+          status: 400,
           error: "SHOP_CLOSED",
           message: "A barbearia não atende neste horário",
         },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === "BARBER_UNAVAILABLE") {
-      return NextResponse.json(
-        {
+        BARBER_UNAVAILABLE: {
+          status: 400,
           error: "BARBER_UNAVAILABLE",
           message: "Este barbeiro não atende neste horário",
         },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === "SLOT_UNAVAILABLE") {
-      return NextResponse.json(
-        {
+        SLOT_UNAVAILABLE: {
+          status: 400,
           error: "SLOT_UNAVAILABLE",
           message: "Este horário não está disponível para agendamento",
         },
-        { status: 400 },
-      );
+        SLOT_OCCUPIED: {
+          status: 409,
+          error: "SLOT_OCCUPIED",
+          message: "Este horário já está ocupado",
+        },
+      };
+
+      const mapped = domainErrors[error.message];
+      if (mapped) {
+        return NextResponse.json(
+          { error: mapped.error, message: mapped.message },
+          { status: mapped.status },
+        );
+      }
     }
 
-    // Handle slot already occupied
-    if (error instanceof Error && error.message === "SLOT_OCCUPIED") {
-      return NextResponse.json(
-        { error: "SLOT_OCCUPIED", message: "Este horário já está ocupado" },
-        { status: 409 },
-      );
-    }
-
-    // Handle unique constraint violation (race condition fallback)
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
@@ -124,9 +114,6 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar agendamento" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar agendamento");
   }
 }

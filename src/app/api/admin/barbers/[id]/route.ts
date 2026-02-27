@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 const updateBarberSchema = z.object({
@@ -51,11 +52,7 @@ export async function GET(
 
     return NextResponse.json({ barber });
   } catch (error) {
-    console.error("Error fetching barber:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar barbeiro" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar barbeiro");
   }
 }
 
@@ -107,11 +104,7 @@ export async function PUT(
 
     return NextResponse.json({ barber });
   } catch (error) {
-    console.error("Error updating barber:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao atualizar barbeiro" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao atualizar barbeiro");
   }
 }
 
@@ -181,10 +174,6 @@ export async function DELETE(
       message: "Barbeiro removido com sucesso",
     });
   } catch (error) {
-    console.error("Error deleting barber:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao remover barbeiro" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao remover barbeiro");
   }
 }

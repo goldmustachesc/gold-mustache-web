@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
 export interface CancelledAppointmentData {
@@ -72,13 +73,6 @@ export async function GET() {
 
     return NextResponse.json({ appointments });
   } catch (error) {
-    console.error("Error fetching cancelled appointments:", error);
-    return NextResponse.json(
-      {
-        error: "INTERNAL_ERROR",
-        message: "Erro ao buscar agendamentos cancelados",
-      },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar agendamentos cancelados");
   }
 }

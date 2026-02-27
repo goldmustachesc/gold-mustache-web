@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 
 export async function GET() {
   try {
@@ -44,10 +45,6 @@ export async function GET() {
       rewards: formattedRewards,
     });
   } catch (error) {
-    console.error("[LOYALTY_REWARDS_GET]", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar recompensas");
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 
 export async function GET() {
   const admin = await requireAdmin();
@@ -39,7 +40,6 @@ export async function GET() {
       accounts: mockAccounts,
     });
   } catch (error) {
-    console.error("[ADMIN_LOYALTY_ACCOUNTS_GET]", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return handlePrismaError(error, "Erro ao buscar contas de fidelidade");
   }
 }

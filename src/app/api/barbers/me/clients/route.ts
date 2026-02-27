@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { z } from "zod";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -131,11 +132,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ clients });
   } catch (error) {
-    console.error("Error fetching clients:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar clientes" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar clientes");
   }
 }
 
@@ -218,10 +215,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ client: clientData }, { status: 201 });
   } catch (error) {
-    console.error("Error creating client:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao criar cliente" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao criar cliente");
   }
 }

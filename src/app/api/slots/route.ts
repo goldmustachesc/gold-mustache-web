@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAvailableSlots } from "@/services/booking";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getSlotsQuerySchema } from "@/lib/validations/booking";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
@@ -54,10 +55,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ slots });
   } catch (error) {
-    console.error("Error fetching slots:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar horários" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar horários");
   }
 }

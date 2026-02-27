@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServices } from "@/services/booking";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
@@ -29,10 +30,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ services });
   } catch (error) {
-    console.error("Error fetching services:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar serviços" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar serviços");
   }
 }

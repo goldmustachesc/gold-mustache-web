@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 
 export async function GET() {
@@ -30,7 +31,6 @@ export async function GET() {
       account,
     });
   } catch (error) {
-    console.error("[LOYALTY_ACCOUNT_GET]", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return handlePrismaError(error, "Erro ao buscar conta de fidelidade");
   }
 }

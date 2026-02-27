@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 import type { FinancialStats } from "@/types/financial";
 
@@ -91,11 +92,7 @@ export async function GET(request: Request) {
       barbers,
     });
   } catch (error) {
-    console.error("Error fetching admin financial stats:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar estatísticas" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar estatísticas");
   }
 }
 

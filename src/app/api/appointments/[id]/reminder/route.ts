@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { notifyAppointmentReminder } from "@/services/notification";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -150,10 +151,6 @@ export async function POST(request: Request, { params }: RouteParams) {
       { status: 400 },
     );
   } catch (error) {
-    console.error("Error sending reminder:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao enviar lembrete" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao enviar lembrete");
   }
 }

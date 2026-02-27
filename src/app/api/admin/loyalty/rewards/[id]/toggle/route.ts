@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 // Schema para validação do request body
@@ -99,22 +100,6 @@ export async function PUT(
       },
     });
   } catch (error: unknown) {
-    console.error(`[LOYALTY_REWARD_TOGGLE_PUT]`, error);
-
-    // Tratamento específico para erros do Prisma
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "P2025"
-    ) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada no banco de dados." },
-        { status: 404 },
-      );
-    }
-
-    // Erro de validação do Zod
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -124,13 +109,6 @@ export async function PUT(
         { status: 400 },
       );
     }
-
-    return NextResponse.json(
-      {
-        error: "Erro interno do servidor",
-        message: "Não foi possível processar a solicitação",
-      },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao alterar status da recompensa");
   }
 }

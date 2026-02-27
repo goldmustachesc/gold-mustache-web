@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getNotifications, getUnreadCount } from "@/services/notification";
 
 export async function GET(_request: Request) {
@@ -21,10 +22,6 @@ export async function GET(_request: Request) {
 
     return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
-    return NextResponse.json(
-      { error: "INTERNAL_ERROR", message: "Erro ao buscar notificações" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar notificações");
   }
 }

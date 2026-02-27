@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
 // Schema para validação de atualização de reward (todos campos opcionais)
@@ -80,11 +81,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("[ADMIN_REWARD_GET]", error);
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao buscar recompensa");
   }
 }
 
@@ -210,8 +207,6 @@ export async function PUT(
       },
     });
   } catch (error: unknown) {
-    console.error("[ADMIN_REWARD_PUT]", error);
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -221,23 +216,7 @@ export async function PUT(
         { status: 400 },
       );
     }
-
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "P2025"
-    ) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Erro ao atualizar recompensa");
   }
 }
 
@@ -297,24 +276,7 @@ export async function DELETE(
       success: true,
       message: "Recompensa removida com sucesso",
     });
-  } catch (error: unknown) {
-    console.error("[ADMIN_REWARD_DELETE]", error);
-
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "P2025"
-    ) {
-      return NextResponse.json(
-        { error: "Recompensa não encontrada" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 },
-    );
+  } catch (error) {
+    return handlePrismaError(error, "Erro ao remover recompensa");
   }
 }
