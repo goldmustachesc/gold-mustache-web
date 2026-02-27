@@ -1,38 +1,24 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: {
-        id: true,
-        name: true,
-        avatarUrl: true,
-      },
+    const barberExtra = await prisma.barber.findUnique({
+      where: { id: auth.barberId },
+      select: { avatarUrl: true },
     });
 
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ barber });
+    return NextResponse.json({
+      barber: {
+        id: auth.barberId,
+        name: auth.barberName,
+        avatarUrl: barberExtra?.avatarUrl ?? null,
+      },
+    });
   } catch (error) {
     console.error("Error fetching barber profile:", error);
     return NextResponse.json(

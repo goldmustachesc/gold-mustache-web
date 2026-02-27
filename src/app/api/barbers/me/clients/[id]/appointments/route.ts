@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 export interface ClientAppointmentData {
   id: string;
@@ -21,40 +21,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user is a barber
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const { id: clientId } = await params;
 
-    // Try to find as registered client first
     const profile = await prisma.profile.findUnique({
       where: { id: clientId },
       select: { id: true },
     });
 
-    // Try to find as guest client
     const guestClient = await prisma.guestClient.findUnique({
       where: { id: clientId },
       select: { id: true },
@@ -67,7 +43,6 @@ export async function GET(
       );
     }
 
-    // Fetch appointments based on client type
     const appointments = await prisma.appointment.findMany({
       where: profile
         ? { clientId: profile.id }
@@ -86,7 +61,7 @@ export async function GET(
         },
       },
       orderBy: [{ date: "desc" }, { startTime: "desc" }],
-      take: 50, // Limit to last 50 appointments
+      take: 50,
     });
 
     const formattedAppointments: ClientAppointmentData[] = appointments.map(

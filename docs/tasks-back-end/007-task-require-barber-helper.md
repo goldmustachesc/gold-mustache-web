@@ -66,7 +66,7 @@ export async function requireBarber(): Promise<RequireBarberResult> {
 
   const barber = await prisma.barber.findUnique({
     where: { userId: user.id },
-    select: { id: true, name: true, isActive: true },
+    select: { id: true, name: true, active: true },
   });
 
   if (!barber) {
@@ -79,7 +79,7 @@ export async function requireBarber(): Promise<RequireBarberResult> {
     };
   }
 
-  if (!barber.isActive) {
+  if (!barber.active) {
     return {
       ok: false,
       response: NextResponse.json(
@@ -116,10 +116,10 @@ if (!auth.ok) return auth.response;
 
 ## Checklist
 
-- [ ] Criar `src/lib/auth/requireBarber.ts`
-- [ ] Refatorar todas as 12 rotas de barbeiro para usar o novo helper
-- [ ] Garantir que `isActive` é verificado (algumas rotas podem não checar)
-- [ ] Testar acesso sem auth → 401
-- [ ] Testar acesso com user que não é barbeiro → 403
-- [ ] Testar acesso com barbeiro inativo → 403
-- [ ] Testar acesso com barbeiro ativo → sucesso
+- [x] Criar `src/lib/auth/requireBarber.ts`
+- [x] Refatorar todas as 12 rotas de barbeiro para usar o novo helper
+- [x] Garantir que `active` é verificado (algumas rotas podem não checar)
+- [x] Testar acesso sem auth → 401
+- [x] Testar acesso com user que não é barbeiro → 403
+- [x] Testar acesso com barbeiro inativo → 403
+- [x] Testar acesso com barbeiro ativo → sucesso

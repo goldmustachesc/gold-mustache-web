@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import type { FinancialStats } from "@/types/financial";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 const querySchema = z.object({
   month: z.coerce.number().min(1).max(12),
@@ -15,32 +15,9 @@ const querySchema = z.object({
  */
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user is a barber
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true, name: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      );
-    }
-
-    // Parse query params
     const { searchParams } = new URL(request.url);
     const query = querySchema.safeParse({
       month: searchParams.get("month"),
@@ -58,9 +35,9 @@ export async function GET(request: Request) {
     }
 
     const { month, year } = query.data;
-    const stats = await calculateFinancialStats(barber.id, month, year);
+    const stats = await calculateFinancialStats(auth.barberId, month, year);
 
-    return NextResponse.json({ stats, barberName: barber.name });
+    return NextResponse.json({ stats, barberName: auth.barberName });
   } catch (error) {
     console.error("Error fetching financial stats:", error);
     return NextResponse.json(
@@ -75,11 +52,9 @@ async function calculateFinancialStats(
   month: number,
   year: number,
 ): Promise<FinancialStats> {
-  // Calculate date range for the month
   const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0); // Last day of month
+  const endDate = new Date(year, month, 0);
 
-  // Fetch appointments for the period (COMPLETED or past CONFIRMED)
   const appointments = await prisma.appointment.findMany({
     where: {
       barberId,
@@ -110,7 +85,6 @@ async function calculateFinancialStats(
     orderBy: { date: "asc" },
   });
 
-  // Filter to only include past appointments (completed)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -120,24 +94,20 @@ async function calculateFinancialStats(
     return aptDate < today || apt.status === "COMPLETED";
   });
 
-  // Calculate total revenue and appointments
   const totalRevenue = completedAppointments.reduce(
     (sum, apt) => sum + Number(apt.service.price),
     0,
   );
   const totalAppointments = completedAppointments.length;
 
-  // Calculate daily revenue
   const dailyRevenueMap = new Map<string, { revenue: number; count: number }>();
 
-  // Initialize all days of the month
   const daysInMonth = endDate.getDate();
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     dailyRevenueMap.set(dateStr, { revenue: 0, count: 0 });
   }
 
-  // Fill in actual data
   for (const apt of completedAppointments) {
     const dateStr = apt.date.toISOString().split("T")[0];
     const existing = dailyRevenueMap.get(dateStr) || { revenue: 0, count: 0 };
@@ -155,7 +125,6 @@ async function calculateFinancialStats(
     }),
   );
 
-  // Calculate service breakdown
   const serviceMap = new Map<
     string,
     { name: string; count: number; revenue: number }
@@ -183,11 +152,9 @@ async function calculateFinancialStats(
     }))
     .sort((a, b) => b.count - a.count);
 
-  // Calculate ticket médio
   const ticketMedio =
     totalAppointments > 0 ? totalRevenue / totalAppointments : 0;
 
-  // Calculate unique clients
   const uniqueClientIds = new Set<string>();
   for (const apt of completedAppointments) {
     if (apt.client?.id) {
@@ -198,19 +165,16 @@ async function calculateFinancialStats(
   }
   const uniqueClients = uniqueClientIds.size;
 
-  // Calculate worked hours (from appointments)
   const workedMinutes = completedAppointments.reduce(
     (sum, apt) => sum + apt.service.duration,
     0,
   );
   const workedHours = workedMinutes / 60;
 
-  // Fetch working hours for the barber
   const workingHours = await prisma.workingHours.findMany({
     where: { barberId },
   });
 
-  // Fetch absences for the period
   const absences = await prisma.barberAbsence.findMany({
     where: {
       barberId,
@@ -221,7 +185,6 @@ async function calculateFinancialStats(
     },
   });
 
-  // Calculate available hours for the month
   let availableMinutes = 0;
   let closedMinutes = 0;
 
@@ -229,7 +192,6 @@ async function calculateFinancialStats(
     const currentDate = new Date(year, month - 1, day);
     const dayOfWeek = currentDate.getDay();
 
-    // Find working hours for this day of week
     const dayWorkingHours = workingHours.find(
       (wh) => wh.dayOfWeek === dayOfWeek,
     );
@@ -239,7 +201,6 @@ async function calculateFinancialStats(
       const [endH, endM] = dayWorkingHours.endTime.split(":").map(Number);
       let dayMinutes = endH * 60 + endM - (startH * 60 + startM);
 
-      // Subtract break time if exists
       if (dayWorkingHours.breakStart && dayWorkingHours.breakEnd) {
         const [breakStartH, breakStartM] = dayWorkingHours.breakStart
           .split(":")
@@ -251,7 +212,6 @@ async function calculateFinancialStats(
           breakEndH * 60 + breakEndM - (breakStartH * 60 + breakStartM);
       }
 
-      // Check for absences on this day
       const dateStr = currentDate.toISOString().split("T")[0];
       const dayAbsence = absences.find(
         (a) => a.date.toISOString().split("T")[0] === dateStr,
@@ -259,10 +219,8 @@ async function calculateFinancialStats(
 
       if (dayAbsence) {
         if (!dayAbsence.startTime || !dayAbsence.endTime) {
-          // Full day absence
           closedMinutes += dayMinutes;
         } else {
-          // Partial absence
           const [absStartH, absStartM] = dayAbsence.startTime
             .split(":")
             .map(Number);
@@ -282,7 +240,6 @@ async function calculateFinancialStats(
   const closedHours = closedMinutes / 60;
   const idleHours = Math.max(0, availableHours - workedHours);
 
-  // Calculate occupancy rate
   const occupancyRate =
     availableHours > 0 ? (workedHours / availableHours) * 100 : 0;
 

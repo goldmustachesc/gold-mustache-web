@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/lib/prisma";
 import { getBarberFeedbackStats } from "@/services/feedback";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 /**
  * GET /api/barbers/me/feedbacks/stats
@@ -9,31 +8,10 @@ import { getBarberFeedbackStats } from "@/services/feedback";
  */
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Find barber by userId
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_FOUND", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
-
-    const stats = await getBarberFeedbackStats(barber.id);
+    const stats = await getBarberFeedbackStats(auth.barberId);
 
     return NextResponse.json({ stats });
   } catch (error) {

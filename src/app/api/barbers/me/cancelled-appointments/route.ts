@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 export interface CancelledAppointmentData {
   id: string;
@@ -20,32 +20,9 @@ export interface CancelledAppointmentData {
  */
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user is a barber
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      );
-    }
-
-    // Fetch all cancelled appointments from the barbershop
     const cancelledAppointments = await prisma.appointment.findMany({
       where: {
         status: {

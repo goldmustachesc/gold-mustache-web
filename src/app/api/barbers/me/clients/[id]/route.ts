@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 const updateClientSchema = z.object({
   fullName: z
@@ -36,40 +36,16 @@ export async function PATCH(
     const originError = requireValidOrigin(request);
     if (originError) return originError;
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user is a barber
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const { id: clientId } = await params;
 
-    // Check if it's a guest client (only guests can be edited)
     const guestClient = await prisma.guestClient.findUnique({
       where: { id: clientId },
     });
 
     if (!guestClient) {
-      // Check if it's a registered client
       const profile = await prisma.profile.findUnique({
         where: { id: clientId },
       });
@@ -107,7 +83,6 @@ export async function PATCH(
     const { fullName, phone } = validation.data;
     const normalizedPhone = normalizePhoneDigits(phone);
 
-    // Check if new phone is already used by another client (if changed)
     if (normalizedPhone !== guestClient.phone) {
       const existingGuest = await prisma.guestClient.findFirst({
         where: {
@@ -126,7 +101,6 @@ export async function PATCH(
         );
       }
 
-      // Also check registered profiles
       const existingProfile = await prisma.profile.findFirst({
         where: { phone: normalizedPhone },
       });
@@ -142,7 +116,6 @@ export async function PATCH(
       }
     }
 
-    // Update the guest client
     const updatedClient = await prisma.guestClient.update({
       where: { id: clientId },
       data: {

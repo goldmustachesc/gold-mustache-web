@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import {
   barberAbsenceSchema,
@@ -12,6 +11,7 @@ import {
 } from "@/utils/time-slots";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 function rangesOverlap(
   aStart: number,
@@ -24,29 +24,8 @@ function rangesOverlap(
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
-    }
-
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_BARBER", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const { searchParams } = new URL(request.url);
     const queryValidation = dateRangeQuerySchema.safeParse({
@@ -67,7 +46,7 @@ export async function GET(request: Request) {
     const { startDate, endDate } = queryValidation.data;
 
     const where: Prisma.BarberAbsenceWhereInput = {
-      barberId: barber.id,
+      barberId: auth.barberId,
     };
 
     if (startDate) {
@@ -113,29 +92,8 @@ export async function POST(request: Request) {
     const originError = requireValidOrigin(request);
     if (originError) return originError;
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
-    }
-
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_BARBER", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const body = await request.json();
     const validation = barberAbsenceSchema.safeParse(body);
@@ -159,7 +117,7 @@ export async function POST(request: Request) {
 
     const confirmedAppointments = await prisma.appointment.findMany({
       where: {
-        barberId: barber.id,
+        barberId: auth.barberId,
         date: dateDb,
         status: AppointmentStatus.CONFIRMED,
       },
@@ -171,7 +129,6 @@ export async function POST(request: Request) {
       orderBy: [{ startTime: "asc" }],
     });
 
-    // Conflict detection (you chose: block creation if conflicts exist)
     let conflicts = confirmedAppointments;
     if (startTime && endTime) {
       const absenceStart = parseTimeToMinutes(startTime);
@@ -203,7 +160,7 @@ export async function POST(request: Request) {
 
     const created = await prisma.barberAbsence.create({
       data: {
-        barberId: barber.id,
+        barberId: auth.barberId,
         date: dateDb,
         startTime,
         endTime,

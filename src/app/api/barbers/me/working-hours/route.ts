@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { updateBarberWorkingHoursSchema } from "@/lib/validations/booking";
 import {
@@ -7,6 +6,7 @@ import {
   upsertWorkingHoursInTransaction,
 } from "@/lib/working-hours";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 /**
  * GET /api/barbers/me/working-hours
@@ -14,32 +14,11 @@ import { requireValidOrigin } from "@/lib/api/verify-origin";
  */
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
-    }
-
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_BARBER", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const workingHours = await prisma.workingHours.findMany({
-      where: { barberId: barber.id },
+      where: { barberId: auth.barberId },
       orderBy: { dayOfWeek: "asc" },
     });
 
@@ -64,31 +43,9 @@ export async function PUT(request: Request) {
     const originError = requireValidOrigin(request);
     if (originError) return originError;
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
-    }
-
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_BARBER", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
-
-    // Parse JSON body with error handling
     let body: unknown;
     try {
       body = await request.json();
@@ -112,14 +69,12 @@ export async function PUT(request: Request) {
 
     const { days } = validation.data;
 
-    // Process each day: upsert if working, delete if not working
     await prisma.$transaction(async (tx) => {
-      await upsertWorkingHoursInTransaction(tx, barber.id, days);
+      await upsertWorkingHoursInTransaction(tx, auth.barberId, days);
     });
 
-    // Fetch updated hours
     const updatedHours = await prisma.workingHours.findMany({
-      where: { barberId: barber.id },
+      where: { barberId: auth.barberId },
       orderBy: { dayOfWeek: "asc" },
     });
 

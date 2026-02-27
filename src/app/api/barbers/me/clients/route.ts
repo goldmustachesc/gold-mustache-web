@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { z } from "zod";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 export interface ClientData {
   id: string;
@@ -40,35 +40,12 @@ const createClientSchema = z.object({
  */
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user is a barber
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
 
-    // Fetch all unique clients from appointments (registered profiles)
     const registeredClients = await prisma.profile.findMany({
       where: {
         appointments: {
@@ -98,7 +75,6 @@ export async function GET(request: Request) {
       },
     });
 
-    // Fetch all unique guest clients from appointments
     const guestClients = await prisma.guestClient.findMany({
       where: {
         appointments: {
@@ -128,7 +104,6 @@ export async function GET(request: Request) {
       },
     });
 
-    // Combine and format the results
     const clients: ClientData[] = [
       ...registeredClients.map((client) => ({
         id: client.id,
@@ -152,7 +127,6 @@ export async function GET(request: Request) {
       })),
     ];
 
-    // Sort by name
     clients.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
     return NextResponse.json({ clients });
@@ -174,30 +148,8 @@ export async function POST(request: Request) {
     const originError = requireValidOrigin(request);
     if (originError) return originError;
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user is a barber
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Acesso restrito a barbeiros" },
-        { status: 403 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const body = await request.json();
     const validation = createClientSchema.safeParse(body);
@@ -215,7 +167,6 @@ export async function POST(request: Request) {
     const { fullName, phone } = validation.data;
     const normalizedPhone = normalizePhoneDigits(phone);
 
-    // Check if phone already exists
     const existingGuest = await prisma.guestClient.findUnique({
       where: { phone: normalizedPhone },
     });
@@ -230,7 +181,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Also check if phone exists in registered profiles
     const existingProfile = await prisma.profile.findFirst({
       where: { phone: normalizedPhone },
     });
@@ -245,7 +195,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create the guest client
     const newClient = await prisma.guestClient.create({
       data: {
         fullName: fullName.trim(),

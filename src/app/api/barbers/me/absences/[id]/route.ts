@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 export async function DELETE(
   request: Request,
@@ -12,36 +12,16 @@ export async function DELETE(
     if (originError) return originError;
 
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", message: "Não autorizado" },
-        { status: 401 },
-      );
-    }
-
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!barber) {
-      return NextResponse.json(
-        { error: "NOT_BARBER", message: "Usuário não é barbeiro" },
-        { status: 404 },
-      );
-    }
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
 
     const absence = await prisma.barberAbsence.findUnique({
       where: { id },
       select: { id: true, barberId: true },
     });
 
-    if (!absence || absence.barberId !== barber.id) {
+    if (!absence || absence.barberId !== auth.barberId) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Ausência não encontrada" },
         { status: 404 },
