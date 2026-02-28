@@ -32,6 +32,17 @@ Este documento contém diretrizes e padrões para desenvolvimento de IA e agente
 - Componha UI com Tailwind utility classes; use `clsx`/`tailwind-merge` para gerenciar estilos condicionais em vez de concatenação manual de strings.
 - Mantenha código de data-fetching dentro de `src/services` ou server components, e exponha configuração via objetos fortemente tipados em `src/config`.
 
+## Code Quality Principles
+**Todos os agentes DEVEM seguir estes princípios ao gerar ou modificar código:**
+- **Clean Code**: Nomes descritivos, funções pequenas e com propósito único, sem código morto ou comentários desnecessários.
+- **SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion. Separe responsabilidades corretamente entre módulos, componentes e funções.
+- **KISS** (Keep It Simple, Stupid): Prefira soluções simples e diretas. Evite abstrações prematuras ou complexidade desnecessária.
+- **YAGNI** (You Aren't Gonna Need It): Não implemente funcionalidades "para o futuro". Implemente apenas o que é necessário agora.
+- **Proibido `any`**: Nunca use `any` em TypeScript. Use tipos explícitos, `unknown` com narrowing, generics, ou utility types quando necessário.
+- **Evite overengineering**: Não crie abstrações, wrappers ou camadas extras sem necessidade concreta e imediata.
+- **Código testável e manutenível**: Escreva código com dependências injetáveis, funções puras quando possível, e separação clara entre lógica de negócio e infraestrutura.
+- **Decisões arquiteturais**: Explique brevemente o racional por trás de escolhas arquiteturais relevantes (em comentários de PR ou na resposta ao usuário, não em comentários no código).
+
 ## Testing Guidelines
 - Não existe suite automatizada ainda; no mínimo execute `pnpm lint` e exercite caminhos críticos (landing page, Instagram feed, booking redirect) antes de abrir PR.
 - Ao introduzir testes, coloque specs próximo da feature com sufixo `.test.ts(x)` e favoreça React Testing Library ou Playwright para UI flows.

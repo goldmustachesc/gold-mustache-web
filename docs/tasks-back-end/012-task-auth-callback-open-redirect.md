@@ -55,9 +55,19 @@ return NextResponse.redirect(`${origin}${next}`);
 
 ## Checklist
 
-- [ ] Criar função `getSafeRedirectPath` para validação
-- [ ] Aplicar no auth callback
-- [ ] Verificar se há outros redirects baseados em parâmetros de URL no projeto
-- [ ] Testar redirect normal (`next=/dashboard`) funciona
-- [ ] Testar que `next=//evil.com` redireciona para `/dashboard`
-- [ ] Testar que `next=/\evil.com` redireciona para `/dashboard`
+- [x] Criar função `getSafeRedirectPath` para validação
+- [x] Aplicar no auth callback
+- [x] Verificar se há outros redirects baseados em parâmetros de URL no projeto
+- [x] Testar redirect normal (`next=/dashboard`) funciona
+- [x] Testar que `next=//evil.com` redireciona para `/dashboard`
+- [x] Testar que `next=/\evil.com` redireciona para `/dashboard`
+
+## Implementação
+
+**Arquivos criados/modificados:**
+
+- `src/utils/redirect.ts` — função `getSafeRedirectPath` com defesas contra protocol-relative URLs, backslash bypass, control chars (CRLF injection), e double-encoding
+- `src/utils/__tests__/redirect.test.ts` — 14 unit tests cobrindo happy paths e vetores de ataque
+- `src/app/[locale]/(auth)/auth/callback/route.ts` — substituído `searchParams.get("next") ?? "/dashboard"` por `getSafeRedirectPath(searchParams.get("next"))`
+
+**Verificação de impacto:** nenhum outro redirect baseado em parâmetro de URL controlado pelo usuário foi encontrado no projeto.

@@ -202,6 +202,9 @@ model Appointment {
   // Uniqueness for active bookings is enforced via a PARTIAL unique index in SQL
   // (status = 'CONFIRMED') plus an advisory-lock + overlap-check in `src/services/booking.ts`.
   @@index([barberId, date, startTime])
+  @@index([clientId])
+  @@index([guestClientId])
+  @@index([status])
   @@map("appointments")
 }
 
@@ -223,6 +226,7 @@ model Notification {
   read      Boolean          @default(false)
   createdAt DateTime         @default(now()) @map("created_at")
 
+  @@index([userId, read])
   @@map("notifications")
 }
 
@@ -305,6 +309,8 @@ model CookieConsent {
 
   // Partial unique indexes are defined in the migration SQL
   // to allow multiple NULLs while preventing duplicates for non-null values
+  @@index([userId])
+  @@index([anonymousId])
   @@map("cookie_consents")
 }
 

@@ -102,11 +102,11 @@ pnpm prisma migrate dev --name add-missing-indexes
 
 ## Checklist
 
-- [ ] Adicionar `@@index([userId])` e `@@index([userId, read])` em Notification
-- [ ] Adicionar `@@index([clientId])` em Appointment
-- [ ] Adicionar `@@index([guestClientId])` em Appointment
-- [ ] Adicionar `@@index([status])` em Appointment
-- [ ] Adicionar `@@index([userId])` em CookieConsent
-- [ ] Adicionar `@@index([anonymousId])` em CookieConsent
-- [ ] Gerar e aplicar migration
+- [x] Adicionar `@@index([userId, read])` em Notification (composite cobre queries por `userId` sozinho)
+- [x] Adicionar `@@index([clientId])` em Appointment
+- [x] Adicionar `@@index([guestClientId])` em Appointment
+- [x] Adicionar `@@index([status])` em Appointment
+- [x] Adicionar `@@index([userId])` em CookieConsent
+- [x] Adicionar `@@index([anonymousId])` em CookieConsent
+- [x] Gerar e aplicar migration
 - [ ] Testar que queries de notificação, agendamentos e consentimento continuam funcionando
