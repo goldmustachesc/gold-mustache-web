@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ApiError, apiAction } from "@/lib/api/client";
+import { apiAction } from "@/lib/api/client";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth";
@@ -50,8 +50,7 @@ export function DeleteAccountCard() {
       router.refresh();
     } catch (error) {
       console.error("Error deleting account:", error);
-      const message = error instanceof ApiError ? error.message : t("error");
-      toast.error(message);
+      toast.error(t("error"));
     } finally {
       setIsLoading(false);
       setIsDialogOpen(false);

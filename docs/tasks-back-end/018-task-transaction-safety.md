@@ -58,8 +58,8 @@ try {
 
 ## Checklist
 
-- [ ] Revisar ordem de operações no profile delete
-- [ ] Revisar ordem de operações no cron cleanup-guests
-- [ ] Documentar padrão de "operação externa primeiro, banco depois"
-- [ ] Adicionar log/alerta para operações parcialmente completadas
+- [x] Revisar ordem de operações no profile delete
+- [x] Revisar ordem de operações no cron cleanup-guests
+- [x] Documentar padrão de "operação externa primeiro, banco depois"
+- [x] Adicionar log/alerta para operações parcialmente completadas
 - [ ] Considerar dead-letter queue para operações falhadas (futuro)

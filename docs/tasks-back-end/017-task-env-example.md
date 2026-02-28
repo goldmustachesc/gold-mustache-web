@@ -2,61 +2,27 @@
 
 ## Prioridade: 🟡 MÉDIA (DevEx / Documentação)
 
-## Problema
+## Status: ✅ RESOLVIDO
 
-O projeto não possui um `.env.example`. Novos desenvolvedores precisam descobrir quais variáveis de ambiente são necessárias lendo o código ou a documentação espalhada.
+## Problema (original)
 
-## O que criar
+O projeto não possuía um `.env.example`. Novos desenvolvedores precisavam descobrir quais variáveis de ambiente são necessárias lendo o código ou a documentação espalhada.
 
-Arquivo `.env.example` na raiz do projeto com todas as variáveis documentadas:
+## Solução aplicada
 
-```bash
-# ===================================
-# Gold Mustache - Variáveis de Ambiente
-# ===================================
-# Copie este arquivo para .env.local e preencha os valores
+Criado `.env.example` na raiz com 17 variáveis documentadas por seção (Database, Supabase, Site, Rate Limiting, Instagram, Cron, Analytics). Scan do codebase identificou duas variáveis extras não previstas na spec original (`INSTAGRAM_MAX_RETRIES`, `INSTAGRAM_POSTS_LIMIT`), que foram incluídas. Variáveis auto-fornecidas por runtime (`NODE_ENV`, `VERCEL_ENV`, `VERCEL_URL`, `VITEST`) foram excluídas por não fazerem sentido no template.
 
-# ---- Banco de Dados (Prisma + PostgreSQL) ----
-# Obrigatório
-DATABASE_URL="postgresql://user:password@host:5432/database?schema=public"
-DIRECT_URL="postgresql://user:password@host:5432/database?schema=public"
+### Arquivos modificados
 
-# ---- Supabase (Autenticação) ----
-# Obrigatório
-NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
-# Obrigatório para operações admin (delete user, seeds)
-SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
-
-# ---- Site ----
-# Obrigatório em produção, usado para verificação de origem (CSRF)
-NEXT_PUBLIC_SITE_URL="https://your-domain.com"
-# Detecção de ambiente (development | staging | production)
-NEXT_PUBLIC_ENVIRONMENT="development"
-
-# ---- Rate Limiting (Upstash Redis) ----
-# Recomendado em produção — sem isso, rate limiting fica desabilitado
-UPSTASH_REDIS_REST_URL=""
-UPSTASH_REDIS_REST_TOKEN=""
-
-# ---- Instagram Integration ----
-# Opcional — necessário apenas para feed de Instagram
-INSTAGRAM_ACCESS_TOKEN=""
-INSTAGRAM_USER_ID=""
-
-# ---- Cron Jobs ----
-# Obrigatório se usar cron endpoints (sync-instagram, cleanup-guests)
-CRON_SECRET="your-random-secret"
-
-# ---- Analytics ----
-# Opcional
-NEXT_PUBLIC_GA_ID=""
-NEXT_PUBLIC_GTM_ID=""
-```
+| Arquivo | Mudança |
+|---------|---------|
+| `.env.example` | **Novo** — template com todas as variáveis documentadas |
+| `.gitignore` | Adicionado `!.env.example` para exceção ao padrão `.env*` |
+| `README.md` | Instruções de setup com `cp .env.example .env.local`; corrigido `npm` → `pnpm` |
 
 ## Checklist
 
-- [ ] Criar `.env.example` na raiz
-- [ ] Verificar se há variáveis faltando comparando com uso no código
-- [ ] Adicionar ao README instruções para copiar para `.env.local`
-- [ ] Garantir que `.env.example` está no git (e `.env.local` no `.gitignore`)
+- [x] Criar `.env.example` na raiz
+- [x] Verificar se há variáveis faltando comparando com uso no código
+- [x] Adicionar ao README instruções para copiar para `.env.local`
+- [x] Garantir que `.env.example` está no git (e `.env.local` no `.gitignore`)

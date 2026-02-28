@@ -179,6 +179,9 @@ describe("DELETE /api/profile/delete", () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
 
+    // Auth user should still be deleted even without a profile
+    expect(mockDeleteUser).toHaveBeenCalledWith(mockUser.id);
+
     // No transaction needed when profile doesn't exist
     expect(mockPrismaTransaction).not.toHaveBeenCalled();
     expect(mockAppointmentDeleteMany).not.toHaveBeenCalled();
@@ -187,13 +190,37 @@ describe("DELETE /api/profile/delete", () => {
     consoleSpy.mockRestore();
   });
 
-  it("should succeed even if Supabase Auth deletion fails", async () => {
+  it("should abort with 500 if Supabase Auth deletion fails", async () => {
     mockDeleteUser.mockResolvedValue({
       error: { message: "Auth deletion failed" },
     });
 
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await DELETE(createMockRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("DELETE_FAILED");
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[Account Delete] Auth deletion failed, aborting:",
+      expect.objectContaining({
+        userId: mockUser.id,
+        error: "Auth deletion failed",
+      }),
+    );
+
+    expect(mockPrismaTransaction).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it("should return 200 on database error when auth already deleted (partial delete)", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    mockPrismaTransaction.mockRejectedValue(new Error("Database error"));
 
     const response = await DELETE(createMockRequest());
     const body = await response.json();
@@ -201,29 +228,18 @@ describe("DELETE /api/profile/delete", () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
 
-    // Should log the error but still succeed
     expect(consoleSpy).toHaveBeenCalledWith(
-      `[Account Delete] Failed to delete auth user ${mockUser.id}:`,
-      "Auth deletion failed",
+      "[Account Delete] PARTIAL DELETE - auth deleted but DB cleanup failed:",
+      expect.objectContaining({
+        userId: mockUser.id,
+        profileId: mockProfile.id,
+        authDeleted: true,
+        error: "Database error",
+      }),
     );
 
     consoleSpy.mockRestore();
     infoSpy.mockRestore();
-  });
-
-  it("should return 500 on database error", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    mockPrismaTransaction.mockRejectedValue(new Error("Database error"));
-
-    const response = await DELETE(createMockRequest());
-    const body = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(body.error).toBe("INTERNAL_ERROR");
-    expect(body.message).toBe("Erro ao deletar conta");
-
-    consoleSpy.mockRestore();
   });
 
   it("should handle user with no appointments", async () => {
@@ -237,26 +253,26 @@ describe("DELETE /api/profile/delete", () => {
     expect(mockAppointmentDeleteMany).toHaveBeenCalled();
   });
 
-  it("should warn when service role key is not set", async () => {
-    // Temporarily remove the service key
+  it("should return 500 when service role key is not set", async () => {
     const originalKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const response = await DELETE(createMockRequest());
     const body = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("CONFIG_ERROR");
+
     expect(consoleSpy).toHaveBeenCalledWith(
-      "[Account Delete] SUPABASE_SERVICE_ROLE_KEY not configured - auth user not deleted",
+      "[Account Delete] SUPABASE_SERVICE_ROLE_KEY not configured - cannot safely delete account",
     );
 
-    // Restore the key
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(mockPrismaTransaction).not.toHaveBeenCalled();
+
     process.env.SUPABASE_SERVICE_ROLE_KEY = originalKey;
     consoleSpy.mockRestore();
-    infoSpy.mockRestore();
   });
 });

@@ -238,7 +238,9 @@ describe("DeleteAccountCard", () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Error deleting account");
+      expect(toast.error).toHaveBeenCalledWith(
+        "Erro ao excluir conta. Tente novamente.",
+      );
     });
   });
 

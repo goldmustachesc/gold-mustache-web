@@ -10,9 +10,9 @@ import { apiMessage, apiError } from "@/lib/api/response";
  * DELETE /api/profile/delete
  *
  * Permanently deletes the user's account and all associated data:
+ * - Supabase Auth user (requires SUPABASE_SERVICE_ROLE_KEY)
  * - Appointments (as client)
  * - Profile data
- * - Supabase Auth user (if service role key is configured)
  *
  * This action is irreversible.
  *
@@ -46,44 +46,21 @@ export async function DELETE(request: Request) {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
-    // Track deletion results for logging
     const deletionResult = {
       userId: user.id,
+      authUserDeleted: false,
       profileDeleted: false,
       appointmentsDeleted: 0,
-      authUserDeleted: false,
     };
 
-    // First, get the profile to get the profile ID
     const profile = await prisma.profile.findUnique({
       where: { userId: user.id },
     });
 
-    // Delete profile and related data from database
-    // Using transaction to ensure all or nothing
-    if (profile) {
-      const transactionResult = await prisma.$transaction(async (tx) => {
-        // Delete appointments associated with the user's profile
-        // Note: clientId references Profile.id, not user.id
-        const appointmentsResult = await tx.appointment.deleteMany({
-          where: { clientId: profile.id },
-        });
+    // Transaction safety: external operations first, database second.
+    // Supabase Auth is harder to revert; Prisma operations can be retried.
 
-        // Delete the profile
-        await tx.profile.delete({
-          where: { id: profile.id },
-        });
-
-        return { appointmentsDeleted: appointmentsResult.count };
-      });
-
-      deletionResult.profileDeleted = true;
-      deletionResult.appointmentsDeleted =
-        transactionResult.appointmentsDeleted;
-    }
-
-    // Delete user from Supabase Auth using admin client
-    // This requires service role key
+    // Step 1: Delete auth user (external operation — do this first)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -99,23 +76,66 @@ export async function DELETE(request: Request) {
         await adminClient.auth.admin.deleteUser(user.id);
 
       if (deleteUserError) {
-        // Log the error but don't fail - profile data is already deleted
-        // The auth user will be orphaned but can be cleaned up manually
-        console.error(
-          `[Account Delete] Failed to delete auth user ${user.id}:`,
-          deleteUserError.message,
+        console.error("[Account Delete] Auth deletion failed, aborting:", {
+          userId: user.id,
+          error: deleteUserError.message,
+          timestamp: new Date().toISOString(),
+        });
+        return apiError(
+          "DELETE_FAILED",
+          "Erro ao deletar conta. Tente novamente.",
+          500,
         );
-      } else {
-        deletionResult.authUserDeleted = true;
       }
+
+      deletionResult.authUserDeleted = true;
     } else {
-      console.warn(
-        "[Account Delete] SUPABASE_SERVICE_ROLE_KEY not configured - auth user not deleted",
+      console.error(
+        "[Account Delete] SUPABASE_SERVICE_ROLE_KEY not configured - cannot safely delete account",
+      );
+      return apiError(
+        "CONFIG_ERROR",
+        "Serviço temporariamente indisponível. Tente novamente mais tarde.",
+        500,
       );
     }
 
-    // Log successful deletion for audit purposes
-    console.info("[Account Delete] Account deleted successfully:", {
+    // Step 2: Delete database records (can be retried/cleaned up if this fails)
+    if (profile) {
+      try {
+        const transactionResult = await prisma.$transaction(async (tx) => {
+          const appointmentsResult = await tx.appointment.deleteMany({
+            where: { clientId: profile.id },
+          });
+
+          await tx.profile.delete({
+            where: { id: profile.id },
+          });
+
+          return { appointmentsDeleted: appointmentsResult.count };
+        });
+
+        deletionResult.profileDeleted = true;
+        deletionResult.appointmentsDeleted =
+          transactionResult.appointmentsDeleted;
+      } catch (dbError) {
+        // Auth user already deleted but DB cleanup failed.
+        // From the user's perspective the account is gone (can't log in).
+        // Orphaned DB records can be cleaned up via cron or manually.
+        console.error(
+          "[Account Delete] PARTIAL DELETE - auth deleted but DB cleanup failed:",
+          {
+            userId: user.id,
+            profileId: profile.id,
+            authDeleted: deletionResult.authUserDeleted,
+            error: dbError instanceof Error ? dbError.message : String(dbError),
+            timestamp: new Date().toISOString(),
+          },
+        );
+      }
+    }
+
+    console.info("[Account Delete] Account deleted:", {
       ...deletionResult,
       timestamp: new Date().toISOString(),
     });
