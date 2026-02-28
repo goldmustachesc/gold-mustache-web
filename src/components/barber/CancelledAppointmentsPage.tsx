@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useCancelledAppointments } from "@/hooks/useCancelledAppointments";
-import { Loader2, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Loader2, XCircle } from "lucide-react";
 import { CancelledAppointmentCard } from "./CancelledAppointmentCard";
 
 export function CancelledAppointmentsPage() {
-  const {
-    data: appointments = [],
-    isLoading,
-    error,
-  } = useCancelledAppointments();
+  const [page, setPage] = useState(1);
+
+  const { data: response, isLoading, error } = useCancelledAppointments(page);
+
+  const appointments = response?.data ?? [];
+  const meta = response?.meta;
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-950">
@@ -18,6 +21,11 @@ export function CancelledAppointmentsPage() {
         <p className="text-zinc-500 text-sm">Agendamentos</p>
         <h1 className="text-4xl font-bold text-white tracking-tight">
           Cancelados
+          {meta && meta.total > 0 && (
+            <span className="text-lg font-normal text-zinc-500 ml-3">
+              ({meta.total})
+            </span>
+          )}
         </h1>
       </div>
 
@@ -43,14 +51,42 @@ export function CancelledAppointmentsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {appointments.map((appointment) => (
-              <CancelledAppointmentCard
-                key={appointment.id}
-                appointment={appointment}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {appointments.map((appointment) => (
+                <CancelledAppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                />
+              ))}
+            </div>
+
+            {meta && meta.totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="border-zinc-700 hover:bg-zinc-800"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-zinc-400">
+                  Página {page} de {meta.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= meta.totalPages}
+                  className="border-zinc-700 hover:bg-zinc-800"
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

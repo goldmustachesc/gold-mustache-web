@@ -29,12 +29,12 @@ export function AdminBarberFeedbacksPage({
   barber,
 }: AdminBarberFeedbacksPageProps) {
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const limit = 20;
 
   const { data, isLoading } = useAdminBarberFeedbacks(
     barber.id,
     page,
-    pageSize,
+    limit,
     true, // Include stats
   );
 

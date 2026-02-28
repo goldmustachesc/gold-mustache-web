@@ -45,26 +45,36 @@ export async function createNotification(
 }
 
 /**
- * Get all notifications for a user
+ * Get notifications for a user with optional pagination.
  */
 export async function getNotifications(
   userId: string,
-): Promise<NotificationData[]> {
-  const notifications = await prisma.notification.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  pagination?: { skip: number; take: number },
+): Promise<{ notifications: NotificationData[]; total: number }> {
+  const where = { userId };
 
-  return notifications.map((n) => ({
-    id: n.id,
-    userId: n.userId,
-    type: n.type,
-    title: n.title,
-    message: n.message,
-    data: n.data as Record<string, unknown> | null,
-    read: n.read,
-    createdAt: n.createdAt.toISOString(),
-  }));
+  const [total, notifications] = await Promise.all([
+    prisma.notification.count({ where }),
+    prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...(pagination ? { skip: pagination.skip, take: pagination.take } : {}),
+    }),
+  ]);
+
+  return {
+    total,
+    notifications: notifications.map((n) => ({
+      id: n.id,
+      userId: n.userId,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      data: n.data as Record<string, unknown> | null,
+      read: n.read,
+      createdAt: n.createdAt.toISOString(),
+    })),
+  };
 }
 
 /**

@@ -84,12 +84,12 @@ export function useCreateGuestFeedback() {
 // Barber Hooks
 // ============================================
 
-export function useBarberFeedbacks(page = 1, pageSize = 10) {
+export function useBarberFeedbacks(page = 1, limit = 10) {
   return useQuery({
-    queryKey: ["barber-feedbacks", page, pageSize],
+    queryKey: ["barber-feedbacks", page, limit],
     queryFn: () =>
       apiGet<PaginatedFeedbacks>(
-        `/api/barbers/me/feedbacks?page=${page}&pageSize=${pageSize}`,
+        `/api/barbers/me/feedbacks?page=${page}&limit=${limit}`,
       ),
   });
 }
@@ -108,11 +108,11 @@ export function useBarberFeedbackStats() {
 export function useAdminFeedbacks(
   filters: FeedbackFilters = {},
   page = 1,
-  pageSize = 20,
+  limit = 20,
 ) {
   const params = new URLSearchParams();
   params.set("page", page.toString());
-  params.set("pageSize", pageSize.toString());
+  params.set("limit", limit.toString());
   if (filters.barberId) params.set("barberId", filters.barberId);
   if (filters.rating) params.set("rating", filters.rating.toString());
   if (filters.startDate) params.set("startDate", filters.startDate);
@@ -122,7 +122,7 @@ export function useAdminFeedbacks(
   }
 
   return useQuery({
-    queryKey: ["admin-feedbacks", filters, page, pageSize],
+    queryKey: ["admin-feedbacks", filters, page, limit],
     queryFn: () => apiGet<PaginatedFeedbacks>(`/api/admin/feedbacks?${params}`),
   });
 }
@@ -144,22 +144,16 @@ export function useBarberRanking() {
 export function useAdminBarberFeedbacks(
   barberId: string | undefined,
   page = 1,
-  pageSize = 20,
+  limit = 20,
   includeStats = false,
 ) {
   const params = new URLSearchParams();
   params.set("page", page.toString());
-  params.set("pageSize", pageSize.toString());
+  params.set("limit", limit.toString());
   if (includeStats) params.set("includeStats", "true");
 
   return useQuery({
-    queryKey: [
-      "admin-barber-feedbacks",
-      barberId,
-      page,
-      pageSize,
-      includeStats,
-    ],
+    queryKey: ["admin-barber-feedbacks", barberId, page, limit, includeStats],
     queryFn: () =>
       apiGet<
         PaginatedFeedbacks & {

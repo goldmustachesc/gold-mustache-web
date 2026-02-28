@@ -89,6 +89,6 @@ export interface PaginatedFeedbacks {
   feedbacks: FeedbackWithDetails[];
   total: number;
   page: number;
-  pageSize: number;
+  limit: number;
   totalPages: number;
 }

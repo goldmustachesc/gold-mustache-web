@@ -38,7 +38,10 @@ describe("GET /api/notifications", () => {
 
   it("returns notifications and unread count", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
-    mockGetNotifications.mockResolvedValue([{ id: "n-1" }]);
+    mockGetNotifications.mockResolvedValue({
+      notifications: [{ id: "n-1" }],
+      total: 1,
+    });
     mockGetUnreadCount.mockResolvedValue(2);
 
     const response = await GET(
@@ -49,6 +52,12 @@ describe("GET /api/notifications", () => {
     expect(response.status).toBe(200);
     expect(body.data.notifications).toEqual([{ id: "n-1" }]);
     expect(body.data.unreadCount).toBe(2);
+    expect(body.data.meta).toEqual({
+      total: 1,
+      page: 1,
+      limit: 20,
+      totalPages: 1,
+    });
   });
 
   it("returns 500 on service error", async () => {

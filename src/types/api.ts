@@ -2,7 +2,7 @@ export interface PaginationMeta {
   total: number;
   page: number;
   limit: number;
-  totalPages?: number;
+  totalPages: number;
 }
 
 export interface ApiSuccessResponse<T> {

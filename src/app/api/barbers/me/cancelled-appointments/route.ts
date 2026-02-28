@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { apiSuccess } from "@/lib/api/response";
+import { apiCollection } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { parsePagination, paginationMeta } from "@/lib/api/pagination";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
 export interface CancelledAppointmentData {
@@ -15,46 +16,42 @@ export interface CancelledAppointmentData {
   barberName: string;
 }
 
+const cancelledStatuses = [
+  "CANCELLED_BY_CLIENT",
+  "CANCELLED_BY_BARBER",
+] as const;
+const cancelledWhere = {
+  status: { in: [...cancelledStatuses] },
+};
+
 /**
  * GET /api/barbers/me/cancelled-appointments
- * Lists all cancelled appointments from the barbershop
+ * Lists cancelled appointments with pagination.
+ * Query params: page, limit
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireBarber();
     if (!auth.ok) return auth.response;
 
-    const cancelledAppointments = await prisma.appointment.findMany({
-      where: {
-        status: {
-          in: ["CANCELLED_BY_CLIENT", "CANCELLED_BY_BARBER"],
+    const { searchParams } = new URL(request.url);
+    const { page, limit, skip } = parsePagination(searchParams);
+
+    const [total, cancelledAppointments] = await Promise.all([
+      prisma.appointment.count({ where: cancelledWhere }),
+      prisma.appointment.findMany({
+        where: cancelledWhere,
+        include: {
+          client: { select: { fullName: true } },
+          guestClient: { select: { fullName: true } },
+          service: { select: { name: true, price: true } },
+          barber: { select: { name: true } },
         },
-      },
-      include: {
-        client: {
-          select: {
-            fullName: true,
-          },
-        },
-        guestClient: {
-          select: {
-            fullName: true,
-          },
-        },
-        service: {
-          select: {
-            name: true,
-            price: true,
-          },
-        },
-        barber: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: [{ date: "desc" }, { startTime: "desc" }],
-    });
+        orderBy: [{ date: "desc" }, { startTime: "desc" }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
     const appointments: CancelledAppointmentData[] = cancelledAppointments.map(
       (apt) => ({
@@ -71,7 +68,7 @@ export async function GET() {
       }),
     );
 
-    return apiSuccess(appointments);
+    return apiCollection(appointments, paginationMeta(total, page, limit));
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos cancelados");
   }

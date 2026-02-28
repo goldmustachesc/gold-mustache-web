@@ -406,7 +406,7 @@ describe("services/feedback", () => {
       expect(result.feedbacks).toHaveLength(1);
       expect(result.total).toBe(15);
       expect(result.page).toBe(2);
-      expect(result.pageSize).toBe(10);
+      expect(result.limit).toBe(10);
       expect(result.totalPages).toBe(2);
     });
 
@@ -570,7 +570,7 @@ describe("services/feedback", () => {
       );
 
       expect(result.page).toBe(3);
-      expect(result.pageSize).toBe(15);
+      expect(result.limit).toBe(15);
       expect(result.totalPages).toBe(4);
     });
   });
@@ -688,7 +688,7 @@ describe("services/feedback", () => {
       );
 
       expect(result.page).toBe(2);
-      expect(result.pageSize).toBe(15);
+      expect(result.limit).toBe(15);
     });
   });
 });

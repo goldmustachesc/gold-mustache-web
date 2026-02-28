@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { apiError, apiSuccess } from "@/lib/api/response";
+import { apiError, apiSuccess, apiCollection } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { parsePagination, paginationMeta } from "@/lib/api/pagination";
 import { normalizePhoneDigits } from "@/lib/booking/phone";
 import { z } from "zod";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -35,9 +36,8 @@ const createClientSchema = z.object({
 
 /**
  * GET /api/barbers/me/clients
- * Lists all clients (registered and guests) who have booked appointments at the barbershop
- * Query params:
- * - search: filter by name or phone
+ * Lists clients (registered and guests) who have booked appointments.
+ * Query params: search, page, limit
  */
 export async function GET(request: Request) {
   try {
@@ -46,66 +46,41 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
+    const { page, limit, skip } = parsePagination(searchParams);
 
-    const registeredClients = await prisma.profile.findMany({
-      where: {
-        appointments: {
-          some: {},
-        },
-        ...(search
-          ? {
-              OR: [
-                { fullName: { contains: search, mode: "insensitive" } },
-                { phone: { contains: search } },
-              ],
-            }
-          : {}),
-      },
-      select: {
-        id: true,
-        fullName: true,
-        phone: true,
-        _count: {
-          select: { appointments: true },
-        },
-        appointments: {
-          orderBy: { date: "desc" },
-          take: 1,
-          select: { date: true },
-        },
-      },
-    });
+    const searchFilter = search
+      ? {
+          OR: [
+            { fullName: { contains: search, mode: "insensitive" as const } },
+            { phone: { contains: search } },
+          ],
+        }
+      : {};
 
-    const guestClients = await prisma.guestClient.findMany({
-      where: {
-        appointments: {
-          some: {},
-        },
-        ...(search
-          ? {
-              OR: [
-                { fullName: { contains: search, mode: "insensitive" } },
-                { phone: { contains: search } },
-              ],
-            }
-          : {}),
+    const clientSelect = {
+      id: true,
+      fullName: true,
+      phone: true,
+      _count: { select: { appointments: true } },
+      appointments: {
+        orderBy: { date: "desc" as const },
+        take: 1,
+        select: { date: true },
       },
-      select: {
-        id: true,
-        fullName: true,
-        phone: true,
-        _count: {
-          select: { appointments: true },
-        },
-        appointments: {
-          orderBy: { date: "desc" },
-          take: 1,
-          select: { date: true },
-        },
-      },
-    });
+    };
 
-    const clients: ClientData[] = [
+    const [registeredClients, guestClients] = await Promise.all([
+      prisma.profile.findMany({
+        where: { appointments: { some: {} }, ...searchFilter },
+        select: clientSelect,
+      }),
+      prisma.guestClient.findMany({
+        where: { appointments: { some: {} }, ...searchFilter },
+        select: clientSelect,
+      }),
+    ]);
+
+    const allClients: ClientData[] = [
       ...registeredClients.map((client) => ({
         id: client.id,
         fullName: client.fullName || "Cliente",
@@ -128,9 +103,12 @@ export async function GET(request: Request) {
       })),
     ];
 
-    clients.sort((a, b) => a.fullName.localeCompare(b.fullName));
+    allClients.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-    return apiSuccess(clients);
+    const total = allClients.length;
+    const paged = allClients.slice(skip, skip + limit);
+
+    return apiCollection(paged, paginationMeta(total, page, limit));
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar clientes");
   }

@@ -7,6 +7,8 @@ import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
 import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
 import {
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   DollarSign,
   Info,
@@ -34,6 +36,7 @@ export function ClientListPage() {
 
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
+  const [page, setPage] = useState(1);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -41,10 +44,18 @@ export function ClientListPage() {
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
 
   const {
-    data: clients = [],
+    data: response,
     isLoading,
     error,
-  } = useBarberClients(deferredSearch || undefined);
+  } = useBarberClients(deferredSearch || undefined, page);
+
+  const clients = response?.data ?? [];
+  const meta = response?.meta;
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const handleViewHistory = (client: ClientData) => {
     setSelectedClient(client);
@@ -58,6 +69,7 @@ export function ClientListPage() {
 
   const registeredClients = clients.filter((c) => c.type === "registered");
   const guestClients = clients.filter((c) => c.type === "guest");
+  const totalClients = meta?.total ?? clients.length;
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-900">
@@ -128,7 +140,7 @@ export function ClientListPage() {
             <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/10 rounded-xl p-3 border border-amber-500/30">
               <p className="text-amber-400 text-xs uppercase">Total</p>
               <p className="text-2xl font-bold text-white">
-                {isLoading ? "—" : clients.length}
+                {isLoading ? "—" : totalClients}
               </p>
             </div>
             <div className="bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/50">
@@ -153,7 +165,7 @@ export function ClientListPage() {
                 type="text"
                 placeholder="Pesquisar por nome ou telefone..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-12 pr-4 py-5 bg-zinc-800/50 border-zinc-700/50 rounded-xl text-white placeholder:text-zinc-500 focus:border-amber-500/50 focus:ring-amber-500/20"
               />
             </div>
@@ -187,16 +199,44 @@ export function ClientListPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
-                {clients.map((client) => (
-                  <ClientCard
-                    key={client.id}
-                    client={client}
-                    onViewHistory={handleViewHistory}
-                    onEdit={handleEdit}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="space-y-3">
+                  {clients.map((client) => (
+                    <ClientCard
+                      key={client.id}
+                      client={client}
+                      onViewHistory={handleViewHistory}
+                      onEdit={handleEdit}
+                    />
+                  ))}
+                </div>
+
+                {meta && meta.totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 pb-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="border-zinc-700 hover:bg-zinc-800"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm text-zinc-400">
+                      Página {page} de {meta.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={page >= meta.totalPages}
+                      className="border-zinc-700 hover:bg-zinc-800"
+                    >
+                      Próxima
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -217,7 +257,7 @@ export function ClientListPage() {
                       </span>
                     </div>
                     <div className="text-4xl font-bold text-white mb-1">
-                      {isLoading ? "—" : clients.length}
+                      {isLoading ? "—" : totalClients}
                     </div>
                     <div className="flex gap-4 mt-3 pt-3 border-t border-amber-500/20">
                       <div>
@@ -322,7 +362,7 @@ export function ClientListPage() {
                         type="text"
                         placeholder="Pesquisar por nome ou telefone..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-12 pr-4 py-5 bg-zinc-900/50 border-zinc-700/50 rounded-xl text-white placeholder:text-zinc-500 focus:border-amber-500/50 focus:ring-amber-500/20"
                       />
                     </div>
@@ -337,10 +377,10 @@ export function ClientListPage() {
                           ? `Resultados para "${search}"`
                           : "Todos os Clientes"}
                       </h2>
-                      {!isLoading && clients.length > 0 && (
+                      {!isLoading && totalClients > 0 && (
                         <span className="text-sm text-zinc-500">
-                          {clients.length} cliente
-                          {clients.length !== 1 ? "s" : ""}
+                          {totalClients} cliente
+                          {totalClients !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
@@ -383,16 +423,44 @@ export function ClientListPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {clients.map((client) => (
-                          <ClientCard
-                            key={client.id}
-                            client={client}
-                            onViewHistory={handleViewHistory}
-                            onEdit={handleEdit}
-                          />
-                        ))}
-                      </div>
+                      <>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                          {clients.map((client) => (
+                            <ClientCard
+                              key={client.id}
+                              client={client}
+                              onViewHistory={handleViewHistory}
+                              onEdit={handleEdit}
+                            />
+                          ))}
+                        </div>
+
+                        {meta && meta.totalPages > 1 && (
+                          <div className="flex items-center justify-between pt-4">
+                            <Button
+                              variant="outline"
+                              onClick={() => setPage((p) => Math.max(1, p - 1))}
+                              disabled={page === 1}
+                              className="border-zinc-700 hover:bg-zinc-800"
+                            >
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              Anterior
+                            </Button>
+                            <span className="text-sm text-zinc-400">
+                              Página {page} de {meta.totalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              onClick={() => setPage((p) => p + 1)}
+                              disabled={page >= meta.totalPages}
+                              className="border-zinc-700 hover:bg-zinc-800"
+                            >
+                              Próxima
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

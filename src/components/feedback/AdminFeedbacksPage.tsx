@@ -44,10 +44,10 @@ export function AdminFeedbacksPage({
 }: AdminFeedbacksPageProps) {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<FeedbackFilters>({});
-  const pageSize = 20;
+  const limit = 20;
 
   const { data: feedbacksData, isLoading: feedbacksLoading } =
-    useAdminFeedbacks(filters, page, pageSize);
+    useAdminFeedbacks(filters, page, limit);
 
   const { data: stats, isLoading: statsLoading } = useAdminFeedbackStats();
   const { data: ranking, isLoading: rankingLoading } = useBarberRanking();

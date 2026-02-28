@@ -91,6 +91,7 @@ describe("services/notification (Prisma-mocked unit tests)", () => {
   });
 
   it("getNotifications maps rows and returns newest first (DB ordering)", async () => {
+    asMock(prisma.notification.count).mockResolvedValue(2);
     asMock(prisma.notification.findMany).mockResolvedValue([
       {
         id: "n-2",
@@ -121,10 +122,11 @@ describe("services/notification (Prisma-mocked unit tests)", () => {
       orderBy: { createdAt: "desc" },
     });
 
-    expect(result).toHaveLength(2);
-    expect(result[0]?.id).toBe("n-2");
-    expect(result[1]?.id).toBe("n-1");
-    expect(result[0]?.createdAt).toBe("2025-01-02T00:00:00.000Z");
+    expect(result.total).toBe(2);
+    expect(result.notifications).toHaveLength(2);
+    expect(result.notifications[0]?.id).toBe("n-2");
+    expect(result.notifications[1]?.id).toBe("n-1");
+    expect(result.notifications[0]?.createdAt).toBe("2025-01-02T00:00:00.000Z");
   });
 
   it("getUnreadCount delegates to prisma.notification.count", async () => {

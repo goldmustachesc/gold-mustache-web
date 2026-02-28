@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { NotificationData } from "@/types/booking";
+import type { PaginationMeta } from "@/types/api";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { apiGet, apiAction } from "@/lib/api/client";
 
 interface UseNotificationsOptions {
   userId: string | null;
+  page?: number;
+  limit?: number;
   onNewNotification?: (notification: NotificationData) => void;
 }
 
@@ -16,6 +19,7 @@ interface UseNotificationsReturn {
   unreadCount: number;
   isLoading: boolean;
   error: Error | null;
+  meta: PaginationMeta | null;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   refetch: () => Promise<void>;
@@ -23,12 +27,18 @@ interface UseNotificationsReturn {
 
 export function useNotifications({
   userId,
+  page = 1,
+  limit = 20,
   onNewNotification,
 }: UseNotificationsOptions): UseNotificationsReturn {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const pageRef = useRef(page);
+  pageRef.current = page;
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -36,25 +46,32 @@ export function useNotifications({
     if (!userId) {
       setNotifications([]);
       setUnreadCount(0);
+      setMeta(null);
       setIsLoading(false);
       return;
     }
 
     try {
       setIsLoading(true);
+      const params = new URLSearchParams();
+      params.set("page", page.toString());
+      params.set("limit", limit.toString());
+
       const data = await apiGet<{
         notifications: NotificationData[];
         unreadCount: number;
-      }>("/api/notifications");
+        meta: PaginationMeta;
+      }>(`/api/notifications?${params}`);
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
+      setMeta(data.meta);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Unknown error"));
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, page, limit]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
@@ -115,7 +132,9 @@ export function useNotifications({
               createdAt: payload.new.created_at,
             };
 
-            setNotifications((prev) => [newNotification, ...prev]);
+            if (pageRef.current === 1) {
+              setNotifications((prev) => [newNotification, ...prev]);
+            }
             if (!newNotification.read) {
               setUnreadCount((c) => c + 1);
             }
@@ -143,6 +162,7 @@ export function useNotifications({
     unreadCount,
     isLoading,
     error,
+    meta,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,

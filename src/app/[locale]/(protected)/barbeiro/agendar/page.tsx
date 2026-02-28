@@ -98,8 +98,10 @@ export default function BarberAgendarPage() {
 
   // Client search - only search when phone has 6+ digits and no client selected
   const shouldSearch = deferredPhone.length >= 6 && !selectedClient;
-  const { data: clientSuggestions = [], isLoading: clientsLoading } =
-    useBarberClients(shouldSearch ? deferredPhone : undefined);
+  const { data: clientsResponse, isLoading: clientsLoading } = useBarberClients(
+    shouldSearch ? deferredPhone : undefined,
+  );
+  const clientSuggestions = clientsResponse?.data ?? [];
 
   const createAppointment = useCreateAppointmentByBarber();
 

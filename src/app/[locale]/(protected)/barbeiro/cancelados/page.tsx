@@ -14,6 +14,8 @@ import { useCancelledAppointments } from "@/hooks/useCancelledAppointments";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   Menu,
   XCircle,
@@ -28,13 +30,19 @@ export default function CanceladosPage() {
   const locale = params.locale as string;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
+
   const { data: user, isLoading: userLoading } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
   const {
-    data: appointments = [],
+    data: response,
     isLoading: appointmentsLoading,
     error,
-  } = useCancelledAppointments();
+  } = useCancelledAppointments(page);
+
+  const appointments = response?.data ?? [];
+  const meta = response?.meta;
+  const totalAppointments = meta?.total ?? appointments.length;
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -143,9 +151,9 @@ export default function CanceladosPage() {
                 Agendamentos Cancelados
               </h2>
               <p className="text-zinc-400">
-                {appointments.length === 0
+                {totalAppointments === 0
                   ? "Nenhum agendamento cancelado encontrado"
-                  : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""} cancelado${appointments.length > 1 ? "s" : ""}`}
+                  : `${totalAppointments} agendamento${totalAppointments > 1 ? "s" : ""} cancelado${totalAppointments > 1 ? "s" : ""}`}
               </p>
             </div>
 
@@ -188,14 +196,42 @@ export default function CanceladosPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {appointments.map((appointment) => (
-              <CancelledAppointmentCard
-                key={appointment.id}
-                appointment={appointment}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {appointments.map((appointment) => (
+                <CancelledAppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                />
+              ))}
+            </div>
+
+            {meta && meta.totalPages > 1 && (
+              <div className="flex items-center justify-between pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="border-zinc-700 hover:bg-zinc-800"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-zinc-400">
+                  Página {page} de {meta.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= meta.totalPages}
+                  className="border-zinc-700 hover:bg-zinc-800"
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { parsePagination } from "@/lib/api/pagination";
 import {
   getBarberFeedbacksAdmin,
   getBarberFeedbackStats,
@@ -32,14 +33,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
+    const { page, limit } = parsePagination(searchParams);
     const includeStats = searchParams.get("includeStats") === "true";
 
     const feedbacksResult = await getBarberFeedbacksAdmin(
       barberId,
       page,
-      pageSize,
+      limit,
     );
 
     // Optionally include stats

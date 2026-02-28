@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getBarberFeedbacks } from "@/services/feedback";
 import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { parsePagination } from "@/lib/api/pagination";
 import { requireBarber } from "@/lib/auth/requireBarber";
 
 /**
@@ -14,10 +15,9 @@ export async function GET(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+    const { page, limit } = parsePagination(searchParams);
 
-    const result = await getBarberFeedbacks(auth.barberId, page, pageSize);
+    const result = await getBarberFeedbacks(auth.barberId, page, limit);
 
     return apiSuccess(result);
   } catch (error) {

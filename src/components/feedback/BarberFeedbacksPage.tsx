@@ -27,10 +27,10 @@ export function BarberFeedbacksPage({
   barberName,
 }: BarberFeedbacksPageProps) {
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const limit = 10;
 
   const { data: feedbacksData, isLoading: feedbacksLoading } =
-    useBarberFeedbacks(page, pageSize);
+    useBarberFeedbacks(page, limit);
 
   const { data: stats, isLoading: statsLoading } = useBarberFeedbackStats();
 

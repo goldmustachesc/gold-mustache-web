@@ -382,9 +382,9 @@ export async function getAppointmentFeedback(
 export async function getBarberFeedbacks(
   barberId: string,
   page = 1,
-  pageSize = 10,
+  limit = 10,
 ): Promise<PaginatedFeedbacks> {
-  const skip = (page - 1) * pageSize;
+  const skip = (page - 1) * limit;
 
   const [feedbacks, total] = await Promise.all([
     prisma.feedback.findMany({
@@ -425,7 +425,7 @@ export async function getBarberFeedbacks(
       },
       orderBy: { createdAt: "desc" },
       skip,
-      take: pageSize,
+      take: limit,
     }),
     prisma.feedback.count({ where: { barberId } }),
   ]);
@@ -434,8 +434,8 @@ export async function getBarberFeedbacks(
     feedbacks: feedbacks.map(mapFeedbackToDetails),
     total,
     page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
+    limit,
+    totalPages: Math.ceil(total / limit),
   };
 }
 
@@ -463,9 +463,9 @@ export async function getBarberFeedbackStats(
 export async function getAllFeedbacks(
   filters: FeedbackFilters = {},
   page = 1,
-  pageSize = 20,
+  limit = 20,
 ): Promise<PaginatedFeedbacks> {
-  const skip = (page - 1) * pageSize;
+  const skip = (page - 1) * limit;
 
   // Build where clause
   const where: {
@@ -536,7 +536,7 @@ export async function getAllFeedbacks(
       },
       orderBy: { createdAt: "desc" },
       skip,
-      take: pageSize,
+      take: limit,
     }),
     prisma.feedback.count({ where }),
   ]);
@@ -545,8 +545,8 @@ export async function getAllFeedbacks(
     feedbacks: feedbacks.map(mapFeedbackToDetails),
     total,
     page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
+    limit,
+    totalPages: Math.ceil(total / limit),
   };
 }
 
@@ -610,7 +610,7 @@ export async function getBarberRanking(): Promise<BarberRanking[]> {
 export async function getBarberFeedbacksAdmin(
   barberId: string,
   page = 1,
-  pageSize = 20,
+  limit = 20,
 ): Promise<PaginatedFeedbacks> {
-  return getBarberFeedbacks(barberId, page, pageSize);
+  return getBarberFeedbacks(barberId, page, limit);
 }

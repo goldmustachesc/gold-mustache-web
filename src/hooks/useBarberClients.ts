@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ClientData } from "@/app/api/barbers/me/clients/route";
 import type { ClientAppointmentData } from "@/app/api/barbers/me/clients/[id]/appointments/route";
-import { apiGet, apiMutate } from "@/lib/api/client";
+import { apiGet, apiGetCollection, apiMutate } from "@/lib/api/client";
 
 interface CreateClientInput {
   fullName: string;
@@ -16,17 +16,16 @@ interface UpdateClientInput {
   phone: string;
 }
 
-export function useBarberClients(search?: string) {
+export function useBarberClients(search?: string, page = 1, limit = 20) {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
-  const query = params.toString();
+  params.set("page", page.toString());
+  params.set("limit", limit.toString());
 
   return useQuery({
-    queryKey: ["barber-clients", search],
+    queryKey: ["barber-clients", search, page, limit],
     queryFn: () =>
-      apiGet<ClientData[]>(
-        `/api/barbers/me/clients${query ? `?${query}` : ""}`,
-      ),
+      apiGetCollection<ClientData>(`/api/barbers/me/clients?${params}`),
     staleTime: 30000,
   });
 }

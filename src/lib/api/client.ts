@@ -7,7 +7,7 @@
  *   await apiAction("/api/notifications/mark-all-read", "PATCH");
  */
 
-import type { ApiMessageResponse } from "@/types/api";
+import type { ApiMessageResponse, ApiCollectionResponse } from "@/types/api";
 
 export class ApiError extends Error {
   code: string;
@@ -29,17 +29,13 @@ export class ApiError extends Error {
 }
 
 /**
- * Low-level helper: calls fetch, checks res.ok, extracts `json.data`,
- * and throws `ApiError` on failure.  Returns `T` directly.
- *
- * **Only for endpoints that return `{ data: T }` (i.e. `apiSuccess` / `apiCollection`).**
- * For side-effect endpoints that return `{ success, message? }` (i.e. `apiMessage`),
- * use {@link apiAction} instead.
+ * Shared fetch + JSON parse + error handling.
+ * Returns the raw parsed JSON body so callers can extract what they need.
  */
-export async function apiRequest<T>(
+async function apiRawRequest(
   url: string,
   options?: RequestInit,
-): Promise<T> {
+): Promise<Record<string, unknown>> {
   const res = await fetch(url, options);
   const json = await res.json().catch(() => null);
 
@@ -60,6 +56,20 @@ export async function apiRequest<T>(
     );
   }
 
+  return json;
+}
+
+/**
+ * Calls an API endpoint and unwraps `json.data`.
+ *
+ * For endpoints that return `{ data: T }` (i.e. `apiSuccess` / `apiCollection`).
+ * For side-effect endpoints that return `{ success, message? }`, use {@link apiAction}.
+ */
+export async function apiRequest<T>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
+  const json = await apiRawRequest(url, options);
   return json.data as T;
 }
 
@@ -69,6 +79,18 @@ export async function apiGet<T>(
   headers?: Record<string, string>,
 ): Promise<T> {
   return apiRequest<T>(url, headers ? { headers } : undefined);
+}
+
+/**
+ * GET wrapper for paginated collection endpoints.
+ * Returns `{ data: T[], meta: PaginationMeta }` instead of unwrapping `data`.
+ */
+export async function apiGetCollection<T>(
+  url: string,
+  headers?: Record<string, string>,
+): Promise<ApiCollectionResponse<T>> {
+  const json = await apiRawRequest(url, headers ? { headers } : undefined);
+  return json as unknown as ApiCollectionResponse<T>;
 }
 
 /** Convenience POST/PUT/PATCH/DELETE wrapper with JSON body. */
@@ -95,30 +117,10 @@ export async function apiAction(
   body?: unknown,
   headers?: Record<string, string>,
 ): Promise<ApiMessageResponse> {
-  const res = await fetch(url, {
+  const json = await apiRawRequest(url, {
     method,
     headers: { "Content-Type": "application/json", ...headers },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-
-  const json = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    throw new ApiError(
-      json?.error ?? "UNKNOWN_ERROR",
-      json?.message ?? `Request failed with status ${res.status}`,
-      res.status,
-      json?.details,
-    );
-  }
-
-  if (json === null) {
-    throw new ApiError(
-      "PARSE_ERROR",
-      "Response body is not valid JSON",
-      res.status,
-    );
-  }
-
-  return json as ApiMessageResponse;
+  return json as unknown as ApiMessageResponse;
 }

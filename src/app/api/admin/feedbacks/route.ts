@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { apiSuccess } from "@/lib/api/response";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { parsePagination } from "@/lib/api/pagination";
 import { getAllFeedbacks } from "@/services/feedback";
 import type { FeedbackFilters } from "@/types/feedback";
 
@@ -15,10 +16,7 @@ export async function GET(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const searchParams = request.nextUrl.searchParams;
-
-    // Pagination
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
+    const { page, limit } = parsePagination(searchParams);
 
     // Filters
     const filters: FeedbackFilters = {};
@@ -40,7 +38,7 @@ export async function GET(request: NextRequest) {
       filters.hasComment = hasComment === "true";
     }
 
-    const result = await getAllFeedbacks(filters, page, pageSize);
+    const result = await getAllFeedbacks(filters, page, limit);
 
     return apiSuccess(result);
   } catch (error) {
