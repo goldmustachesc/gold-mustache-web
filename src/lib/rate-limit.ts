@@ -2,17 +2,27 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 /**
- * Rate limiting configuration using Upstash Redis.
+ * Rate limiting with Upstash Redis (distributed) and in-memory fallback.
  *
- * Environment variables required:
- * - UPSTASH_REDIS_REST_URL
- * - UPSTASH_REDIS_REST_TOKEN
- *
- * If not configured, rate limiting will be disabled (no-op).
+ * When UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set, uses
+ * distributed sliding-window rate limiting via Upstash.
+ * Otherwise falls back to a per-process in-memory fixed-window store —
+ * suitable for development and single-instance deploys, but NOT for
+ * multi-instance production. The fixed-window algorithm may allow up to 2×
+ * the configured rate at window boundaries (acceptable trade-off for a
+ * lightweight fallback that requires no external dependencies).
  */
 
 const isConfigured =
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
+
+if (!isConfigured && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[rate-limit] UPSTASH Redis not configured — using in-memory fallback. " +
+      "This is NOT recommended for production. " +
+      "Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
+  );
+}
 
 const redis = isConfigured
   ? new Redis({
@@ -21,54 +31,87 @@ const redis = isConfigured
     })
   : null;
 
-/**
- * Rate limiters for different endpoints with varying restrictions.
- * Returns null if Upstash is not configured (development fallback).
- */
-export const rateLimiters = redis
-  ? {
-      /**
-       * 10 requests per minute for authenticated appointment creation.
-       * More permissive since user is authenticated.
-       */
-      appointments: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(10, "1 m"),
-        prefix: "ratelimit:appointments",
+const RATE_LIMIT_CONFIGS = {
+  appointments: {
+    maxRequests: 10,
+    windowMs: 60_000,
+    prefix: "ratelimit:appointments",
+  },
+  guestAppointments: {
+    maxRequests: 5,
+    windowMs: 60_000,
+    prefix: "ratelimit:guest",
+  },
+  api: { maxRequests: 100, windowMs: 60_000, prefix: "ratelimit:api" },
+  sensitive: {
+    maxRequests: 3,
+    windowMs: 60_000,
+    prefix: "ratelimit:sensitive",
+  },
+} as const;
+
+export type RateLimiterType = keyof typeof RATE_LIMIT_CONFIGS;
+
+function buildRedisLimiters(redisClient: Redis) {
+  return Object.fromEntries(
+    Object.entries(RATE_LIMIT_CONFIGS).map(([key, config]) => [
+      key,
+      new Ratelimit({
+        redis: redisClient,
+        limiter: Ratelimit.slidingWindow(config.maxRequests, "1 m"),
+        prefix: config.prefix,
         analytics: true,
       }),
-      /**
-       * 5 requests per minute for guest appointments.
-       * More restrictive to prevent spam/abuse.
-       */
-      guestAppointments: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(5, "1 m"),
-        prefix: "ratelimit:guest",
-        analytics: true,
-      }),
-      /**
-       * 100 requests per minute for general API read operations.
-       * Higher limit for normal usage patterns.
-       */
-      api: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(100, "1 m"),
-        prefix: "ratelimit:api",
-        analytics: true,
-      }),
-      /**
-       * 3 requests per minute for sensitive operations (delete, admin).
-       * Very restrictive for security-critical endpoints.
-       */
-      sensitive: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(3, "1 m"),
-        prefix: "ratelimit:sensitive",
-        analytics: true,
-      }),
+    ]),
+  ) as Record<RateLimiterType, Ratelimit>;
+}
+
+const redisLimiters = redis ? buildRedisLimiters(redis) : null;
+
+// --- In-memory fallback (fixed-window, per-process) ---
+
+const inMemoryStore = new Map<string, { count: number; resetAt: number }>();
+
+const CLEANUP_INTERVAL_MS = 60_000;
+
+if (typeof setInterval !== "undefined") {
+  const timer = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of inMemoryStore) {
+      if (now > entry.resetAt) {
+        inMemoryStore.delete(key);
+      }
     }
-  : null;
+  }, CLEANUP_INTERVAL_MS);
+  timer.unref?.();
+}
+
+function inMemoryRateLimit(
+  key: string,
+  maxRequests: number,
+  windowMs: number,
+): RateLimitResult {
+  const now = Date.now();
+  const entry = inMemoryStore.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    inMemoryStore.set(key, { count: 1, resetAt: now + windowMs });
+    return { success: true, remaining: maxRequests - 1, reset: now + windowMs };
+  }
+
+  if (entry.count >= maxRequests) {
+    return { success: false, remaining: 0, reset: entry.resetAt };
+  }
+
+  entry.count++;
+  return {
+    success: true,
+    remaining: maxRequests - entry.count,
+    reset: entry.resetAt,
+  };
+}
+
+// --- Public API ---
 
 export interface RateLimitResult {
   success: boolean;
@@ -78,6 +121,8 @@ export interface RateLimitResult {
 
 /**
  * Check rate limit for a given limiter and identifier.
+ *
+ * Uses Upstash Redis when configured, otherwise falls back to in-memory.
  *
  * @param limiterType - The type of rate limiter to use
  * @param identifier - Unique identifier for the client (usually IP or user ID)
@@ -93,18 +138,18 @@ export interface RateLimitResult {
  * ```
  */
 export async function checkRateLimit(
-  limiterType: keyof NonNullable<typeof rateLimiters>,
+  limiterType: RateLimiterType,
   identifier: string,
 ): Promise<RateLimitResult> {
-  // If rate limiting is not configured, allow all requests
-  if (!rateLimiters) {
-    return { success: true, remaining: 999, reset: 0 };
+  if (redisLimiters) {
+    const limiter = redisLimiters[limiterType];
+    const { success, remaining, reset } = await limiter.limit(identifier);
+    return { success, remaining, reset };
   }
 
-  const limiter = rateLimiters[limiterType];
-  const { success, remaining, reset } = await limiter.limit(identifier);
-
-  return { success, remaining, reset };
+  const config = RATE_LIMIT_CONFIGS[limiterType];
+  const key = `${limiterType}:${identifier}`;
+  return inMemoryRateLimit(key, config.maxRequests, config.windowMs);
 }
 
 /**
@@ -116,25 +161,23 @@ export async function checkRateLimit(
  * @returns Client identifier string
  */
 export function getClientIdentifier(request: Request): string {
-  // X-Forwarded-For may contain multiple IPs, use the first one (client IP)
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     return forwardedFor.split(",")[0].trim();
   }
 
-  // X-Real-IP is used by some proxies
   const realIp = request.headers.get("x-real-ip");
   if (realIp) {
     return realIp;
   }
 
-  // Fallback for development or unknown source
   return "anonymous";
 }
 
 /**
- * Check if rate limiting is configured and available.
+ * Whether the distributed (Redis-backed) rate limiter is active.
+ * When false, the in-memory fixed-window fallback is being used.
  */
-export function isRateLimitingEnabled(): boolean {
-  return rateLimiters !== null;
+export function isDistributedRateLimiting(): boolean {
+  return redisLimiters !== null;
 }

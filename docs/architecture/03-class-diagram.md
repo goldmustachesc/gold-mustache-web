@@ -126,7 +126,7 @@ classDiagram
     class RateLimiter {
         +checkRateLimit(limiterType, identifier) Promise~RateLimitResult~
         +getClientIdentifier(request) string
-        +isRateLimitingEnabled() boolean
+        +isDistributedRateLimiting() boolean
     }
     note for RateLimiter "Upstash Redis com 4 limiters: appointments, guest, api, sensitive"
 

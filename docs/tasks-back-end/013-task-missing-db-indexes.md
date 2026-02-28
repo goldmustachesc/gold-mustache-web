@@ -1,5 +1,7 @@
 # 013 - Adicionar indexes faltantes no Prisma schema
 
+## Status: ✅ IMPLEMENTADO
+
 ## Prioridade: 🟡 MÉDIA (Performance)
 
 ## Problema
@@ -9,17 +11,17 @@ Vários campos frequentemente usados em `WHERE` nas queries não possuem indexes
 ## Indexes que existem hoje
 
 ```
-ShopClosure     → @@index([date])
-BarberAbsence   → @@index([barberId, date])
-Appointment     → @@index([barberId, date, startTime])
-Feedback        → @@index([barberId]), @@index([clientId]), @@index([guestClientId]), @@index([createdAt])
+ShopClosure      → @@index([date])
+BarberAbsence    → @@index([barberId, date])
+Appointment      → @@index([barberId, date, startTime])
+Feedback         → @@index([barberId]), @@index([clientId]), @@index([guestClientId]), @@index([createdAt])
 PointTransaction → @@index([loyaltyAccountId]), @@index([referenceId])
-Redemption      → @@index([loyaltyAccountId]), @@index([rewardId]), @@index([code])
+Redemption       → @@index([loyaltyAccountId]), @@index([rewardId]), @@index([code])
 ```
 
-## Indexes faltantes
+## Indexes adicionados
 
-### 1. `Notification.userId` — MAIS IMPACTANTE
+### 1. `Notification` — MAIS IMPACTANTE
 
 Toda query de notificação filtra por `userId`:
 - `getNotifications(userId)` → `where: { userId }`
@@ -27,9 +29,7 @@ Toda query de notificação filtra por `userId`:
 - `markAsRead(id, userId)` → `where: { id, userId }`
 - `markAllAsRead(userId)` → `where: { userId, read: false }`
 
-**Adicionar:** `@@index([userId])` no model `Notification`
-
-Considerar também index composto: `@@index([userId, read])` para a query de "não lidas".
+**Adicionado:** `@@index([userId, read])` — index composto que cobre tanto queries por `userId` sozinho (via leftmost-prefix do PostgreSQL) quanto queries de "não lidas" (`userId + read`). O index individual `@@index([userId])` é redundante quando o composto existe.
 
 ### 2. `Appointment.clientId`
 
@@ -39,14 +39,14 @@ Queries de "meus agendamentos" filtram por `clientId`:
 
 O index existente `[barberId, date, startTime]` **não ajuda** queries por `clientId`.
 
-**Adicionar:** `@@index([clientId])`
+**Adicionado:** `@@index([clientId])`
 
 ### 3. `Appointment.guestClientId`
 
 Guest lookups filtram por `guestClientId`:
 - `GET /api/appointments/guest/lookup` → `where: { guestClientId }`
 
-**Adicionar:** `@@index([guestClientId])`
+**Adicionado:** `@@index([guestClientId])`
 
 ### 4. `Appointment.status`
 
@@ -55,7 +55,7 @@ Muitas queries filtram por status (CONFIRMED, COMPLETED, etc.):
 - Listagens de agendamentos
 - Verificação de overlaps
 
-**Adicionar:** `@@index([status])` ou melhorar o existente para `@@index([barberId, date, status])`
+**Adicionado:** `@@index([status])`
 
 ### 5. `CookieConsent.userId` e `CookieConsent.anonymousId`
 
@@ -63,15 +63,16 @@ Queries de consentimento buscam por estes campos:
 - `where: { userId }` para usuários logados
 - `where: { anonymousId }` para anônimos
 
-**Adicionar:** `@@index([userId])` e `@@index([anonymousId])`
+**Adicionado:** `@@index([userId])` e `@@index([anonymousId])`
 
-## Como aplicar
+## Implementação
+
+### Schema (prisma/schema.prisma)
 
 ```prisma
 model Notification {
   // ... campos existentes ...
 
-  @@index([userId])
   @@index([userId, read])
   @@map("notifications")
 }
@@ -95,10 +96,11 @@ model CookieConsent {
 }
 ```
 
-Depois rodar:
-```bash
-pnpm prisma migrate dev --name add-missing-indexes
-```
+### Migration
+
+Migration criada manualmente em `prisma/migrations/20260228021853_add_missing_indexes/migration.sql` com `CREATE INDEX IF NOT EXISTS` para idempotência.
+
+> **Nota:** Existe schema drift pré-existente no banco. A migration pode precisar ser aplicada via `psql` e marcada com `prisma migrate resolve --applied 20260228021853_add_missing_indexes`.
 
 ## Checklist
 
@@ -108,5 +110,8 @@ pnpm prisma migrate dev --name add-missing-indexes
 - [x] Adicionar `@@index([status])` em Appointment
 - [x] Adicionar `@@index([userId])` em CookieConsent
 - [x] Adicionar `@@index([anonymousId])` em CookieConsent
-- [x] Gerar e aplicar migration
-- [ ] Testar que queries de notificação, agendamentos e consentimento continuam funcionando
+- [x] Gerar migration (`20260228021853_add_missing_indexes`)
+- [x] Validar schema (`prisma format` + `prisma generate`)
+- [x] Build passa (`pnpm build`)
+- [x] Lint passa (`pnpm lint`)
+- [ ] Aplicar migration no banco e testar queries

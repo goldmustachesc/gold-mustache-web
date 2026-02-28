@@ -64,8 +64,8 @@ if (!isConfigured && process.env.NODE_ENV === "production") {
 
 ## Checklist
 
-- [ ] Implementar fallback in-memory para rate limiting
-- [ ] Adicionar warning em produção quando Redis não está configurado
-- [ ] Limpar entries expiradas do Map periodicamente (evitar memory leak)
-- [ ] Testar rate limiting funciona em dev sem Redis
-- [ ] Documentar no `.env.example` que Upstash é recomendado para produção
+- [x] Implementar fallback in-memory para rate limiting
+- [x] Adicionar warning em produção quando Redis não está configurado
+- [x] Limpar entries expiradas do Map periodicamente (evitar memory leak)
+- [x] Testar rate limiting funciona em dev sem Redis
+- [ ] Documentar no `.env.example` que Upstash é recomendado para produção (→ task 017)
