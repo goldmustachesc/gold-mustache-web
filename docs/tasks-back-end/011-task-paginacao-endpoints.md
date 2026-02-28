@@ -58,11 +58,11 @@ export function paginationMeta(total: number, page: number, limit: number) {
 
 ## Checklist
 
-- [ ] Criar helper de paginação em `src/lib/api/pagination.ts`
-- [ ] Adicionar paginação em `/api/barbers/me/clients`
-- [ ] Adicionar paginação em `/api/barbers/me/cancelled-appointments`
-- [ ] Adicionar paginação em `/api/notifications`
+- [x] Criar helper de paginação em `src/lib/api/pagination.ts`
+- [x] Adicionar paginação em `/api/barbers/me/clients`
+- [x] Adicionar paginação em `/api/barbers/me/cancelled-appointments`
+- [x] Adicionar paginação em `/api/notifications`
 - [ ] Adicionar paginação em `/api/dashboard/stats`
-- [ ] Adicionar paginação em `/api/admin/feedbacks`
-- [ ] Atualizar front-end para consumir paginação (ou manter compatibilidade)
-- [ ] Testar com `?page=1&limit=10`, `?page=2`, sem params (default)
+- [x] Adicionar paginação em `/api/admin/feedbacks`
+- [x] Atualizar front-end para consumir paginação (ou manter compatibilidade)
+- [x] Testar com `?page=1&limit=10`, `?page=2`, sem params (default)
