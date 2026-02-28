@@ -7,6 +7,7 @@ import {
   createAdminServiceSchema,
   generateSlug,
 } from "@/lib/validations/service";
+import { API_CONFIG } from "@/config/api";
 
 /**
  * GET /api/admin/services
@@ -77,8 +78,7 @@ export async function POST(request: Request) {
     // Generate slug from name
     const baseSlug = generateSlug(name);
 
-    // Check for slug uniqueness, append number if needed (max 100 attempts)
-    const MAX_SLUG_ATTEMPTS = 100;
+    const MAX_SLUG_ATTEMPTS = API_CONFIG.slugGeneration.maxAttempts;
     let slug = baseSlug;
     let counter = 1;
     while (await prisma.service.findUnique({ where: { slug } })) {

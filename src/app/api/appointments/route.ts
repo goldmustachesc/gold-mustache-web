@@ -20,6 +20,7 @@ import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { API_CONFIG } from "@/config/api";
 
 export async function GET(request: Request) {
   try {
@@ -65,7 +66,10 @@ export async function GET(request: Request) {
           : getTodayUTCMidnight(),
         end: endDate
           ? parseDateStringToUTC(endDate)
-          : new Date(getTodayUTCMidnight().getTime() + 7 * 24 * 60 * 60 * 1000),
+          : new Date(
+              getTodayUTCMidnight().getTime() +
+                API_CONFIG.appointments.defaultRangeMs,
+            ),
       };
 
       const appointments = await getBarberAppointments(barber.id, dateRange);

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { API_CONFIG } from "@/config/api";
 
 /**
  * POST /api/cron/cleanup-guests
@@ -70,8 +71,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Anonymize in batches to avoid overwhelming the database
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = API_CONFIG.cron.guestCleanupBatchSize;
     let totalAnonymized = 0;
 
     for (let i = 0; i < guestsToAnonymize.length; i += BATCH_SIZE) {

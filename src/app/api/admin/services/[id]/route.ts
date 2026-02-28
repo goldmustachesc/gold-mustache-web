@@ -7,6 +7,7 @@ import {
   updateAdminServiceSchema,
   generateSlug,
 } from "@/lib/validations/service";
+import { API_CONFIG } from "@/config/api";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -107,8 +108,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (name !== undefined && name !== existingService.name) {
       const baseSlug = generateSlug(name);
 
-      // Check for slug uniqueness (excluding current service, max 100 attempts)
-      const MAX_SLUG_ATTEMPTS = 100;
+      const MAX_SLUG_ATTEMPTS = API_CONFIG.slugGeneration.maxAttempts;
       let slug = baseSlug;
       let counter = 1;
       while (true) {

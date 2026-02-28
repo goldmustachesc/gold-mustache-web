@@ -81,10 +81,18 @@ export const API_CONFIG = {
 
 ## Checklist
 
-- [ ] Criar `src/config/api.ts` com constantes centralizadas
-- [ ] Substituir magic numbers no cron do Instagram
-- [ ] Substituir magic numbers no cron de limpeza
-- [ ] Nomear constante de range padrão em appointments
-- [ ] Nomear constante de max slug attempts
-- [ ] Documentar o problema do `pending_` userId (task separada se necessário)
-- [ ] Revisar se há mais magic numbers não listados
+- [x] Criar `src/config/api.ts` com constantes centralizadas
+- [x] Substituir magic numbers no cron do Instagram
+- [x] Substituir magic numbers no cron de limpeza
+- [x] Nomear constante de range padrão em appointments
+- [x] Nomear constante de max slug attempts
+- [x] Revisar se há mais magic numbers não listados
+  - Encontrado: `MAX_SLUG_ATTEMPTS` duplicado em `src/app/api/admin/services/route.ts` (create) — corrigido
+- [ ] Corrigir o problema do `pending_` userId (task separada recomendada — ver nota abaixo)
+
+### Nota sobre `pending_` userId (item 5)
+
+O `src/app/api/admin/barbers/route.ts` cria barbeiros com `userId: "pending_..."` sem
+vínculo real com Supabase Auth. Isso não é um magic number mas sim um **design debt**:
+barbeiros deveriam ser vinculados a usuários reais. Recomenda-se uma task separada para
+implementar o fluxo correto (convite por email → criação de conta → vínculo automático).

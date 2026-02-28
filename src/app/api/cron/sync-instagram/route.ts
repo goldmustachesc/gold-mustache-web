@@ -4,13 +4,11 @@ import {
 } from "@/services/instagram";
 import type { InstagramCacheData, InstagramPost } from "@/types/instagram";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { API_CONFIG } from "@/config/api";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-// Constantes de configuração do cron
-const MAX_RETRIES = 3;
-const POSTS_LIMIT = 10;
-const RETRY_BASE_DELAY_MS = 1000;
+const { maxRetries, postsLimit, retryBaseDelayMs } = API_CONFIG.instagram;
 
 /**
  * POST /api/cron/sync-instagram
@@ -45,24 +43,24 @@ export async function POST(request: Request) {
     let posts: InstagramPost[] = [];
     let retryCount = 0;
 
-    while (retryCount < MAX_RETRIES) {
+    while (retryCount < maxRetries) {
       try {
         posts = await fetchInstagramPosts(
           config.accessToken ?? "",
           config.userId ?? "",
-          POSTS_LIMIT,
+          postsLimit,
         );
         break;
       } catch (error) {
         retryCount++;
 
-        if (retryCount >= MAX_RETRIES) {
+        if (retryCount >= maxRetries) {
           throw error;
         }
 
-        // Aguardar antes de tentar novamente (exponential backoff)
+        // Exponential backoff
         await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_BASE_DELAY_MS * retryCount),
+          setTimeout(resolve, retryBaseDelayMs * retryCount),
         );
       }
     }
