@@ -23,13 +23,17 @@ Website profissional para a Barbearia Gold Mustache, localizada em Itapema, Sant
 
 ```bash
 # Instalar dependências
-npm install
+pnpm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env.local
+# Preencha os valores em .env.local (veja comentários no arquivo)
 
 # Executar em modo desenvolvimento
-npm run dev
+pnpm dev
 
 # Build para produção
-npm run build
+pnpm build
 ```
 
 Acesse [http://localhost:3001](http://localhost:3001) para ver o resultado.

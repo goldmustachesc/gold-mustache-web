@@ -2,82 +2,26 @@
 
 ## Prioridade: 🟡 MÉDIA (Manutenibilidade)
 
-## Problema
+## Status: ✅ RESOLVIDO
 
-Existem "magic numbers" e valores hardcoded espalhados pelas rotas e serviços. Quando precisar alterar (ex: mudar limite de retries do Instagram), é preciso encontrar o valor no meio do código em vez de mexer num só lugar.
+## Problema (original)
 
-## Ocorrências
+Existiam "magic numbers" e valores hardcoded espalhados pelas rotas e serviços. Para alterar qualquer valor (ex: limite de retries do Instagram), era preciso localizar a constante no meio do código em vez de ajustar num único lugar.
 
-### 1. Cron do Instagram
-**`src/app/api/cron/sync-instagram/route.ts`** (linhas 11-13)
+## Solução aplicada
 
-```typescript
-const MAX_RETRIES = 3;
-const POSTS_LIMIT = 10;
-const RETRY_BASE_DELAY_MS = 1000;
-```
+Adotada a **Opção B** (centralizar em config). Criado `src/config/api.ts` com `API_CONFIG` exportado como `as const`, agrupando todas as constantes por domínio. Valores de Instagram são configuráveis via env vars com nullish coalescing (`??`) para defaults seguros.
 
-Deveria estar em config ou variável de ambiente.
+### Arquivos modificados
 
-### 2. Cron de limpeza LGPD
-**`src/app/api/cron/cleanup-guests/route.ts`** (linha 76)
-
-```typescript
-const BATCH_SIZE = 50;
-```
-
-### 3. Slug generation
-**`src/app/api/admin/services/[id]/route.ts`** (linha 121)
-
-```typescript
-const MAX_SLUG_ATTEMPTS = 100;
-```
-
-### 4. Range padrão de appointments
-**`src/app/api/appointments/route.ts`** (linha 53)
-
-```typescript
-7 * 24 * 60 * 60 * 1000  // 7 dias em ms — sem nome
-```
-
-### 5. User ID sintético para barbeiros
-**`src/app/api/admin/barbers/route.ts`** (linha 99)
-
-```typescript
-userId: `pending_${Date.now()}_${Math.random()...}`
-```
-
-Barbeiros são criados com IDs falsos em vez de serem vinculados a users reais do Supabase.
-
-## O que corrigir
-
-### Opção A: Constantes nomeadas no arquivo
-
-```typescript
-const DEFAULT_APPOINTMENT_RANGE_MS = 7 * 24 * 60 * 60 * 1000;
-```
-
-### Opção B: Centralizar em config (para valores que podem mudar por ambiente)
-
-```typescript
-// src/config/api.ts
-export const API_CONFIG = {
-  instagram: {
-    maxRetries: Number(process.env.INSTAGRAM_MAX_RETRIES) || 3,
-    postsLimit: Number(process.env.INSTAGRAM_POSTS_LIMIT) || 10,
-    retryBaseDelayMs: 1000,
-  },
-  cron: {
-    guestCleanupBatchSize: 50,
-  },
-  appointments: {
-    defaultRangeMs: 7 * 24 * 60 * 60 * 1000,
-  },
-  slugGeneration: {
-    maxAttempts: 100,
-  },
-};
-```
+| Arquivo | Mudança |
+|---------|---------|
+| `src/config/api.ts` | **Novo** — config centralizada |
+| `src/app/api/cron/sync-instagram/route.ts` | 3 constantes → `API_CONFIG.instagram.*` |
+| `src/app/api/cron/cleanup-guests/route.ts` | `BATCH_SIZE` → `API_CONFIG.cron.guestCleanupBatchSize` |
+| `src/app/api/admin/services/[id]/route.ts` | `MAX_SLUG_ATTEMPTS` → `API_CONFIG.slugGeneration.maxAttempts` |
+| `src/app/api/admin/services/route.ts` | Idem (ocorrência extra encontrada na revisão) |
+| `src/app/api/appointments/route.ts` | `7 * 24 * 60 * 60 * 1000` → `API_CONFIG.appointments.defaultRangeMs` |
 
 ## Checklist
 
@@ -92,7 +36,4 @@ export const API_CONFIG = {
 
 ### Nota sobre `pending_` userId (item 5)
 
-O `src/app/api/admin/barbers/route.ts` cria barbeiros com `userId: "pending_..."` sem
-vínculo real com Supabase Auth. Isso não é um magic number mas sim um **design debt**:
-barbeiros deveriam ser vinculados a usuários reais. Recomenda-se uma task separada para
-implementar o fluxo correto (convite por email → criação de conta → vínculo automático).
+O `src/app/api/admin/barbers/route.ts` cria barbeiros com `userId: "pending_..."` sem vínculo real com Supabase Auth. Isso não é um magic number mas sim um **design debt**: barbeiros deveriam ser vinculados a usuários reais. Recomenda-se uma task separada para implementar o fluxo correto (convite por email → criação de conta → vínculo automático).
