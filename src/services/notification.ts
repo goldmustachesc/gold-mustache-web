@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { AppointmentWithDetails, NotificationData } from "@/types/booking";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, type Prisma } from "@prisma/client";
 
 // ============================================
 // Notification Functions
@@ -13,6 +13,26 @@ export interface CreateNotificationInput {
   title: string;
   message: string;
   data?: Record<string, string | number | boolean>;
+}
+
+function toInputJson(
+  data?: Record<string, string | number | boolean>,
+): Prisma.InputJsonValue | undefined {
+  if (data === undefined) return undefined;
+  const result: Record<string, Prisma.InputJsonValue> = {};
+  for (const [key, val] of Object.entries(data)) {
+    result[key] = val;
+  }
+  return result;
+}
+
+function toJsonRecord(
+  value: Prisma.JsonValue | null,
+): Record<string, unknown> | null {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+  return null;
 }
 
 /**
@@ -27,7 +47,7 @@ export async function createNotification(
       type: input.type,
       title: input.title,
       message: input.message,
-      data: input.data as object | undefined,
+      data: toInputJson(input.data),
       read: false,
     },
   });
@@ -38,7 +58,7 @@ export async function createNotification(
     type: notification.type,
     title: notification.title,
     message: notification.message,
-    data: notification.data as Record<string, unknown> | null,
+    data: toJsonRecord(notification.data),
     read: notification.read,
     createdAt: notification.createdAt.toISOString(),
   };
@@ -70,7 +90,7 @@ export async function getNotifications(
       type: n.type,
       title: n.title,
       message: n.message,
-      data: n.data as Record<string, unknown> | null,
+      data: toJsonRecord(n.data),
       read: n.read,
       createdAt: n.createdAt.toISOString(),
     })),

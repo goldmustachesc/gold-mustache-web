@@ -49,16 +49,17 @@ export async function GET(request: Request) {
       barberId: auth.barberId,
     };
 
-    if (startDate) {
-      where.date = {
-        ...(where.date as object),
-        gte: parseDateStringToUTC(startDate),
-      };
-    }
+    const gteDate = startDate ? parseDateStringToUTC(startDate) : undefined;
+    let ltDate: Date | undefined;
     if (endDate) {
-      const endPlusOne = parseDateStringToUTC(endDate);
-      endPlusOne.setUTCDate(endPlusOne.getUTCDate() + 1);
-      where.date = { ...(where.date as object), lt: endPlusOne };
+      ltDate = parseDateStringToUTC(endDate);
+      ltDate.setUTCDate(ltDate.getUTCDate() + 1);
+    }
+    if (gteDate || ltDate) {
+      where.date = {
+        ...(gteDate && { gte: gteDate }),
+        ...(ltDate && { lt: ltDate }),
+      };
     }
 
     const absences = await prisma.barberAbsence.findMany({

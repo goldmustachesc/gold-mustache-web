@@ -75,8 +75,8 @@ if (startDate) {
 
 ## Checklist
 
-- [ ] Tipar `body` com Zod (resolvido junto com task 006)
-- [ ] Substituir `where.date as object` por tipo Prisma correto
-- [ ] Criar interface para notification data
-- [ ] Substituir checks manuais de Prisma error por `handlePrismaError` (task 008)
-- [ ] Buscar outros `as any` ou `as unknown` no código de API
+- [x] Tipar `body` com Zod (resolvido junto com task 006)
+- [x] Substituir `where.date as object` por tipo Prisma correto
+- [x] Criar interface para notification data
+- [x] Substituir checks manuais de Prisma error por `handlePrismaError` (task 008)
+- [x] Buscar outros `as any` ou `as unknown` no código de API
