@@ -1,8 +1,10 @@
+import { revalidateTag } from "next/cache";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { BARBERSHOP_SETTINGS_CACHE_TAG } from "@/services/barbershop-settings";
 import { z } from "zod";
 
 const updateSettingsSchema = z.object({
@@ -101,9 +103,7 @@ export async function PUT(request: Request) {
       create: { id: "default", ...parsed.data },
     });
 
-    // Invalidate cache only after successful database operation
-    // Note: revalidateTag requires 2 arguments in Next.js 16+, but we'll skip cache invalidation for now
-    // revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG, "force");
+    revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
 
     return apiSuccess(settings);
   } catch (error) {
