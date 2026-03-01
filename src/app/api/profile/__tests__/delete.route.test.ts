@@ -31,14 +31,9 @@ vi.mock("@/lib/supabase/server", () => ({
 
 // Mock Supabase admin client
 const mockDeleteUser = vi.fn();
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({
-    auth: {
-      admin: {
-        deleteUser: (...args: unknown[]) => mockDeleteUser(...args),
-      },
-    },
-  }),
+const mockGetSupabaseAdmin = vi.fn();
+vi.mock("@/lib/supabase/admin", () => ({
+  getSupabaseAdmin: (...args: unknown[]) => mockGetSupabaseAdmin(...args),
 }));
 
 // Mock rate limiting
@@ -86,6 +81,15 @@ describe("DELETE /api/profile/delete", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Setup default: admin client available with working deleteUser
+    mockGetSupabaseAdmin.mockReturnValue({
+      auth: {
+        admin: {
+          deleteUser: (...args: unknown[]) => mockDeleteUser(...args),
+        },
+      },
+    });
 
     // Setup default happy path mocks
     mockGetUser.mockResolvedValue({
@@ -254,8 +258,7 @@ describe("DELETE /api/profile/delete", () => {
   });
 
   it("should return 500 when service role key is not set", async () => {
-    const originalKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    mockGetSupabaseAdmin.mockReturnValue(null);
 
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -272,7 +275,6 @@ describe("DELETE /api/profile/delete", () => {
     expect(mockDeleteUser).not.toHaveBeenCalled();
     expect(mockPrismaTransaction).not.toHaveBeenCalled();
 
-    process.env.SUPABASE_SERVICE_ROLE_KEY = originalKey;
     consoleSpy.mockRestore();
   });
 });
