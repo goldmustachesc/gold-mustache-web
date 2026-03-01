@@ -1,41 +1,36 @@
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiSuccess } from "@/lib/api/response";
+import { prisma } from "@/lib/prisma";
+import { getAuthUserEmailMap } from "@/lib/supabase/admin";
 
 export async function GET() {
   const admin = await requireAdmin();
   if (!admin.ok) return admin.response;
 
   try {
-    // Retornando mock data para exibição no frontend enquanto backend real não está finalizado.
-    const mockAccounts = [
-      {
-        id: "1",
-        userId: "u1",
-        fullName: "Leonardo B.",
-        email: "leo@example.com",
-        points: 1200,
-        tier: "SILVER",
-      },
-      {
-        id: "2",
-        userId: "u2",
-        fullName: "Maria Silva",
-        email: "maria@example.com",
-        points: 300,
-        tier: "BRONZE",
-      },
-      {
-        id: "3",
-        userId: "u3",
-        fullName: "João Pedro",
-        email: "joao@example.com",
-        points: 3500,
-        tier: "DIAMOND",
-      },
-    ];
+    const [accounts, emailMap] = await Promise.all([
+      prisma.loyaltyAccount.findMany({
+        include: {
+          profile: {
+            select: { userId: true, fullName: true },
+          },
+        },
+        orderBy: { currentPoints: "desc" },
+      }),
+      getAuthUserEmailMap(),
+    ]);
 
-    return apiSuccess(mockAccounts);
+    const result = accounts.map((acc) => ({
+      id: acc.id,
+      userId: acc.profile.userId,
+      fullName: acc.profile.fullName ?? "Sem nome",
+      email: emailMap.get(acc.profile.userId) ?? "",
+      points: acc.currentPoints,
+      tier: acc.tier,
+    }));
+
+    return apiSuccess(result);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar contas de fidelidade");
   }

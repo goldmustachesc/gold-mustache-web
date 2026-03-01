@@ -40,17 +40,6 @@ export type CreateGuestAppointmentInput = z.infer<
   typeof createGuestAppointmentSchema
 >;
 
-export const cancelAppointmentSchema = z.object({
-  appointmentId: z.string().uuid("ID do agendamento inválido"),
-  reason: z
-    .string()
-    .min(1, "Motivo é obrigatório")
-    .max(500, "Motivo deve ter no máximo 500 caracteres")
-    .optional(),
-});
-
-export type CancelAppointmentInput = z.infer<typeof cancelAppointmentSchema>;
-
 export const cancelAppointmentByBarberSchema = z.object({
   appointmentId: z.string().uuid("ID do agendamento inválido"),
   reason: z
@@ -320,58 +309,3 @@ export const getAppointmentsQuerySchema = z
   .refine(validateDateRange, dateRangeRefineOptions);
 
 export type GetAppointmentsQuery = z.infer<typeof getAppointmentsQuerySchema>;
-
-// ============================================
-// Guest Appointment Schemas
-// ============================================
-
-export const guestLookupSchema = z.object({
-  phone: z.string().regex(/^\d{10,11}$/, "Telefone deve ter 10 ou 11 dígitos"),
-});
-
-export type GuestLookupInput = z.infer<typeof guestLookupSchema>;
-
-export const cancelGuestAppointmentSchema = z.object({
-  appointmentId: z.string().uuid("ID do agendamento inválido"),
-  phone: z.string().regex(/^\d{10,11}$/, "Telefone deve ter 10 ou 11 dígitos"),
-});
-
-export type CancelGuestAppointmentInput = z.infer<
-  typeof cancelGuestAppointmentSchema
->;
-
-// ============================================
-// Service Schemas
-// ============================================
-
-export const createServiceSchema = z.object({
-  slug: z
-    .string()
-    .min(1, "Slug é obrigatório")
-    .max(100, "Slug deve ter no máximo 100 caracteres")
-    .regex(
-      /^[a-z0-9-]+$/,
-      "Slug deve conter apenas letras minúsculas, números e hífens",
-    ),
-  name: z
-    .string()
-    .min(1, "Nome é obrigatório")
-    .max(100, "Nome deve ter no máximo 100 caracteres"),
-  description: z
-    .string()
-    .max(500, "Descrição deve ter no máximo 500 caracteres")
-    .nullable()
-    .optional(),
-  duration: z
-    .number()
-    .int()
-    .min(15, "Duração mínima é 15 minutos")
-    .max(240, "Duração máxima é 240 minutos"),
-  price: z
-    .number()
-    .min(0, "Preço não pode ser negativo")
-    .max(10000, "Preço máximo é R$ 10.000"),
-  active: z.boolean().default(true),
-});
-
-export type CreateServiceInput = z.infer<typeof createServiceSchema>;

@@ -155,14 +155,3 @@ export const updateAdminServiceSchema = z
   );
 
 export type UpdateAdminServiceInput = z.infer<typeof updateAdminServiceSchema>;
-
-/**
- * Schema for toggling service active status
- */
-export const toggleServiceStatusSchema = z.object({
-  active: z.boolean(),
-});
-
-export type ToggleServiceStatusInput = z.infer<
-  typeof toggleServiceStatusSchema
->;

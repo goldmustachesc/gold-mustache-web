@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { apiMessage, apiError } from "@/lib/api/response";
@@ -61,17 +61,9 @@ export async function DELETE(request: Request) {
     // Supabase Auth is harder to revert; Prisma operations can be retried.
 
     // Step 1: Delete auth user (external operation — do this first)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const adminClient = getSupabaseAdmin();
 
-    if (supabaseServiceKey && supabaseUrl) {
-      const adminClient = createAdminClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      });
-
+    if (adminClient) {
       const { error: deleteUserError } =
         await adminClient.auth.admin.deleteUser(user.id);
 

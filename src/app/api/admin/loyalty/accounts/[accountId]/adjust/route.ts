@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
-import { apiError, apiMessage } from "@/lib/api/response";
+import { apiError, apiSuccess } from "@/lib/api/response";
+import { prisma } from "@/lib/prisma";
 import {
   accountIdSchema,
   loyaltyAdjustSchema,
@@ -40,10 +41,50 @@ export async function POST(
 
     const { points, reason } = validation.data;
 
-    // Simulate success
-    return apiMessage(
-      `Points adjusted for account ${accountId}: ${points} (${reason})`,
-    );
+    const account = await prisma.loyaltyAccount.findUnique({
+      where: { id: accountId },
+    });
+
+    if (!account) {
+      return apiError("NOT_FOUND", "Conta de fidelidade não encontrada", 404);
+    }
+
+    const newPoints = account.currentPoints + points;
+    if (newPoints < 0) {
+      return apiError(
+        "INSUFFICIENT_POINTS",
+        "Saldo insuficiente para este ajuste",
+        422,
+      );
+    }
+
+    const [updatedAccount] = await prisma.$transaction([
+      prisma.loyaltyAccount.update({
+        where: { id: accountId },
+        data: {
+          currentPoints: newPoints,
+          ...(points > 0 && {
+            lifetimePoints: { increment: points },
+          }),
+        },
+      }),
+      prisma.pointTransaction.create({
+        data: {
+          loyaltyAccountId: accountId,
+          type: "ADJUSTED",
+          points,
+          description: reason,
+        },
+      }),
+    ]);
+
+    return apiSuccess({
+      id: updatedAccount.id,
+      currentPoints: updatedAccount.currentPoints,
+      lifetimePoints: updatedAccount.lifetimePoints,
+      tier: updatedAccount.tier,
+      adjustedPoints: points,
+    });
   } catch (error) {
     return handlePrismaError(error, "Erro ao ajustar pontos de fidelidade");
   }

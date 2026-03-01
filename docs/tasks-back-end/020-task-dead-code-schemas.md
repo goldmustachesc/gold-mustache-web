@@ -38,9 +38,11 @@ Esses endpoints retornam dados fictícios. Devem ser implementados de verdade ou
 
 ## Checklist
 
-- [ ] Usar `getAppointmentsQuerySchema` no GET de appointments (task 006)
-- [ ] Decidir: remover `email` do `createBarberSchema` OU usar para vincular ao Supabase
-- [ ] Implementar endpoint real de loyalty accounts (usando Prisma)
-- [ ] Implementar endpoint real de loyalty adjust (usando loyalty service)
-- [ ] Remover ou marcar mock data com `// TODO: implementar`
-- [ ] Rodar busca por exports não utilizados em `src/lib/validations/`
+- [x] Usar `getAppointmentsQuerySchema` no GET de appointments (task 006) — já estava implementado
+- [x] Decidir: usar `email` para vincular ao Supabase (lookup via admin API, fallback para pending userId)
+- [x] Implementar endpoint real de loyalty accounts (usando Prisma + Supabase admin API para emails)
+- [x] Implementar endpoint real de loyalty adjust (usando Prisma $transaction com PointTransaction)
+- [x] Remover mock data dos endpoints de loyalty
+- [x] Rodar busca por exports não utilizados em `src/lib/validations/`
+  - Removidos de `booking.ts`: `cancelAppointmentSchema`, `guestLookupSchema`, `cancelGuestAppointmentSchema`, `createServiceSchema` e seus tipos
+  - Removido de `service.ts`: `toggleServiceStatusSchema` e seu tipo

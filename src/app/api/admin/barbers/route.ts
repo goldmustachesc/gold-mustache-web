@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { findAuthUserByEmail } from "@/lib/supabase/admin";
 import { z } from "zod";
 
 const createBarberSchema = z.object({
@@ -69,30 +70,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, avatarUrl } = parsed.data;
+    const { name, email, avatarUrl } = parsed.data;
 
-    // Para criar um barbeiro, precisamos de um userId
-    // Primeiro verificamos se já existe um barbeiro com esse email/nome
-    const existingBarber = await prisma.barber.findFirst({
-      where: { name },
-    });
+    let userId = `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    if (existingBarber) {
-      return apiError("DUPLICATE", "Já existe um barbeiro com esse nome", 409);
+    const authUser = await findAuthUserByEmail(email);
+
+    if (authUser) {
+      const existingBarberByUser = await prisma.barber.findUnique({
+        where: { userId: authUser.id },
+      });
+      if (existingBarberByUser) {
+        return apiError(
+          "DUPLICATE",
+          "Já existe um barbeiro vinculado a este email",
+          409,
+        );
+      }
+      userId = authUser.id;
     }
-
-    // Busca o perfil do usuário pelo email no Supabase Auth
-    // Como não temos acesso direto ao auth.users, vamos criar o barbeiro
-    // com um userId temporário baseado no email (o admin pode ajustar depois)
-    // Ou podemos buscar o userId de um usuário existente
-
-    // Estratégia: buscar o profile que tenha o userId correspondente
-    // Para isso, precisamos que o usuário já tenha feito login
-    // Vamos procurar no Supabase
-
-    // Por simplicidade, vamos permitir criar barbeiro com userId gerado
-    // O admin depois pode vincular ao usuário correto
-    const userId = `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     const barber = await prisma.barber.create({
       data: {
