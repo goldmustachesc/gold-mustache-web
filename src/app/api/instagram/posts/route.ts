@@ -1,8 +1,6 @@
-import type { InstagramCacheData } from "@/types/instagram";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/lib/api/response";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import { getInstagramCache } from "@/lib/instagram-cache";
 
 // Posts mockados como fallback
 const MOCK_POSTS = [
@@ -58,19 +56,9 @@ export async function GET(request: Request) {
       return res;
     }
 
-    const cacheFilePath = path.join(
-      process.cwd(),
-      "public",
-      "data",
-      "instagram-cache.json",
-    );
+    const cache = await getInstagramCache();
 
-    // Tentar ler o cache
-    const cacheData = await readFile(cacheFilePath, "utf-8");
-    const cache: InstagramCacheData = JSON.parse(cacheData);
-
-    // Validar se o cache tem posts
-    if (cache.posts && cache.posts.length > 0) {
+    if (cache) {
       const res = apiSuccess({
         posts: cache.posts,
         lastUpdated: cache.lastUpdated,
@@ -83,12 +71,10 @@ export async function GET(request: Request) {
       return res;
     }
 
-    // Se cache estiver vazio, usar mock
-    console.warn("[Instagram API] Cache vazio, usando posts mockados");
     const mockRes = apiSuccess({
       posts: MOCK_POSTS,
       lastUpdated: new Date().toISOString(),
-      source: "mock",
+      source: "mock" as const,
     });
     mockRes.headers.set(
       "Cache-Control",
@@ -96,16 +82,12 @@ export async function GET(request: Request) {
     );
     return mockRes;
   } catch (error) {
-    // Se cache não existir ou houver erro, retornar mock
-    console.warn(
-      "[Instagram API] Erro ao ler cache, usando posts mockados:",
-      error,
-    );
+    console.warn("[Instagram API] Erro ao ler cache:", error);
 
     const fallbackRes = apiSuccess({
       posts: MOCK_POSTS,
       lastUpdated: new Date().toISOString(),
-      source: "mock",
+      source: "mock" as const,
     });
     fallbackRes.headers.set(
       "Cache-Control",

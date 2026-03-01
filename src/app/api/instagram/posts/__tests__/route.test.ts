@@ -1,18 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { InstagramCacheData } from "@/types/instagram";
 
-const mockReadFile = vi.fn();
+const mockGetInstagramCache = vi.fn<() => Promise<InstagramCacheData | null>>();
 
-vi.mock("node:fs/promises", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return {
-    ...actual,
-    default: {
-      ...actual,
-      readFile: (...args: unknown[]) => mockReadFile(...args),
-    },
-    readFile: (...args: unknown[]) => mockReadFile(...args),
-  };
-});
+vi.mock("@/lib/instagram-cache", () => ({
+  getInstagramCache: () => mockGetInstagramCache(),
+}));
 
 import { GET } from "../route";
 
@@ -22,28 +15,27 @@ describe("GET /api/instagram/posts", () => {
   });
 
   it("returns cached posts when cache exists", async () => {
-    mockReadFile.mockResolvedValue(
-      JSON.stringify({
-        posts: [{ id: "p-1" }],
-        lastUpdated: "2025-01-01T00:00:00.000Z",
-        source: "cache",
-      }),
-    );
+    mockGetInstagramCache.mockResolvedValue({
+      posts: [
+        { id: "p-1", image: "/img.jpg", caption: "test", url: "https://ig" },
+      ],
+      lastUpdated: "2025-01-01T00:00:00.000Z",
+      source: "api",
+    });
 
     const request = new Request("http://localhost:3001/api/instagram/posts");
     const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.data.posts).toEqual([{ id: "p-1" }]);
-    expect(body.data.source).toBe("cache");
+    expect(body.data.posts).toEqual([
+      { id: "p-1", image: "/img.jpg", caption: "test", url: "https://ig" },
+    ]);
+    expect(body.data.source).toBe("api");
   });
 
   it("returns mock posts when cache is empty", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockReadFile.mockResolvedValue(
-      JSON.stringify({ posts: [], lastUpdated: null, source: "cache" }),
-    );
+    mockGetInstagramCache.mockResolvedValue(null);
 
     const request = new Request("http://localhost:3001/api/instagram/posts");
     const response = await GET(request);
@@ -56,7 +48,7 @@ describe("GET /api/instagram/posts", () => {
 
   it("returns mock posts when cache read fails", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockReadFile.mockRejectedValue(new Error("boom"));
+    mockGetInstagramCache.mockRejectedValue(new Error("redis down"));
 
     const request = new Request("http://localhost:3001/api/instagram/posts");
     const response = await GET(request);

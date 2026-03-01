@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
+import { redis } from "@/lib/redis";
 
 /**
  * Rate limiting with Upstash Redis (distributed) and in-memory fallback.
@@ -12,24 +13,6 @@ import { Redis } from "@upstash/redis";
  * the configured rate at window boundaries (acceptable trade-off for a
  * lightweight fallback that requires no external dependencies).
  */
-
-const isConfigured =
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
-
-if (!isConfigured && process.env.NODE_ENV === "production") {
-  console.warn(
-    "[rate-limit] UPSTASH Redis not configured — using in-memory fallback. " +
-      "This is NOT recommended for production. " +
-      "Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
-  );
-}
-
-const redis = isConfigured
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL as string,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN as string,
-    })
-  : null;
 
 const RATE_LIMIT_CONFIGS = {
   appointments: {

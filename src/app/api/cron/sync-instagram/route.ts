@@ -5,8 +5,8 @@ import {
 import type { InstagramCacheData, InstagramPost } from "@/types/instagram";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { API_CONFIG } from "@/config/api";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { setInstagramCache } from "@/lib/instagram-cache";
+import { isRedisConfigured } from "@/lib/redis";
 
 const { maxRetries, postsLimit, retryBaseDelayMs } = API_CONFIG.instagram;
 
@@ -72,20 +72,21 @@ export async function POST(request: Request) {
       });
     }
 
-    // Preparar dados do cache
+    if (!isRedisConfigured()) {
+      return apiError(
+        "CONFIG_ERROR",
+        "Redis não configurado — impossível persistir cache",
+        500,
+      );
+    }
+
     const cacheData: InstagramCacheData = {
       posts,
       lastUpdated: new Date().toISOString(),
       source: "api",
     };
 
-    // Criar diretório se não existir
-    const cacheDir = path.join(process.cwd(), "public", "data");
-    await mkdir(cacheDir, { recursive: true });
-
-    // Salvar no cache
-    const cacheFilePath = path.join(cacheDir, "instagram-cache.json");
-    await writeFile(cacheFilePath, JSON.stringify(cacheData, null, 2), "utf-8");
+    await setInstagramCache(cacheData);
 
     return apiSuccess({
       postsCount: posts.length,
