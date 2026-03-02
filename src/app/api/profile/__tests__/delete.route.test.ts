@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock Prisma
-const mockPrismaTransaction = vi.fn();
 const mockProfileFindUnique = vi.fn();
-const mockAppointmentDeleteMany = vi.fn();
 const mockProfileDelete = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
@@ -12,10 +10,6 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: (...args: unknown[]) => mockProfileFindUnique(...args),
       delete: (...args: unknown[]) => mockProfileDelete(...args),
     },
-    appointment: {
-      deleteMany: (...args: unknown[]) => mockAppointmentDeleteMany(...args),
-    },
-    $transaction: (...args: unknown[]) => mockPrismaTransaction(...args),
   },
 }));
 
@@ -97,22 +91,6 @@ describe("DELETE /api/profile/delete", () => {
     });
 
     mockProfileFindUnique.mockResolvedValue(mockProfile);
-
-    mockPrismaTransaction.mockImplementation(
-      async (callback: (tx: unknown) => Promise<unknown>) => {
-        const tx = {
-          appointment: {
-            deleteMany: mockAppointmentDeleteMany,
-          },
-          profile: {
-            delete: mockProfileDelete,
-          },
-        };
-        return callback(tx);
-      },
-    );
-
-    mockAppointmentDeleteMany.mockResolvedValue({ count: 2 });
     mockProfileDelete.mockResolvedValue(mockProfile);
     mockDeleteUser.mockResolvedValue({ error: null });
   });
@@ -134,7 +112,7 @@ describe("DELETE /api/profile/delete", () => {
     expect(body.message).toBe("Não autorizado");
   });
 
-  it("should delete appointments and profile within transaction", async () => {
+  it("should delete profile and let DB cascade nullify appointment references", async () => {
     const response = await DELETE(createMockRequest());
     const body = await response.json();
 
@@ -142,20 +120,10 @@ describe("DELETE /api/profile/delete", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Conta deletada com sucesso");
 
-    // Verify profile was looked up
     expect(mockProfileFindUnique).toHaveBeenCalledWith({
       where: { userId: mockUser.id },
     });
 
-    // Verify transaction was executed
-    expect(mockPrismaTransaction).toHaveBeenCalled();
-
-    // Verify appointments were deleted with profile.id
-    expect(mockAppointmentDeleteMany).toHaveBeenCalledWith({
-      where: { clientId: mockProfile.id },
-    });
-
-    // Verify profile was deleted
     expect(mockProfileDelete).toHaveBeenCalledWith({
       where: { id: mockProfile.id },
     });
@@ -186,9 +154,7 @@ describe("DELETE /api/profile/delete", () => {
     // Auth user should still be deleted even without a profile
     expect(mockDeleteUser).toHaveBeenCalledWith(mockUser.id);
 
-    // No transaction needed when profile doesn't exist
-    expect(mockPrismaTransaction).not.toHaveBeenCalled();
-    expect(mockAppointmentDeleteMany).not.toHaveBeenCalled();
+    // No profile delete needed when profile doesn't exist
     expect(mockProfileDelete).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
@@ -215,7 +181,7 @@ describe("DELETE /api/profile/delete", () => {
       }),
     );
 
-    expect(mockPrismaTransaction).not.toHaveBeenCalled();
+    expect(mockProfileDelete).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
   });
@@ -224,7 +190,7 @@ describe("DELETE /api/profile/delete", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    mockPrismaTransaction.mockRejectedValue(new Error("Database error"));
+    mockProfileDelete.mockRejectedValue(new Error("Database error"));
 
     const response = await DELETE(createMockRequest());
     const body = await response.json();
@@ -246,15 +212,18 @@ describe("DELETE /api/profile/delete", () => {
     infoSpy.mockRestore();
   });
 
-  it("should handle user with no appointments", async () => {
-    mockAppointmentDeleteMany.mockResolvedValue({ count: 0 });
+  it("should not delete appointments directly (relies on DB cascade)", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
     const response = await DELETE(createMockRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(mockAppointmentDeleteMany).toHaveBeenCalled();
+    expect(mockProfileDelete).toHaveBeenCalledWith({
+      where: { id: mockProfile.id },
+    });
+    infoSpy.mockRestore();
   });
 
   it("should return 500 when service role key is not set", async () => {
@@ -273,7 +242,7 @@ describe("DELETE /api/profile/delete", () => {
     );
 
     expect(mockDeleteUser).not.toHaveBeenCalled();
-    expect(mockPrismaTransaction).not.toHaveBeenCalled();
+    expect(mockProfileDelete).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
   });
