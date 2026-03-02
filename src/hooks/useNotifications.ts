@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { NotificationData } from "@/types/booking";
 import type { PaginationMeta } from "@/types/api";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { apiGet, apiAction } from "@/lib/api/client";
+import { apiGet } from "@/lib/api/client";
+import {
+  markNotificationAsRead as markNotificationAsReadAction,
+  markAllNotificationsAsRead as markAllNotificationsAsReadAction,
+} from "@/actions/notifications";
 
 interface UseNotificationsOptions {
   userId: string | null;
@@ -75,7 +79,11 @@ export function useNotifications({
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await apiAction(`/api/notifications/${notificationId}/read`, "PATCH");
+      const result = await markNotificationAsReadAction(notificationId);
+      if (!result.success) {
+        console.error("Failed to mark notification as read:", result.error);
+        return;
+      }
 
       setNotifications((prev) =>
         prev.map((n) => {
@@ -95,7 +103,14 @@ export function useNotifications({
     if (!userId) return;
 
     try {
-      await apiAction("/api/notifications/mark-all-read", "PATCH");
+      const result = await markAllNotificationsAsReadAction();
+      if (!result.success) {
+        console.error(
+          "Failed to mark all notifications as read:",
+          result.error,
+        );
+        return;
+      }
 
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
