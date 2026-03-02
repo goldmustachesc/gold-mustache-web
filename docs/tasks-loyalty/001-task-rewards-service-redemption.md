@@ -60,66 +60,73 @@ Marcar `usedAt = new Date()`. Validar que não foi usado antes.
 
 Criar `src/services/loyalty/__tests__/rewards.service.test.ts`:
 
-- [ ] **Teste `generateRedemptionCode`**
-  - [ ] Deve gerar string de 6 caracteres alfanuméricos uppercase
-  - [ ] Deve gerar códigos diferentes em chamadas consecutivas (property test com fast-check)
+- [x] **Teste `generateRedemptionCode`**
+  - [x] Deve gerar string de 6 caracteres alfanuméricos uppercase
+  - [x] Deve gerar códigos diferentes em chamadas consecutivas (property test com fast-check)
 
-- [ ] **Testes `redeemReward`**
-  - [ ] Deve resgatar com sucesso quando saldo suficiente + reward ativo
-  - [ ] Deve retornar erro quando saldo insuficiente (`currentPoints < pointsCost`)
-  - [ ] Deve retornar erro quando reward inativo (`active: false`)
-  - [ ] Deve retornar erro quando reward sem estoque (`stock === 0`)
-  - [ ] Deve decrementar stock quando `stock !== null`
-  - [ ] Deve criar Redemption com `expiresAt` correto (now + REDEMPTION_VALIDITY_DAYS)
-  - [ ] Deve chamar `debitPoints` com amount correto
-  - [ ] Deve executar tudo dentro de `prisma.$transaction`
+- [x] **Testes `redeemReward`**
+  - [x] Deve resgatar com sucesso quando saldo suficiente + reward ativo
+  - [x] Deve retornar erro quando saldo insuficiente (`currentPoints < pointsCost`)
+  - [x] Deve retornar erro quando reward inativo (`active: false`)
+  - [x] Deve retornar erro quando reward sem estoque (`stock === 0`)
+  - [x] Deve decrementar stock quando `stock !== null`
+  - [x] NÃO deve decrementar stock quando `stock === null` (ilimitado)
+  - [x] Deve criar Redemption com `expiresAt` correto (now + REDEMPTION_VALIDITY_DAYS)
+  - [x] Deve debitar pontos com amount correto (inline na transaction)
+  - [x] Deve executar tudo dentro de `prisma.$transaction`
+  - [x] Deve fazer retry quando código gerado já existe (P2002 collision)
 
-- [ ] **Testes `validateRedemptionCode`**
-  - [ ] Deve retornar redemption + reward quando código válido e pendente
-  - [ ] Deve retornar erro quando código não existe
-  - [ ] Deve retornar erro quando código já usado (`usedAt !== null`)
-  - [ ] Deve retornar erro quando código expirado (`expiresAt < now`)
+- [x] **Testes `validateRedemptionCode`**
+  - [x] Deve retornar redemption + reward quando código válido e pendente
+  - [x] Deve retornar erro quando código não existe
+  - [x] Deve retornar erro quando código já usado (`usedAt !== null`)
+  - [x] Deve retornar erro quando código expirado (`expiresAt < now`)
 
-- [ ] **Testes `markRedemptionAsUsed`**
-  - [ ] Deve marcar `usedAt` com data atual
-  - [ ] Deve retornar erro quando código já usado (guard double-use)
-  - [ ] Deve retornar erro quando código não encontrado
+- [x] **Testes `markRedemptionAsUsed`**
+  - [x] Deve marcar `usedAt` com data atual (atomic `updateMany`)
+  - [x] Deve retornar erro quando código já usado (guard double-use)
+  - [x] Deve retornar erro quando código não encontrado
 
-- [ ] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
+- [x] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
 
 ### Mocks necessários
 
 ```typescript
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    redemption: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    redemption: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     reward: { findUnique: vi.fn(), update: vi.fn() },
-    loyaltyAccount: { findUnique: vi.fn() },
-    $transaction: vi.fn((cb) => cb(prisma)),
+    loyaltyAccount: { findUnique: vi.fn(), update: vi.fn() },
+    pointTransaction: { create: vi.fn() },
+    $transaction: vi.fn(),
   },
-}));
-
-vi.mock("@/services/loyalty/loyalty.service", () => ({
-  LoyaltyService: { debitPoints: vi.fn() },
 }));
 ```
 
 ### Fase GREEN — Implementar código mínimo para passar
 
-- [ ] Criar `src/services/loyalty/rewards.service.ts` com esqueleto das funções
-- [ ] Implementar `generateRedemptionCode()` → rodar testes dessa função → GREEN
-- [ ] Implementar `redeemReward()` → rodar testes dessa função → GREEN
-- [ ] Implementar `validateRedemptionCode()` → rodar testes → GREEN
-- [ ] Implementar `markRedemptionAsUsed()` → rodar testes → GREEN
-- [ ] Adicionar schemas Zod: `redeemRewardSchema` e `redemptionCodeSchema`
-- [ ] Rodar `pnpm test` → TODOS os testes passam (GREEN)
+- [x] Criar `src/services/loyalty/rewards.service.ts` com esqueleto das funções
+- [x] Implementar `generateRedemptionCode()` → rodar testes dessa função → GREEN
+- [x] Implementar `redeemReward()` → rodar testes dessa função → GREEN
+- [x] Implementar `validateRedemptionCode()` → rodar testes → GREEN
+- [x] Implementar `markRedemptionAsUsed()` → rodar testes → GREEN
+- [x] Adicionar schemas Zod: `redeemRewardSchema` e `redemptionCodeSchema`
+- [x] Rodar `pnpm test` → TODOS os testes passam (GREEN)
 
 ### Fase REFACTOR — Limpar sem quebrar testes
 
-- [ ] Extrair constantes mágicas para `LOYALTY_CONFIG`
-- [ ] Revisar tipagem (sem `any`, tipos explícitos nos retornos)
-- [ ] Verificar single responsibility — funções pequenas e coesas
-- [ ] Rodar `pnpm test` → continua GREEN
-- [ ] `pnpm lint` ✅ e `pnpm build` ✅
+- [x] Extrair constantes mágicas para `LOYALTY_CONFIG`
+- [x] Revisar tipagem (sem `any`, tipos explícitos nos retornos)
+- [x] Verificar single responsibility — funções pequenas e coesas
+- [x] Rodar `pnpm test` → continua GREEN
+- [x] `pnpm lint` ✅ e `pnpm build` ✅
 
-## Status: 🔲 A FAZER
+## Decisões de implementação
+
+- **Atomicidade**: Debit de pontos é feito inline dentro da `prisma.$transaction` de `redeemReward` (não via `LoyaltyService.debitPoints`) para garantir atomicidade — `debitPoints` cria sua própria transaction separada.
+- **TOCTOU**: `markRedemptionAsUsed` usa `updateMany({ where: { code, usedAt: null } })` atômico em vez de find-check-update para prevenir race conditions.
+- **Collision retry**: `redeemReward` faz até 3 tentativas de gerar código único, detectando `P2002` (unique constraint violation).
+- **Charset**: 32 caracteres sem ambiguidade (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`) — sem 0/O, 1/I/L.
+- **Tipo explícito**: `RedemptionWithDetails` via `Prisma.RedemptionGetPayload` para retorno de `validateRedemptionCode`.
+
+## Status: ✅ CONCLUÍDO

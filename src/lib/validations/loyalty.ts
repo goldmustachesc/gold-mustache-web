@@ -16,3 +16,16 @@ export const loyaltyAdjustSchema = z.object({
 });
 
 export type LoyaltyAdjustInput = z.infer<typeof loyaltyAdjustSchema>;
+
+export const redeemRewardSchema = z.object({
+  rewardId: z.string().uuid("ID da recompensa inválido"),
+});
+
+export type RedeemRewardInput = z.infer<typeof redeemRewardSchema>;
+
+export const redemptionCodeSchema = z
+  .string()
+  .length(6, "Código deve ter 6 caracteres")
+  .regex(/^[A-Z0-9]+$/, "Código deve ser alfanumérico uppercase");
+
+export type RedemptionCodeInput = z.infer<typeof redemptionCodeSchema>;
