@@ -86,35 +86,35 @@ Em `src/services/booking.ts` → `markAppointmentAsCompleted`:
 #### Arquivo: `src/services/loyalty/__tests__/referral.service.test.ts`
 
 **Testes `validateReferralCode`:**
-- [ ] Deve retornar LoyaltyAccount quando código válido existe
-- [ ] Deve retornar erro quando código não existe no banco
-- [ ] Deve retornar erro quando código é do próprio usuário (self-referral)
+- [x] Deve retornar LoyaltyAccount quando código válido existe
+- [x] Deve retornar erro quando código não existe no banco
+- [x] Deve retornar erro quando código é do próprio usuário (self-referral)
 
 **Testes `applyReferral`:**
-- [ ] Deve vincular `referredById` no account do referred
-- [ ] Deve retornar erro quando referrer não existe
-- [ ] Deve retornar erro quando referred já tem `referredById` (já foi indicado)
+- [x] Deve vincular `referredById` no account do referred
+- [x] Deve retornar erro quando referrer não existe
+- [x] Deve retornar erro quando referred já tem `referredById` (já foi indicado)
 
 **Testes `creditReferralBonus`:**
-- [ ] Deve creditar REFERRAL_BONUS (150 pts) para o referrer
-- [ ] Deve creditar FIRST_APPOINTMENT_BONUS (50 pts) para o referred
-- [ ] Deve criar PointTransaction com type EARNED_REFERRAL para ambos
-- [ ] Deve NÃO creditar se bônus já foi dado (double-credit guard)
-- [ ] Deve NÃO creditar se account não tem `referredById` (não foi indicado)
+- [x] Deve creditar REFERRAL_BONUS (150 pts) para o referrer
+- [x] Deve creditar FIRST_APPOINTMENT_BONUS (50 pts) para o referred
+- [x] Deve criar PointTransaction com type EARNED_REFERRAL para ambos
+- [x] Deve NÃO creditar se bônus já foi dado (double-credit guard)
+- [x] Deve NÃO creditar se account não tem `referredById` (não foi indicado)
 
 **Property test (fast-check):**
-- [ ] Para qualquer par válido (referrer, referred), o total de pontos creditados é exatamente `REFERRAL_BONUS + FIRST_APPOINTMENT_BONUS`
+- [x] Para qualquer par válido (referrer, referred), o total de pontos creditados é exatamente `REFERRAL_BONUS + FIRST_APPOINTMENT_BONUS`
 
 #### Arquivo: `src/app/api/loyalty/referral/validate/__tests__/route.test.ts`
 
 **Testes `POST /api/loyalty/referral/validate`:**
-- [ ] Deve retornar 401 quando não autenticado
-- [ ] Deve retornar 400 quando body inválido (sem code)
-- [ ] Deve retornar 200 com `valid: true` e nome parcial do referrer
-- [ ] Deve retornar 400 quando código é do próprio usuário
-- [ ] Deve retornar 404 quando código não existe
+- [x] Deve retornar 401 quando não autenticado
+- [x] Deve retornar 400 quando body inválido (sem code)
+- [x] Deve retornar 200 com `valid: true` e nome parcial do referrer
+- [x] Deve retornar 400 quando código é do próprio usuário
+- [x] Deve retornar 404 quando código não existe
 
-- [ ] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
+- [x] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
 
 ### Mocks necessários
 
@@ -138,21 +138,21 @@ vi.mock("@/services/loyalty/referral.service", () => ({
 
 ### Fase GREEN — Implementar código mínimo para passar
 
-- [ ] Criar `src/services/loyalty/referral.service.ts` com esqueleto
-- [ ] Implementar `validateReferralCode()` → rodar testes → GREEN
-- [ ] Implementar `applyReferral()` → rodar testes → GREEN
-- [ ] Implementar `creditReferralBonus()` → rodar testes → GREEN
-- [ ] Criar `POST /api/loyalty/referral/validate` → rodar testes → GREEN
-- [ ] Integrar `creditReferralBonus` no `markAppointmentAsCompleted` do booking.ts
-- [ ] Adicionar `referralCodeSchema` em validations
-- [ ] Rodar `pnpm test` → TODOS passam (GREEN)
+- [x] Criar `src/services/loyalty/referral.service.ts` com esqueleto
+- [x] Implementar `validateReferralCode()` → rodar testes → GREEN
+- [x] Implementar `applyReferral()` → rodar testes → GREEN
+- [x] Implementar `creditReferralBonus()` → rodar testes → GREEN
+- [x] Criar `POST /api/loyalty/referral/validate` → rodar testes → GREEN
+- [x] Integrar `creditReferralBonus` no `markAppointmentAsCompleted` do booking.ts
+- [x] Adicionar `referralCodeSchema` em validations
+- [x] Rodar `pnpm test` → TODOS passam (GREEN)
 
 ### Fase REFACTOR — Limpar sem quebrar testes
 
-- [ ] Verificar que nome parcial é seguro (não expõe PII além do necessário)
-- [ ] Extrair lógica de "primeiro agendamento" em helper testável
-- [ ] Verificar tipagem completa (sem `any`)
-- [ ] Rodar `pnpm test` → continua GREEN
-- [ ] `pnpm lint` ✅ e `pnpm build` ✅
+- [x] Verificar que nome parcial é seguro (não expõe PII além do necessário)
+- [x] Extrair lógica de "primeiro agendamento" em helper testável
+- [x] Verificar tipagem completa (sem `any`)
+- [x] Rodar `pnpm test` → continua GREEN
+- [x] `pnpm lint` ✅ e `pnpm build` ✅
 
-## Status: 🔲 A FAZER
+## Status: ✅ CONCLUÍDA

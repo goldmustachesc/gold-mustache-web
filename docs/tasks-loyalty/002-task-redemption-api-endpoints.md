@@ -91,32 +91,32 @@ Admin marca um código de resgate como utilizado quando o cliente apresenta na b
 #### Arquivo: `src/app/api/loyalty/redemptions/__tests__/route.test.ts`
 
 **Testes `POST /api/loyalty/redemptions`:**
-- [ ] Deve retornar 401 quando não autenticado
-- [ ] Deve retornar 400 quando body inválido (sem rewardId, rewardId não-UUID)
-- [ ] Deve retornar 201 com redemption data quando resgate bem-sucedido
-- [ ] Deve retornar 400 quando saldo insuficiente (erro do service)
-- [ ] Deve retornar 404 quando reward não existe (erro do service)
-- [ ] Deve chamar `RewardsService.redeemReward` com accountId e rewardId corretos
+- [x] Deve retornar 401 quando não autenticado
+- [x] Deve retornar 400 quando body inválido (sem rewardId, rewardId não-UUID)
+- [x] Deve retornar 201 com redemption data quando resgate bem-sucedido
+- [x] Deve retornar 400 quando saldo insuficiente (erro do service)
+- [x] Deve retornar 404 quando reward não existe (erro do service)
+- [x] Deve chamar `RewardsService.redeemReward` com accountId e rewardId corretos
 
 **Testes `GET /api/loyalty/redemptions`:**
-- [ ] Deve retornar 401 quando não autenticado
-- [ ] Deve retornar 200 com lista paginada de redemptions
-- [ ] Deve incluir `reward { name, type }` em cada item
-- [ ] Deve derivar status correto: PENDING / USED / EXPIRED
-- [ ] Deve respeitar paginação (`page`, `limit`)
-- [ ] Deve retornar lista vazia quando sem resgates
+- [x] Deve retornar 401 quando não autenticado
+- [x] Deve retornar 200 com lista paginada de redemptions
+- [x] Deve incluir `reward { name, type }` em cada item
+- [x] Deve derivar status correto: PENDING / USED / EXPIRED
+- [x] Deve respeitar paginação (`page`, `limit`)
+- [x] Deve retornar lista vazia quando sem resgates
 
 #### Arquivo: `src/app/api/admin/loyalty/redemptions/__tests__/use.route.test.ts`
 
 **Testes `POST /api/admin/loyalty/redemptions/use`:**
-- [ ] Deve retornar 401/403 quando não admin
-- [ ] Deve retornar 400 quando body inválido (sem code)
-- [ ] Deve retornar 200 com redemption atualizada (usedAt preenchido)
-- [ ] Deve retornar 400 quando código já usado
-- [ ] Deve retornar 400 quando código expirado
-- [ ] Deve retornar 404 quando código não encontrado
+- [x] Deve retornar 401/403 quando não admin
+- [x] Deve retornar 400 quando body inválido (sem code)
+- [x] Deve retornar 200 com redemption atualizada (usedAt preenchido)
+- [x] Deve retornar 400 quando código já usado
+- [x] Deve retornar 400 quando código expirado
+- [x] Deve retornar 404 quando código não encontrado
 
-- [ ] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
+- [x] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
 
 ### Mocks necessários
 
@@ -147,20 +147,20 @@ vi.mock("@/services/loyalty/rewards.service", () => ({
 
 ### Fase GREEN — Implementar código mínimo para passar
 
-- [ ] Criar `src/app/api/loyalty/redemptions/route.ts` com POST handler
-- [ ] Rodar testes POST → GREEN
-- [ ] Adicionar GET handler no mesmo arquivo
-- [ ] Rodar testes GET → GREEN
-- [ ] Criar `src/app/api/admin/loyalty/redemptions/use/route.ts` com POST handler
-- [ ] Rodar testes admin → GREEN
-- [ ] Verificar que hook `useRedeemReward` em `useLoyalty.ts` aponta para o endpoint correto
-- [ ] Rodar `pnpm test` → TODOS passam (GREEN)
+- [x] Criar `src/app/api/loyalty/redemptions/route.ts` com POST handler
+- [x] Rodar testes POST → GREEN
+- [x] Adicionar GET handler no mesmo arquivo
+- [x] Rodar testes GET → GREEN
+- [x] Criar `src/app/api/admin/loyalty/redemptions/use/route.ts` com POST handler
+- [x] Rodar testes admin → GREEN
+- [x] Verificar que hook `useRedeemReward` em `useLoyalty.ts` aponta para o endpoint correto
+- [x] Rodar `pnpm test` → TODOS passam (GREEN)
 
 ### Fase REFACTOR — Limpar sem quebrar testes
 
-- [ ] Extrair lógica de derivação de status (PENDING/USED/EXPIRED) para utility function
-- [ ] Verificar response format consistente com outros endpoints existentes
-- [ ] Rodar `pnpm test` → continua GREEN
-- [ ] `pnpm lint` ✅ e `pnpm build` ✅
+- [x] Extrair lógica de derivação de status (PENDING/USED/EXPIRED) para utility function
+- [x] Verificar response format consistente com outros endpoints existentes
+- [x] Rodar `pnpm test` → continua GREEN
+- [x] `pnpm lint` ✅ e `pnpm build` ✅
 
-## Status: 🔲 A FAZER
+## Status: ✅ CONCLUÍDA
