@@ -190,8 +190,8 @@ model Appointment {
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
-  client      Profile?     @relation(fields: [clientId], references: [id])
-  guestClient GuestClient? @relation(fields: [guestClientId], references: [id])
+  client      Profile?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  guestClient GuestClient? @relation(fields: [guestClientId], references: [id], onDelete: SetNull)
   barber      Barber       @relation(fields: [barberId], references: [id], onDelete: Restrict)
   service     Service      @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   feedback    Feedback?

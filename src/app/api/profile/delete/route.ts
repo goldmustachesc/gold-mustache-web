@@ -9,10 +9,12 @@ import { apiMessage, apiError } from "@/lib/api/response";
 /**
  * DELETE /api/profile/delete
  *
- * Permanently deletes the user's account and all associated data:
+ * Permanently deletes the user's account:
  * - Supabase Auth user (requires SUPABASE_SERVICE_ROLE_KEY)
- * - Appointments (as client)
  * - Profile data
+ *
+ * Appointments are preserved with client_id set to NULL (ON DELETE SET NULL)
+ * to maintain financial history and reporting integrity.
  *
  * This action is irreversible.
  *
@@ -50,7 +52,6 @@ export async function DELETE(request: Request) {
       userId: user.id,
       authUserDeleted: false,
       profileDeleted: false,
-      appointmentsDeleted: 0,
     };
 
     const profile = await prisma.profile.findUnique({
@@ -92,24 +93,15 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Step 2: Delete database records (can be retried/cleaned up if this fails)
+    // Step 2: Delete profile (can be retried/cleaned up if this fails)
+    // ON DELETE SET NULL cascades to appointments.client_id, preserving appointment history.
     if (profile) {
       try {
-        const transactionResult = await prisma.$transaction(async (tx) => {
-          const appointmentsResult = await tx.appointment.deleteMany({
-            where: { clientId: profile.id },
-          });
-
-          await tx.profile.delete({
-            where: { id: profile.id },
-          });
-
-          return { appointmentsDeleted: appointmentsResult.count };
+        await prisma.profile.delete({
+          where: { id: profile.id },
         });
 
         deletionResult.profileDeleted = true;
-        deletionResult.appointmentsDeleted =
-          transactionResult.appointmentsDeleted;
       } catch (dbError) {
         // Auth user already deleted but DB cleanup failed.
         // From the user's perspective the account is gone (can't log in).
