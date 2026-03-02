@@ -7,8 +7,10 @@ import {
 } from "@/hooks/useLoyalty";
 import { Loader2 } from "lucide-react";
 import { RewardCard } from "@/components/loyalty/RewardCard";
+import { ApiError } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -40,16 +42,11 @@ export default function LoyaltyRewardsPage() {
   const handleRedeem = async (rewardId: string) => {
     try {
       const result = await redeemReward.mutateAsync(rewardId);
-      if (result.redemption?.code) {
-        setSuccessCode(result.redemption.code);
-      } else {
-        // Mock fallback check just to show the success dialog in development/mock
-        setSuccessCode("RESGATE-DEV-123");
-      }
+      setSuccessCode(result.code);
     } catch (e) {
-      console.error(e);
-      // fallback just to demonstrate since API might not be handling post body yet fully
-      setSuccessCode("DEV-CODE-MOCK");
+      const message =
+        e instanceof ApiError ? e.message : "Erro ao resgatar recompensa";
+      toast.error(message);
     }
   };
 

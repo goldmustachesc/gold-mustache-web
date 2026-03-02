@@ -27,7 +27,11 @@ export function useRewards() {
 }
 
 interface RedemptionResult {
-  redemption?: { code: string };
+  id: string;
+  code: string;
+  pointsSpent: number;
+  expiresAt: string;
+  reward: { name: string; type: string } | null;
 }
 
 export function useRedeemReward() {
