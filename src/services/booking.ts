@@ -1440,6 +1440,22 @@ export async function markAppointmentAsCompleted(
         description: `Agendamento concluído: ${updated.service.name}`,
         referenceId: updated.id,
       });
+
+      if (account.referredById) {
+        const completedCount = await prisma.appointment.count({
+          where: {
+            clientId: updated.clientId,
+            status: AppointmentStatus.COMPLETED,
+          },
+        });
+
+        if (completedCount === 1) {
+          const { ReferralService } = await import(
+            "./loyalty/referral.service"
+          );
+          await ReferralService.creditReferralBonus(account.id);
+        }
+      }
     } catch (error) {
       console.error("Falha ao registrar pontos de fidelidade", error);
     }

@@ -9,6 +9,7 @@ vi.mock("@/lib/prisma", () => {
       findFirst: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     $transaction: vi.fn(),
   };
@@ -37,6 +38,14 @@ vi.mock("../loyalty/loyalty.service", () => {
 vi.mock("../loyalty/points.calculator", () => {
   return {
     calculateAppointmentPoints: vi.fn(),
+  };
+});
+
+vi.mock("../loyalty/referral.service", () => {
+  return {
+    ReferralService: {
+      creditReferralBonus: vi.fn(),
+    },
   };
 });
 
@@ -156,6 +165,7 @@ describe("services/booking/completion", () => {
     asMock(LoyaltyService.getOrCreateAccount).mockResolvedValue({
       id: "acc-1",
       tier: "BRONZE",
+      referredById: null,
     });
     asMock(calculateAppointmentPoints).mockReturnValue({
       base: 50,
@@ -163,16 +173,11 @@ describe("services/booking/completion", () => {
       total: 50,
     });
 
-    // Process the completion
     const updated = await markAppointmentAsCompleted("apt-done", "barber-1");
 
     expect(updated.status).toBe(AppointmentStatus.COMPLETED);
 
-    // We expect dynamic imports to have been called.
-    // Wait for event loop to clear dynamic import promises
     await Promise.resolve();
-    // Flush microtasks explicitly if needed, but Promise.resolve should suffice for dynamic imports
-    // or advance fake timers lightly:
     await vi.advanceTimersByTimeAsync(1);
 
     expect(LoyaltyService.getOrCreateAccount).toHaveBeenCalledWith(
@@ -184,6 +189,60 @@ describe("services/booking/completion", () => {
         points: 50,
         description: "Agendamento concluído: Corte",
       }),
+    );
+    expect(prisma.appointment.count).not.toHaveBeenCalled();
+  });
+
+  it("markAppointmentAsCompleted triggers referral bonus on first appointment with referral", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
+
+    asMock(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-first",
+      barberId: "barber-1",
+      status: AppointmentStatus.CONFIRMED,
+      startTime: "18:00",
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-first",
+      clientId: "reg-client-referred",
+      client: { id: "reg-client-referred" },
+      service: { price: 50, name: "Corte" },
+      status: AppointmentStatus.COMPLETED,
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      startTime: "18:00",
+      endTime: "18:30",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const { LoyaltyService } = await import("../loyalty/loyalty.service");
+    const { calculateAppointmentPoints } = await import(
+      "../loyalty/points.calculator"
+    );
+    const { ReferralService } = await import("../loyalty/referral.service");
+
+    asMock(LoyaltyService.getOrCreateAccount).mockResolvedValue({
+      id: "acc-referred",
+      tier: "BRONZE",
+      referredById: "acc-referrer",
+    });
+    asMock(prisma.appointment.count).mockResolvedValue(1);
+    asMock(calculateAppointmentPoints).mockReturnValue({
+      base: 50,
+      bonus: 0,
+      total: 50,
+    });
+    asMock(ReferralService.creditReferralBonus).mockResolvedValue(undefined);
+
+    await markAppointmentAsCompleted("apt-first", "barber-1");
+
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(ReferralService.creditReferralBonus).toHaveBeenCalledWith(
+      "acc-referred",
     );
   });
 });

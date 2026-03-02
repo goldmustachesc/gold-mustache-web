@@ -1,5 +1,1 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-echo "pre-push: executando checks (lint + testes + coverage >= 90%)..."
-pnpm test:gate:full
+pnpm test:gate

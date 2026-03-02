@@ -29,3 +29,12 @@ export const redemptionCodeSchema = z
   .regex(/^[A-Z0-9]+$/, "Código deve ser alfanumérico uppercase");
 
 export type RedemptionCodeInput = z.infer<typeof redemptionCodeSchema>;
+
+export const referralCodeSchema = z.object({
+  code: z
+    .string()
+    .length(6, "Código deve ter 6 caracteres")
+    .regex(/^[A-Z0-9]+$/, "Código deve ser alfanumérico uppercase"),
+});
+
+export type ReferralCodeInput = z.infer<typeof referralCodeSchema>;
