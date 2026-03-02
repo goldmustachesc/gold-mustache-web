@@ -110,16 +110,36 @@ rename_phone_to_phone_number
 create_feedback_indexes
 ```
 
-### Fase 5: Atualização do Código
+### Fase 5: TDD — Atualizar Testes PRIMEIRO (OBRIGATÓRIO)
 
-Após alterar o schema, atualize:
+Após alterar o schema, **atualize os testes antes do código de produção**:
+
+1. **Identifique testes afetados**: Testes que mockam os models alterados precisam ser atualizados.
+
+```bash
+# Encontre testes que usam o model alterado
+rg "prisma\.modelName" src/ --type ts -g "*test*"
+```
+
+2. **RED — Atualize/crie testes** para refletir o novo schema:
+   - Novos campos? Adicione testes que validam o comportamento esperado com esses campos.
+   - Novas relações? Adicione testes que verificam includes/selects.
+   - Novo model? Crie testes para o service e API route ANTES de implementá-los.
+
+3. Rode `pnpm test` → testes afetados devem FALHAR (RED) indicando o código que precisa atualizar.
+
+### Fase 6: GREEN — Atualizar Código de Produção
+
+Com os testes falhando como guia, atualize:
 
 1. **Types**: Atualize interfaces em `src/types/` se existirem
 2. **Queries**: Atualize `select`/`include` nas queries Prisma
 3. **Validação**: Atualize schemas Zod que refletem o modelo
 4. **API Routes**: Atualize endpoints que retornam/recebem o modelo
 
-### Fase 6: Validação
+Rode `pnpm test` após cada camada → devem PASSAR (GREEN).
+
+### Fase 7: Validação
 
 ```bash
 # Verifica se o schema é válido
@@ -128,11 +148,14 @@ npx prisma validate
 # Gera o client
 npx prisma generate
 
+# Testes passando
+pnpm test
+
 # Verifica compilação
 pnpm build
 ```
 
-### Fase 7: Atualização de Documentação
+### Fase 8: Atualização de Documentação
 
 Se a mudança for significativa, atualize:
 - `docs/architecture/02-entity-relationship.md`
@@ -175,8 +198,10 @@ Se a mudança for significativa, atualize:
 - [ ] Schema alterado corretamente
 - [ ] Migration gerada e SQL revisado
 - [ ] Prisma Client regenerado
+- [ ] **Testes atualizados/criados ANTES do código de produção (TDD)**
 - [ ] Código consumidor atualizado
 - [ ] Schemas Zod atualizados
 - [ ] `npx prisma validate` passa
+- [ ] `pnpm test` passa
 - [ ] `pnpm build` passa
 - [ ] Documentação atualizada (se necessário)

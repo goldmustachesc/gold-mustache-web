@@ -25,6 +25,8 @@ Este documento contém diretrizes e padrões para desenvolvimento de IA e agente
 - `pnpm build` valida o bundle de produção; execute antes de enviar mudanças importantes.
 - `pnpm start` serve o build compilado para testes de comportamento em produção.
 - `pnpm lint` executa verificações do Biome; `pnpm format` aplica correções de formatação do Biome.
+- `pnpm test` roda todos os testes (Vitest); `pnpm test:watch` para ciclo TDD em watch mode.
+- `pnpm test:gate` executa lint + test + coverage checks — rode antes de abrir PR.
 
 ## Coding Style & Naming Conventions
 - Biome enforce 2-space indentation, import sorting, and the shared lint rules in `biome.json`.
@@ -41,12 +43,83 @@ Este documento contém diretrizes e padrões para desenvolvimento de IA e agente
 - **Proibido `any`**: Nunca use `any` em TypeScript. Use tipos explícitos, `unknown` com narrowing, generics, ou utility types quando necessário.
 - **Evite overengineering**: Não crie abstrações, wrappers ou camadas extras sem necessidade concreta e imediata.
 - **Código testável e manutenível**: Escreva código com dependências injetáveis, funções puras quando possível, e separação clara entre lógica de negócio e infraestrutura.
+- **TDD First**: Todo código novo deve começar pelos testes. Escreva o teste que define o comportamento esperado, veja falhar, implemente o mínimo para passar, e então refatore. Isso é inegociável.
 - **Decisões arquiteturais**: Explique brevemente o racional por trás de escolhas arquiteturais relevantes (em comentários de PR ou na resposta ao usuário, não em comentários no código).
+- **Não colocar comentários no código**: tentar deixar o código mais enxuto possivel, evitando colocar comentários, pois um codigo bem escrito já serve.
 
-## Testing Guidelines
-- Não existe suite automatizada ainda; no mínimo execute `pnpm lint` e exercite caminhos críticos (landing page, Instagram feed, booking redirect) antes de abrir PR.
-- Ao introduzir testes, coloque specs próximo da feature com sufixo `.test.ts(x)` e favoreça React Testing Library ou Playwright para UI flows.
-- Documente fixtures ou serviços mockados em `src/services` para manter integrações de API determinísticas.
+## Testing — TDD como Metodologia Primária
+
+**TDD (Test-Driven Development) é a metodologia #1 do projeto.** Todo código novo ou modificação significativa DEVE seguir o ciclo Red → Green → Refactor.
+
+### Ciclo TDD Obrigatório
+
+```
+RED ───── Escrever testes ANTES do código. Testes definem o comportamento esperado. Rodar `pnpm test` → devem FALHAR.
+GREEN ─── Implementar código MÍNIMO para os testes passarem. Rodar `pnpm test` → devem PASSAR.
+REFACTOR ─ Limpar código sem alterar comportamento. Rodar `pnpm test` → devem continuar PASSANDO.
+```
+
+### Stack de Testes
+
+| Ferramenta | Uso |
+|------------|-----|
+| **Vitest** | Test runner (`vitest.config.ts`) |
+| **@testing-library/react** | Testes de componentes |
+| **@testing-library/jest-dom** | Matchers DOM |
+| **@testing-library/user-event** | Interações de usuário |
+| **fast-check** | Property-based testing (regras de negócio) |
+| **happy-dom** | DOM environment |
+
+### Convenções
+
+- **Localização:** Testes em `__tests__/` dentro do módulo testado, ou colocados como `*.test.ts(x)` junto ao arquivo.
+- **Nomenclatura:** `*.test.ts` / `*.test.tsx` para testes unitários, `*.property.test.ts` para property-based.
+- **Mocks:** Mockar apenas dependências externas (Prisma, Supabase, APIs). Usar `vi.mock()` com apenas os methods necessários.
+- **Console:** `vitest.setup.ts` falha testes com `console.error`/`console.warn` inesperados. Se necessário, spy e restore.
+
+### Mocks Padrão do Projeto
+
+```typescript
+// Prisma
+vi.mock("@/lib/prisma", () => ({ prisma: { model: { method: vi.fn() } } }));
+
+// Auth (Supabase)
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn().mockResolvedValue({
+    auth: { getUser: () => mockGetUser() },
+  }),
+}));
+
+// Admin
+vi.mock("@/lib/auth/requireAdmin", () => ({
+  requireAdmin: () => mockRequireAdmin(),
+}));
+
+// Hooks em componentes — usar vi.hoisted() quando referenciado dentro de vi.mock()
+const mockFn = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/useAuth", () => ({ useSignIn: () => ({ mutate: mockFn }) }));
+```
+
+### Quando aplicar TDD
+
+| Cenário | TDD obrigatório? |
+|---------|-------------------|
+| Nova feature (service, API, componente) | **Sim** — testes primeiro |
+| Bug fix | **Sim** — escrever teste que reproduz o bug, depois corrigir |
+| Refatoração | **Sim** — garantir testes existentes antes; criar se faltam |
+| Mudança visual/CSS puro | Não obrigatório, mas recomendado para lógica condicional |
+| Documentação/config | Não |
+
+### Comandos
+
+```bash
+pnpm test                    # Rodar todos os testes (single run)
+pnpm test:watch              # Watch mode (uso durante ciclo TDD)
+pnpm test:coverage:all       # Coverage completo
+pnpm test:coverage:services  # Coverage de services
+pnpm test:coverage:app-api   # Coverage de API routes
+pnpm test:gate               # Gate: lint + test + coverage checks
+```
 
 ## Commit & Pull Request Guidelines
 - Siga Conventional Commits enforced by Commitlint; use `pnpm commit` (Commitizen) para prompts. Tipos permitidos incluem `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`, e `revert`.

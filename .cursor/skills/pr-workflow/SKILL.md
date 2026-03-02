@@ -14,8 +14,10 @@ Siga este fluxo ao preparar e criar Pull Requests:
 Antes de abrir o PR, valide tudo:
 
 ```bash
-pnpm lint
-pnpm build
+pnpm test        # Todos os testes passando (TDD obrigatório)
+pnpm lint        # Padrões de código
+pnpm build       # Compilação
+pnpm test:gate   # Gate completo (lint + test + coverage) — se disponível
 ```
 
 Verifique o estado do branch:
@@ -25,6 +27,11 @@ git status
 git log --oneline main..HEAD
 git diff --stat main...HEAD
 ```
+
+Verifique cobertura de testes:
+- [ ] Todo código novo tem testes correspondentes (TDD)
+- [ ] Bug fixes incluem teste de regressão
+- [ ] Refatorações foram feitas com testes existentes GREEN
 
 ### Fase 2: Organização de Commits
 
@@ -87,14 +94,17 @@ Implementa lock com pg_advisory_xact_lock no barberId+date.
 [Capturas antes/depois para mudanças visuais]
 
 ## Checklist
+- [ ] `pnpm test` passa (todos os testes, incluindo novos)
 - [ ] `pnpm lint` passa
 - [ ] `pnpm build` passa
+- [ ] Código novo tem testes (TDD)
+- [ ] Bug fixes incluem teste de regressão
 - [ ] Testado manualmente
 - [ ] Sem breaking changes (ou documentado)
 - [ ] Brand Book respeitado (se visual)
 
 ## Plano de Teste
-[Como verificar que as mudanças funcionam]
+[Testes automatizados + como verificar manualmente]
 ```
 
 #### Comando para criar PR
@@ -136,4 +146,5 @@ chore/tarefa-de-manutencao
 - Rebase no branch base antes de abrir PR
 - Nunca force push em branches compartilhados
 - PRs para `main` precisam de review
+- **PRs sem testes para código novo serão rejeitados** — TDD é obrigatório
 - Inclua screenshots para qualquer mudança visual

@@ -37,13 +37,31 @@ rg "modulo" src/ --type ts
 
 4. **Avalie risco**: Quantos arquivos serão afetados? Há testes cobrindo?
 
-### Fase 3: Execução Segura
+### Fase 3: Garantir Cobertura de Testes (TDD — OBRIGATÓRIO)
+
+**Antes de refatorar, testes DEVEM existir para o código alvo.** Se não existem, crie-os primeiro.
+
+1. **Verifique testes existentes**:
+
+```bash
+pnpm test -- --reporter=verbose [path-do-modulo]
+```
+
+2. **Se não há testes**: Escreva testes que documentam o comportamento ATUAL antes de mudar qualquer coisa. Rode `pnpm test` → todos DEVEM PASSAR (GREEN baseline).
+
+3. **Se há testes**: Rode e confirme que passam. Este é seu safety net.
+
+A refatoração só prossegue quando você tem testes GREEN que cobrem o código sendo alterado. Após cada mudança, rode `pnpm test` — se algum teste falhar, a refatoração introduziu uma regressão.
+
+### Fase 4: Execução Segura
 
 #### Regras de Ouro
 
-1. **Um tipo de refatoração por commit**: Não misture rename com extract.
-2. **Build entre cada passo**: `pnpm build` após cada mudança significativa.
-3. **Preserve comportamento**: Outputs devem ser idênticos.
+1. **Testes GREEN antes de começar**: Nunca refatore sem safety net.
+2. **Um tipo de refatoração por commit**: Não misture rename com extract.
+3. **`pnpm test` entre cada passo**: Testes devem continuar passando após cada mudança.
+4. **Build entre cada passo**: `pnpm build` após cada mudança significativa.
+5. **Preserve comportamento**: Outputs devem ser idênticos.
 
 #### Padrão: Extract Component
 
@@ -114,22 +132,24 @@ interface BookingData {
 function processBooking(data: BookingData): ProcessedBooking { ... }
 ```
 
-### Fase 4: Validação
+### Fase 5: Validação
 
 Após cada refatoração:
 
 ```bash
+pnpm test       # Testes continuam passando
 pnpm lint       # Padrões de código
 pnpm build      # Compilação sem erros
 ```
 
 Verifique manualmente:
 - [ ] Comportamento idêntico ao original
+- [ ] Todos os testes passando (nenhuma regressão)
 - [ ] Nenhum import quebrado
 - [ ] Nenhuma referência perdida
 - [ ] Performance não degradou
 
-### Fase 5: Commit
+### Fase 6: Commit
 
 ```
 refactor(escopo): descrição da reestruturação
@@ -141,6 +161,8 @@ Comportamento: [inalterado]
 
 ## Checklist
 
+- [ ] **Testes existiam ou foram criados ANTES da refatoração**
+- [ ] Todos os testes passando (`pnpm test`) — nenhuma regressão
 - [ ] Comportamento preservado (mesmos inputs → mesmos outputs)
 - [ ] Todos os consumidores atualizados
 - [ ] Imports usando `@/`

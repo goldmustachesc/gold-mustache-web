@@ -26,6 +26,43 @@ src/app/api/
 └── profile/           # Perfil do usuário e LGPD
 ```
 
+### TDD — Escrever Testes ANTES da Rota (OBRIGATÓRIO)
+
+Antes de criar qualquer route handler, escreva o teste correspondente:
+
+**Arquivo:** `src/app/api/[recurso]/__tests__/route.test.ts`
+
+```typescript
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { POST } from "../route";
+
+const mockGetUser = vi.fn();
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn().mockResolvedValue({
+    auth: { getUser: () => mockGetUser() },
+  }),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: { model: { create: vi.fn() } },
+}));
+
+describe("POST /api/recurso", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("deve retornar 401 quando não autenticado", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+    const response = await POST(new Request("http://localhost", { method: "POST", body: "{}" }));
+    expect(response.status).toBe(401);
+  });
+
+  it("deve retornar 400 quando body inválido", async () => { /* ... */ });
+  it("deve retornar 201 quando criado com sucesso", async () => { /* ... */ });
+});
+```
+
+Rode `pnpm test` → testes DEVEM FALHAR (rota não existe ainda). Depois implemente a rota e rode novamente → DEVEM PASSAR.
+
 ### Template de Route Handler
 
 ```typescript
@@ -206,6 +243,9 @@ export async function GET(request: Request) {
 
 ### Checklist
 
+- [ ] **Testes escritos ANTES da rota (TDD)**
+- [ ] Testes cobrem: auth (401), authz (403), validation (400), success (200/201), errors
+- [ ] `pnpm test` passa
 - [ ] Autenticação verificada
 - [ ] Autorização por role (se necessário)
 - [ ] Input validado com Zod

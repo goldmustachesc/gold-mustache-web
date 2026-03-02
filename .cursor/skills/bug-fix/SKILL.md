@@ -58,7 +58,9 @@ Verifique se o bug pode existir em outros pontos:
 rg "padrão-problemático" src/
 ```
 
-### Fase 3: Correção
+### Fase 3: Teste de Regressão PRIMEIRO (TDD — OBRIGATÓRIO)
+
+Antes de corrigir o bug, escreva um teste que o reproduz:
 
 1. **Crie branch**:
 
@@ -66,22 +68,40 @@ rg "padrão-problemático" src/
 git checkout -b fix/descricao-curta-do-bug
 ```
 
-2. **Implemente a correção mínima**: Resolva a causa raiz, não apenas o sintoma.
+2. **RED — Escreva teste que reproduz o bug**:
 
-3. **Corrija ocorrências similares**: Se o mesmo padrão existir em outros lugares, corrija todos.
+Crie ou adicione ao arquivo `__tests__/` mais próximo do código afetado:
 
-4. **Valide a correção**:
+```typescript
+it("should [comportamento esperado] when [condição do bug]", async () => {
+  // Arrange: setup que reproduz o cenário do bug
+  // Act: executar a operação problemática
+  // Assert: verificar o comportamento CORRETO (vai FALHAR porque o bug existe)
+});
+```
+
+Rode `pnpm test` → o teste DEVE FALHAR (confirma que o bug é real e reproduzível).
+
+3. **GREEN — Implemente a correção mínima**:
+   - Resolva a causa raiz, não apenas o sintoma
+   - Rode `pnpm test` → o teste de regressão DEVE PASSAR
+
+4. **Corrija ocorrências similares**: Se o mesmo padrão existir em outros lugares, corrija todos (e adicione testes para cada).
+
+5. **REFACTOR — Valide a correção**:
 
 ```bash
+pnpm test       # Todos os testes passando (incluindo o novo)
 pnpm lint
 pnpm build
 ```
 
-5. **Teste manualmente**:
+6. **Teste manualmente**:
    - [ ] Bug original resolvido
+   - [ ] Teste de regressão passando
    - [ ] Funcionalidade adjacente não quebrou
    - [ ] Edge cases testados
-   - [ ] Ocorrências similares corrigidas
+   - [ ] Ocorrências similares corrigidas e testadas
 
 ### Fase 4: Commit
 
@@ -144,8 +164,11 @@ if (!user) {
 
 - [ ] Erro reproduzido consistentemente
 - [ ] Causa raiz identificada (não apenas sintoma)
+- [ ] **Teste de regressão escrito ANTES da correção (TDD)**
+- [ ] Teste falha sem a correção (RED) e passa com ela (GREEN)
 - [ ] Correção aplicada no ponto correto
 - [ ] Padrão similar verificado em outros arquivos
+- [ ] `pnpm test` passa (incluindo novo teste de regressão)
 - [ ] `pnpm lint` passa
 - [ ] `pnpm build` passa
 - [ ] Teste manual confirma correção

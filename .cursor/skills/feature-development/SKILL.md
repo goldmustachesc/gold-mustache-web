@@ -46,47 +46,62 @@ git checkout -b feat/nome-da-feature
 pnpm build
 ```
 
-### Fase 4: Implementação
+### Fase 4: TDD — Testes Primeiro (OBRIGATÓRIO)
 
-Siga esta ordem de implementação:
+**Todo código novo começa pelos testes.** Antes de implementar qualquer service, API ou componente, escreva os testes que definem o comportamento esperado.
 
 #### 4.1 Schema (se necessário)
 - Atualize `prisma/schema.prisma`
 - Gere migration: `npx prisma migrate dev --name nome_descritivo`
 - Gere client: `npx prisma generate`
 
-#### 4.2 Tipos e Contratos
-- Defina types em `src/types/`
-- Defina schemas Zod para validação de input
+#### 4.2 RED — Escrever testes que FALHAM
 
-#### 4.3 Service Layer
-- Crie/atualize services em `src/services/`
-- Mantenha lógica de negócio isolada do framework
+Para cada camada da feature, crie os testes ANTES do código:
 
-#### 4.4 API Routes
-- Crie route handlers em `src/app/api/`
-- Valide inputs com Zod
-- Trate erros adequadamente
-- Verifique autenticação/autorização
+**Service tests** (`src/services/[module]/__tests__/[service].test.ts`):
+- Defina o comportamento esperado de cada função do service
+- Teste cenários de sucesso e todos os caminhos de erro
+- Use property-based testing (fast-check) para regras de negócio
+- Mock apenas Prisma e dependências externas
 
-#### 4.5 UI Components
-- Componentes reutilizáveis em `src/components/ui/`
-- Componentes específicos em `src/components/custom/`
-- Use Tailwind + `clsx`/`tailwind-merge`
-- Consulte Brand Book para decisões visuais
+**Route handler tests** (`src/app/api/[route]/__tests__/route.test.ts`):
+- Teste auth (401), authorization (403), validation (400), success (200/201)
+- Mock o service layer — a route só orquestra
+- Verifique response format (apiSuccess, apiError, apiCollection)
 
-#### 4.6 Pages
-- Crie pages em `src/app/`
-- Use Server Components por padrão
-- Client Components apenas quando necessário (interatividade)
+**Component/Page tests** (`src/components/[module]/__tests__/[Component].test.tsx`):
+- Teste renderização com dados corretos
+- Teste estados (loading, error, empty)
+- Teste interações do usuário (clicks, forms)
+- Mock hooks, não services
+
+Rode `pnpm test` → **todos os testes DEVEM falhar** (RED).
+
+#### 4.3 GREEN — Implementar código mínimo para passar
+
+Implemente camada por camada, rodando testes após cada uma:
+
+1. **Tipos e Contratos** — types em `src/types/`, schemas Zod
+2. **Service Layer** — lógica de negócio em `src/services/` → `pnpm test` → GREEN
+3. **API Routes** — handlers em `src/app/api/` → `pnpm test` → GREEN
+4. **UI Components** — componentes e pages → `pnpm test` → GREEN
+
+#### 4.4 REFACTOR — Limpar sem quebrar testes
+
+- Extrair constantes, melhorar tipos, reduzir duplicação
+- Verificar SOLID, KISS, YAGNI
+- Rode `pnpm test` → **deve continuar GREEN**
 
 ### Fase 5: Validação
 
 Execute antes de considerar completo:
 
 ```bash
+pnpm test        # Todos os testes passando
 pnpm lint        # Verifica padrões Biome
 pnpm build       # Valida compilação
+pnpm test:gate   # Gate completo (lint + test + coverage)
 ```
 
 Teste manualmente os caminhos críticos:
@@ -129,6 +144,8 @@ src/
 
 ## Checklist Final
 
+- [ ] Testes escritos ANTES da implementação (TDD)
+- [ ] Todos os testes passando (`pnpm test`)
 - [ ] Todos os arquivos usam TypeScript (`.ts`/`.tsx`)
 - [ ] Imports usam alias `@/`
 - [ ] Sem `any` não justificado
@@ -136,5 +153,6 @@ src/
 - [ ] Componentes PascalCase, hooks prefixo `use`, utils camelCase
 - [ ] `pnpm lint` passa
 - [ ] `pnpm build` passa
+- [ ] `pnpm test:gate` passa
 - [ ] Feature funciona end-to-end
 - [ ] Brand Book respeitado (se UI)

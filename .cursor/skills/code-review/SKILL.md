@@ -26,8 +26,9 @@ git diff --stat main...HEAD
 Execute e reporte o resultado de cada verificação:
 
 ```bash
-pnpm lint
-pnpm build
+pnpm test        # Testes automatizados
+pnpm lint        # Padrões de código (Biome)
+pnpm build       # Compilação
 ```
 
 ### Fase 3: Análise por Arquivo
@@ -45,6 +46,7 @@ Para **cada arquivo modificado**, analise:
 - [ ] Componente no diretório correto (`components/ui` ou `components/custom`)
 
 #### Route Handlers / API (.ts em app/api)
+- [ ] **Testes existem** em `__tests__/route.test.ts` cobrindo auth, validation, success e errors
 - [ ] Validação de input com Zod
 - [ ] Tratamento de erros com try/catch e respostas HTTP adequadas
 - [ ] Autenticação verificada (Supabase session)
@@ -53,6 +55,7 @@ Para **cada arquivo modificado**, analise:
 - [ ] Prisma queries otimizadas (select/include mínimos)
 
 #### Services & Utils (.ts)
+- [ ] **Testes existem** em `__tests__/[service].test.ts` cobrindo happy path e edge cases
 - [ ] Tratamento de erros robusto
 - [ ] Funções com responsabilidade única
 - [ ] Tipagem forte (sem `any`)
@@ -69,6 +72,8 @@ Para **cada arquivo modificado**, analise:
 
 ### Fase 4: Análise Transversal
 
+- [ ] **TDD Compliance**: Código novo tem testes correspondentes? Foram escritos antes da implementação? Ausência de testes para código novo é **🔴 Crítico**.
+- [ ] **Cobertura de testes**: Cenários de erro, edge cases e happy path cobertos
 - [ ] **Segurança**: Sem exposição de dados, inputs validados, headers mantidos
 - [ ] **Performance**: Lazy loading de imagens, sem queries N+1, bundle impact
 - [ ] **Breaking changes**: Interfaces/contratos alterados documentados
@@ -87,6 +92,7 @@ Formate o resultado assim:
 ### Verificações Automáticas
 | Check | Status |
 |-------|--------|
+| Tests (Vitest) | PASS/FAIL |
 | Lint (Biome) | PASS/FAIL |
 | Build (Next.js) | PASS/FAIL |
 
@@ -113,7 +119,8 @@ Formate o resultado assim:
 
 ## Regras Importantes
 
-- Sempre execute `pnpm lint` e `pnpm build` antes de aprovar
+- Sempre execute `pnpm test`, `pnpm lint` e `pnpm build` antes de aprovar
+- **Código novo sem testes correspondentes é 🔴 Crítico** — TDD é obrigatório no projeto
 - Nunca aprove código com `any` sem justificativa documentada
 - Verifique se `console.log` foi removido de código de produção
 - Confirme que mudanças visuais seguem o Brand Book
