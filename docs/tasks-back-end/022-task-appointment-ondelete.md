@@ -56,9 +56,9 @@ model Appointment {
 
 ## Checklist
 
-- [ ] Adicionar `onDelete: SetNull` na relação `Appointment → Profile`
-- [ ] Adicionar `onDelete: SetNull` na relação `Appointment → GuestClient`
-- [ ] Gerar migration
-- [ ] Verificar que o profile delete route funciona corretamente com a nova cascade
-- [ ] Verificar que o cron cleanup-guests funciona corretamente
-- [ ] Testar que agendamentos não são deletados quando profile é removido
+- [x] Adicionar `onDelete: SetNull` na relação `Appointment → Profile`
+- [x] Adicionar `onDelete: SetNull` na relação `Appointment → GuestClient`
+- [x] Gerar migration — já presente na baseline migration
+- [x] Verificar que o profile delete route funciona corretamente com a nova cascade
+- [x] Verificar que o cron cleanup-guests funciona corretamente
+- [x] Testar que agendamentos não são deletados quando profile é removido

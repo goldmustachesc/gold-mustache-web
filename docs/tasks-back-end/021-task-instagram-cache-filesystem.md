@@ -29,9 +29,9 @@ Gravar em `/tmp` (funciona na Vercel), com fallback para dados estáticos do bui
 
 ## Checklist
 
-- [ ] Escolher abordagem (A, B ou C)
-- [ ] Atualizar cron para gravar no novo local
-- [ ] Atualizar endpoint de leitura para buscar do novo local
-- [ ] Manter fallback com dados mock se cache não existir
-- [ ] Testar em produção (Vercel) que o cron funciona
-- [ ] Remover `public/data/instagram-cache.json` do git se migrar
+- [x] Escolher abordagem (A, B ou C) — Opção B (Upstash Redis)
+- [x] Atualizar cron para gravar no novo local — `setInstagramCache()` via Redis
+- [x] Atualizar endpoint de leitura para buscar do novo local — `getInstagramCache()` via Redis
+- [x] Manter fallback com dados mock se cache não existir — fallback para `MOCK_POSTS`
+- [x] Testar em produção (Vercel) que o cron funciona
+- [x] Remover `public/data/instagram-cache.json` do git se migrar — removido

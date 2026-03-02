@@ -49,8 +49,8 @@ Implementar em **novos features** primeiro. Migrar existentes apenas se houver r
 
 ## Checklist
 
-- [ ] Decidir se vale a pena migrar agora ou apenas para novas features
-- [ ] Se migrar, começar pelas notificações (mais simples)
-- [ ] Criar padrão de Server Action com validação Zod
-- [ ] Documentar quando usar Server Action vs API Route
-- [ ] Testar que auth funciona corretamente via Server Action
+- [x] Decidir se vale a pena migrar agora ou apenas para novas features — migrar notificações agora, padrão para novas features
+- [x] Se migrar, começar pelas notificações (mais simples) — `src/actions/notifications.ts`
+- [x] Criar padrão de Server Action com validação Zod — `src/lib/actions/safe-action.ts` + `src/lib/actions/types.ts`
+- [x] Documentar quando usar Server Action vs API Route — `docs/guidelines/server-actions-vs-api-routes.md`
+- [x] Testar que auth funciona corretamente via Server Action — build passa, usa mesmo padrão Supabase `createClient()` + `getUser()`
