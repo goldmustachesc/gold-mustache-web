@@ -32,7 +32,26 @@
     "emptyState": "No hay recompensas disponibles en este momento.",
     "redeemCodeLabel": "Tu código de canje es:",
     "redeemCodeInstruction": "Presenta este código en la barbería para disfrutar tu recompensa!",
-    "understood": "Entendido"
+    "understood": "Entendido",
+    "copyCode": "Copiar código",
+    "expiresAt": "Válido hasta"
+  },
+  "redemptions": {
+    "title": "Mis Canjes",
+    "emptyState": "Ningún canje realizado",
+    "unknownReward": "Recompensa",
+    "copyCode": "Copiar código",
+    "copied": "¡Copiado!",
+    "status": {
+      "pending": "Pendiente",
+      "used": "Usado",
+      "expired": "Expirado"
+    },
+    "expiresAt": "Válido hasta",
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente"
+    }
   },
   "history": {
     "title": "Historial de Puntos",

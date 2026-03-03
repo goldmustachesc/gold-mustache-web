@@ -32,7 +32,26 @@
     "emptyState": "No rewards available at the moment.",
     "redeemCodeLabel": "Your redemption code is:",
     "redeemCodeInstruction": "Show this code at the barbershop to enjoy your reward!",
-    "understood": "Got it"
+    "understood": "Got it",
+    "copyCode": "Copy code",
+    "expiresAt": "Valid until"
+  },
+  "redemptions": {
+    "title": "My Redemptions",
+    "emptyState": "No redemptions yet",
+    "unknownReward": "Reward",
+    "copyCode": "Copy code",
+    "copied": "Copied!",
+    "status": {
+      "pending": "Pending",
+      "used": "Used",
+      "expired": "Expired"
+    },
+    "expiresAt": "Valid until",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    }
   },
   "history": {
     "title": "Points History",

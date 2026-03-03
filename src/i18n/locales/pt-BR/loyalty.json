@@ -32,7 +32,26 @@
     "emptyState": "Nenhuma recompensa disponível no momento.",
     "redeemCodeLabel": "Seu código de resgate é:",
     "redeemCodeInstruction": "Apresente este código na barbearia para aproveitar sua recompensa!",
-    "understood": "Entendi"
+    "understood": "Entendi",
+    "copyCode": "Copiar código",
+    "expiresAt": "Válido até"
+  },
+  "redemptions": {
+    "title": "Meus Resgates",
+    "emptyState": "Nenhum resgate realizado",
+    "unknownReward": "Recompensa",
+    "copyCode": "Copiar código",
+    "copied": "Copiado!",
+    "status": {
+      "pending": "Pendente",
+      "used": "Usado",
+      "expired": "Expirado"
+    },
+    "expiresAt": "Válido até",
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Próxima"
+    }
   },
   "history": {
     "title": "Extrato de Pontos",

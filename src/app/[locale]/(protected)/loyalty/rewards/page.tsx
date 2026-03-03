@@ -4,8 +4,9 @@ import {
   useLoyaltyAccount,
   useRewards,
   useRedeemReward,
+  type RedemptionResult,
 } from "@/hooks/useLoyalty";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, Copy, Check } from "lucide-react";
 import { RewardCard } from "@/components/loyalty/RewardCard";
 import { ApiError } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
@@ -20,6 +21,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { formatDateShort } from "@/utils/datetime";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 export default function LoyaltyRewardsPage() {
   const { data: account, isLoading: accountLoading } = useLoyaltyAccount();
@@ -32,7 +35,10 @@ export default function LoyaltyRewardsPage() {
   const redeemReward = useRedeemReward();
   const t = useTranslations("loyalty.rewards");
 
-  const [successCode, setSuccessCode] = useState<string | null>(null);
+  const [successResult, setSuccessResult] = useState<RedemptionResult | null>(
+    null,
+  );
+  const { copied: codeCopied, copy: copyCode } = useCopyToClipboard();
 
   const isLoading = accountLoading || rewardsLoading;
 
@@ -47,7 +53,7 @@ export default function LoyaltyRewardsPage() {
   const handleRedeem = async (rewardId: string) => {
     try {
       const result = await redeemReward.mutateAsync(rewardId);
-      setSuccessCode(result.code);
+      setSuccessResult(result);
     } catch (e) {
       const message = e instanceof ApiError ? e.message : t("redeemError");
       toast.error(message);
@@ -98,8 +104,8 @@ export default function LoyaltyRewardsPage() {
       )}
 
       <Dialog
-        open={!!successCode}
-        onOpenChange={(open) => !open && setSuccessCode(null)}
+        open={!!successResult}
+        onOpenChange={(open) => !open && setSuccessResult(null)}
       >
         <DialogContent className="sm:max-w-md text-center bg-zinc-900 border-zinc-800">
           <DialogHeader className="flex flex-col items-center">
@@ -114,19 +120,50 @@ export default function LoyaltyRewardsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="bg-zinc-800 p-6 rounded-lg my-6">
-            <p className="text-3xl font-mono font-black tracking-widest text-primary">
-              {successCode}
+          {successResult?.reward?.name && (
+            <p
+              className="text-lg font-semibold text-zinc-200"
+              data-testid="success-reward-name"
+            >
+              {successResult.reward.name}
             </p>
+          )}
+
+          <div className="bg-zinc-800 p-6 rounded-lg my-4 flex items-center justify-center gap-3">
+            <p className="text-3xl font-mono font-black tracking-widest text-primary">
+              {successResult?.code}
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => successResult && copyCode(successResult.code)}
+              aria-label={t("copyCode")}
+              className="h-9 w-9 text-zinc-400 hover:text-white shrink-0"
+            >
+              {codeCopied ? (
+                <Check className="h-5 w-5" />
+              ) : (
+                <Copy className="h-5 w-5" />
+              )}
+            </Button>
           </div>
 
-          <p className="text-sm text-zinc-400 mb-6 px-4">
+          {successResult?.expiresAt && (
+            <p
+              className="text-sm text-zinc-400"
+              data-testid="success-expiry-date"
+            >
+              {t("expiresAt")}: {formatDateShort(successResult.expiresAt)}
+            </p>
+          )}
+
+          <p className="text-sm text-zinc-400 mb-4 px-4">
             {t("redeemCodeInstruction")}
           </p>
 
           <DialogFooter className="sm:justify-center">
             <Button
-              onClick={() => setSuccessCode(null)}
+              onClick={() => setSuccessResult(null)}
               className="w-full font-bold"
             >
               {t("understood")}

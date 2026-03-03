@@ -13,6 +13,7 @@ import {
   History,
   Share2,
   User,
+  Ticket,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -50,6 +51,11 @@ export default function LoyaltyLayout({
   const navItems = [
     { name: "Dashboard", href: `/${locale}/loyalty`, icon: LayoutDashboard },
     { name: "Recompensas", href: `/${locale}/loyalty/rewards`, icon: Gift },
+    {
+      name: "Meus Resgates",
+      href: `/${locale}/loyalty/redemptions`,
+      icon: Ticket,
+    },
     { name: "Extrato", href: `/${locale}/loyalty/history`, icon: History },
     {
       name: "Indicar Amigos",

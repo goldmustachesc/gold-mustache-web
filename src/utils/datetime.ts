@@ -140,6 +140,14 @@ export function parseIsoDateYyyyMmDdAsSaoPauloDate(dateStr: string): Date {
  *
  * Use isso para o blog, onde a data deve respeitar o idioma do usuário.
  */
+export function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 export function formatLocalizedDateFromIsoDateLike(
   input: string,
   locale: string,

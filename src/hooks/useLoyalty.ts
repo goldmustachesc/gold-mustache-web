@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { LoyaltyTier } from "@/components/loyalty/TierBadge";
 import type { Reward } from "@/components/loyalty/RewardCard";
-import { apiGet, apiMutate } from "@/lib/api/client";
+import { apiGet, apiGetCollection, apiMutate } from "@/lib/api/client";
+import type { RedemptionStatus } from "@/types/loyalty";
 
 export interface LoyaltyAccount {
   id: string;
@@ -51,11 +52,22 @@ export function useRewards() {
   });
 }
 
-interface RedemptionResult {
+export interface RedemptionResult {
   id: string;
   code: string;
   pointsSpent: number;
   expiresAt: string;
+  reward: { name: string; type: string } | null;
+}
+
+export interface Redemption {
+  id: string;
+  code: string;
+  pointsSpent: number;
+  usedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+  status: RedemptionStatus;
   reward: { name: string; type: string } | null;
 }
 
@@ -70,7 +82,18 @@ export function useRedeemReward() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loyalty", "account"] });
       queryClient.invalidateQueries({ queryKey: ["loyalty", "transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "redemptions"] });
     },
+  });
+}
+
+export function useRedemptions(page = 1, limit = 10) {
+  return useQuery({
+    queryKey: ["loyalty", "redemptions", page, limit],
+    queryFn: () =>
+      apiGetCollection<Redemption>(
+        `/api/loyalty/redemptions?page=${page}&limit=${limit}`,
+      ),
   });
 }
 
