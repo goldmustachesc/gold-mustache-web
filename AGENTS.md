@@ -122,7 +122,7 @@ pnpm test:gate               # Gate: lint + test + coverage checks
 ```
 
 ## Commit & Pull Request Guidelines
-- Siga Conventional Commits enforced by Commitlint; use `pnpm commit` (Commitizen) para prompts. Tipos permitidos incluem `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`, e `revert`.
+- Siga Conventional Commits enforced by Commitlint; use `pnpm commit` (Commitizen) para prompts. Tipos permitidos incluem `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, e `revert`.
 - Mantenha assuntos abaixo de 72 caracteres, tempo presente, e sem pontuação final.
 - Abra PRs com resumo conciso, issue ou ticket linkado, screenshots para mudanças de UI, e notas sobre verificação manual ou gaps conhecidos.
 - Garanta que o branch esteja rebased em `main` e que passos de lint/build passem em CI antes de solicitar review.

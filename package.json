@@ -31,6 +31,11 @@
     "validate-commit": "node scripts/validate-commit.cjs",
     "optimize:images": "node scripts/optimize-images.cjs"
   },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,cjs,mjs,json,css}": [
+      "biome check --write"
+    ]
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.19.0",
@@ -89,6 +94,7 @@
     "happy-dom": "^20.0.10",
     "husky": "^9.1.7",
     "jsdom": "^27.0.1",
+    "lint-staged": "^16.3.2",
     "lucide-react": "^0.542.0",
     "puppeteer": "^24.37.5",
     "tailwindcss": "^4",
