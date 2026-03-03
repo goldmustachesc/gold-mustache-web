@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { LoyaltyTier } from "@/components/loyalty/TierBadge";
 import type { Reward } from "@/components/loyalty/RewardCard";
-import { apiGet, apiMutate, apiAction } from "@/lib/api/client";
+import type { RedemptionStatus } from "@/types/loyalty";
+import {
+  apiGet,
+  apiGetCollection,
+  apiMutate,
+  apiAction,
+} from "@/lib/api/client";
 
 export interface AdminLoyaltyAccount {
   id: string;
@@ -139,6 +145,58 @@ export function useAdminToggleReward() {
       queryClient.invalidateQueries({ queryKey: ["loyalty", "rewards"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
+      });
+    },
+  });
+}
+
+export interface AdminRedemption {
+  id: string;
+  code: string;
+  pointsSpent: number;
+  clientName: string | null;
+  clientEmail: string | null;
+  rewardName: string;
+  rewardType: string;
+  rewardValue: number | null;
+  status: RedemptionStatus;
+  createdAt: string;
+  expiresAt: string;
+  usedAt: string | null;
+}
+
+export function useAdminRedemptions(status?: string, page = 1, limit = 20) {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (status) params.set("status", status);
+
+  return useQuery({
+    queryKey: ["admin", "loyalty", "redemptions", { status, page }],
+    queryFn: () =>
+      apiGetCollection<AdminRedemption>(
+        `/api/admin/loyalty/redemptions?${params}`,
+      ),
+  });
+}
+
+export function useAdminValidateRedemption() {
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiGet<AdminRedemption>(`/api/admin/loyalty/redemptions?code=${code}`),
+  });
+}
+
+export function useAdminUseRedemption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiMutate("/api/admin/loyalty/redemptions/use", "POST", { code }),
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "loyalty", "redemptions"],
       });
     },
   });

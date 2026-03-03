@@ -6,17 +6,9 @@ import { apiSuccess, apiError, apiCollection } from "@/lib/api/response";
 import { parsePagination, paginationMeta } from "@/lib/api/pagination";
 import { redeemRewardSchema } from "@/lib/validations/loyalty";
 import { mapServiceErrorToResponse } from "@/lib/api/service-error-mapper";
+import { deriveRedemptionStatus } from "@/lib/loyalty/status";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 import { RewardsService } from "@/services/loyalty/rewards.service";
-
-function deriveRedemptionStatus(redemption: {
-  usedAt: Date | null;
-  expiresAt: Date;
-}): "PENDING" | "USED" | "EXPIRED" {
-  if (redemption.usedAt) return "USED";
-  if (redemption.expiresAt < new Date()) return "EXPIRED";
-  return "PENDING";
-}
 
 export async function POST(request: Request) {
   const originError = requireValidOrigin(request);

@@ -96,6 +96,35 @@
     "adjustPoints": "Ajustar Pontos",
     "reason": "Motivo do Ajuste",
     "accountsCount": "contas cadastradas",
-    "rewardsCount": "prêmios"
+    "rewardsCount": "prêmios",
+    "redemptions": {
+      "tab": "Resgates",
+      "validateTitle": "Validar Código",
+      "codePlaceholder": "Ex: ABC123",
+      "validate": "Validar",
+      "code": "Código",
+      "createdAt": "Resgatado em",
+      "expiresAt": "Válido até",
+      "markAsUsed": "Marcar como Usado",
+      "recentTitle": "Resgates Recentes",
+      "filterAll": "Todos",
+      "filterPending": "Pendente",
+      "filterUsed": "Usado",
+      "filterExpired": "Expirado",
+      "colClient": "Cliente",
+      "colReward": "Recompensa",
+      "colCode": "Código",
+      "colDate": "Data",
+      "colStatus": "Status",
+      "colAction": "Ação",
+      "use": "Usar",
+      "emptyState": "Nenhum resgate encontrado.",
+      "confirmUseTitle": "Confirmar uso do resgate",
+      "confirmUseDescription": "Tem certeza que deseja marcar este resgate como usado? Esta ação não pode ser desfeita.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "validateError": "Erro ao validar código",
+      "useError": "Erro ao marcar resgate como usado"
+    }
   }
 }

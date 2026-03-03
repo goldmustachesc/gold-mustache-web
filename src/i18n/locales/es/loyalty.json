@@ -96,6 +96,35 @@
     "adjustPoints": "Ajustar Puntos",
     "reason": "Razón del Ajuste",
     "accountsCount": "cuentas registradas",
-    "rewardsCount": "recompensas"
+    "rewardsCount": "recompensas",
+    "redemptions": {
+      "tab": "Canjes",
+      "validateTitle": "Validar Código",
+      "codePlaceholder": "Ej: ABC123",
+      "validate": "Validar",
+      "code": "Código",
+      "createdAt": "Canjeado el",
+      "expiresAt": "Válido hasta",
+      "markAsUsed": "Marcar como Usado",
+      "recentTitle": "Canjes Recientes",
+      "filterAll": "Todos",
+      "filterPending": "Pendiente",
+      "filterUsed": "Usado",
+      "filterExpired": "Expirado",
+      "colClient": "Cliente",
+      "colReward": "Recompensa",
+      "colCode": "Código",
+      "colDate": "Fecha",
+      "colStatus": "Estado",
+      "colAction": "Acción",
+      "use": "Usar",
+      "emptyState": "No se encontraron canjes.",
+      "confirmUseTitle": "Confirmar uso del canje",
+      "confirmUseDescription": "¿Estás seguro de que deseas marcar este canje como usado? Esta acción no se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "validateError": "Error al validar código",
+      "useError": "Error al marcar canje como usado"
+    }
   }
 }

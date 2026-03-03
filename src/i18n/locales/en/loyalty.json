@@ -96,6 +96,35 @@
     "adjustPoints": "Adjust Points",
     "reason": "Adjustment Reason",
     "accountsCount": "registered accounts",
-    "rewardsCount": "rewards"
+    "rewardsCount": "rewards",
+    "redemptions": {
+      "tab": "Redemptions",
+      "validateTitle": "Validate Code",
+      "codePlaceholder": "e.g. ABC123",
+      "validate": "Validate",
+      "code": "Code",
+      "createdAt": "Redeemed on",
+      "expiresAt": "Valid until",
+      "markAsUsed": "Mark as Used",
+      "recentTitle": "Recent Redemptions",
+      "filterAll": "All",
+      "filterPending": "Pending",
+      "filterUsed": "Used",
+      "filterExpired": "Expired",
+      "colClient": "Client",
+      "colReward": "Reward",
+      "colCode": "Code",
+      "colDate": "Date",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "use": "Use",
+      "emptyState": "No redemptions found.",
+      "confirmUseTitle": "Confirm redemption use",
+      "confirmUseDescription": "Are you sure you want to mark this redemption as used? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "validateError": "Error validating code",
+      "useError": "Error marking redemption as used"
+    }
   }
 }

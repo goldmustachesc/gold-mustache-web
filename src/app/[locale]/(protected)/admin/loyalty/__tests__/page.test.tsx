@@ -83,6 +83,10 @@ vi.mock("@/components/loyalty/RewardModal", () => ({
   RewardModal: () => null,
 }));
 
+vi.mock("@/components/admin/RedemptionsTab", () => ({
+  RedemptionsTab: () => <div data-testid="redemptions-tab-mock" />,
+}));
+
 import AdminLoyaltyPage from "../page";
 
 describe("AdminLoyaltyPage — catalog", () => {

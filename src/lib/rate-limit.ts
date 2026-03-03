@@ -125,9 +125,16 @@ export async function checkRateLimit(
   identifier: string,
 ): Promise<RateLimitResult> {
   if (redisLimiters) {
-    const limiter = redisLimiters[limiterType];
-    const { success, remaining, reset } = await limiter.limit(identifier);
-    return { success, remaining, reset };
+    try {
+      const limiter = redisLimiters[limiterType];
+      const { success, remaining, reset } = await limiter.limit(identifier);
+      return { success, remaining, reset };
+    } catch (error) {
+      console.error(
+        "[rate-limit] Redis error, falling back to in-memory:",
+        error,
+      );
+    }
   }
 
   const config = RATE_LIMIT_CONFIGS[limiterType];

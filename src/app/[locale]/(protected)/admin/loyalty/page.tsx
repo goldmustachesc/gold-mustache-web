@@ -17,6 +17,7 @@ import {
   Users,
   Gift,
   Save,
+  TicketCheck,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
@@ -36,6 +37,7 @@ import { TierBadge } from "@/components/loyalty/TierBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslations } from "next-intl";
 import { RewardModal } from "@/components/loyalty/RewardModal";
+import { RedemptionsTab } from "@/components/admin/RedemptionsTab";
 
 export default function AdminLoyaltyPage() {
   const t = useTranslations("loyalty.admin");
@@ -77,7 +79,6 @@ export default function AdminLoyaltyPage() {
       setSelectedAccount(null);
     } catch (e) {
       console.error(e);
-      // In a real app we'd show a toast here. For now we just close or mock success.
       setSelectedAccount(null);
     }
   };
@@ -100,7 +101,6 @@ export default function AdminLoyaltyPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header Padronizado */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ export default function AdminLoyaltyPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <Tabs defaultValue="accounts" className="w-full">
-            <TabsList className="mb-6 bg-muted border border-border flex h-12 w-full max-w-sm rounded-xl p-1">
+            <TabsList className="mb-6 bg-muted border border-border flex h-12 w-full max-w-md rounded-xl p-1">
               <TabsTrigger
                 value="accounts"
                 className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -152,6 +152,13 @@ export default function AdminLoyaltyPage() {
               >
                 <Gift className="h-4 w-4 mr-2" />
                 {t("catalog") || "Catálogo"}
+              </TabsTrigger>
+              <TabsTrigger
+                value="redemptions"
+                className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <TicketCheck className="h-4 w-4 mr-2" />
+                {t("redemptions.tab") || "Resgates"}
               </TabsTrigger>
             </TabsList>
 
@@ -233,7 +240,6 @@ export default function AdminLoyaltyPage() {
                       <div>
                         <div className="font-bold flex items-center gap-2">
                           {r.name}
-                          {/* Assuming valid reward has active status, using logic fallback */}
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                             {r.costInPoints} pts
                           </span>
@@ -258,9 +264,12 @@ export default function AdminLoyaltyPage() {
                 </div>
               </div>
             </TabsContent>
+
+            <TabsContent value="redemptions">
+              <RedemptionsTab />
+            </TabsContent>
           </Tabs>
 
-          {/* Manual Adjust Modal */}
           <Dialog
             open={!!selectedAccount}
             onOpenChange={(open) => !open && setSelectedAccount(null)}
@@ -339,7 +348,6 @@ export default function AdminLoyaltyPage() {
         </div>
       </main>
 
-      {/* Reward Creation Modal */}
       <RewardModal
         open={isNewRewardModalOpen}
         onOpenChange={setIsNewRewardModalOpen}
