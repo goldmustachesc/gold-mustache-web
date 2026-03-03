@@ -24,7 +24,15 @@
     "redeem": "Redeem",
     "confirmRedeem": "Confirm Redemption",
     "successRedeem": "Redeemed successfully!",
-    "insufficientPoints": "Not enough points"
+    "insufficientPoints": "Not enough points",
+    "errorLoading": "Failed to load rewards. Please try again.",
+    "retry": "Try again",
+    "redeemError": "Failed to redeem reward",
+    "currentBalance": "Your current balance:",
+    "emptyState": "No rewards available at the moment.",
+    "redeemCodeLabel": "Your redemption code is:",
+    "redeemCodeInstruction": "Show this code at the barbershop to enjoy your reward!",
+    "understood": "Got it"
   },
   "history": {
     "title": "Points History",
@@ -53,6 +61,8 @@
     "users": "Accounts",
     "catalog": "Catalog",
     "adjustPoints": "Adjust Points",
-    "reason": "Adjustment Reason"
+    "reason": "Adjustment Reason",
+    "accountsCount": "registered accounts",
+    "rewardsCount": "rewards"
   }
 }

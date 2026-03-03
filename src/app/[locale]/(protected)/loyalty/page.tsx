@@ -29,7 +29,7 @@ export default function LoyaltyDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Overview Cards */}
-      <LoyaltyCard points={account.points} tier={account.tier} />
+      <LoyaltyCard points={account.currentPoints} tier={account.tier} />
 
       {/* Como funciona ou Benefícios (Estatico por enquanto) */}
       <section className="space-y-4">

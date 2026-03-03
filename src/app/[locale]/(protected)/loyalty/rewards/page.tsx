@@ -5,7 +5,7 @@ import {
   useRewards,
   useRedeemReward,
 } from "@/hooks/useLoyalty";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { RewardCard } from "@/components/loyalty/RewardCard";
 import { ApiError } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
@@ -23,7 +23,12 @@ import { Button } from "@/components/ui/button";
 
 export default function LoyaltyRewardsPage() {
   const { data: account, isLoading: accountLoading } = useLoyaltyAccount();
-  const { data: rewards, isLoading: rewardsLoading } = useRewards();
+  const {
+    data: rewards,
+    isLoading: rewardsLoading,
+    isError: rewardsError,
+    refetch: refetchRewards,
+  } = useRewards();
   const redeemReward = useRedeemReward();
   const t = useTranslations("loyalty.rewards");
 
@@ -44,8 +49,7 @@ export default function LoyaltyRewardsPage() {
       const result = await redeemReward.mutateAsync(rewardId);
       setSuccessCode(result.code);
     } catch (e) {
-      const message =
-        e instanceof ApiError ? e.message : "Erro ao resgatar recompensa";
+      const message = e instanceof ApiError ? e.message : t("redeemError");
       toast.error(message);
     }
   };
@@ -58,28 +62,40 @@ export default function LoyaltyRewardsPage() {
       </div>
 
       <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
-        <span className="font-semibold text-zinc-300">Seu saldo atual:</span>
+        <span className="font-semibold text-zinc-300">
+          {t("currentBalance")}
+        </span>
         <span className="text-2xl font-black text-primary">
-          {account?.points || 0} pts
+          {account?.currentPoints ?? 0} pts
         </span>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {rewards?.map((reward) => (
-          <RewardCard
-            key={reward.id}
-            reward={reward}
-            userPoints={account?.points || 0}
-            onRedeem={handleRedeem}
-            isRedeeming={redeemReward.isPending}
-          />
-        ))}
-        {(!rewards || rewards.length === 0) && (
-          <div className="col-span-full text-center py-12 text-zinc-500 border border-dashed border-zinc-700 rounded-xl">
-            Nenhuma recompensa disponível no momento.
-          </div>
-        )}
-      </div>
+      {rewardsError ? (
+        <div className="col-span-full text-center py-12 border border-dashed border-zinc-700 rounded-xl space-y-4">
+          <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
+          <p className="text-zinc-400">{t("errorLoading")}</p>
+          <Button variant="outline" onClick={() => refetchRewards()}>
+            {t("retry")}
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {rewards?.map((reward) => (
+            <RewardCard
+              key={reward.id}
+              reward={reward}
+              userPoints={account?.currentPoints ?? 0}
+              onRedeem={handleRedeem}
+              isRedeeming={redeemReward.isPending}
+            />
+          ))}
+          {(!rewards || rewards.length === 0) && (
+            <div className="col-span-full text-center py-12 text-zinc-500 border border-dashed border-zinc-700 rounded-xl">
+              {t("emptyState")}
+            </div>
+          )}
+        </div>
+      )}
 
       <Dialog
         open={!!successCode}
@@ -94,7 +110,7 @@ export default function LoyaltyRewardsPage() {
               {t("successRedeem")}
             </DialogTitle>
             <DialogDescription className="text-base mt-2">
-              Seu código de resgate é:
+              {t("redeemCodeLabel")}
             </DialogDescription>
           </DialogHeader>
 
@@ -105,7 +121,7 @@ export default function LoyaltyRewardsPage() {
           </div>
 
           <p className="text-sm text-zinc-400 mb-6 px-4">
-            Apresente este código na barbearia para aproveitar sua recompensa!
+            {t("redeemCodeInstruction")}
           </p>
 
           <DialogFooter className="sm:justify-center">
@@ -113,7 +129,7 @@ export default function LoyaltyRewardsPage() {
               onClick={() => setSuccessCode(null)}
               className="w-full font-bold"
             >
-              Entendi
+              {t("understood")}
             </Button>
           </DialogFooter>
         </DialogContent>

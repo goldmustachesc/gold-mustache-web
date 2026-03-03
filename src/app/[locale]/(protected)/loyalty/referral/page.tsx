@@ -11,10 +11,7 @@ export default function LoyaltyReferralPage() {
   const t = useTranslations("loyalty.referral");
   const [copied, setCopied] = useState(false);
 
-  // Fallback referral generation depending on loyalty backend config
-  const referralCode = account?.id
-    ? `GM-${account.id.substring(0, 6).toUpperCase()}`
-    : "";
+  const referralCode = account?.referralCode ?? "";
 
   const handleCopy = () => {
     if (referralCode) {

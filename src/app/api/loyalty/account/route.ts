@@ -26,7 +26,15 @@ export async function GET() {
 
     const account = await LoyaltyService.getOrCreateAccount(profile.id);
 
-    return apiSuccess(account);
+    return apiSuccess({
+      id: account.id,
+      currentPoints: account.currentPoints,
+      lifetimePoints: account.lifetimePoints,
+      tier: account.tier,
+      referralCode: account.referralCode,
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt,
+    });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar conta de fidelidade");
   }

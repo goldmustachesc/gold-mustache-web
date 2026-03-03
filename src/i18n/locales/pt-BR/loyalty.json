@@ -24,7 +24,15 @@
     "redeem": "Resgatar",
     "confirmRedeem": "Confirmar Resgate",
     "successRedeem": "Resgate realizado com sucesso!",
-    "insufficientPoints": "Pontos insuficientes"
+    "insufficientPoints": "Pontos insuficientes",
+    "errorLoading": "Erro ao carregar recompensas. Tente novamente.",
+    "retry": "Tentar novamente",
+    "redeemError": "Erro ao resgatar recompensa",
+    "currentBalance": "Seu saldo atual:",
+    "emptyState": "Nenhuma recompensa disponível no momento.",
+    "redeemCodeLabel": "Seu código de resgate é:",
+    "redeemCodeInstruction": "Apresente este código na barbearia para aproveitar sua recompensa!",
+    "understood": "Entendi"
   },
   "history": {
     "title": "Extrato de Pontos",
@@ -53,6 +61,8 @@
     "users": "Contas",
     "catalog": "Catálogo",
     "adjustPoints": "Ajustar Pontos",
-    "reason": "Motivo do Ajuste"
+    "reason": "Motivo do Ajuste",
+    "accountsCount": "contas cadastradas",
+    "rewardsCount": "prêmios"
   }
 }

@@ -7,7 +7,7 @@ import {
   useAdminToggleReward,
   type AdminLoyaltyAccount,
 } from "@/hooks/useAdminLoyalty";
-import { useRewards } from "@/hooks/useLoyalty";
+import { useAdminRewards } from "@/hooks/useAdminRewards";
 import {
   ArrowLeft,
   Loader2,
@@ -45,7 +45,7 @@ export default function AdminLoyaltyPage() {
 
   const { data: accounts, isLoading: accountsLoading } =
     useAdminLoyaltyAccounts();
-  const { data: rewards, isLoading: rewardsLoading } = useRewards();
+  const { data: rewards, isLoading: rewardsLoading } = useAdminRewards();
 
   const adjustPointsMut = useAdminAdjustPoints();
   const toggleRewardMut = useAdminToggleReward();
@@ -126,8 +126,8 @@ export default function AdminLoyaltyPage() {
                   {t("title") || "Gestão de Fidelidade"}
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  {accounts?.length || 0} contas cadastradas •{" "}
-                  {rewards?.length || 0} prêmios
+                  {accounts?.length ?? 0} {t("accountsCount")} •{" "}
+                  {rewards?.length ?? 0} {t("rewardsCount")}
                 </p>
               </div>
             </div>

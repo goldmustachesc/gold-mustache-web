@@ -24,7 +24,15 @@
     "redeem": "Canjear",
     "confirmRedeem": "Confirmar Canje",
     "successRedeem": "¡Canje exitoso!",
-    "insufficientPoints": "Puntos insuficientes"
+    "insufficientPoints": "Puntos insuficientes",
+    "errorLoading": "Error al cargar recompensas. Inténtelo de nuevo.",
+    "retry": "Intentar de nuevo",
+    "redeemError": "Error al canjear recompensa",
+    "currentBalance": "Tu saldo actual:",
+    "emptyState": "No hay recompensas disponibles en este momento.",
+    "redeemCodeLabel": "Tu código de canje es:",
+    "redeemCodeInstruction": "Presenta este código en la barbería para disfrutar tu recompensa!",
+    "understood": "Entendido"
   },
   "history": {
     "title": "Historial de Puntos",
@@ -53,6 +61,8 @@
     "users": "Cuentas",
     "catalog": "Catálogo",
     "adjustPoints": "Ajustar Puntos",
-    "reason": "Razón del Ajuste"
+    "reason": "Razón del Ajuste",
+    "accountsCount": "cuentas registradas",
+    "rewardsCount": "recompensas"
   }
 }

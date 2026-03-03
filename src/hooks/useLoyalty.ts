@@ -5,16 +5,35 @@ import { apiGet, apiMutate } from "@/lib/api/client";
 
 export interface LoyaltyAccount {
   id: string;
-  points: number;
+  currentPoints: number;
   lifetimePoints: number;
   tier: LoyaltyTier;
-  tierUpdatedAt: string;
+  referralCode: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function useLoyaltyAccount() {
   return useQuery({
     queryKey: ["loyalty", "account"],
     queryFn: () => apiGet<LoyaltyAccount>("/api/loyalty/account"),
+    select: ({
+      id,
+      currentPoints,
+      lifetimePoints,
+      tier,
+      referralCode,
+      createdAt,
+      updatedAt,
+    }) => ({
+      id,
+      currentPoints,
+      lifetimePoints,
+      tier,
+      referralCode,
+      createdAt,
+      updatedAt,
+    }),
   });
 }
 
