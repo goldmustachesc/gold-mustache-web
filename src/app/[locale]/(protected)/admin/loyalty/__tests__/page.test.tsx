@@ -99,4 +99,27 @@ describe("AdminLoyaltyPage — catalog", () => {
 
     expect(screen.getByText("Inactive Admin Reward")).toBeInTheDocument();
   });
+
+  it("should show 'Inativo' badge on inactive rewards", async () => {
+    const user = userEvent.setup();
+    render(<AdminLoyaltyPage />);
+
+    const catalogTab = screen.getByRole("tab", { name: /catalog/i });
+    await user.click(catalogTab);
+
+    expect(screen.getByText("Inativo")).toBeInTheDocument();
+  });
+
+  it("should have unchecked switch for inactive rewards and checked for active", async () => {
+    const user = userEvent.setup();
+    render(<AdminLoyaltyPage />);
+
+    const catalogTab = screen.getByRole("tab", { name: /catalog/i });
+    await user.click(catalogTab);
+
+    const switches = screen.getAllByRole("switch");
+    expect(switches).toHaveLength(2);
+    expect(switches[0]).toBeChecked();
+    expect(switches[1]).not.toBeChecked();
+  });
 });

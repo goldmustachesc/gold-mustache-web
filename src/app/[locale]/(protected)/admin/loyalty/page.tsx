@@ -8,6 +8,7 @@ import {
   type AdminLoyaltyAccount,
 } from "@/hooks/useAdminLoyalty";
 import { useAdminRewards } from "@/hooks/useAdminRewards";
+import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   Loader2,
@@ -244,7 +245,12 @@ export default function AdminLoyaltyPage() {
                   {rewards?.map((r) => (
                     <div
                       key={r.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border rounded-lg bg-muted/20 gap-4"
+                      className={cn(
+                        "flex flex-col md:flex-row md:items-center justify-between p-4 border border-border rounded-lg gap-4",
+                        r.active === false
+                          ? "bg-muted/10 opacity-60"
+                          : "bg-muted/20",
+                      )}
                     >
                       <div>
                         <div className="font-bold flex items-center gap-2">
@@ -252,6 +258,11 @@ export default function AdminLoyaltyPage() {
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                             {r.costInPoints} pts
                           </span>
+                          {r.active === false && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                              Inativo
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
                           {r.description}

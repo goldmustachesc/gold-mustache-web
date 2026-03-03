@@ -7,6 +7,7 @@ import {
   accountIdSchema,
   loyaltyAdjustSchema,
 } from "@/lib/validations/loyalty";
+import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 
 export async function POST(
   req: Request,
@@ -78,11 +79,18 @@ export async function POST(
       }),
     ]);
 
+    await LoyaltyService.recalculateTier(accountId);
+
+    const refreshed = await prisma.loyaltyAccount.findUnique({
+      where: { id: accountId },
+      select: { tier: true },
+    });
+
     return apiSuccess({
       id: updatedAccount.id,
       currentPoints: updatedAccount.currentPoints,
       lifetimePoints: updatedAccount.lifetimePoints,
-      tier: updatedAccount.tier,
+      tier: refreshed?.tier ?? updatedAccount.tier,
       adjustedPoints: points,
     });
   } catch (error) {
