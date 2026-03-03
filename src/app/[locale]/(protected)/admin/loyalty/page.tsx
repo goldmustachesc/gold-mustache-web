@@ -18,6 +18,7 @@ import {
   Gift,
   Save,
   TicketCheck,
+  BarChart3,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
@@ -38,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslations } from "next-intl";
 import { RewardModal } from "@/components/loyalty/RewardModal";
 import { RedemptionsTab } from "@/components/admin/RedemptionsTab";
+import { ReportsTab } from "@/components/admin/ReportsTab";
 
 export default function AdminLoyaltyPage() {
   const t = useTranslations("loyalty.admin");
@@ -138,7 +140,7 @@ export default function AdminLoyaltyPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <Tabs defaultValue="accounts" className="w-full">
-            <TabsList className="mb-6 bg-muted border border-border flex h-12 w-full max-w-md rounded-xl p-1">
+            <TabsList className="mb-6 bg-muted border border-border flex h-12 w-full max-w-xl rounded-xl p-1">
               <TabsTrigger
                 value="accounts"
                 className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -159,6 +161,13 @@ export default function AdminLoyaltyPage() {
               >
                 <TicketCheck className="h-4 w-4 mr-2" />
                 {t("redemptions.tab") || "Resgates"}
+              </TabsTrigger>
+              <TabsTrigger
+                value="reports"
+                className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                {t("reports.tab") || "Relatórios"}
               </TabsTrigger>
             </TabsList>
 
@@ -267,6 +276,10 @@ export default function AdminLoyaltyPage() {
 
             <TabsContent value="redemptions">
               <RedemptionsTab />
+            </TabsContent>
+
+            <TabsContent value="reports">
+              <ReportsTab />
             </TabsContent>
           </Tabs>
 

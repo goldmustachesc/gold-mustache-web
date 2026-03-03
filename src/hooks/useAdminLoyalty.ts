@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { LoyaltyTier } from "@/components/loyalty/TierBadge";
 import type { Reward } from "@/components/loyalty/RewardCard";
-import type { RedemptionStatus } from "@/types/loyalty";
+import type { RedemptionStatus, LoyaltyReportsData } from "@/types/loyalty";
 import {
   apiGet,
   apiGetCollection,
@@ -147,6 +147,13 @@ export function useAdminToggleReward() {
         queryKey: ["admin", "loyalty", "rewards"],
       });
     },
+  });
+}
+
+export function useAdminLoyaltyReports() {
+  return useQuery({
+    queryKey: ["admin", "loyalty", "reports"],
+    queryFn: () => apiGet<LoyaltyReportsData>("/api/admin/loyalty/reports"),
   });
 }
 
