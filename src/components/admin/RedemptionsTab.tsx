@@ -27,10 +27,27 @@ import {
 } from "@/components/ui/select";
 import { useTranslations } from "next-intl";
 import { ApiError } from "@/lib/api/client";
+import type { RedemptionStatus } from "@/types/loyalty";
+
+const STATUS_STYLES: Record<RedemptionStatus, string> = {
+  PENDING: "bg-amber-500/20 text-amber-500",
+  USED: "bg-green-500/20 text-green-500",
+  EXPIRED: "bg-zinc-500/20 text-zinc-400",
+};
+
+function RedemptionStatusBadge({ status }: { status: RedemptionStatus }) {
+  const t = useTranslations("loyalty.redemptions");
+  return (
+    <span
+      className={`inline-block text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[status]}`}
+    >
+      {t(`status.${status.toLowerCase()}`)}
+    </span>
+  );
+}
 
 export function RedemptionsTab() {
   const t = useTranslations("loyalty.admin");
-  const tRedemptions = useTranslations("loyalty.redemptions");
 
   const [redemptionCode, setRedemptionCode] = useState("");
   const [validatedRedemption, setValidatedRedemption] =
@@ -153,19 +170,7 @@ export function RedemptionsTab() {
                       validatedRedemption.expiresAt,
                     ).toLocaleDateString()}
                   </div>
-                  <span
-                    className={`inline-block text-xs px-2 py-0.5 rounded-full ${
-                      validatedRedemption.status === "PENDING"
-                        ? "bg-amber-500/20 text-amber-500"
-                        : validatedRedemption.status === "USED"
-                          ? "bg-green-500/20 text-green-500"
-                          : "bg-zinc-500/20 text-zinc-400"
-                    }`}
-                  >
-                    {tRedemptions(
-                      `status.${validatedRedemption.status.toLowerCase()}`,
-                    )}
-                  </span>
+                  <RedemptionStatusBadge status={validatedRedemption.status} />
                 </div>
                 {validatedRedemption.status === "PENDING" && (
                   <Button
@@ -273,17 +278,7 @@ export function RedemptionsTab() {
                         {new Date(r.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            r.status === "PENDING"
-                              ? "bg-amber-500/20 text-amber-500"
-                              : r.status === "USED"
-                                ? "bg-green-500/20 text-green-500"
-                                : "bg-zinc-500/20 text-zinc-400"
-                          }`}
-                        >
-                          {tRedemptions(`status.${r.status.toLowerCase()}`)}
-                        </span>
+                        <RedemptionStatusBadge status={r.status} />
                       </td>
                       <td className="px-6 py-4 text-right">
                         {r.status === "PENDING" && (
