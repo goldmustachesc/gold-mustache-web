@@ -26,12 +26,18 @@ export async function GET() {
 
     const account = await LoyaltyService.getOrCreateAccount(profile.id);
 
+    const referralsCount = await prisma.loyaltyAccount.count({
+      where: { referredById: account.id },
+    });
+
     return apiSuccess({
       id: account.id,
       currentPoints: account.currentPoints,
       lifetimePoints: account.lifetimePoints,
       tier: account.tier,
       referralCode: account.referralCode,
+      referredById: account.referredById,
+      referralsCount,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     });

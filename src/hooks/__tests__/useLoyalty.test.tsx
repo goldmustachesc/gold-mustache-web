@@ -10,10 +10,11 @@ const MOCK_API_ACCOUNT = {
   lifetimePoints: 1200,
   tier: "SILVER",
   referralCode: "ABC123",
+  referredById: "ref-456",
+  referralsCount: 2,
   createdAt: "2024-01-01T00:00:00.000Z",
   updatedAt: "2024-06-01T00:00:00.000Z",
   profileId: "profile-xyz",
-  referredById: "ref-456",
 };
 
 function stubFetch(data: unknown) {
@@ -84,11 +85,14 @@ describe("useLoyaltyAccount", () => {
         "lifetimePoints",
         "tier",
         "referralCode",
+        "referredById",
+        "referralsCount",
         "createdAt",
         "updatedAt",
       ].sort(),
     );
     expect(data).not.toHaveProperty("profileId");
-    expect(data).not.toHaveProperty("referredById");
+    expect(data).toHaveProperty("referredById", "ref-456");
+    expect(data).toHaveProperty("referralsCount", 2);
   });
 });

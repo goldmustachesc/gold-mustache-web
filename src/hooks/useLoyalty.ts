@@ -9,6 +9,8 @@ export interface LoyaltyAccount {
   lifetimePoints: number;
   tier: LoyaltyTier;
   referralCode: string;
+  referredById: string | null;
+  referralsCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +25,8 @@ export function useLoyaltyAccount() {
       lifetimePoints,
       tier,
       referralCode,
+      referredById,
+      referralsCount,
       createdAt,
       updatedAt,
     }) => ({
@@ -31,6 +35,8 @@ export function useLoyaltyAccount() {
       lifetimePoints,
       tier,
       referralCode,
+      referredById,
+      referralsCount,
       createdAt,
       updatedAt,
     }),
@@ -80,5 +86,26 @@ export function useLoyaltyTransactions() {
   return useQuery({
     queryKey: ["loyalty", "transactions"],
     queryFn: () => apiGet<LoyaltyTransaction[]>("/api/loyalty/transactions"),
+  });
+}
+
+interface ValidateReferralResult {
+  valid: boolean;
+  referrerName: string;
+}
+
+export function useValidateReferral() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiMutate<ValidateReferralResult>(
+        "/api/loyalty/referral/validate",
+        "POST",
+        { code },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "account"] });
+    },
   });
 }

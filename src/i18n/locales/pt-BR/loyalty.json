@@ -54,7 +54,21 @@
     "description": "Compartilhe seu código com amigos e ambos ganham {{points}} pontos.",
     "yourCode": "Seu Código de Indicação",
     "copy": "Copiar",
-    "copied": "Copiado!"
+    "copied": "Copiado!",
+    "referredByTitle": "Fui indicado por",
+    "referredByPlaceholder": "Digite o código de indicação",
+    "validate": "Validar",
+    "validating": "Validando...",
+    "alreadyReferred": "Você já foi indicado por um amigo.",
+    "referrerFound": "Indicado por {{name}}",
+    "referralsCount": "Você indicou {{count}} amigo(s)",
+    "shareWhatsApp": "Compartilhar no WhatsApp",
+    "shareMessage": "Use meu código {{code}} na Gold Mustache e ganhe pontos de fidelidade!",
+    "howItWorksTitle": "Como funciona?",
+    "howItWorksStep1": "Copie seu código de indicação único.",
+    "howItWorksStep2": "Envie para amigos que ainda não conhecem a Gold Mustache.",
+    "howItWorksStep3": "Seu amigo insere o código no primeiro agendamento.",
+    "howItWorksStep4": "Após a conclusão do serviço, ambos ganham pontos do programa fidelidade!"
   },
   "admin": {
     "title": "Gestão de Fidelidade",

@@ -54,7 +54,21 @@
     "description": "Share your code with friends and both get {{points}} points.",
     "yourCode": "Your Referral Code",
     "copy": "Copy",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "referredByTitle": "I was referred by",
+    "referredByPlaceholder": "Enter referral code",
+    "validate": "Validate",
+    "validating": "Validating...",
+    "alreadyReferred": "You have already been referred by a friend.",
+    "referrerFound": "Referred by {{name}}",
+    "referralsCount": "You referred {{count}} friend(s)",
+    "shareWhatsApp": "Share on WhatsApp",
+    "shareMessage": "Use my code {{code}} at Gold Mustache and earn loyalty points!",
+    "howItWorksTitle": "How does it work?",
+    "howItWorksStep1": "Copy your unique referral code.",
+    "howItWorksStep2": "Send it to friends who haven't tried Gold Mustache yet.",
+    "howItWorksStep3": "Your friend enters the code on their first booking.",
+    "howItWorksStep4": "After the service is completed, you both earn loyalty points!"
   },
   "admin": {
     "title": "Loyalty Management",

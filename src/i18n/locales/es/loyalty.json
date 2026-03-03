@@ -54,7 +54,21 @@
     "description": "Comparte tu código con amigos y ambos ganarán {{points}} puntos.",
     "yourCode": "Tu Código de Referencia",
     "copy": "Copiar",
-    "copied": "¡Copiado!"
+    "copied": "¡Copiado!",
+    "referredByTitle": "Fui referido por",
+    "referredByPlaceholder": "Ingresa el código de referencia",
+    "validate": "Validar",
+    "validating": "Validando...",
+    "alreadyReferred": "Ya fuiste referido por un amigo.",
+    "referrerFound": "Referido por {{name}}",
+    "referralsCount": "Referiste a {{count}} amigo(s)",
+    "shareWhatsApp": "Compartir en WhatsApp",
+    "shareMessage": "¡Usa mi código {{code}} en Gold Mustache y gana puntos de lealtad!",
+    "howItWorksTitle": "¿Cómo funciona?",
+    "howItWorksStep1": "Copia tu código de referencia único.",
+    "howItWorksStep2": "Envíalo a amigos que aún no conocen Gold Mustache.",
+    "howItWorksStep3": "Tu amigo ingresa el código en su primera reserva.",
+    "howItWorksStep4": "¡Tras completar el servicio, ambos ganan puntos de lealtad!"
   },
   "admin": {
     "title": "Gestión de Lealtad",
