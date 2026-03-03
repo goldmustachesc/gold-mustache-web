@@ -1,6 +1,10 @@
 "use client";
 
-import { useLoyaltyAccount, useValidateReferral } from "@/hooks/useLoyalty";
+import {
+  useLoyaltyAccount,
+  useValidateReferral,
+  useApplyReferral,
+} from "@/hooks/useLoyalty";
 import {
   Loader2,
   Copy,
@@ -18,6 +22,7 @@ import { LOYALTY_CONFIG } from "@/config/loyalty.config";
 export default function LoyaltyReferralPage() {
   const { data: account, isLoading } = useLoyaltyAccount();
   const validateReferral = useValidateReferral();
+  const applyReferral = useApplyReferral();
   const t = useTranslations("loyalty.referral");
   const [copied, setCopied] = useState(false);
   const [referralInput, setReferralInput] = useState("");
@@ -40,6 +45,13 @@ export default function LoyaltyReferralPage() {
     const trimmed = referralInput.trim().toUpperCase();
     if (trimmed) {
       validateReferral.mutate(trimmed);
+    }
+  };
+
+  const handleConfirmReferral = () => {
+    const trimmed = referralInput.trim().toUpperCase();
+    if (trimmed) {
+      applyReferral.mutate(trimmed);
     }
   };
 
@@ -138,12 +150,30 @@ export default function LoyaltyReferralPage() {
               </Button>
             </div>
 
-            {validateReferral.data && (
+            {validateReferral.data && !applyReferral.isSuccess && (
+              <div className="space-y-3">
+                <p className="text-emerald-400 text-sm flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {t("referrerFound", {
+                    name: validateReferral.data.referrerName,
+                  })}
+                </p>
+                <Button
+                  onClick={handleConfirmReferral}
+                  disabled={applyReferral.isPending}
+                  className="w-full font-bold"
+                >
+                  {applyReferral.isPending
+                    ? t("applying")
+                    : t("confirmReferral")}
+                </Button>
+              </div>
+            )}
+
+            {applyReferral.isSuccess && (
               <p className="text-emerald-400 text-sm flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
-                {t("referrerFound", {
-                  name: validateReferral.data.referrerName,
-                })}
+                {t("referralApplied")}
               </p>
             )}
 
@@ -151,6 +181,13 @@ export default function LoyaltyReferralPage() {
               <p className="text-red-400 text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 {validateReferral.error?.message}
+              </p>
+            )}
+
+            {applyReferral.isError && (
+              <p className="text-red-400 text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {applyReferral.error?.message}
               </p>
             )}
           </>

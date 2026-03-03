@@ -116,4 +116,4 @@ Object.assign(navigator, {
 - [ ] Rodar `pnpm test` → continua GREEN
 - [ ] `pnpm lint` ✅ e `pnpm build` ✅
 
-## Status: 🔲 A FAZER
+## Status: ✅ CONCLUÍDO

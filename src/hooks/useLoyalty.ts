@@ -132,3 +132,22 @@ export function useValidateReferral() {
     },
   });
 }
+
+interface ApplyReferralResult {
+  applied: boolean;
+  referrerName: string;
+}
+
+export function useApplyReferral() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiMutate<ApplyReferralResult>("/api/loyalty/referral/apply", "POST", {
+        code,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "account"] });
+    },
+  });
+}

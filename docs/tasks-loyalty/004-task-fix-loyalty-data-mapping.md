@@ -100,4 +100,4 @@ A rewards page do cliente tem um fallback que renderiza rewards mockados quando 
 - [ ] Rodar `pnpm test` → continua GREEN
 - [ ] `pnpm lint` ✅ e `pnpm build` ✅
 
-## Status: 🔲 A FAZER
+## Status: ✅ CONCLUÍDO
