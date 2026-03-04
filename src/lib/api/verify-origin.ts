@@ -1,37 +1,37 @@
 import type { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/response";
 
-/**
- * List of allowed origins for CSRF protection.
- * Includes production URL, staging URLs, and localhost for development.
- */
-function getAllowedOrigins(): string[] {
-  const origins: string[] = [];
+function normalizeToOrigin(raw: string): string {
+  return new URL(raw).origin;
+}
 
-  // Production URL
+function getAllowedOrigins(): string[] {
+  const origins = new Set<string>();
+
   if (process.env.NEXT_PUBLIC_SITE_URL) {
-    origins.push(process.env.NEXT_PUBLIC_SITE_URL);
-    // Also allow www subdomain
-    const url = new URL(process.env.NEXT_PUBLIC_SITE_URL);
-    if (!url.hostname.startsWith("www.")) {
-      origins.push(`${url.protocol}//www.${url.hostname}`);
+    const normalized = normalizeToOrigin(process.env.NEXT_PUBLIC_SITE_URL);
+    origins.add(normalized);
+
+    const url = new URL(normalized);
+    if (url.hostname.startsWith("www.")) {
+      origins.add(`${url.protocol}//${url.hostname.slice(4)}`);
+    } else {
+      origins.add(`${url.protocol}//www.${url.hostname}`);
     }
   }
 
-  // Vercel deployment URLs
   if (process.env.VERCEL_URL) {
-    origins.push(`https://${process.env.VERCEL_URL}`);
+    origins.add(normalizeToOrigin(`https://${process.env.VERCEL_URL}`));
   }
 
-  // Development
   if (process.env.NODE_ENV === "development") {
-    origins.push("http://localhost:3000");
-    origins.push("http://localhost:3001");
-    origins.push("http://127.0.0.1:3000");
-    origins.push("http://127.0.0.1:3001");
+    origins.add("http://localhost:3000");
+    origins.add("http://localhost:3001");
+    origins.add("http://127.0.0.1:3000");
+    origins.add("http://127.0.0.1:3001");
   }
 
-  return origins;
+  return [...origins];
 }
 
 /**
