@@ -21,6 +21,12 @@ vi.mock("@/services/loyalty/loyalty.service", () => ({
   },
 }));
 
+vi.mock("@/services/loyalty/notification.service", () => ({
+  LoyaltyNotificationService: {
+    notifyReferralBonus: vi.fn(),
+  },
+}));
+
 import { prisma } from "@/lib/prisma";
 import { ReferralService } from "../referral.service";
 

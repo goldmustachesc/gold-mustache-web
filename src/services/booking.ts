@@ -1433,13 +1433,24 @@ export async function markAppointmentAsCompleted(
         account.tier,
       );
 
+      const pointsDescription = `Agendamento concluído: ${updated.service.name}`;
+
       await LoyaltyService.creditPoints({
         accountId: account.id,
         type: "EARNED_APPOINTMENT",
         points: pointsData.total,
-        description: `Agendamento concluído: ${updated.service.name}`,
+        description: pointsDescription,
         referenceId: updated.id,
       });
+
+      const { LoyaltyNotificationService } = await import(
+        "./loyalty/notification.service"
+      );
+      await LoyaltyNotificationService.notifyPointsEarned(
+        updated.clientId,
+        pointsData.total,
+        pointsDescription,
+      );
 
       if (account.referredById) {
         const completedCount = await prisma.appointment.count({

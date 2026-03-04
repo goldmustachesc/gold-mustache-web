@@ -59,12 +59,21 @@ async function recalculateTier(accountId: string): Promise<void> {
   const newTier = determineTier(account.lifetimePoints);
 
   if (newTier !== account.tier) {
+    const previousTier = account.tier;
+
     await prisma.loyaltyAccount.update({
       where: { id: accountId },
       data: { tier: newTier },
     });
 
-    // TODO: Create LOYALTY_TIER_UPGRADE notification for the user
+    const { LoyaltyNotificationService } = await import(
+      "./notification.service"
+    );
+    await LoyaltyNotificationService.notifyTierUpgrade(
+      accountId,
+      newTier,
+      previousTier,
+    );
   }
 }
 

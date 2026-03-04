@@ -24,97 +24,112 @@ async function redeemReward(
   accountId: string,
   rewardId: string,
 ): Promise<Redemption> {
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const account = await tx.loyaltyAccount.findUnique({
-      where: { id: accountId },
-      select: { id: true, currentPoints: true },
-    });
+  const { redemption, rewardName } = await prisma.$transaction(
+    async (tx: Prisma.TransactionClient) => {
+      const account = await tx.loyaltyAccount.findUnique({
+        where: { id: accountId },
+        select: { id: true, currentPoints: true },
+      });
 
-    if (!account) {
-      throw new Error("Conta de fidelidade não encontrada.");
-    }
+      if (!account) {
+        throw new Error("Conta de fidelidade não encontrada.");
+      }
 
-    const reward = await tx.reward.findUnique({
-      where: { id: rewardId },
-    });
+      const reward = await tx.reward.findUnique({
+        where: { id: rewardId },
+      });
 
-    if (!reward) {
-      throw new Error("Recompensa não encontrada.");
-    }
+      if (!reward) {
+        throw new Error("Recompensa não encontrada.");
+      }
 
-    if (!reward.active) {
-      throw new Error("Recompensa não está ativa.");
-    }
+      if (!reward.active) {
+        throw new Error("Recompensa não está ativa.");
+      }
 
-    if (reward.stock !== null && reward.stock <= 0) {
-      throw new Error("Recompensa sem estoque disponível.");
-    }
+      if (reward.stock !== null && reward.stock <= 0) {
+        throw new Error("Recompensa sem estoque disponível.");
+      }
 
-    if (account.currentPoints < reward.pointsCost) {
-      throw new Error("Saldo de pontos insuficiente.");
-    }
+      if (account.currentPoints < reward.pointsCost) {
+        throw new Error("Saldo de pontos insuficiente.");
+      }
 
-    const expiresAt = addDays(
-      new Date(),
-      LOYALTY_CONFIG.REDEMPTION_VALIDITY_DAYS,
-    );
+      const expiresAt = addDays(
+        new Date(),
+        LOYALTY_CONFIG.REDEMPTION_VALIDITY_DAYS,
+      );
 
-    const MAX_CODE_RETRIES = 3;
-    let redemption: Redemption | undefined;
+      const MAX_CODE_RETRIES = 3;
+      let created: Redemption | undefined;
 
-    for (let attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
-      const code = generateRedemptionCode();
-      try {
-        redemption = await tx.redemption.create({
-          data: {
-            loyaltyAccountId: accountId,
-            rewardId,
-            pointsSpent: reward.pointsCost,
-            code,
-            expiresAt,
-          },
-        });
-        break;
-      } catch (error: unknown) {
-        const isUniqueViolation =
-          error !== null &&
-          typeof error === "object" &&
-          "code" in error &&
-          error.code === "P2002";
-        if (!isUniqueViolation || attempt === MAX_CODE_RETRIES - 1) {
-          throw error;
+      for (let attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
+        const code = generateRedemptionCode();
+        try {
+          created = await tx.redemption.create({
+            data: {
+              loyaltyAccountId: accountId,
+              rewardId,
+              pointsSpent: reward.pointsCost,
+              code,
+              expiresAt,
+            },
+          });
+          break;
+        } catch (error: unknown) {
+          const isUniqueViolation =
+            error !== null &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002";
+          if (!isUniqueViolation || attempt === MAX_CODE_RETRIES - 1) {
+            throw error;
+          }
         }
       }
-    }
 
-    if (!redemption) {
-      throw new Error("Falha ao gerar código de resgate único.");
-    }
+      if (!created) {
+        throw new Error("Falha ao gerar código de resgate único.");
+      }
 
-    await tx.pointTransaction.create({
-      data: {
-        loyaltyAccountId: accountId,
-        type: PointTransactionType.REDEEMED,
-        points: -Math.abs(reward.pointsCost),
-        description: `Resgate: ${reward.name}`,
-        referenceId: redemption.id,
-      },
-    });
-
-    await tx.loyaltyAccount.update({
-      where: { id: accountId },
-      data: { currentPoints: { decrement: reward.pointsCost } },
-    });
-
-    if (reward.stock !== null) {
-      await tx.reward.update({
-        where: { id: rewardId },
-        data: { stock: { decrement: 1 } },
+      await tx.pointTransaction.create({
+        data: {
+          loyaltyAccountId: accountId,
+          type: PointTransactionType.REDEEMED,
+          points: -Math.abs(reward.pointsCost),
+          description: `Resgate: ${reward.name}`,
+          referenceId: created.id,
+        },
       });
-    }
 
-    return redemption;
-  });
+      await tx.loyaltyAccount.update({
+        where: { id: accountId },
+        data: { currentPoints: { decrement: reward.pointsCost } },
+      });
+
+      if (reward.stock !== null) {
+        await tx.reward.update({
+          where: { id: rewardId },
+          data: { stock: { decrement: 1 } },
+        });
+      }
+
+      return { redemption: created, rewardName: reward.name };
+    },
+  );
+
+  try {
+    const { LoyaltyNotificationService } = await import(
+      "./notification.service"
+    );
+    await LoyaltyNotificationService.notifyRewardRedeemed(
+      accountId,
+      rewardName,
+      redemption.code,
+    );
+  } catch {}
+
+  return redemption;
 }
 
 async function validateRedemptionCode(

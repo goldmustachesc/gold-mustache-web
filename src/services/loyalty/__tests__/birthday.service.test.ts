@@ -20,6 +20,12 @@ vi.mock("@/services/loyalty/loyalty.service", () => ({
   },
 }));
 
+vi.mock("@/services/loyalty/notification.service", () => ({
+  LoyaltyNotificationService: {
+    notifyBirthdayBonus: vi.fn(),
+  },
+}));
+
 import { prisma } from "@/lib/prisma";
 import { BirthdayService } from "../birthday.service";
 

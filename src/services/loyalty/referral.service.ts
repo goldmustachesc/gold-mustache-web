@@ -136,6 +136,20 @@ async function creditReferralBonus(referredAccountId: string): Promise<void> {
   if (credited) {
     await LoyaltyService.recalculateTier(referrerId);
     await LoyaltyService.recalculateTier(referredAccountId);
+
+    const { LoyaltyNotificationService } = await import(
+      "./notification.service"
+    );
+    const referrerAccount = await prisma.loyaltyAccount.findUnique({
+      where: { id: referrerId },
+      select: { profileId: true },
+    });
+    if (referrerAccount) {
+      await LoyaltyNotificationService.notifyReferralBonus(
+        referrerAccount.profileId,
+        LOYALTY_CONFIG.REFERRAL_BONUS,
+      );
+    }
   }
 }
 

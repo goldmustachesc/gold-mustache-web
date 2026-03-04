@@ -24,7 +24,7 @@ A `LOYALTY_CONFIG` define `BIRTHDAY_BONUS: 100` e o schema Prisma tem `Profile.b
   - Creditar `BIRTHDAY_BONUS` (100 pts) com type `EARNED_BIRTHDAY`
   - Usar `referenceId` = `birthday-{year}` para guard de duplicata anual
   - Recalcular tier se necessário
-- Retornar resumo: `{ processedCount, totalPointsCredited }`
+- Retornar resumo: `{ processedCount, totalPointsCredited, failedCount }`
 
 #### `hasBirthdayBonusThisYear(accountId: string, year: number): Promise<boolean>`
 - Verificar se já existe `PointTransaction` com type `EARNED_BIRTHDAY` e `referenceId = birthday-{year}`
@@ -41,10 +41,10 @@ A `LOYALTY_CONFIG` define `BIRTHDAY_BONUS: 100` e o schema Prisma tem `Profile.b
 
 | Arquivo | Ação |
 |---------|------|
-| `src/services/loyalty/__tests__/birthday.service.test.ts` | **Criar PRIMEIRO** — testes unitários |
-| `src/app/api/admin/loyalty/birthday-bonuses/__tests__/route.test.ts` | **Criar PRIMEIRO** — testes do endpoint |
-| `src/services/loyalty/birthday.service.ts` | **Criar** — lógica de bônus |
-| `src/app/api/admin/loyalty/birthday-bonuses/route.ts` | **Criar** — endpoint admin |
+| `src/services/loyalty/__tests__/birthday.service.test.ts` | ✅ **Criado** — testes unitários |
+| `src/app/api/admin/loyalty/birthday-bonuses/__tests__/route.test.ts` | ✅ **Criado** — testes do endpoint |
+| `src/services/loyalty/birthday.service.ts` | ✅ **Criado** — lógica de bônus |
+| `src/app/api/admin/loyalty/birthday-bonuses/route.ts` | ✅ **Criado** — endpoint admin |
 
 ## Regras de negócio
 
@@ -69,36 +69,38 @@ A `LOYALTY_CONFIG` define `BIRTHDAY_BONUS: 100` e o schema Prisma tem `Profile.b
 #### Arquivo: `src/services/loyalty/__tests__/birthday.service.test.ts`
 
 **Testes `getTodayBirthdays`:**
-- [ ] Deve retornar perfis cujo birthDate tem mês e dia iguais à data informada
-- [ ] Deve ignorar perfis sem birthDate
-- [ ] Deve ignorar perfis sem LoyaltyAccount
-- [ ] Deve retornar lista vazia quando nenhum aniversariante
+- [x] Deve retornar perfis cujo birthDate tem mês e dia iguais à data informada
+- [x] Deve ignorar perfis sem birthDate
+- [x] Deve ignorar perfis sem LoyaltyAccount
+- [x] Deve retornar lista vazia quando nenhum aniversariante
 
 **Testes `hasBirthdayBonusThisYear`:**
-- [ ] Deve retornar true quando já existe transaction EARNED_BIRTHDAY com referenceId `birthday-{year}`
-- [ ] Deve retornar false quando não existe
-- [ ] Deve distinguir entre anos diferentes (bônus de 2025 não bloqueia 2026)
+- [x] Deve retornar true quando já existe transaction EARNED_BIRTHDAY com referenceId `birthday-{year}`
+- [x] Deve retornar false quando não existe
+- [x] Deve distinguir entre anos diferentes (bônus de 2025 não bloqueia 2026)
 
 **Testes `creditBirthdayBonuses`:**
-- [ ] Deve creditar BIRTHDAY_BONUS para cada aniversariante elegível
-- [ ] Deve criar PointTransaction com type EARNED_BIRTHDAY
-- [ ] Deve usar referenceId `birthday-{year}` para guard
-- [ ] Deve NÃO creditar se já recebeu bônus neste ano
-- [ ] Deve recalcular tier após crédito
-- [ ] Deve retornar resumo com `processedCount` e `totalPointsCredited`
-- [ ] Deve não fazer nada quando nenhum aniversariante
+- [x] Deve creditar BIRTHDAY_BONUS para cada aniversariante elegível
+- [x] Deve criar PointTransaction com type EARNED_BIRTHDAY
+- [x] Deve usar referenceId `birthday-{year}` para guard
+- [x] Deve NÃO creditar se já recebeu bônus neste ano
+- [x] Deve recalcular tier após crédito (delegado via `LoyaltyService.creditPoints`)
+- [x] Deve retornar resumo com `processedCount`, `totalPointsCredited` e `failedCount`
+- [x] Deve não fazer nada quando nenhum aniversariante
+- [x] Deve continuar processando demais aniversariantes quando `creditPoints` falha para um
+- [x] Deve retornar `failedCount` no resumo
 
 **Property test (fast-check):**
-- [ ] Para N aniversariantes elegíveis, `totalPointsCredited === N * BIRTHDAY_BONUS`
+- [x] Para N aniversariantes elegíveis, `totalPointsCredited === N * BIRTHDAY_BONUS`
 
 #### Arquivo: `src/app/api/admin/loyalty/birthday-bonuses/__tests__/route.test.ts`
 
 **Testes `POST /api/admin/loyalty/birthday-bonuses`:**
-- [ ] Deve retornar 401/403 quando não admin
-- [ ] Deve retornar 200 com resumo do processamento
-- [ ] Deve chamar `BirthdayService.creditBirthdayBonuses()`
+- [x] Deve retornar 401/403 quando não admin
+- [x] Deve retornar 200 com resumo do processamento
+- [x] Deve chamar `BirthdayService.creditBirthdayBonuses()`
 
-- [ ] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
+- [x] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
 
 ### Mocks necessários
 
@@ -117,19 +119,19 @@ vi.mock("@/services/loyalty/loyalty.service", () => ({
 
 ### Fase GREEN — Implementar código mínimo para passar
 
-- [ ] Criar `birthday.service.ts` com esqueleto
-- [ ] Implementar `getTodayBirthdays()` → rodar testes → GREEN
-- [ ] Implementar `hasBirthdayBonusThisYear()` → rodar testes → GREEN
-- [ ] Implementar `creditBirthdayBonuses()` → rodar testes → GREEN
-- [ ] Criar endpoint `POST /api/admin/loyalty/birthday-bonuses` → rodar testes → GREEN
-- [ ] Rodar `pnpm test` → TODOS passam (GREEN)
+- [x] Criar `birthday.service.ts` com esqueleto
+- [x] Implementar `getTodayBirthdays()` → rodar testes → GREEN
+- [x] Implementar `hasBirthdayBonusThisYear()` → rodar testes → GREEN
+- [x] Implementar `creditBirthdayBonuses()` → rodar testes → GREEN
+- [x] Criar endpoint `POST /api/admin/loyalty/birthday-bonuses` → rodar testes → GREEN
+- [x] Rodar `pnpm test` → TODOS passam (GREEN)
 
 ### Fase REFACTOR — Limpar sem quebrar testes
 
-- [ ] Verificar query de birthDate usa índice eficiente (EXTRACT month/day)
-- [ ] Verificar tipagem completa (sem `any`)
-- [ ] Rodar `pnpm test` → continua GREEN
-- [ ] `pnpm lint` ✅ e `pnpm build` ✅
+- [x] Verificar query de birthDate usa índice eficiente (EXTRACT month/day)
+- [x] Verificar tipagem completa (sem `any`)
+- [x] Rodar `pnpm test` → continua GREEN
+- [x] `pnpm lint` ✅ e `pnpm build` ✅
 
 ## Notas de implementação
 
@@ -137,4 +139,4 @@ vi.mock("@/services/loyalty/loyalty.service", () => ({
 - Considerar timezone: usar timezone da barbearia (America/Sao_Paulo) para determinar "hoje"
 - Execução ideal: cron job diário às 00:05 (após meia-noite)
 
-## Status: 🔲 A FAZER
+## Status: ✅ CONCLUÍDO

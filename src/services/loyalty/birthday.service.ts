@@ -71,6 +71,8 @@ async function creditBirthdayBonuses(
   let totalPointsCredited = 0;
   let failedCount = 0;
 
+  const { LoyaltyNotificationService } = await import("./notification.service");
+
   for (const profile of birthdays) {
     if (!profile.loyaltyAccount) continue;
 
@@ -89,6 +91,11 @@ async function creditBirthdayBonuses(
         description: `Bônus de aniversário ${year}`,
         referenceId: `birthday-${year}`,
       });
+
+      await LoyaltyNotificationService.notifyBirthdayBonus(
+        profile.id,
+        LOYALTY_CONFIG.BIRTHDAY_BONUS,
+      );
 
       processedCount += 1;
       totalPointsCredited += LOYALTY_CONFIG.BIRTHDAY_BONUS;

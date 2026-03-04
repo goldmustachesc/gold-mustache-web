@@ -49,6 +49,12 @@ vi.mock("../loyalty/referral.service", () => {
   };
 });
 
+vi.mock("../loyalty/notification.service", () => ({
+  LoyaltyNotificationService: {
+    notifyPointsEarned: vi.fn(),
+  },
+}));
+
 describe("services/booking/completion", () => {
   beforeEach(() => {
     vi.useFakeTimers();
