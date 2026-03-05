@@ -196,6 +196,15 @@ describe("services/booking/completion", () => {
         description: "Agendamento concluído: Corte",
       }),
     );
+
+    const { LoyaltyNotificationService } = await import(
+      "../loyalty/notification.service"
+    );
+    expect(LoyaltyNotificationService.notifyPointsEarned).toHaveBeenCalledWith(
+      "reg-client-1",
+      50,
+      expect.stringContaining("Corte"),
+    );
     expect(prisma.appointment.count).not.toHaveBeenCalled();
   });
 

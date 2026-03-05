@@ -209,6 +209,13 @@ describe("services/loyalty/birthday.service", () => {
         description: expect.any(String),
         referenceId: "birthday-2026",
       });
+
+      const { LoyaltyNotificationService } = await import(
+        "../notification.service"
+      );
+      expect(
+        LoyaltyNotificationService.notifyBirthdayBonus,
+      ).toHaveBeenCalledWith(profile.id, LOYALTY_CONFIG.BIRTHDAY_BONUS);
     });
 
     it("should create PointTransaction with type EARNED_BIRTHDAY", async () => {

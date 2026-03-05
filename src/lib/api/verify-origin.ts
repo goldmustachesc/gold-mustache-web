@@ -1,27 +1,35 @@
 import type { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/response";
 
-function normalizeToOrigin(raw: string): string {
-  return new URL(raw).origin;
+function addOriginWithWwwVariant(origins: Set<string>, raw: string): void {
+  const normalized = new URL(raw).origin;
+  origins.add(normalized);
+
+  const url = new URL(normalized);
+  if (url.hostname.startsWith("www.")) {
+    origins.add(`${url.protocol}//${url.hostname.slice(4)}`);
+  } else {
+    origins.add(`${url.protocol}//www.${url.hostname}`);
+  }
 }
 
 function getAllowedOrigins(): string[] {
   const origins = new Set<string>();
 
   if (process.env.NEXT_PUBLIC_SITE_URL) {
-    const normalized = normalizeToOrigin(process.env.NEXT_PUBLIC_SITE_URL);
-    origins.add(normalized);
+    addOriginWithWwwVariant(origins, process.env.NEXT_PUBLIC_SITE_URL);
+  }
 
-    const url = new URL(normalized);
-    if (url.hostname.startsWith("www.")) {
-      origins.add(`${url.protocol}//${url.hostname.slice(4)}`);
-    } else {
-      origins.add(`${url.protocol}//www.${url.hostname}`);
+  if (process.env.ALLOWED_ORIGINS) {
+    for (const entry of process.env.ALLOWED_ORIGINS.split(",")) {
+      const trimmed = entry.trim();
+      if (!trimmed) continue;
+      addOriginWithWwwVariant(origins, trimmed);
     }
   }
 
   if (process.env.VERCEL_URL) {
-    origins.add(normalizeToOrigin(`https://${process.env.VERCEL_URL}`));
+    origins.add(new URL(`https://${process.env.VERCEL_URL}`).origin);
   }
 
   if (process.env.NODE_ENV === "development") {

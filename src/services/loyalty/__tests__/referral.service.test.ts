@@ -273,6 +273,30 @@ describe("services/loyalty/referral.service", () => {
       expect(mockRecalculateTier).toHaveBeenCalledWith("acc-referred");
     });
 
+    it("should notify referrer after successful referral bonus credit", async () => {
+      const tx = createTxMocks();
+      const referred = createMockAccount({
+        id: "acc-referred",
+        referredById: "acc-referrer",
+      });
+
+      asMock(prisma.loyaltyAccount.findUnique)
+        .mockResolvedValueOnce(referred)
+        .mockResolvedValueOnce({ profileId: "prof-referrer" });
+      tx.pointTransaction.findFirst.mockResolvedValue(null);
+      setupTransaction(tx);
+      mockRecalculateTier.mockResolvedValue(undefined);
+
+      await ReferralService.creditReferralBonus("acc-referred");
+
+      const { LoyaltyNotificationService } = await import(
+        "../notification.service"
+      );
+      expect(
+        LoyaltyNotificationService.notifyReferralBonus,
+      ).toHaveBeenCalledWith("prof-referrer", LOYALTY_CONFIG.REFERRAL_BONUS);
+    });
+
     it("should NOT credit if bonus was already given (double-credit guard)", async () => {
       const tx = createTxMocks();
       const referred = createMockAccount({

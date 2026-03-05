@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { NextResponse } from "next/server";
 import { GET, POST } from "../route";
 import { Decimal } from "@prisma/client/runtime/library";
 import type { RequireAdminResult } from "@/lib/auth/requireAdmin";
@@ -38,6 +39,20 @@ describe("/api/admin/loyalty/rewards", () => {
   });
 
   describe("GET", () => {
+    it("should return 401 when not admin", async () => {
+      mockRequireAdmin.mockResolvedValue({
+        ok: false,
+        response: NextResponse.json(
+          { error: "UNAUTHORIZED", message: "Não autorizado" },
+          { status: 401 },
+        ),
+      });
+
+      const response = await GET();
+
+      expect(response.status).toBe(401);
+    });
+
     it("deve retornar lista de rewards com sucesso", async () => {
       const mockRewards = [
         {
@@ -98,6 +113,21 @@ describe("/api/admin/loyalty/rewards", () => {
   });
 
   describe("POST", () => {
+    it("should return 401 when not admin", async () => {
+      mockRequireAdmin.mockResolvedValue({
+        ok: false,
+        response: NextResponse.json(
+          { error: "UNAUTHORIZED", message: "Não autorizado" },
+          { status: 401 },
+        ),
+      });
+
+      const request = { json: async () => ({}) } as Request;
+      const response = await POST(request);
+
+      expect(response.status).toBe(401);
+    });
+
     it("deve criar um novo reward com sucesso", async () => {
       const newReward = {
         name: "Novo Reward",

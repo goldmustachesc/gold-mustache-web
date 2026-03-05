@@ -15,6 +15,12 @@ vi.mock("@/lib/prisma", () => {
   return { prisma };
 });
 
+vi.mock("../notification.service", () => ({
+  LoyaltyNotificationService: {
+    notifyTierUpgrade: vi.fn(),
+  },
+}));
+
 import { prisma } from "@/lib/prisma";
 import { LoyaltyService } from "../loyalty.service";
 import * as pointsCalculator from "../points.calculator";
@@ -104,7 +110,6 @@ describe("services/loyalty.service", () => {
         tier: LoyaltyTier.BRONZE,
       });
 
-      // pointsCalculator returns SILVER for 1000 points
       vi.spyOn(pointsCalculator, "determineTier").mockReturnValue(
         LoyaltyTier.SILVER,
       );
@@ -115,6 +120,15 @@ describe("services/loyalty.service", () => {
         where: { id: "acc-upgraded" },
         data: { tier: LoyaltyTier.SILVER },
       });
+
+      const { LoyaltyNotificationService } = await import(
+        "../notification.service"
+      );
+      expect(LoyaltyNotificationService.notifyTierUpgrade).toHaveBeenCalledWith(
+        "acc-upgraded",
+        LoyaltyTier.SILVER,
+        LoyaltyTier.BRONZE,
+      );
     });
   });
 

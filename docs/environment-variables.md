@@ -26,10 +26,22 @@ URL base do site (sem trailing slash).
 | Ambiente | Exemplo |
 |----------|---------|
 | Production | `https://www.goldmustachebarbearia.com.br` |
-| Staging | `https://staging-gold-mustache-web.vercel.app` |
+| Staging | `https://staging.goldmustachebarbearia.com.br` |
 | Development | `http://localhost:3001` |
 
-**Nota:** Se não definido, usa `VERCEL_URL` automaticamente em deployments Vercel.
+**Nota:** Se não definido, usa `VERCEL_URL` automaticamente em deployments Vercel. Trailing slashes e paths são normalizados automaticamente. Variantes www/non-www são aceitas automaticamente.
+
+### `ALLOWED_ORIGINS`
+
+Origens adicionais permitidas para verificação CSRF (server-only, não exposta ao cliente). Útil quando o domínio custom difere de `NEXT_PUBLIC_SITE_URL` (ex: staging com domínio próprio).
+
+```
+ALLOWED_ORIGINS="https://staging.goldmustachebarbearia.com.br,https://preview.goldmustachebarbearia.com.br"
+```
+
+- Separar múltiplas origens por vírgula
+- Variantes www/non-www são adicionadas automaticamente
+- Trailing slashes e paths são normalizados automaticamente
 
 ---
 
@@ -182,6 +194,8 @@ CRON_SECRET=seu-token-secreto-aqui
 
 ```
 NEXT_PUBLIC_ENVIRONMENT=staging
+NEXT_PUBLIC_SITE_URL=https://staging.goldmustachebarbearia.com.br
+ALLOWED_ORIGINS=https://staging.goldmustachebarbearia.com.br
 ```
 
 4. Selecione "Preview" como o ambiente de destino

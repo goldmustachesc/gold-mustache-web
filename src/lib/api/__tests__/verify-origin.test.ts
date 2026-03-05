@@ -121,6 +121,75 @@ describe("verifyOrigin", () => {
     });
   });
 
+  describe("ALLOWED_ORIGINS env var", () => {
+    it("should accept origin from comma-separated ALLOWED_ORIGINS", () => {
+      vi.stubEnv(
+        "NEXT_PUBLIC_SITE_URL",
+        "https://gold-mustache-web.vercel.app",
+      );
+      vi.stubEnv(
+        "ALLOWED_ORIGINS",
+        "https://staging.goldmustachebarbearia.com.br,https://preview.goldmustachebarbearia.com.br",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://www.staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("should accept non-www variant from ALLOWED_ORIGINS with www", () => {
+      vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+      vi.stubEnv(
+        "ALLOWED_ORIGINS",
+        "https://www.staging.goldmustachebarbearia.com.br",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("should normalize ALLOWED_ORIGINS entries with trailing slashes", () => {
+      vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+      vi.stubEnv(
+        "ALLOWED_ORIGINS",
+        "https://staging.goldmustachebarbearia.com.br/",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("should ignore empty entries in ALLOWED_ORIGINS", () => {
+      allowConsoleWarn();
+      vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+      vi.stubEnv("ALLOWED_ORIGINS", ",,");
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({ origin: "https://evil-site.com" }),
+      );
+
+      expect(result.valid).toBe(false);
+    });
+  });
+
   describe("development origins", () => {
     it("should accept localhost in development mode", () => {
       vi.stubEnv("NODE_ENV", "development");

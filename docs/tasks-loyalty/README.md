@@ -1,6 +1,6 @@
 # Loyalty Program — Phases 3 to 7
 
-Tasks para completar o sistema de fidelidade. Fases 1-6 estão implementadas. Fase 7 (refinamentos) pendente.
+Tasks para completar o sistema de fidelidade. Fases 1-7 implementadas. Task 013 (notificações) parcialmente concluída — falta integração de `notifyPointsExpiring`.
 
 **Todas as tasks seguem metodologia TDD (Red → Green → Refactor).**
 
@@ -70,29 +70,25 @@ pnpm test:gate         # Gate: lint + test + coverage checks
 | 008 | [Relatórios de fidelidade (admin)](./008-task-admin-loyalty-reports.md) | 6 | 🟡 Média | — | Route + hook + UI | ✅ |
 | 009 | [Fixes admin (tier + catálogo)](./009-task-admin-fixes-tier-catalog.md) | 6 | 🟠 Alta | — | Route + hook + UI | ✅ |
 | 010 | [Fix referral apply flow](./010-task-fix-referral-apply-flow.md) | 4 | 🔴 Crítica | 003 | Route + hook + UI | ✅ |
-| 011 | [Job expiração de pontos](./011-task-points-expiration-job.md) | 7 | 🟠 Alta | — | Service + route | 🔲 |
-| 012 | [Job bônus de aniversário](./012-task-birthday-bonus-job.md) | 7 | 🟡 Média | — | Service + route | 🔲 |
-| 013 | [Notificações de fidelidade](./013-task-loyalty-notifications.md) | 7 | 🟡 Média | 011, 012 | Service + integration | 🔲 |
+| 011 | [Job expiração de pontos](./011-task-points-expiration-job.md) | 7 | 🟠 Alta | — | Service + route | ✅ |
+| 012 | [Job bônus de aniversário](./012-task-birthday-bonus-job.md) | 7 | 🟡 Média | — | Service + route | ✅ |
+| 013 | [Notificações de fidelidade](./013-task-loyalty-notifications.md) | 7 | 🟡 Média | 011, 012 | Service + integration | ⚠️ |
 
 ## Ordem de execução recomendada
 
 ```
-✅ CONCLUÍDO (Fases 3-6):
+✅ CONCLUÍDO (Fases 3-7):
   001 → 002 → 006 → 007 ✅
   003 → 005 ✅
-  004, 009 ✅
+  004, 009, 010 ✅
   008 ✅
+  011, 012 ✅
 
-PENDENTE:
-  010 ✅ (fix referral apply — concluído)
-
-  011 (expiração de pontos — pode iniciar imediatamente)
-  012 (bônus aniversário — pode iniciar imediatamente)
-    ↓
-  013 (notificações — integra com todos os fluxos, incluindo 011 e 012)
+⚠️ PARCIAL:
+  013 (notificações — service + 5/6 integrações concluídas, falta wiring de notifyPointsExpiring)
 ```
 
-**Próxima prioridade:** 011 + 012 (podem ser paralelizados) → 013 (integra com tudo)
+**Próxima prioridade:** Completar 013 — wiring de `notifyPointsExpiring` no fluxo de expiração
 
 ## O que já existe (Fases 1-6)
 
@@ -111,7 +107,7 @@ PENDENTE:
 
 ## Bugs/gaps conhecidos
 
-1. **`applyReferral` nunca chamado** — validate endpoint não persiste `referredById` → Task 010
-2. **Pontos não expiram** — sem job de expiração → Task 011
-3. **Bônus de aniversário não implementado** — sem job de crédito → Task 012
-4. **Notificações de fidelidade não disparam** — enum existe mas nunca usado → Task 013
+1. ~~**`applyReferral` nunca chamado** — validate endpoint não persiste `referredById`~~ → Task 010 ✅
+2. ~~**Pontos não expiram** — sem job de expiração~~ → Task 011 ✅
+3. ~~**Bônus de aniversário não implementado** — sem job de crédito~~ → Task 012 ✅
+4. **`notifyPointsExpiring` nunca chamado** — método existe e está testado, mas nenhum fluxo o invoca → Task 013 ⚠️

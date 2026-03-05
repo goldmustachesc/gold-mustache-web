@@ -84,4 +84,19 @@ describe("POST /api/admin/loyalty/expire-points", () => {
 
     expect(mockExpirePoints).toHaveBeenCalledTimes(1);
   });
+
+  it("should return 500 when service throws unexpected error", async () => {
+    mockExpirePoints.mockRejectedValue(
+      new Error("Unexpected failure") as never,
+    );
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await POST(makeRequest());
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("INTERNAL_ERROR");
+
+    consoleSpy.mockRestore();
+  });
 });

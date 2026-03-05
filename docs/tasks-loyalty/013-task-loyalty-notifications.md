@@ -70,12 +70,12 @@ Adicionar chamadas de notificação nos pontos corretos:
 
 | Arquivo | Ação |
 |---------|------|
-| `src/services/loyalty/__tests__/notification.service.test.ts` | **Criar PRIMEIRO** — testes unitários |
-| `src/services/loyalty/notification.service.ts` | **Criar** — service de notificações |
-| `src/services/booking.ts` | **Modificar** — adicionar notificação de pontos |
-| `src/services/loyalty/loyalty.service.ts` | **Modificar** — notificar tier upgrade |
-| `src/services/loyalty/rewards.service.ts` | **Modificar** — notificar resgate |
-| `src/services/loyalty/referral.service.ts` | **Modificar** — notificar bônus referral |
+| `src/services/loyalty/__tests__/notification.service.test.ts` | ✅ **Criado** — testes unitários |
+| `src/services/loyalty/notification.service.ts` | ✅ **Criado** — service de notificações |
+| `src/services/booking.ts` | ✅ **Modificado** — notificação de pontos |
+| `src/services/loyalty/loyalty.service.ts` | ✅ **Modificado** — notificar tier upgrade |
+| `src/services/loyalty/rewards.service.ts` | ✅ **Modificado** — notificar resgate |
+| `src/services/loyalty/referral.service.ts` | ✅ **Modificado** — notificar bônus referral |
 
 ## Regras de negócio
 
@@ -98,32 +98,32 @@ Adicionar chamadas de notificação nos pontos corretos:
 #### Arquivo: `src/services/loyalty/__tests__/notification.service.test.ts`
 
 **Testes `notifyPointsEarned`:**
-- [ ] Deve criar Notification com tipo LOYALTY_POINTS_EARNED
-- [ ] Deve incluir pontos e descrição na mensagem
-- [ ] Deve usar userId correto (buscar do profile)
+- [x] Deve criar Notification com tipo LOYALTY_POINTS_EARNED
+- [x] Deve incluir pontos e descrição na mensagem
+- [x] Deve usar userId correto (buscar do profile)
 
 **Testes `notifyTierUpgrade`:**
-- [ ] Deve criar Notification com tipo LOYALTY_TIER_UPGRADE
-- [ ] Deve incluir nomes dos tiers na mensagem
+- [x] Deve criar Notification com tipo LOYALTY_TIER_UPGRADE
+- [x] Deve incluir nomes dos tiers na mensagem
 
 **Testes `notifyRewardRedeemed`:**
-- [ ] Deve criar Notification com tipo LOYALTY_REWARD_REDEEMED
-- [ ] Deve incluir nome da recompensa e código na mensagem
+- [x] Deve criar Notification com tipo LOYALTY_REWARD_REDEEMED
+- [x] Deve incluir nome da recompensa e código na mensagem
 
 **Testes `notifyPointsExpiring`:**
-- [ ] Deve criar Notification com tipo LOYALTY_POINTS_EXPIRING
-- [ ] Deve incluir quantidade e data formatada na mensagem
+- [x] Deve criar Notification com tipo LOYALTY_POINTS_EXPIRING
+- [x] Deve incluir quantidade e data formatada na mensagem
 
 **Testes `notifyReferralBonus`:**
-- [ ] Deve criar Notification com tipo LOYALTY_REFERRAL_BONUS
+- [x] Deve criar Notification com tipo LOYALTY_REFERRAL_BONUS
 
 **Testes `notifyBirthdayBonus`:**
-- [ ] Deve criar Notification com tipo LOYALTY_BIRTHDAY_BONUS
+- [x] Deve criar Notification com tipo LOYALTY_BIRTHDAY_BONUS
 
 **Teste de resiliência:**
-- [ ] Deve não propagar erro se `prisma.notification.create` falhar (fire-and-forget)
+- [x] Deve não propagar erro se `prisma.notification.create` falhar (fire-and-forget)
 
-- [ ] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
+- [x] Rodar `pnpm test` → confirmar que TODOS os testes falham (RED)
 
 ### Mocks necessários
 
@@ -138,21 +138,22 @@ vi.mock("@/lib/prisma", () => ({
 
 ### Fase GREEN — Implementar código mínimo para passar
 
-- [ ] Criar `notification.service.ts` com todas as funções
-- [ ] Rodar testes → GREEN
-- [ ] Integrar `notifyPointsEarned` no `booking.ts`
-- [ ] Integrar `notifyTierUpgrade` no `loyalty.service.ts`
-- [ ] Integrar `notifyRewardRedeemed` no `rewards.service.ts`
-- [ ] Integrar `notifyReferralBonus` no `referral.service.ts`
-- [ ] Rodar `pnpm test` → TODOS passam (GREEN)
+- [x] Criar `notification.service.ts` com todas as funções
+- [x] Rodar testes → GREEN
+- [x] Integrar `notifyPointsEarned` no `booking.ts`
+- [x] Integrar `notifyTierUpgrade` no `loyalty.service.ts`
+- [x] Integrar `notifyRewardRedeemed` no `rewards.service.ts`
+- [x] Integrar `notifyReferralBonus` no `referral.service.ts`
+- [ ] Integrar `notifyPointsExpiring` no fluxo de expiração (⚠️ pendente — método existe mas não é chamado)
+- [x] Rodar `pnpm test` → TODOS passam (GREEN)
 
 ### Fase REFACTOR — Limpar sem quebrar testes
 
-- [ ] Verificar que notificações não impactam performance dos fluxos principais
-- [ ] Extrair templates de mensagem em constantes
-- [ ] Verificar tipagem completa (sem `any`)
-- [ ] Rodar `pnpm test` → continua GREEN
-- [ ] `pnpm lint` ✅ e `pnpm build` ✅
+- [x] Verificar que notificações não impactam performance dos fluxos principais
+- [x] Extrair templates de mensagem em constantes
+- [x] Verificar tipagem completa (sem `any`)
+- [x] Rodar `pnpm test` → continua GREEN
+- [x] `pnpm lint` ✅ e `pnpm build` ✅
 
 ## Notas de implementação
 
@@ -160,4 +161,4 @@ vi.mock("@/lib/prisma", () => ({
 - Considerar um helper `safeNotify` que faz o try-catch genérico
 - Integração com tasks 011 (expiração) e 012 (aniversário) pode ser feita quando essas tasks forem implementadas
 
-## Status: 🔲 A FAZER
+## Status: ⚠️ PARCIAL — falta integração de `notifyPointsExpiring` no fluxo de expiração

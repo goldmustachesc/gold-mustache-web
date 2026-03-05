@@ -21,6 +21,12 @@ vi.mock("@/lib/prisma", () => {
   return { prisma };
 });
 
+vi.mock("../notification.service", () => ({
+  LoyaltyNotificationService: {
+    notifyRewardRedeemed: vi.fn(),
+  },
+}));
+
 import { prisma } from "@/lib/prisma";
 import { RewardsService } from "../rewards.service";
 
@@ -144,6 +150,34 @@ describe("services/loyalty/rewards.service", () => {
           expiresAt: addDays(NOW, LOYALTY_CONFIG.REDEMPTION_VALIDITY_DAYS),
         }),
       });
+
+      const { LoyaltyNotificationService } = await import(
+        "../notification.service"
+      );
+      expect(
+        LoyaltyNotificationService.notifyRewardRedeemed,
+      ).toHaveBeenCalledWith("acc-1", "Corte Grátis", "ABC123");
+    });
+
+    it("should throw when account is not found", async () => {
+      const tx = createTxMocks();
+      tx.loyaltyAccount.findUnique.mockResolvedValue(null);
+      setupTransaction(tx);
+
+      await expect(
+        RewardsService.redeemReward("acc-missing", "reward-1"),
+      ).rejects.toThrow("Conta de fidelidade não encontrada");
+    });
+
+    it("should throw when reward is not found", async () => {
+      const tx = createTxMocks();
+      tx.loyaltyAccount.findUnique.mockResolvedValue(createMockAccount());
+      tx.reward.findUnique.mockResolvedValue(null);
+      setupTransaction(tx);
+
+      await expect(
+        RewardsService.redeemReward("acc-1", "reward-missing"),
+      ).rejects.toThrow("Recompensa não encontrada");
     });
 
     it("should throw when balance is insufficient", async () => {
