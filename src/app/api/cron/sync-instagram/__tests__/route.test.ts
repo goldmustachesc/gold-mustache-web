@@ -210,7 +210,7 @@ describe("POST /api/cron/sync-instagram", () => {
 describe("GET /api/cron/sync-instagram", () => {
   it("returns 405 in production", async () => {
     const original = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
 
     const response = await GET();
     const body = await response.json();
@@ -218,7 +218,7 @@ describe("GET /api/cron/sync-instagram", () => {
     expect(response.status).toBe(405);
     expect(body.error).toBe("METHOD_NOT_ALLOWED");
 
-    process.env.NODE_ENV = original;
+    vi.stubEnv("NODE_ENV", original ?? "test");
   });
 
   it("returns usage instructions in development", async () => {
