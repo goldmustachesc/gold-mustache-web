@@ -16,11 +16,12 @@ vi.mock("@/constants/brand", () => ({
 }));
 
 const appointment = {
+  id: "apt-1",
   date: "2026-03-10",
   startTime: "09:00",
   endTime: "09:30",
-  service: { name: "Corte", duration: 30, price: 50 },
-  barber: { name: "Carlos" },
+  service: { id: "s-1", name: "Corte", duration: 30, price: 50 },
+  barber: { id: "b-1", name: "Carlos", avatarUrl: null },
 };
 
 describe("NextAppointmentCard", () => {

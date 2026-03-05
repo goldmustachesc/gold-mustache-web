@@ -8,23 +8,29 @@ vi.mock("@/utils/datetime", () => ({
   formatDateDdMmYyyyFromIsoDateLike: vi.fn().mockReturnValue("10/03/2026"),
 }));
 
-const appointment = {
+const appointment: AppointmentWithDetails = {
   id: "apt-1",
+  clientId: "c-1",
+  guestClientId: null,
+  barberId: "b-1",
+  serviceId: "s-1",
   date: "2026-03-10",
   startTime: "09:00",
   endTime: "09:30",
   status: "CONFIRMED",
+  cancelReason: null,
+  createdAt: "2026-03-09T10:00:00.000Z",
+  updatedAt: "2026-03-09T10:00:00.000Z",
+  client: { id: "c-1", fullName: "João", phone: "11999999999" },
+  guestClient: null,
   service: {
     id: "s-1",
     name: "Corte",
     duration: 30,
     price: 50,
-    slug: "corte",
-    description: null,
-    active: true,
   },
   barber: { id: "b-1", name: "Carlos", avatarUrl: null },
-} as AppointmentWithDetails;
+};
 
 describe("BookingConfirmation", () => {
   it("renders confirmation title", () => {

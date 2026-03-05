@@ -124,6 +124,7 @@ describe("/api/admin/loyalty/accounts/[accountId]/adjust", () => {
         lifetimePoints: 50,
         tier: "BRONZE",
         referralCode: "ABC123",
+        referredById: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -141,8 +142,16 @@ describe("/api/admin/loyalty/accounts/[accountId]/adjust", () => {
 
   describe("recalculateTier after adjustment", () => {
     async function setupSuccessfulAdjust(
-      initial: { currentPoints: number; lifetimePoints: number; tier: string },
-      updated: { currentPoints: number; lifetimePoints: number; tier: string },
+      initial: {
+        currentPoints: number;
+        lifetimePoints: number;
+        tier: "BRONZE" | "SILVER" | "GOLD" | "DIAMOND";
+      },
+      updated: {
+        currentPoints: number;
+        lifetimePoints: number;
+        tier: "BRONZE" | "SILVER" | "GOLD" | "DIAMOND";
+      },
       refreshedTier: string,
     ) {
       const { prisma } = await import("@/lib/prisma");
@@ -152,23 +161,25 @@ describe("/api/admin/loyalty/accounts/[accountId]/adjust", () => {
           id: VALID_UUID,
           profileId: "p-1",
           referralCode: "ABC123",
+          referredById: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           ...initial,
         })
-        .mockResolvedValueOnce({ tier: refreshedTier });
+        .mockResolvedValueOnce({ tier: refreshedTier } as never);
 
       vi.mocked(prisma.loyaltyAccount.update).mockResolvedValue({
         id: VALID_UUID,
         profileId: "p-1",
         referralCode: "ABC123",
+        referredById: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         ...updated,
       });
-      vi.mocked(prisma.pointTransaction.create).mockResolvedValue({});
-      vi.mocked(prisma.$transaction).mockImplementation((promises) =>
-        Promise.all(promises),
+      vi.mocked(prisma.pointTransaction.create).mockResolvedValue({} as never);
+      vi.mocked(prisma.$transaction).mockImplementation(
+        (promises) => Promise.all(promises as unknown as unknown[]) as never,
       );
       mockRecalculateTier.mockResolvedValue(undefined);
     }
