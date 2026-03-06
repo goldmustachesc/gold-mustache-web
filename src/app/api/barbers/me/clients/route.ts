@@ -69,16 +69,26 @@ export async function GET(request: Request) {
       },
     };
 
-    const [registeredClients, guestClients] = await Promise.all([
-      prisma.profile.findMany({
-        where: { appointments: { some: {} }, ...searchFilter },
-        select: clientSelect,
-      }),
-      prisma.guestClient.findMany({
-        where: { appointments: { some: {} }, ...searchFilter },
-        select: clientSelect,
-      }),
-    ]);
+    const registeredWhere = { appointments: { some: {} }, ...searchFilter };
+    const guestWhere = { appointments: { some: {} }, ...searchFilter };
+
+    const [registeredClients, guestClients, registeredCount, guestCount] =
+      await Promise.all([
+        prisma.profile.findMany({
+          where: registeredWhere,
+          select: clientSelect,
+          orderBy: { fullName: "asc" },
+          take: skip + limit,
+        }),
+        prisma.guestClient.findMany({
+          where: guestWhere,
+          select: clientSelect,
+          orderBy: { fullName: "asc" },
+          take: skip + limit,
+        }),
+        prisma.profile.count({ where: registeredWhere }),
+        prisma.guestClient.count({ where: guestWhere }),
+      ]);
 
     const allClients: ClientData[] = [
       ...registeredClients.map((client) => ({
@@ -105,7 +115,7 @@ export async function GET(request: Request) {
 
     allClients.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-    const total = allClients.length;
+    const total = registeredCount + guestCount;
     const paged = allClients.slice(skip, skip + limit);
 
     return apiCollection(paged, paginationMeta(total, page, limit));

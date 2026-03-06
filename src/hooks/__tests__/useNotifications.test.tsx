@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { useNotifications } from "../useNotifications";
 
 type ChannelCallback = (payload: { new: Record<string, unknown> }) => void;
@@ -62,6 +64,19 @@ const MOCK_API_RESPONSE = {
   meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
 };
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
+
 beforeEach(() => {
   channelCallback = null;
   vi.clearAllMocks();
@@ -76,7 +91,9 @@ afterEach(() => {
 
 describe("useNotifications", () => {
   it("returns empty state when userId is null", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: null }));
+    const { result } = renderHook(() => useNotifications({ userId: null }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.notifications).toEqual([]);
@@ -85,7 +102,9 @@ describe("useNotifications", () => {
   });
 
   it("fetches notifications from API on mount", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(mockApiGet).toHaveBeenCalledWith(
@@ -94,7 +113,9 @@ describe("useNotifications", () => {
   });
 
   it("sets notifications and unreadCount from response", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.notifications).toHaveLength(2);
@@ -103,7 +124,9 @@ describe("useNotifications", () => {
   });
 
   it("subscribes to Supabase realtime channel", async () => {
-    renderHook(() => useNotifications({ userId: "u-1" }));
+    renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(mockChannel).toHaveBeenCalledWith("notifications:u-1");
@@ -121,8 +144,9 @@ describe("useNotifications", () => {
   });
 
   it("adds new notification to list on realtime INSERT", async () => {
-    const { result } = renderHook(() =>
-      useNotifications({ userId: "u-1", page: 1 }),
+    const { result } = renderHook(
+      () => useNotifications({ userId: "u-1", page: 1 }),
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -143,12 +167,16 @@ describe("useNotifications", () => {
       });
     });
 
-    expect(result.current.notifications).toHaveLength(3);
-    expect(result.current.notifications[0].id).toBe("n-3");
+    await waitFor(() => {
+      expect(result.current.notifications).toHaveLength(3);
+      expect(result.current.notifications[0].id).toBe("n-3");
+    });
   });
 
   it("increments unreadCount on unread realtime notification", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.unreadCount).toBe(1);
@@ -168,14 +196,15 @@ describe("useNotifications", () => {
       });
     });
 
-    expect(result.current.unreadCount).toBe(2);
+    await waitFor(() => expect(result.current.unreadCount).toBe(2));
   });
 
   it("calls onNewNotification callback on realtime INSERT", async () => {
     const onNew = vi.fn();
 
-    renderHook(() =>
-      useNotifications({ userId: "u-1", onNewNotification: onNew }),
+    renderHook(
+      () => useNotifications({ userId: "u-1", onNewNotification: onNew }),
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => expect(mockApiGet).toHaveBeenCalled());
@@ -201,7 +230,9 @@ describe("useNotifications", () => {
   });
 
   it("markAsRead calls server action and updates state", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -210,12 +241,16 @@ describe("useNotifications", () => {
     });
 
     expect(mockMarkAsRead).toHaveBeenCalledWith("n-1");
-    const updated = result.current.notifications.find((n) => n.id === "n-1");
-    expect(updated?.read).toBe(true);
+    await waitFor(() => {
+      const updated = result.current.notifications.find((n) => n.id === "n-1");
+      expect(updated?.read).toBe(true);
+    });
   });
 
   it("markAsRead decrements unreadCount", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.unreadCount).toBe(1);
@@ -224,11 +259,13 @@ describe("useNotifications", () => {
       await result.current.markAsRead("n-1");
     });
 
-    expect(result.current.unreadCount).toBe(0);
+    await waitFor(() => expect(result.current.unreadCount).toBe(0));
   });
 
   it("markAllAsRead calls server action and marks all read", async () => {
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -237,14 +274,18 @@ describe("useNotifications", () => {
     });
 
     expect(mockMarkAllAsRead).toHaveBeenCalled();
-    expect(result.current.notifications.every((n) => n.read)).toBe(true);
-    expect(result.current.unreadCount).toBe(0);
+    await waitFor(() => {
+      expect(result.current.notifications.every((n) => n.read)).toBe(true);
+      expect(result.current.unreadCount).toBe(0);
+    });
   });
 
   it("handles API error gracefully", async () => {
     mockApiGet.mockRejectedValueOnce(new Error("Network error"));
 
-    const { result } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.error).toBeInstanceOf(Error);
@@ -252,7 +293,9 @@ describe("useNotifications", () => {
   });
 
   it("unsubscribes from channel on unmount", async () => {
-    const { unmount } = renderHook(() => useNotifications({ userId: "u-1" }));
+    const { unmount } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(mockChannel).toHaveBeenCalled());
 

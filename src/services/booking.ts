@@ -58,10 +58,20 @@ async function getBookingPolicyError(params: {
 
   const dayOfWeek = appointmentDateLocal.getDay();
 
-  // Shop-wide hours gate (checked first for fallback)
-  const shopHours = await prisma.shopHours.findUnique({
-    where: { dayOfWeek },
-  });
+  const [shopHours, workingHours, shopClosures, absences] = await Promise.all([
+    prisma.shopHours.findUnique({ where: { dayOfWeek } }),
+    prisma.workingHours.findUnique({
+      where: { barberId_dayOfWeek: { barberId, dayOfWeek } },
+    }),
+    prisma.shopClosure.findMany({
+      where: { date: appointmentDateDb },
+      select: { startTime: true, endTime: true },
+    }),
+    prisma.barberAbsence.findMany({
+      where: { barberId, date: appointmentDateDb },
+      select: { startTime: true, endTime: true },
+    }),
+  ]);
 
   if (
     !shopHours ||
@@ -72,17 +82,6 @@ async function getBookingPolicyError(params: {
     return "SHOP_CLOSED";
   }
 
-  // Barber working hours - fallback to shop hours if not configured
-  const workingHours = await prisma.workingHours.findUnique({
-    where: {
-      barberId_dayOfWeek: {
-        barberId,
-        dayOfWeek,
-      },
-    },
-  });
-
-  // Use barber's working hours if available, otherwise use shop hours as fallback
   const effectiveHours = workingHours
     ? {
         startTime: workingHours.startTime,
@@ -97,7 +96,6 @@ async function getBookingPolicyError(params: {
         breakEnd: shopHours.breakEnd,
       };
 
-  // Pure policy: validate slot is within working hours and aligned to slot grid (incl. break)
   const workingHoursError = getWorkingHoursSlotError({
     workingStartTime: effectiveHours.startTime,
     workingEndTime: effectiveHours.endTime,
@@ -107,18 +105,6 @@ async function getBookingPolicyError(params: {
     durationMinutes: serviceDuration,
   });
   if (workingHoursError) return workingHoursError;
-
-  // Shop closures (date-specific)
-  const shopClosures = await prisma.shopClosure.findMany({
-    where: { date: appointmentDateDb },
-    select: { startTime: true, endTime: true },
-  });
-
-  // Barber absences (date-specific)
-  const absences = await prisma.barberAbsence.findMany({
-    where: { barberId, date: appointmentDateDb },
-    select: { startTime: true, endTime: true },
-  });
 
   const shopError = getShopSlotError({
     slotStartTime: startTime,
@@ -251,20 +237,41 @@ export async function getAvailableSlots(
   const dayOfWeek = businessDate.getUTCDay();
   const dateForDb = parseDateStringToUTC(dateStr);
 
-  // Get service duration
-  const service = await prisma.service.findUnique({
-    where: { id: serviceId },
-    select: { duration: true },
-  });
+  const [
+    service,
+    shopHours,
+    shopClosures,
+    absences,
+    workingHours,
+    existingAppointments,
+  ] = await Promise.all([
+    prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { duration: true },
+    }),
+    prisma.shopHours.findUnique({ where: { dayOfWeek } }),
+    prisma.shopClosure.findMany({
+      where: { date: dateForDb },
+      select: { startTime: true, endTime: true },
+    }),
+    prisma.barberAbsence.findMany({
+      where: { barberId, date: dateForDb },
+      select: { startTime: true, endTime: true },
+    }),
+    prisma.workingHours.findUnique({
+      where: { barberId_dayOfWeek: { barberId, dayOfWeek } },
+    }),
+    prisma.appointment.findMany({
+      where: {
+        barberId,
+        date: dateForDb,
+        status: AppointmentStatus.CONFIRMED,
+      },
+      select: { startTime: true, endTime: true, status: true },
+    }),
+  ]);
 
-  if (!service) {
-    return []; // Service not found
-  }
-
-  // Shop-wide hours gate
-  const shopHours = await prisma.shopHours.findUnique({
-    where: { dayOfWeek },
-  });
+  if (!service) return [];
 
   if (
     !shopHours ||
@@ -272,40 +279,12 @@ export async function getAvailableSlots(
     !shopHours.startTime ||
     !shopHours.endTime
   ) {
-    return []; // Shop closed on this day
+    return [];
   }
 
-  // Shop closures (date-specific)
-  const shopClosures = await prisma.shopClosure.findMany({
-    where: { date: dateForDb },
-    select: { startTime: true, endTime: true },
-  });
+  if (shopClosures.some((c) => !c.startTime || !c.endTime)) return [];
+  if (absences.some((a) => !a.startTime || !a.endTime)) return [];
 
-  if (shopClosures.some((c) => !c.startTime || !c.endTime)) {
-    return []; // Shop closed all day
-  }
-
-  // Barber absences (date-specific)
-  const absences = await prisma.barberAbsence.findMany({
-    where: { barberId, date: dateForDb },
-    select: { startTime: true, endTime: true },
-  });
-
-  if (absences.some((a) => !a.startTime || !a.endTime)) {
-    return []; // Barber absent all day
-  }
-
-  // Get barber's working hours for this day
-  const workingHours = await prisma.workingHours.findUnique({
-    where: {
-      barberId_dayOfWeek: {
-        barberId,
-        dayOfWeek,
-      },
-    },
-  });
-
-  // Use barber's working hours if available, otherwise use shop hours as fallback
   const effectiveHours = workingHours
     ? {
         startTime: workingHours.startTime,
@@ -319,20 +298,6 @@ export async function getAvailableSlots(
         breakStart: shopHours.breakStart,
         breakEnd: shopHours.breakEnd,
       };
-
-  // Get existing appointments for this date and barber
-  const existingAppointments = await prisma.appointment.findMany({
-    where: {
-      barberId,
-      date: dateForDb,
-      status: AppointmentStatus.CONFIRMED,
-    },
-    select: {
-      startTime: true,
-      endTime: true,
-      status: true,
-    },
-  });
 
   // Generate slots based on service duration
   const allSlots = generateTimeSlots({

@@ -31,7 +31,12 @@ export async function GET(request: Request) {
       orderBy: { name: "asc" },
     });
 
-    return apiSuccess(barbers);
+    const response = apiSuccess(barbers);
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=300",
+    );
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar barbeiros");
   }

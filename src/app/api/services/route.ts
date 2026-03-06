@@ -26,7 +26,12 @@ export async function GET(request: Request) {
 
     const services = await getServices(barberId);
 
-    return apiSuccess(services);
+    const response = apiSuccess(services);
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=300",
+    );
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar serviços");
   }

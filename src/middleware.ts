@@ -1,6 +1,7 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 import { defaultLocale, locales } from "./i18n/config";
+import { isPublicApiRoute } from "./lib/middleware/public-routes";
 import { updateSession } from "./lib/supabase/middleware";
 
 const intlMiddleware = createIntlMiddleware({
@@ -9,10 +10,8 @@ const intlMiddleware = createIntlMiddleware({
   localePrefix: "always",
 });
 
-// Routes that require authentication
 const protectedRoutes = ["/dashboard", "/profile", "/barbeiro", "/admin"];
 
-// Routes that should redirect to dashboard if already authenticated
 const authRoutes = ["/login", "/signup", "/reset-password"];
 
 function getPathnameWithoutLocale(pathname: string): string {
@@ -23,10 +22,12 @@ function getPathnameWithoutLocale(pathname: string): string {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Handle Supabase auth session refresh
+  if (pathname.startsWith("/api") && isPublicApiRoute(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   const { supabaseResponse, user } = await updateSession(request);
 
-  // Skip i18n middleware for API routes, but keep session refresh
   if (pathname.startsWith("/api")) {
     return supabaseResponse;
   }

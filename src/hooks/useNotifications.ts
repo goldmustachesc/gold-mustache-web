@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { NotificationData } from "@/types/booking";
 import type { PaginationMeta } from "@/types/api";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { apiGet } from "@/lib/api/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   markNotificationAsRead as markNotificationAsReadAction,
   markAllNotificationsAsRead as markAllNotificationsAsReadAction,
@@ -16,6 +17,12 @@ interface UseNotificationsOptions {
   page?: number;
   limit?: number;
   onNewNotification?: (notification: NotificationData) => void;
+}
+
+interface NotificationsResponse {
+  notifications: NotificationData[];
+  unreadCount: number;
+  meta: PaginationMeta;
 }
 
 interface UseNotificationsReturn {
@@ -29,75 +36,88 @@ interface UseNotificationsReturn {
   refetch: () => Promise<void>;
 }
 
+function notificationsQueryKey(
+  userId: string | null,
+  page: number,
+  limit: number,
+) {
+  return ["notifications", userId, page, limit] as const;
+}
+
 export function useNotifications({
   userId,
   page = 1,
   limit = 20,
   onNewNotification,
 }: UseNotificationsOptions): UseNotificationsReturn {
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
+  const queryClient = useQueryClient();
   const pageRef = useRef(page);
   pageRef.current = page;
 
   const supabase = useMemo(() => createClient(), []);
 
-  const fetchNotifications = useCallback(async () => {
-    if (!userId) {
-      setNotifications([]);
-      setUnreadCount(0);
-      setMeta(null);
-      setIsLoading(false);
-      return;
-    }
+  const queryKey = useMemo(
+    () => notificationsQueryKey(userId, page, limit),
+    [userId, page, limit],
+  );
 
-    try {
-      setIsLoading(true);
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: rqRefetch,
+  } = useQuery({
+    queryKey,
+    queryFn: async () => {
       const params = new URLSearchParams();
       params.set("page", page.toString());
       params.set("limit", limit.toString());
+      return apiGet<NotificationsResponse>(`/api/notifications?${params}`);
+    },
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
 
-      const data = await apiGet<{
-        notifications: NotificationData[];
-        unreadCount: number;
-        meta: PaginationMeta;
-      }>(`/api/notifications?${params}`);
-      setNotifications(data.notifications);
-      setUnreadCount(data.unreadCount);
-      setMeta(data.meta);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Unknown error"));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, page, limit]);
+  const notifications = data?.notifications ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
+  const meta = data?.meta ?? null;
 
-  const markAsRead = useCallback(async (notificationId: string) => {
-    try {
-      const result = await markNotificationAsReadAction(notificationId);
-      if (!result.success) {
-        console.error("Failed to mark notification as read:", result.error);
-        return;
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      try {
+        const result = await markNotificationAsReadAction(notificationId);
+        if (!result.success) {
+          console.error("Failed to mark notification as read:", result.error);
+          return;
+        }
+
+        queryClient.setQueryData(
+          queryKey,
+          (old: NotificationsResponse | undefined) => {
+            if (!old) return old;
+            let decremented = false;
+            const updated = old.notifications.map((n) => {
+              if (n.id === notificationId && !n.read) {
+                decremented = true;
+                return { ...n, read: true };
+              }
+              return n;
+            });
+            return {
+              ...old,
+              notifications: updated,
+              unreadCount: decremented
+                ? Math.max(0, old.unreadCount - 1)
+                : old.unreadCount,
+            };
+          },
+        );
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
       }
-
-      setNotifications((prev) =>
-        prev.map((n) => {
-          if (n.id === notificationId && !n.read) {
-            setUnreadCount((c) => Math.max(0, c - 1));
-            return { ...n, read: true };
-          }
-          return n;
-        }),
-      );
-    } catch (err) {
-      console.error("Failed to mark notification as read:", err);
-    }
-  }, []);
+    },
+    [queryClient, queryKey],
+  );
 
   const markAllAsRead = useCallback(async () => {
     if (!userId) return;
@@ -112,12 +132,21 @@ export function useNotifications({
         return;
       }
 
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
+      queryClient.setQueryData(
+        queryKey,
+        (old: NotificationsResponse | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            notifications: old.notifications.map((n) => ({ ...n, read: true })),
+            unreadCount: 0,
+          };
+        },
+      );
     } catch (err) {
       console.error("Failed to mark all notifications as read:", err);
     }
-  }, [userId]);
+  }, [userId, queryClient, queryKey]);
 
   useEffect(() => {
     if (!userId || !supabase) return;
@@ -147,12 +176,22 @@ export function useNotifications({
               createdAt: payload.new.created_at,
             };
 
-            if (pageRef.current === 1) {
-              setNotifications((prev) => [newNotification, ...prev]);
-            }
-            if (!newNotification.read) {
-              setUnreadCount((c) => c + 1);
-            }
+            queryClient.setQueryData(
+              queryKey,
+              (old: NotificationsResponse | undefined) => {
+                if (!old) return old;
+                return {
+                  ...old,
+                  notifications:
+                    pageRef.current === 1
+                      ? [newNotification, ...old.notifications]
+                      : old.notifications,
+                  unreadCount: newNotification.read
+                    ? old.unreadCount
+                    : old.unreadCount + 1,
+                };
+              },
+            );
             onNewNotification?.(newNotification);
           },
         )
@@ -166,20 +205,20 @@ export function useNotifications({
         supabase.removeChannel(channel);
       }
     };
-  }, [userId, supabase, onNewNotification]);
+  }, [userId, supabase, onNewNotification, queryClient, queryKey]);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+  const refetch = useCallback(async () => {
+    await rqRefetch();
+  }, [rqRefetch]);
 
   return {
     notifications,
     unreadCount,
     isLoading,
-    error,
+    error: error as Error | null,
     meta,
     markAsRead,
     markAllAsRead,
-    refetch: fetchNotifications,
+    refetch,
   };
 }

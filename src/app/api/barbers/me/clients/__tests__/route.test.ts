@@ -15,11 +15,13 @@ vi.mock("@/lib/prisma", () => ({
     profile: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      count: vi.fn(),
     },
     guestClient: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
@@ -100,6 +102,8 @@ describe("GET /api/barbers/me/clients", () => {
     vi.mocked(prisma.guestClient.findMany).mockResolvedValue([
       GUEST_CLIENT,
     ] as never);
+    vi.mocked(prisma.profile.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.guestClient.count).mockResolvedValue(1 as never);
 
     const response = await GET(createGetRequest());
     const json = await response.json();
@@ -120,6 +124,8 @@ describe("GET /api/barbers/me/clients", () => {
     vi.mocked(prisma.guestClient.findMany).mockResolvedValue([
       { ...GUEST_CLIENT, fullName: "André" },
     ] as never);
+    vi.mocked(prisma.profile.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.guestClient.count).mockResolvedValue(1 as never);
 
     const response = await GET(createGetRequest());
     const json = await response.json();
@@ -134,6 +140,8 @@ describe("GET /api/barbers/me/clients", () => {
       { ...REGISTERED_CLIENT, fullName: null },
     ] as never);
     vi.mocked(prisma.guestClient.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.profile.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.guestClient.count).mockResolvedValue(0 as never);
 
     const response = await GET(createGetRequest());
     const json = await response.json();

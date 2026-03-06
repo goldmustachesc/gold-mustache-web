@@ -187,8 +187,10 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const messages = await getMessages();
-  const settings = await getBarbershopSettings();
+  const [messages, settings] = await Promise.all([
+    getMessages(),
+    getBarbershopSettings(),
+  ]);
 
   return (
     <html lang={locale} suppressHydrationWarning>

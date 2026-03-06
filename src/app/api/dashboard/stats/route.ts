@@ -24,19 +24,18 @@ export async function GET() {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
-    // Get user profile and role
-    const profile = await prisma.profile.findUnique({
-      where: { userId: user.id },
-    });
+    const [profile, barberProfile] = await Promise.all([
+      prisma.profile.findUnique({
+        where: { userId: user.id },
+      }),
+      prisma.barber.findUnique({
+        where: { userId: user.id },
+      }),
+    ]);
 
     if (!profile) {
       return apiError("NOT_FOUND", "Perfil não encontrado", 404);
     }
-
-    // Get barber profile if exists
-    const barberProfile = await prisma.barber.findUnique({
-      where: { userId: user.id },
-    });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -56,17 +55,26 @@ export async function GET() {
       admin: null,
     };
 
-    // Client stats (for all users including barbers when viewing as client)
-    const clientAppointments = await prisma.appointment.findMany({
-      where: {
-        clientId: profile.id,
-      },
-      include: {
-        barber: true,
-        service: true,
-      },
-      orderBy: { date: "desc" },
-    });
+    const MAX_CLIENT_HISTORY = 200;
+
+    const [clientAppointments, barberAppointments] = await Promise.all([
+      prisma.appointment.findMany({
+        where: { clientId: profile.id },
+        include: { barber: true, service: true },
+        orderBy: { date: "desc" },
+        take: MAX_CLIENT_HISTORY,
+      }),
+      barberProfile
+        ? prisma.appointment.findMany({
+            where: {
+              barberId: barberProfile.id,
+              date: { gte: startOfWeek, lte: endOfWeek },
+            },
+            include: { client: true, guestClient: true, service: true },
+            orderBy: [{ date: "asc" }, { startTime: "asc" }],
+          })
+        : Promise.resolve(null),
+    ]);
 
     // Upcoming appointments (future confirmed)
     const upcomingAppointments = clientAppointments
@@ -183,25 +191,7 @@ export async function GET() {
         : null,
     };
 
-    // Barber stats
-    if (barberProfile) {
-      const barberAppointments = await prisma.appointment.findMany({
-        where: {
-          barberId: barberProfile.id,
-          date: {
-            gte: startOfWeek,
-            lte: endOfWeek,
-          },
-        },
-        include: {
-          client: true,
-          guestClient: true,
-          service: true,
-        },
-        orderBy: [{ date: "asc" }, { startTime: "asc" }],
-      });
-
-      // Today's appointments
+    if (barberAppointments) {
       const todayAppointments = barberAppointments.filter(
         (apt) =>
           formatPrismaDateToString(apt.date) === todayStr &&
@@ -262,38 +252,27 @@ export async function GET() {
       };
     }
 
-    // Admin stats
     if (profile.role === "ADMIN") {
-      const allTodayAppointments = await prisma.appointment.findMany({
-        where: {
-          date: today,
-          status: "CONFIRMED",
-        },
-        include: {
-          service: true,
-        },
-      });
-
-      const allWeekAppointments = await prisma.appointment.findMany({
-        where: {
-          date: {
-            gte: startOfWeek,
-            lte: endOfWeek,
+      const [
+        allTodayAppointments,
+        allWeekAppointments,
+        activeBarbers,
+        totalClients,
+      ] = await Promise.all([
+        prisma.appointment.findMany({
+          where: { date: today, status: "CONFIRMED" },
+          include: { service: { select: { price: true } } },
+        }),
+        prisma.appointment.findMany({
+          where: {
+            date: { gte: startOfWeek, lte: endOfWeek },
+            status: "CONFIRMED",
           },
-          status: "CONFIRMED",
-        },
-        include: {
-          service: true,
-        },
-      });
-
-      const activeBarbers = await prisma.barber.count({
-        where: { active: true },
-      });
-
-      const totalClients = await prisma.profile.count({
-        where: { role: "CLIENT" },
-      });
+          include: { service: { select: { price: true } } },
+        }),
+        prisma.barber.count({ where: { active: true } }),
+        prisma.profile.count({ where: { role: "CLIENT" } }),
+      ]);
 
       stats.admin = {
         todayAppointments: allTodayAppointments.length,

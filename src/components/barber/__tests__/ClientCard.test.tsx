@@ -12,7 +12,7 @@ const REGISTERED_CLIENT = {
   fullName: "João Silva",
   phone: "47996358807",
   type: "registered" as const,
-  totalAppointments: 5,
+  appointmentCount: 5,
   lastAppointment: "2026-03-01",
 };
 
@@ -21,7 +21,7 @@ const GUEST_CLIENT = {
   fullName: "Maria Santos",
   phone: "4733221100",
   type: "guest" as const,
-  totalAppointments: 1,
+  appointmentCount: 1,
   lastAppointment: "2026-02-15",
 };
 
