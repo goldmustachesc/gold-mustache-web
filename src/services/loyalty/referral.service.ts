@@ -32,29 +32,31 @@ async function applyReferral(
   referrerId: string,
   referredAccountId: string,
 ): Promise<void> {
-  const referrer = await prisma.loyaltyAccount.findUnique({
-    where: { id: referrerId },
-  });
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const referrer = await tx.loyaltyAccount.findUnique({
+      where: { id: referrerId },
+    });
 
-  if (!referrer) {
-    throw new Error("Conta do indicador não encontrada");
-  }
+    if (!referrer) {
+      throw new Error("Conta do indicador não encontrada");
+    }
 
-  const referred = await prisma.loyaltyAccount.findUnique({
-    where: { id: referredAccountId },
-  });
+    const referred = await tx.loyaltyAccount.findUnique({
+      where: { id: referredAccountId },
+    });
 
-  if (!referred) {
-    throw new Error("Conta do indicado não encontrada");
-  }
+    if (!referred) {
+      throw new Error("Conta do indicado não encontrada");
+    }
 
-  if (referred.referredById) {
-    throw new Error("Esta conta já foi indicada por outro usuário");
-  }
+    if (referred.referredById) {
+      throw new Error("Esta conta já foi indicada por outro usuário");
+    }
 
-  await prisma.loyaltyAccount.update({
-    where: { id: referredAccountId },
-    data: { referredById: referrerId },
+    await tx.loyaltyAccount.update({
+      where: { id: referredAccountId },
+      data: { referredById: referrerId },
+    });
   });
 }
 

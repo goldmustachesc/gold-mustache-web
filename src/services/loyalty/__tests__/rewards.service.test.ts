@@ -410,5 +410,14 @@ describe("services/loyalty/rewards.service", () => {
         RewardsService.markRedemptionAsUsed("NONEXIST"),
       ).rejects.toThrow("Código de resgate não encontrado");
     });
+
+    it("should throw when findUnique returns null after successful updateMany (race condition)", async () => {
+      asMock(prisma.redemption.updateMany).mockResolvedValue({ count: 1 });
+      asMock(prisma.redemption.findUnique).mockResolvedValue(null);
+
+      await expect(
+        RewardsService.markRedemptionAsUsed("ABC123"),
+      ).rejects.toThrow("Código de resgate não encontrado");
+    });
   });
 });

@@ -67,12 +67,36 @@ function createRequest(body = {}) {
   );
 }
 
+function createRequestWithRawBody(rawBody: string) {
+  return new Request(
+    `http://localhost:3001/api/appointments/${APT_ID}/cancel`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: rawBody,
+    },
+  );
+}
+
 const routeParams = { params: Promise.resolve({ id: APT_ID }) };
 
 describe("PATCH /api/appointments/[id]/cancel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireValidOrigin.mockReturnValue(null);
+  });
+
+  it("returns 400 when request body is not valid JSON", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+
+    const response = await PATCH(
+      createRequestWithRawBody("invalid-json{"),
+      routeParams,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("INVALID_JSON");
   });
 
   it("returns 401 when user is not authenticated", async () => {

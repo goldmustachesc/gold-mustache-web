@@ -131,6 +131,7 @@ describe("/api/loyalty/transactions", () => {
       expect(data.meta).toMatchObject({
         total: 1,
         page: 1,
+        limit: 20,
         totalPages: 1,
       });
     });
@@ -179,6 +180,63 @@ describe("/api/loyalty/transactions", () => {
       expect(response.status).toBe(200);
       expect(data.data).toEqual([]);
       expect(data.meta.total).toBe(0);
+    });
+
+    it("should cap limit to 100 when a larger value is provided", async () => {
+      authenticatedUser();
+      mockProfile();
+      mockAccount();
+
+      vi.mocked(prisma.pointTransaction.findMany).mockResolvedValue(
+        [] as never,
+      );
+      vi.mocked(prisma.pointTransaction.count).mockResolvedValue(0);
+
+      const response = await GET(createGetRequest({ limit: "500" }));
+      const data = await response.json();
+
+      expect(data.meta.limit).toBe(100);
+      expect(prisma.pointTransaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100 }),
+      );
+    });
+
+    it("should default to page 1 and limit 20 for invalid params", async () => {
+      authenticatedUser();
+      mockProfile();
+      mockAccount();
+
+      vi.mocked(prisma.pointTransaction.findMany).mockResolvedValue(
+        [] as never,
+      );
+      vi.mocked(prisma.pointTransaction.count).mockResolvedValue(0);
+
+      const response = await GET(
+        createGetRequest({ page: "abc", limit: "xyz" }),
+      );
+      const data = await response.json();
+
+      expect(data.meta.page).toBe(1);
+      expect(data.meta.limit).toBe(20);
+      expect(prisma.pointTransaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0, take: 20 }),
+      );
+    });
+
+    it("should clamp negative page to 1", async () => {
+      authenticatedUser();
+      mockProfile();
+      mockAccount();
+
+      vi.mocked(prisma.pointTransaction.findMany).mockResolvedValue(
+        [] as never,
+      );
+      vi.mocked(prisma.pointTransaction.count).mockResolvedValue(0);
+
+      const response = await GET(createGetRequest({ page: "-5" }));
+      const data = await response.json();
+
+      expect(data.meta.page).toBe(1);
     });
   });
 });

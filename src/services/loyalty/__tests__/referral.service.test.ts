@@ -106,31 +106,49 @@ describe("services/loyalty/referral.service", () => {
   });
 
   describe("applyReferral", () => {
-    it("should update referredById on the referred account", async () => {
+    function createApplyTxMocks() {
+      return {
+        loyaltyAccount: { findUnique: vi.fn(), update: vi.fn() },
+      };
+    }
+
+    function setupApplyTransaction(tx: ReturnType<typeof createApplyTxMocks>) {
+      asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+        return await (cb as (t: typeof tx) => Promise<unknown>)(tx);
+      });
+    }
+
+    it("should execute all reads and write inside a single transaction", async () => {
+      const tx = createApplyTxMocks();
       const referrer = createMockAccount({ id: "acc-referrer" });
       const referred = createMockAccount({
         id: "acc-referred",
         referredById: null,
       });
 
-      asMock(prisma.loyaltyAccount.findUnique)
+      tx.loyaltyAccount.findUnique
         .mockResolvedValueOnce(referrer)
         .mockResolvedValueOnce(referred);
-      asMock(prisma.loyaltyAccount.update).mockResolvedValue({
+      tx.loyaltyAccount.update.mockResolvedValue({
         ...referred,
         referredById: "acc-referrer",
       });
+      setupApplyTransaction(tx);
 
       await ReferralService.applyReferral("acc-referrer", "acc-referred");
 
-      expect(prisma.loyaltyAccount.update).toHaveBeenCalledWith({
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(tx.loyaltyAccount.findUnique).toHaveBeenCalledTimes(2);
+      expect(tx.loyaltyAccount.update).toHaveBeenCalledWith({
         where: { id: "acc-referred" },
         data: { referredById: "acc-referrer" },
       });
     });
 
     it("should throw when referrer does not exist", async () => {
-      asMock(prisma.loyaltyAccount.findUnique).mockResolvedValueOnce(null);
+      const tx = createApplyTxMocks();
+      tx.loyaltyAccount.findUnique.mockResolvedValueOnce(null);
+      setupApplyTransaction(tx);
 
       await expect(
         ReferralService.applyReferral("acc-nonexistent", "acc-referred"),
@@ -138,11 +156,13 @@ describe("services/loyalty/referral.service", () => {
     });
 
     it("should throw when referred account does not exist", async () => {
+      const tx = createApplyTxMocks();
       const referrer = createMockAccount({ id: "acc-referrer" });
 
-      asMock(prisma.loyaltyAccount.findUnique)
+      tx.loyaltyAccount.findUnique
         .mockResolvedValueOnce(referrer)
         .mockResolvedValueOnce(null);
+      setupApplyTransaction(tx);
 
       await expect(
         ReferralService.applyReferral("acc-referrer", "acc-nonexistent"),
@@ -150,15 +170,17 @@ describe("services/loyalty/referral.service", () => {
     });
 
     it("should throw when referred already has referredById set", async () => {
+      const tx = createApplyTxMocks();
       const referrer = createMockAccount({ id: "acc-referrer" });
       const referred = createMockAccount({
         id: "acc-referred",
         referredById: "acc-someone-else",
       });
 
-      asMock(prisma.loyaltyAccount.findUnique)
+      tx.loyaltyAccount.findUnique
         .mockResolvedValueOnce(referrer)
         .mockResolvedValueOnce(referred);
+      setupApplyTransaction(tx);
 
       await expect(
         ReferralService.applyReferral("acc-referrer", "acc-referred"),

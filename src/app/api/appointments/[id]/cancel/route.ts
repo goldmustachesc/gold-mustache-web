@@ -32,7 +32,12 @@ export async function PATCH(
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
     }
 
-    const body = await request.json();
+    let body: Record<string, unknown> = {};
+    try {
+      body = await request.json();
+    } catch {
+      return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
+    }
     const { reason } = body;
 
     // Fetch the appointment first to determine the correct cancellation path
@@ -72,7 +77,7 @@ export async function PATCH(
       const appointment = await cancelAppointmentByBarber(
         appointmentId,
         barber.id,
-        reason,
+        validation.data.reason,
       );
 
       // Notify client (appointment.date comes as "YYYY-MM-DD" from service)
@@ -90,7 +95,7 @@ export async function PATCH(
             barberName: appointment.barber.name,
             date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
             time: appointment.startTime,
-            reason,
+            reason: validation.data.reason,
           });
         }
       }

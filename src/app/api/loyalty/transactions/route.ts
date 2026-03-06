@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 import { apiError, apiCollection } from "@/lib/api/response";
+import { parsePagination, paginationMeta } from "@/lib/api/pagination";
 
 export async function GET(request: Request) {
   try {
@@ -16,9 +17,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(searchParams);
 
     const profile = await prisma.profile.findUnique({
       where: { userId: user.id },
@@ -43,12 +42,7 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    return apiCollection(transactions, {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    });
+    return apiCollection(transactions, paginationMeta(total, page, limit));
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar transações de fidelidade");
   }

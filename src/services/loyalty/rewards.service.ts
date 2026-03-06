@@ -172,9 +172,15 @@ async function markRedemptionAsUsed(code: string): Promise<Redemption> {
     throw new Error("Código de resgate já foi utilizado.");
   }
 
-  return prisma.redemption.findUnique({
+  const redemption = await prisma.redemption.findUnique({
     where: { code },
-  }) as Promise<Redemption>;
+  });
+
+  if (!redemption) {
+    throw new Error("Código de resgate não encontrado.");
+  }
+
+  return redemption;
 }
 
 export const RewardsService = {
