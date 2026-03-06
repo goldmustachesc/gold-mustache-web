@@ -42,9 +42,29 @@ function getAllowedOrigins(): string[] {
   return [...origins];
 }
 
+function getRequestHost(request: Request): string | null {
+  return (
+    request.headers.get("host") ??
+    request.headers.get("x-forwarded-host") ??
+    null
+  );
+}
+
+function isOriginSameAsHost(origin: string, request: Request): boolean {
+  const host = getRequestHost(request);
+  if (!host) return false;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Verify that the request Origin header matches an allowed origin.
- * Used for CSRF protection on sensitive endpoints.
+ * Uses two-layer CSRF protection:
+ *  1. Static allowed-origins list (from env vars)
+ *  2. Same-origin check via Host header comparison (OWASP recommended)
  *
  * @param request - The incoming request
  * @returns true if origin is valid or missing (same-origin requests may not have Origin)
@@ -63,10 +83,7 @@ export function verifyOrigin(request: Request): {
 } {
   const origin = request.headers.get("origin");
 
-  // No origin header usually means same-origin request (e.g., form submissions)
-  // However, some browsers may not send it for API calls
   if (!origin) {
-    // Check Referer as fallback
     const referer = request.headers.get("referer");
     if (referer) {
       let refererOrigin: string;
@@ -80,7 +97,10 @@ export function verifyOrigin(request: Request): {
         };
       }
       const allowedOrigins = getAllowedOrigins();
-      if (!allowedOrigins.includes(refererOrigin)) {
+      if (
+        !allowedOrigins.includes(refererOrigin) &&
+        !isOriginSameAsHost(refererOrigin, request)
+      ) {
         console.warn("[Origin Verify] Invalid referer:", refererOrigin);
         return {
           valid: false,
@@ -88,21 +108,24 @@ export function verifyOrigin(request: Request): {
         };
       }
     }
-    // If neither Origin nor Referer is present, allow (could be same-origin)
     return { valid: true };
   }
 
   const allowedOrigins = getAllowedOrigins();
 
-  if (!allowedOrigins.includes(origin)) {
-    console.warn("[Origin Verify] Blocked request from:", origin);
-    return {
-      valid: false,
-      response: apiError("FORBIDDEN", "Origem não permitida", 403),
-    };
+  if (allowedOrigins.includes(origin)) {
+    return { valid: true };
   }
 
-  return { valid: true };
+  if (isOriginSameAsHost(origin, request)) {
+    return { valid: true };
+  }
+
+  console.warn("[Origin Verify] Blocked request from:", origin);
+  return {
+    valid: false,
+    response: apiError("FORBIDDEN", "Origem não permitida", 403),
+  };
 }
 
 /**

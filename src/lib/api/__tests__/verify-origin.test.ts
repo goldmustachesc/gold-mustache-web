@@ -239,6 +239,110 @@ describe("verifyOrigin", () => {
     });
   });
 
+  describe("Host header same-origin fallback", () => {
+    it("should accept origin matching Host header even when not in allowed origins list", () => {
+      vi.stubEnv(
+        "NEXT_PUBLIC_SITE_URL",
+        "https://goldmustachebarbearia.com.br",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://www.staging.goldmustachebarbearia.com.br",
+          host: "www.staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("should reject origin not matching Host header and not in allowed list", async () => {
+      allowConsoleWarn();
+      vi.stubEnv(
+        "NEXT_PUBLIC_SITE_URL",
+        "https://goldmustachebarbearia.com.br",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://evil-site.com",
+          host: "www.staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(false);
+      const body = await result.response?.json();
+      expect(body.error).toBe("FORBIDDEN");
+    });
+
+    it("should accept origin matching Host with port", () => {
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "http://localhost:3001",
+          host: "localhost:3001",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("should use x-forwarded-host when host is absent", () => {
+      vi.stubEnv(
+        "NEXT_PUBLIC_SITE_URL",
+        "https://goldmustachebarbearia.com.br",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://www.staging.goldmustachebarbearia.com.br",
+          "x-forwarded-host": "www.staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("should still reject when origin does not match host and not in list", async () => {
+      allowConsoleWarn();
+      vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          origin: "https://evil-site.com",
+          host: "goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  describe("referer Host header fallback", () => {
+    it("should accept referer matching Host header even when not in allowed origins", () => {
+      vi.stubEnv(
+        "NEXT_PUBLIC_SITE_URL",
+        "https://goldmustachebarbearia.com.br",
+      );
+      vi.stubEnv("NODE_ENV", "production");
+
+      const result = verifyOrigin(
+        makeRequest({
+          referer:
+            "https://www.staging.goldmustachebarbearia.com.br/pt-BR/agendar",
+          host: "www.staging.goldmustachebarbearia.com.br",
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+    });
+  });
+
   describe("referer fallback", () => {
     it("should allow valid referer when origin is missing", () => {
       vi.stubEnv(
