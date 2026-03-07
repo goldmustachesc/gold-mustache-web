@@ -9,17 +9,13 @@ import {
 } from "@/hooks/useBooking";
 import { AppointmentCard } from "./AppointmentCard";
 import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
-import { toast } from "sonner";
-import Link from "next/link";
-import { getMinutesUntilAppointment } from "@/utils/time-slots";
+import { useAppointmentActions } from "@/hooks/useAppointmentActions";
+import { filterAppointments } from "@/lib/booking/appointment-filters";
 import { getAppointmentCancellationStatus } from "@/lib/booking/cancellation";
+import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import { hasGuestToken } from "@/lib/guest-session";
 import type { AppointmentWithDetails } from "@/types/booking";
-
-// Error codes from API - centralized for consistency
-const CANCELLATION_ERROR_CODES = {
-  BLOCKED: "CANCELLATION_BLOCKED",
-} as const;
+import Link from "next/link";
 
 interface GuestAppointmentsLookupProps {
   locale: string;
@@ -28,10 +24,8 @@ interface GuestAppointmentsLookupProps {
 export function GuestAppointmentsLookup({
   locale,
 }: GuestAppointmentsLookupProps) {
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState<boolean | null>(null);
 
-  // Check for token on mount (client-side only)
   useEffect(() => {
     setHasToken(hasGuestToken());
   }, []);
@@ -39,44 +33,18 @@ export function GuestAppointmentsLookup({
   const { data: appointments, isLoading, error } = useGuestAppointments();
   const cancelMutation = useCancelGuestAppointment();
 
-  const handleCancel = async (appointmentId: string) => {
-    setCancellingId(appointmentId);
-    try {
-      await cancelMutation.mutateAsync({ appointmentId });
-      toast.success("Agendamento cancelado com sucesso!");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao cancelar";
-      if (errorMessage === CANCELLATION_ERROR_CODES.BLOCKED) {
-        toast.error(
-          "Cancelamento não permitido com menos de 2 horas de antecedência.",
-        );
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setCancellingId(null);
-    }
-  };
-
-  const isPastOrStarted = (apt: AppointmentWithDetails) =>
-    getMinutesUntilAppointment(apt.date, apt.startTime) <= 0;
+  const { cancellingId, handleCancel } = useAppointmentActions({
+    cancelMutateAsync: cancelMutation.mutateAsync,
+  });
 
   const getCancellationStatus = (apt: AppointmentWithDetails) => {
     const minutesUntil = getMinutesUntilAppointment(apt.date, apt.startTime);
     return getAppointmentCancellationStatus(minutesUntil);
   };
 
-  const confirmedAppointments =
-    appointments?.filter(
-      (apt) => apt.status === "CONFIRMED" && !isPastOrStarted(apt),
-    ) || [];
-  const otherAppointments =
-    appointments?.filter(
-      (apt) => apt.status !== "CONFIRMED" || isPastOrStarted(apt),
-    ) || [];
+  const { upcoming: confirmedAppointments, history: otherAppointments } =
+    filterAppointments(appointments);
 
-  // Loading state while checking for token
   if (hasToken === null) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -85,32 +53,34 @@ export function GuestAppointmentsLookup({
     );
   }
 
-  // No token found - show message
   if (!hasToken) {
     return (
       <div className="space-y-6">
         <div className="text-center py-12 space-y-4">
-          <div className="p-4 bg-muted dark:bg-zinc-800 rounded-full w-fit mx-auto">
-            <Smartphone className="h-8 w-8 text-muted-foreground dark:text-zinc-500" />
+          <div className="p-4 bg-muted rounded-full w-fit mx-auto">
+            <Smartphone className="h-8 w-8 text-muted-foreground" />
           </div>
           <div className="space-y-2">
-            <h3 className="font-semibold text-lg text-foreground dark:text-zinc-100">
+            <h3 className="font-semibold text-lg text-foreground font-playfair">
               Nenhum agendamento neste dispositivo
             </h3>
-            <p className="text-sm text-muted-foreground dark:text-zinc-500 max-w-md mx-auto">
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Seus agendamentos ficam vinculados ao dispositivo onde foram
               criados. Se você agendou em outro aparelho ou navegador, acesse
               por lá.
             </p>
           </div>
           <div className="pt-4 space-y-3">
-            <Button asChild className="w-full sm:w-auto shadow-md">
+            <Button
+              asChild
+              className="w-full sm:w-auto shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
               <Link href={`/${locale}/agendar`}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Fazer novo agendamento
               </Link>
             </Button>
-            <div className="flex items-start gap-2 p-3 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm max-w-md mx-auto">
+            <div className="flex items-start gap-2 p-3 bg-primary/10 text-primary rounded-xl text-sm max-w-md mx-auto border border-primary/20">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <p>
                 Dica: Crie uma conta para acessar seus agendamentos de qualquer
@@ -125,33 +95,30 @@ export function GuestAppointmentsLookup({
 
   return (
     <div className="space-y-6">
-      {/* Loading state */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       )}
 
-      {/* Error state */}
       {error && !isLoading && (
-        <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-center">
+        <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-center border border-destructive/20">
           Erro ao buscar agendamentos. Tente novamente.
         </div>
       )}
 
-      {/* Results */}
       {!isLoading && !error && (
         <div className="space-y-6">
           {appointments && appointments.length === 0 && (
             <div className="text-center py-12 space-y-4">
-              <div className="p-4 bg-muted dark:bg-zinc-800 rounded-full w-fit mx-auto">
-                <Calendar className="h-8 w-8 text-muted-foreground dark:text-zinc-500" />
+              <div className="p-4 bg-muted rounded-full w-fit mx-auto">
+                <Calendar className="h-8 w-8 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground dark:text-zinc-100">
+                <h3 className="font-semibold text-foreground font-playfair">
                   Nenhum agendamento encontrado
                 </h3>
-                <p className="text-sm text-muted-foreground dark:text-zinc-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Você ainda não tem agendamentos futuros neste dispositivo.
                 </p>
               </div>
@@ -166,7 +133,7 @@ export function GuestAppointmentsLookup({
 
           {confirmedAppointments.length > 0 && (
             <div className="space-y-4">
-              <h2 className="font-semibold text-foreground dark:text-zinc-100">
+              <h2 className="font-semibold text-foreground">
                 Agendamentos Confirmados ({confirmedAppointments.length})
               </h2>
               <div className="space-y-3">
@@ -188,7 +155,7 @@ export function GuestAppointmentsLookup({
 
           {otherAppointments.length > 0 && (
             <div className="space-y-4">
-              <h2 className="font-semibold text-muted-foreground dark:text-zinc-500">
+              <h2 className="font-semibold text-muted-foreground">
                 Histórico ({otherAppointments.length})
               </h2>
               <div className="space-y-3">

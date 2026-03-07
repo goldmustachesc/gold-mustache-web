@@ -18,7 +18,6 @@ import {
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
 
-// Status values matching Prisma enum
 const AppointmentStatus = {
   CONFIRMED: "CONFIRMED",
   CANCELLED_BY_CLIENT: "CANCELLED_BY_CLIENT",
@@ -36,19 +35,12 @@ interface AppointmentCardProps {
   isCancelling?: boolean;
   showClientInfo?: boolean;
   canCancel?: boolean;
-  /** When true, shows a message that cancellation is blocked (within 2h window) */
   isCancellationBlocked?: boolean;
-  /** Callback to mark appointment as NO_SHOW (barber only) */
   onMarkNoShow?: () => void;
-  /** Whether the appointment can be marked as NO_SHOW */
   canMarkNoShow?: boolean;
-  /** Whether NO_SHOW is being processed */
   isMarkingNoShow?: boolean;
-  /** Whether to show the client phone (for NO_SHOW cases) */
   showClientPhone?: boolean;
-  /** Callback to open feedback modal */
   onFeedback?: () => void;
-  /** Whether the appointment already has feedback */
   hasFeedback?: boolean;
 }
 
@@ -60,6 +52,7 @@ const statusConfig: Record<
     textClass: string;
     borderClass: string;
     iconBgClass: string;
+    barClass: string;
   }
 > = {
   CONFIRMED: {
@@ -67,21 +60,24 @@ const statusConfig: Record<
     bgClass: "bg-success/10",
     textClass: "text-success",
     borderClass: "border-success/30",
-    iconBgClass: "bg-success/20",
+    iconBgClass: "bg-success/15",
+    barClass: "bg-success",
   },
   CANCELLED_BY_CLIENT: {
     label: "Cancelado",
     bgClass: "bg-destructive/10",
     textClass: "text-destructive",
     borderClass: "border-destructive/30",
-    iconBgClass: "bg-destructive/20",
+    iconBgClass: "bg-destructive/15",
+    barClass: "bg-destructive",
   },
   CANCELLED_BY_BARBER: {
     label: "Cancelado pelo barbeiro",
     bgClass: "bg-destructive/10",
     textClass: "text-destructive",
     borderClass: "border-destructive/30",
-    iconBgClass: "bg-destructive/20",
+    iconBgClass: "bg-destructive/15",
+    barClass: "bg-destructive",
   },
   COMPLETED: {
     label: "Concluído",
@@ -89,13 +85,15 @@ const statusConfig: Record<
     textClass: "text-muted-foreground",
     borderClass: "border-border/50",
     iconBgClass: "bg-muted/50",
+    barClass: "bg-muted-foreground/30",
   },
   NO_SHOW: {
     label: "Não compareceu",
     bgClass: "bg-warning/10",
     textClass: "text-warning",
     borderClass: "border-warning/30",
-    iconBgClass: "bg-warning/20",
+    iconBgClass: "bg-warning/15",
+    barClass: "bg-warning",
   },
 };
 
@@ -113,71 +111,51 @@ export function AppointmentCard({
   onFeedback,
   hasFeedback = false,
 }: AppointmentCardProps) {
-  const formatDate = (dateStr: string) => {
-    return formatDateDdMmYyyyFromIsoDateLike(dateStr);
-  };
-
-  // If cancellation is blocked, cannot cancel
   const isCancellable =
     (canCancel ?? appointment.status === AppointmentStatus.CONFIRMED) &&
     !isCancellationBlocked;
   const status = statusConfig[appointment.status as AppointmentStatusType];
   const isConfirmed = appointment.status === AppointmentStatus.CONFIRMED;
-
-  // Can review if onFeedback is provided (page controls eligibility) and doesn't have feedback yet
   const canReview = onFeedback && !hasFeedback;
-
-  // Get client phone for NO_SHOW display
   const clientPhone =
     appointment.client?.phone ?? appointment.guestClient?.phone;
+  const hasActions =
+    (isCancellable && onCancel) || (canMarkNoShow && onMarkNoShow) || canReview;
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl transition-all duration-200",
-        "bg-card dark:bg-zinc-800/50 border hover:bg-zinc-100 dark:hover:bg-zinc-800/70",
+        "relative overflow-hidden rounded-xl transition-all duration-200",
+        "bg-card border",
         isConfirmed
-          ? "border-border dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600/50"
-          : "border-border/50 dark:border-zinc-800/50 opacity-70",
+          ? "border-border hover:border-primary/30"
+          : "border-border/50 opacity-75",
       )}
     >
-      {/* Status Indicator Bar */}
       <div
-        className={cn(
-          "absolute top-0 left-0 right-0 h-1",
-          isConfirmed
-            ? "bg-success"
-            : appointment.status === AppointmentStatus.COMPLETED
-              ? "bg-muted-foreground/30"
-              : appointment.status === AppointmentStatus.NO_SHOW
-                ? "bg-warning"
-                : "bg-destructive",
-        )}
+        className={cn("absolute top-0 left-0 w-1 bottom-0", status.barClass)}
       />
 
-      <div className="p-5">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
+      <div className="pl-4 pr-5 py-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
               className={cn(
-                "h-11 w-11 rounded-xl flex items-center justify-center",
+                "h-10 w-10 shrink-0 rounded-lg flex items-center justify-center",
                 status.iconBgClass,
               )}
             >
-              <Scissors className={cn("h-5 w-5", status.textClass)} />
+              <Scissors className={cn("h-4.5 w-4.5", status.textClass)} />
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground dark:text-zinc-100 text-base">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-foreground text-[15px] truncate">
                 {appointment.service.name}
               </h3>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm text-muted-foreground dark:text-zinc-500">
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-sm text-muted-foreground">
                   {appointment.service.duration} min
                 </span>
-                <span className="text-muted-foreground dark:text-zinc-600">
-                  •
-                </span>
+                <span className="text-muted-foreground/50">·</span>
                 <span className="text-sm font-medium font-mono text-primary">
                   R$ {appointment.service.price.toFixed(2).replace(".", ",")}
                 </span>
@@ -186,7 +164,7 @@ export function AppointmentCard({
           </div>
           <Badge
             className={cn(
-              "shrink-0 border font-medium",
+              "shrink-0 border font-medium text-xs",
               status.bgClass,
               status.textClass,
               status.borderClass,
@@ -196,27 +174,24 @@ export function AppointmentCard({
           </Badge>
         </div>
 
-        {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50">
-            <Calendar className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
-            <span className="text-sm text-foreground dark:text-zinc-300">
-              {formatDate(appointment.date)}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm text-foreground">
+              {formatDateDdMmYyyyFromIsoDateLike(appointment.date)}
             </span>
           </div>
-
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50">
-            <Clock className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
-            <span className="text-sm text-foreground dark:text-zinc-300 font-mono">
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm text-foreground font-mono">
               {appointment.startTime} - {appointment.endTime}
             </span>
           </div>
         </div>
 
-        {/* Barber/Client Info */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50 mb-4">
-          <User className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
-          <span className="text-sm text-foreground dark:text-zinc-300">
+        <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50">
+          <User className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-sm text-foreground">
             {showClientInfo ? (
               (appointment.client?.fullName ??
               appointment.guestClient?.fullName ??
@@ -224,7 +199,7 @@ export function AppointmentCard({
             ) : (
               <>
                 Com{" "}
-                <span className="font-medium text-foreground dark:text-zinc-100">
+                <span className="font-medium text-foreground">
                   {appointment.barber.name}
                 </span>
               </>
@@ -232,10 +207,9 @@ export function AppointmentCard({
           </span>
         </div>
 
-        {/* Client Phone (for NO_SHOW) */}
         {showClientPhone && clientPhone && (
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted dark:bg-zinc-900/50 mb-4">
-            <Phone className="h-4 w-4 text-muted-foreground dark:text-zinc-500" />
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
             <a
               href={`tel:${clientPhone}`}
               className="text-sm text-info hover:underline font-mono"
@@ -245,18 +219,16 @@ export function AppointmentCard({
           </div>
         )}
 
-        {/* Cancel Reason */}
         {appointment.cancelReason && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+          <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-md">
             <p className="text-sm text-destructive">
               <strong>Motivo:</strong> {appointment.cancelReason}
             </p>
           </div>
         )}
 
-        {/* Cancellation Blocked Warning */}
         {isCancellationBlocked && (
-          <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-2.5 mb-4">
+          <div className="p-2.5 bg-warning/10 border border-warning/20 rounded-md flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
             <p className="text-sm text-warning">
               Cancelamento não permitido com menos de 2 horas de antecedência.
@@ -265,19 +237,15 @@ export function AppointmentCard({
           </div>
         )}
 
-        {/* Feedback Badge (if already reviewed) */}
         {hasFeedback && (
-          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mb-4">
-            <CheckCircle className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm text-emerald-400">Avaliação enviada</span>
+          <div className="flex items-center gap-2 p-2.5 rounded-md bg-success/10 border border-success/20">
+            <CheckCircle className="h-4 w-4 text-success" />
+            <span className="text-sm text-success">Avaliação enviada</span>
           </div>
         )}
 
-        {/* Actions */}
-        {((isCancellable && onCancel) ||
-          (canMarkNoShow && onMarkNoShow) ||
-          canReview) && (
-          <div className="flex gap-2 pt-2 border-t border-border dark:border-zinc-700/50">
+        {hasActions && (
+          <div className="flex gap-2 pt-2 border-t border-border">
             {isCancellable && onCancel && (
               <Button
                 variant="ghost"
@@ -307,7 +275,7 @@ export function AppointmentCard({
                 variant="ghost"
                 size="sm"
                 onClick={onFeedback}
-                className="flex-1 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
+                className="flex-1 text-primary hover:text-primary/90 hover:bg-primary/10"
               >
                 <Star className="h-4 w-4 mr-2" />
                 Avaliar Atendimento
