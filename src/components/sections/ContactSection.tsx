@@ -1,7 +1,8 @@
 "use client";
 
 import { GoogleMap } from "@/components/custom/GoogleMap";
-import { Badge } from "@/components/ui/badge";
+import { RevealOnScroll } from "@/components/shared/RevealOnScroll";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BRAND } from "@/constants/brand";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import {
   Calendar,
   Clock,
@@ -23,70 +25,62 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useBookingSettings } from "@/hooks/useBookingSettings";
+
+function openWhatsApp(whatsapp: string, message: string) {
+  const encoded = encodeURIComponent(message);
+  window.open(`https://wa.me/${whatsapp}?text=${encoded}`, "_blank");
+}
+
+interface ContactPerson {
+  titleKey: string;
+  phone: string;
+  whatsapp: string;
+}
+
+const CONTACTS: ContactPerson[] = [
+  {
+    titleKey: "phone.ownerYgor",
+    phone: BRAND.contact.phone,
+    whatsapp: BRAND.contact.whatsapp,
+  },
+  {
+    titleKey: "phone.ownerVitor",
+    phone: BRAND.contactVitor.phone,
+    whatsapp: BRAND.contactVitor.whatsapp,
+  },
+  {
+    titleKey: "phone.barberJoao",
+    phone: BRAND.contactJoao.phone,
+    whatsapp: BRAND.contactJoao.whatsapp,
+  },
+  {
+    titleKey: "phone.barberDavid",
+    phone: BRAND.contactDavid.phone,
+    whatsapp: BRAND.contactDavid.whatsapp,
+  },
+];
 
 export function ContactSection() {
   const t = useTranslations("contact");
   const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
   const bookingLinkProps = isExternal
-    ? { target: "_blank", rel: "noopener noreferrer" }
+    ? { target: "_blank" as const, rel: "noopener noreferrer" }
     : {};
 
-  const handleWhatsAppClick = () => {
-    const message = encodeURIComponent(t("whatsappMessage"));
-    window.open(
-      `https://wa.me/${BRAND.contact.whatsapp}?text=${message}`,
-      "_blank",
-    );
-  };
-
-  const handleWhatsAppVitorClick = () => {
-    const message = encodeURIComponent(t("whatsappMessage"));
-    window.open(
-      `https://wa.me/${BRAND.contactVitor.whatsapp}?text=${message}`,
-      "_blank",
-    );
-  };
-
-  const handleWhatsAppJoaoClick = () => {
-    const message = encodeURIComponent(t("whatsappMessage"));
-    window.open(
-      `https://wa.me/${BRAND.contactJoao.whatsapp}?text=${message}`,
-      "_blank",
-    );
-  };
-
-  const handleWhatsAppDavidClick = () => {
-    const message = encodeURIComponent(t("whatsappMessage"));
-    window.open(
-      `https://wa.me/${BRAND.contactDavid.whatsapp}?text=${message}`,
-      "_blank",
-    );
-  };
-
-  const handleDirectionsClick = () => {
-    window.open(BRAND.contact.googleMapsUrl, "_blank");
-  };
+  const whatsappMessage = t("whatsappMessage");
 
   return (
-    <section className="py-20 bg-muted/30" id="contato">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <Badge variant="outline" className="mb-4">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{t("title")}</span>
-          </Badge>
-          <h2 className="text-3xl md:text-4xl font-playfair font-bold mb-4">
-            {t("subtitle")}
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {t("description")}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Informações de Contato */}
-          <div className="space-y-6">
+    <SectionLayout
+      id="contato"
+      icon={MapPin}
+      badge={t("title")}
+      title={t("subtitle")}
+      description={t("description")}
+      className="py-20 bg-muted/30"
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="space-y-6">
+          <RevealOnScroll delay={0.1}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -100,7 +94,9 @@ export function ContactSection() {
                   {BRAND.contact.address}
                 </p>
                 <Button
-                  onClick={handleDirectionsClick}
+                  onClick={() =>
+                    window.open(BRAND.contact.googleMapsUrl, "_blank")
+                  }
                   variant="default"
                   className="w-full cursor-pointer"
                 >
@@ -109,7 +105,9 @@ export function ContactSection() {
                 </Button>
               </CardContent>
             </Card>
+          </RevealOnScroll>
 
+          <RevealOnScroll delay={0.15}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -143,108 +141,48 @@ export function ContactSection() {
                 </div>
               </CardContent>
             </Card>
+          </RevealOnScroll>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <span>{t("phone.ownerYgor")}</span>
-                </CardTitle>
-                <CardDescription>{t("phone.description")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-muted-foreground">{t("phone.label")}</p>
-                  <p className="font-medium">{BRAND.contact.phone}</p>
-                </div>
-                <Button
-                  onClick={handleWhatsAppClick}
-                  className="w-full cursor-pointer"
-                  variant="default"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {t("phone.cta")}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <span>{t("phone.ownerVitor")}</span>
-                </CardTitle>
-                <CardDescription>{t("phone.description")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-muted-foreground">{t("phone.label")}</p>
-                  <p className="font-medium">{BRAND.contactVitor.phone}</p>
-                </div>
-                <Button
-                  onClick={handleWhatsAppVitorClick}
-                  className="w-full cursor-pointer"
-                  variant="default"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {t("phone.cta")}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <div className="flex gap-4">
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Phone className="h-5 w-5 text-primary" />
-                    <span>{t("phone.barberJoao")}</span>
-                  </CardTitle>
-                  <CardDescription>{t("phone.description")}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground">{t("phone.label")}</p>
-                    <p className="font-medium">{BRAND.contactJoao.phone}</p>
-                  </div>
-                  <Button
-                    onClick={handleWhatsAppJoaoClick}
-                    className="w-full cursor-pointer"
-                    variant="default"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    {t("phone.cta")}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Phone className="h-5 w-5 text-primary" />
-                    <span>{t("phone.barberDavid")}</span>
-                  </CardTitle>
-                  <CardDescription>{t("phone.description")}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground">{t("phone.label")}</p>
-                    <p className="font-medium">{BRAND.contactDavid.phone}</p>
-                  </div>
-                  <Button
-                    onClick={handleWhatsAppDavidClick}
-                    className="w-full cursor-pointer"
-                    variant="default"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    {t("phone.cta")}
-                  </Button>
-                </CardContent>
-              </Card>
+          <RevealOnScroll delay={0.2}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {CONTACTS.map((contact) => (
+                <Card key={contact.titleKey}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center space-x-2 text-base">
+                      <Phone className="h-4 w-4 text-primary" />
+                      <span>{t(contact.titleKey)}</span>
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {t("phone.description")}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        {t("phone.label")}
+                      </p>
+                      <p className="font-medium text-sm">{contact.phone}</p>
+                    </div>
+                    <Button
+                      onClick={() =>
+                        openWhatsApp(contact.whatsapp, whatsappMessage)
+                      }
+                      className="w-full cursor-pointer"
+                      variant="default"
+                      size="sm"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {t("phone.cta")}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
+          </RevealOnScroll>
+        </div>
 
-          {/* Mapa do Google e Ações */}
-          <div className="space-y-6">
+        <div className="space-y-6">
+          <RevealOnScroll delay={0.15} direction="right">
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="aspect-[4/3]">
@@ -252,43 +190,29 @@ export function ContactSection() {
                 </div>
               </CardContent>
             </Card>
+          </RevealOnScroll>
 
-            {/* Call to Actions */}
-            <div className="flex w-full">
-              {shouldShowBooking && bookingHref && (
-                <Button size="lg" className="h-auto py-4 w-full" asChild>
-                  <Link
-                    href={bookingHref}
-                    className="flex items-center"
-                    {...bookingLinkProps}
-                  >
-                    <Calendar className="h-5 w-5 mr-2" />
-                    <div className="text-left">
-                      <div className="font-semibold">{t("cta.book")}</div>
-                      <div className="text-xs opacity-90">
-                        {t("cta.bookDescription")}
-                      </div>
+          {shouldShowBooking && bookingHref && (
+            <RevealOnScroll delay={0.2} direction="right">
+              <Button size="lg" className="h-auto py-4 w-full" asChild>
+                <Link
+                  href={bookingHref}
+                  className="flex items-center"
+                  {...bookingLinkProps}
+                >
+                  <Calendar className="h-5 w-5 mr-2" />
+                  <div className="text-left">
+                    <div className="font-semibold">{t("cta.book")}</div>
+                    <div className="text-xs opacity-90">
+                      {t("cta.bookDescription")}
                     </div>
-                  </Link>
-                </Button>
-              )}
-
-              {/* <Button
-                onClick={handleWhatsAppClick}
-                variant="outline"
-                size="lg"
-                className="h-auto py-4"
-              >
-                <MessageSquare className="h-5 w-5 mr-2" />
-                <div className="text-left">
-                  <div className="font-semibold">
-                    WhatsApp Ygor (proprietário)
                   </div>
-                  <div className="text-xs opacity-90">Contato Direto</div>
-                </div>
-              </Button> */}
-            </div>
+                </Link>
+              </Button>
+            </RevealOnScroll>
+          )}
 
+          <RevealOnScroll delay={0.25} direction="right">
             <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">
@@ -332,25 +256,9 @@ export function ContactSection() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </RevealOnScroll>
         </div>
-
-        {/* Emergency Contact */}
-        {/* <div className="text-center">
-          <Card className="max-w-lg mx-auto bg-secondary text-secondary-foreground">
-            <CardContent className="py-6">
-              <h3 className="font-semibold mb-2">Emergência ou Dúvidas?</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Entre em contato conosco via WhatsApp para atendimento rápido
-              </p>
-              <Button onClick={handleWhatsAppClick} size="sm">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Falar Agora
-              </Button>
-            </CardContent>
-          </Card>
-        </div> */}
       </div>
-    </section>
+    </SectionLayout>
   );
 }
