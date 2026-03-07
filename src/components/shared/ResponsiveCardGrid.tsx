@@ -51,10 +51,7 @@ export function ResponsiveCardGrid<T>({
       {/* Desktop: grid layout */}
       <div className={cn("hidden gap-6", colsClass[desktopCols], className)}>
         {items.map((item, index) => (
-          <RevealOnScroll
-            key={keyExtractor(item)}
-            delay={index * staggerDelay}
-          >
+          <RevealOnScroll key={keyExtractor(item)} delay={index * staggerDelay}>
             {renderCard(item, index)}
           </RevealOnScroll>
         ))}

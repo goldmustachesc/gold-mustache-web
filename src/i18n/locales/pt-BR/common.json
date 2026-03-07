@@ -3,7 +3,9 @@
     "book": "Agendar",
     "follow": "Seguir no Instagram",
     "bookAppointment": "Agendar Horário",
-    "close": "Fechar"
+    "close": "Fechar",
+    "signOut": "Sair",
+    "signingOut": "Saindo..."
   },
   "aria": {
     "openMenu": "Abrir menu",

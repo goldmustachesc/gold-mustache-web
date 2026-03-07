@@ -3,7 +3,9 @@
     "book": "Book",
     "follow": "Follow on Instagram",
     "bookAppointment": "Book Appointment",
-    "close": "Close"
+    "close": "Close",
+    "signOut": "Sign out",
+    "signingOut": "Signing out..."
   },
   "aria": {
     "openMenu": "Open menu",

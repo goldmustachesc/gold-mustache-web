@@ -3,7 +3,9 @@
     "book": "Reservar",
     "follow": "Seguir en Instagram",
     "bookAppointment": "Reservar Cita",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "signOut": "Cerrar sesión",
+    "signingOut": "Cerrando sesión..."
   },
   "aria": {
     "openMenu": "Abrir menú",
