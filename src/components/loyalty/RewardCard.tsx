@@ -62,7 +62,7 @@ export function RewardCard({
   };
 
   return (
-    <Card className="overflow-hidden flex flex-col border transition-all hover:shadow-md">
+    <Card className="overflow-hidden flex flex-col border border-border shadow-sm transition-shadow duration-200 hover:shadow-md">
       {reward.imageUrl && (
         <div className="relative h-48 w-full bg-muted">
           <OptimizedImage
@@ -75,9 +75,9 @@ export function RewardCard({
       )}
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
-          <CardTitle className="text-xl">{reward.name}</CardTitle>
+          <CardTitle className="text-xl font-playfair">{reward.name}</CardTitle>
           <div className="flex flex-col items-end">
-            <span className="font-bold text-primary whitespace-nowrap bg-primary/10 px-2 py-1 object-contain rounded-md">
+            <span className="font-bold font-mono tabular-nums text-primary whitespace-nowrap bg-primary/10 px-2.5 py-1 rounded-md text-sm">
               {reward.costInPoints} pts
             </span>
           </div>
@@ -111,14 +111,23 @@ export function RewardCard({
                   Sua recompensa: <strong>{reward.name}</strong>
                 </p>
                 <p>
-                  Custo: <strong>{reward.costInPoints} pontos</strong>
+                  Custo:{" "}
+                  <strong className="font-mono tabular-nums">
+                    {reward.costInPoints} pontos
+                  </strong>
                 </p>
                 <p>
-                  Seu Saldo atual: <strong>{userPoints} pontos</strong>
+                  Seu Saldo atual:{" "}
+                  <strong className="font-mono tabular-nums">
+                    {userPoints} pontos
+                  </strong>
                 </p>
                 {reward.stock !== undefined && (
                   <p>
-                    Estoque disponível: <strong>{reward.stock} unidades</strong>
+                    Estoque disponível:{" "}
+                    <strong className="font-mono tabular-nums">
+                      {reward.stock} unidades
+                    </strong>
                   </p>
                 )}
               </DialogDescription>

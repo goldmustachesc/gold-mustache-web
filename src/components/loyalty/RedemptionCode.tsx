@@ -16,9 +16,9 @@ interface RedemptionCodeProps {
 }
 
 const STATUS_STYLES: Record<RedemptionStatus, string> = {
-  PENDING: "bg-amber-500/10 text-amber-500 border-amber-500/30",
-  USED: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
-  EXPIRED: "bg-zinc-500/10 text-zinc-400 border-zinc-500/30",
+  PENDING: "bg-warning/10 text-warning border-warning/30",
+  USED: "bg-success/10 text-success border-success/30",
+  EXPIRED: "bg-muted text-muted-foreground border-border",
 };
 
 const STATUS_KEYS: Record<RedemptionStatus, string> = {
@@ -49,7 +49,7 @@ export function RedemptionCode({
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <span className="text-sm text-zinc-400">
+        <span className="text-sm text-muted-foreground font-mono tabular-nums">
           {formatDateShort(expiresAt)}
         </span>
         <Button
@@ -57,7 +57,7 @@ export function RedemptionCode({
           size="icon"
           onClick={() => copy(code)}
           aria-label={t("copyCode")}
-          className="h-8 w-8 text-zinc-400 hover:text-white"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
         >
           {copied ? (
             <Check className="h-4 w-4" />

@@ -97,7 +97,7 @@ export default function AdminLoyaltyPage() {
   if (accountsLoading || rewardsLoading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -124,8 +124,8 @@ export default function AdminLoyaltyPage() {
                 className="rounded-full"
               />
               <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-amber-500 hidden sm:block" />
+                <h1 className="text-lg font-playfair font-bold text-primary flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-primary hidden sm:block" />
                   {t("title") || "Gestão de Fidelidade"}
                 </h1>
                 <p className="text-xs text-muted-foreground">
@@ -201,7 +201,7 @@ export default function AdminLoyaltyPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <TierBadge tier={acc.tier} />
                           </td>
-                          <td className="px-6 py-4 text-right font-black text-primary text-lg">
+                          <td className="px-6 py-4 text-right font-black font-mono tabular-nums text-primary text-lg">
                             {acc.points}
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -309,7 +309,7 @@ export default function AdminLoyaltyPage() {
                     {selectedAccount?.fullName}
                   </strong>{" "}
                   (Atual:{" "}
-                  <strong className="text-amber-500">
+                  <strong className="text-primary font-mono tabular-nums">
                     {selectedAccount?.points} pts
                   </strong>
                   ).
@@ -330,7 +330,7 @@ export default function AdminLoyaltyPage() {
                     value={adjustAmount}
                     onChange={(e) => setAdjustAmount(e.target.value)}
                     placeholder="+100 ou -50"
-                    className="col-span-3 border-input bg-background focus-visible:ring-amber-500"
+                    className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -342,7 +342,7 @@ export default function AdminLoyaltyPage() {
                     value={adjustReason}
                     onChange={(e) => setAdjustReason(e.target.value)}
                     placeholder="Ex: Correção, Bônus extra..."
-                    className="col-span-3 border-input bg-background focus-visible:ring-amber-500"
+                    className="col-span-3"
                   />
                 </div>
               </div>

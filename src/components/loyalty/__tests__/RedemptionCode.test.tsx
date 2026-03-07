@@ -31,7 +31,7 @@ describe("RedemptionCode", () => {
 
     const badge = screen.getByText("status.pending");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toMatch(/amber|yellow/);
+    expect(badge.className).toMatch(/warning|amber|yellow/);
   });
 
   it("should display badge 'status.used' with green styling when status is USED", () => {
@@ -39,7 +39,7 @@ describe("RedemptionCode", () => {
 
     const badge = screen.getByText("status.used");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toMatch(/green|emerald/);
+    expect(badge.className).toMatch(/success|green|emerald/);
   });
 
   it("should display badge 'status.expired' with muted styling when status is EXPIRED", () => {

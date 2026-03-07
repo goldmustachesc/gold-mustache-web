@@ -50,22 +50,7 @@ class GTMErrorBoundary extends React.Component<
 export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
   const { hasConsent, isLoading } = useConsent();
 
-  // Show minimal placeholder during loading to avoid layout shifts
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          height: "1px",
-          width: "1px",
-          visibility: "hidden",
-        }}
-        aria-hidden="true"
-      />
-    );
-  }
-
-  // Don't load GTM if no GTM ID or no consent
-  if (!gtmId || !hasConsent("analytics")) return null;
+  if (isLoading || !gtmId || !hasConsent("analytics")) return null;
 
   return (
     <GTMErrorBoundary>
@@ -97,22 +82,7 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
 export function GoogleTagManagerNoScript({ gtmId }: { gtmId: string }) {
   const { hasConsent, isLoading } = useConsent();
 
-  // Show minimal placeholder during loading to avoid layout shifts
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          height: "1px",
-          width: "1px",
-          visibility: "hidden",
-        }}
-        aria-hidden="true"
-      />
-    );
-  }
-
-  // Don't render noscript if no GTM ID or no consent
-  if (!gtmId || !hasConsent("analytics")) return null;
+  if (isLoading || !gtmId || !hasConsent("analytics")) return null;
 
   return (
     <noscript>

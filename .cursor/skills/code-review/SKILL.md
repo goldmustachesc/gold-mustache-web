@@ -5,9 +5,40 @@ description: Realiza code review completo dos arquivos modificados no branch atu
 
 # Code Review - Gold Mustache
 
+## Princípio Central: HIGH SIGNAL ONLY
+
+**Apenas issues de alto sinal.** Cada issue reportada deve justificar o tempo do reviewer. Falsos positivos erodem confiança e desperdiçam tempo.
+
+**Flaggear apenas quando:**
+- O código vai falhar ao compilar/parsear (erros de sintaxe, tipo, imports faltando, referências não resolvidas)
+- O código vai produzir resultados errados independente dos inputs (erros de lógica claros)
+- Violação clara e inequívoca de regras do `AGENTS.md` (citar a regra exata)
+- Bugs de segurança concretos (não genéricos)
+- Código novo sem testes (TDD é obrigatório no projeto)
+
+**NÃO flaggear (falsos positivos comuns):**
+- Issues pré-existentes (não introduzidas neste diff)
+- Nitpicks pedantes que um engenheiro sênior não flaggearia
+- Issues que o linter já vai capturar (Biome cuida disso)
+- Preocupações genéricas de qualidade sem violação concreta
+- Issues explicitamente silenciadas no código (ex: comentário de lint ignore)
+- Algo que parece bug mas está correto no contexto
+- Sugestões subjetivas de melhoria sem impacto funcional
+
+**Validação:** Para cada issue encontrada, verifique se é realmente um problema no código. Se não tiver confiança alta, não reporte.
+
+---
+
 ## Instruções
 
 Ao executar um code review, siga este fluxo rigoroso:
+
+### Fase 0: Pre-checks
+
+Antes de iniciar, verifique:
+- Se o PR está fechado ou é draft → não revisar
+- Se é um PR trivial/automatizado obviamente correto → não revisar
+- Se já foi revisado anteriormente → não duplicar review
 
 ### Fase 1: Coleta de Contexto
 
@@ -20,6 +51,7 @@ git diff --stat main...HEAD
 
 2. Leia `AGENTS.md` para relembrar os padrões do projeto.
 3. Se houver mudanças visuais, consulte `docs/Brand_Book_Gold_Mustache.md`.
+4. Leia o título e descrição do PR para entender a intenção do autor.
 
 ### Fase 2: Verificações Automáticas
 
@@ -125,3 +157,23 @@ Formate o resultado assim:
 - Verifique se `console.log` foi removido de código de produção
 - Confirme que mudanças visuais seguem o Brand Book
 - Valide que novas rotas API têm autenticação adequada
+
+## Comentários no GitHub (quando `--comment` for usado)
+
+Se o review for postado como comentário no PR:
+
+**Se nenhuma issue encontrada:**
+```markdown
+## Code Review
+
+No issues found. Checked for bugs and AGENTS.md compliance.
+```
+
+**Para inline comments:**
+- Issues pequenas e auto-contidas: incluir suggestion block committable
+- Issues maiores (6+ linhas, mudanças estruturais, múltiplos arquivos): descrever o problema e a correção sugerida sem suggestion block
+- **Nunca** postar suggestion committable a menos que commitar a sugestão resolva o problema por completo
+- **Um comentário por issue** — não duplicar
+- Citar e linkar regras violadas (ex: link para AGENTS.md)
+- Ao linkar código, usar SHA completo do commit:
+  `https://github.com/owner/repo/blob/<full-sha>/path/to/file.ts#L10-L15`

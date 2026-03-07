@@ -17,6 +17,15 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/supabase/admin", () => ({
+  getAuthUserEmailMap: vi.fn().mockResolvedValue(
+    new Map([
+      ["user-1", "john@example.com"],
+      ["user-2", "jane@example.com"],
+    ]),
+  ),
+}));
+
 import { GET } from "../route";
 
 const NOW = new Date("2026-03-01T12:00:00.000Z");
@@ -57,7 +66,7 @@ const mockRedemption = (overrides = {}) => ({
   rewardId: "reward-1",
   reward: { name: "Corte Grátis", type: "FREE_SERVICE", value: null },
   loyaltyAccount: {
-    profile: { fullName: "John Doe", email: "john@example.com" },
+    profile: { fullName: "John Doe", userId: "user-1" },
   },
   ...overrides,
 });
@@ -94,7 +103,7 @@ describe("GET /api/admin/loyalty/redemptions", () => {
         usedAt: new Date("2026-02-25T14:00:00.000Z"),
         reward: { name: "Desconto 20%", type: "DISCOUNT", value: 20 },
         loyaltyAccount: {
-          profile: { fullName: "Jane Smith", email: "jane@example.com" },
+          profile: { fullName: "Jane Smith", userId: "user-2" },
         },
       }),
     ];

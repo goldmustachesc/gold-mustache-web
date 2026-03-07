@@ -5,7 +5,13 @@
     "pointsBalance": "Points Balance",
     "currentTier": "Current Tier",
     "benefits": "Your Benefits",
-    "howItWorks": "How it works?"
+    "howItWorks": "How it works?",
+    "earnPoints": "Earn Points",
+    "earnPointsDesc": "Earn points for every completed appointment.",
+    "levelUp": "Level Up",
+    "levelUpDesc": "The more services you use, the better your tier and perks.",
+    "redeemRewards": "Redeem Rewards",
+    "redeemRewardsDesc": "Use your points in the Rewards tab to redeem services and discounts."
   },
   "tiers": {
     "bronze": "Bronze",
@@ -128,6 +134,21 @@
       "confirm": "Confirm",
       "validateError": "Error validating code",
       "useError": "Error marking redemption as used"
+    },
+    "reports": {
+      "tab": "Reports",
+      "totalAccounts": "Registered Accounts",
+      "pointsInCirculation": "Points in Circulation",
+      "redemptionsMonth": "Redemptions This Month",
+      "redemptionRate": "Redemption Rate",
+      "tierDistribution": "Tier Distribution",
+      "noData": "No data available.",
+      "topRewards": "Most Popular Rewards",
+      "noRewards": "No rewards redeemed yet.",
+      "recentActivity": "Recent Activity (30 days)",
+      "pointsEarned30d": "Points earned",
+      "redemptions30d": "Redemptions made",
+      "newAccounts30d": "New accounts"
     }
   }
 }

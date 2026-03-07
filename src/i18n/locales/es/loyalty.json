@@ -5,7 +5,13 @@
     "pointsBalance": "Saldo de Puntos",
     "currentTier": "Tu Nivel Actual",
     "benefits": "Tus Beneficios",
-    "howItWorks": "¿Cómo funciona?"
+    "howItWorks": "¿Cómo funciona?",
+    "earnPoints": "Acumula Puntos",
+    "earnPointsDesc": "Gana puntos por cada cita completada.",
+    "levelUp": "Sube de Nivel",
+    "levelUpDesc": "Cuantos más servicios, mejor tu nivel y tus ventajas.",
+    "redeemRewards": "Canjea Premios",
+    "redeemRewardsDesc": "Usa tus puntos en la pestaña Recompensas para canjear servicios y descuentos."
   },
   "tiers": {
     "bronze": "Bronce",
@@ -128,6 +134,21 @@
       "confirm": "Confirmar",
       "validateError": "Error al validar código",
       "useError": "Error al marcar canje como usado"
+    },
+    "reports": {
+      "tab": "Informes",
+      "totalAccounts": "Cuentas Registradas",
+      "pointsInCirculation": "Puntos en Circulación",
+      "redemptionsMonth": "Canjes del Mes",
+      "redemptionRate": "Tasa de Canje",
+      "tierDistribution": "Distribución por Nivel",
+      "noData": "No hay datos disponibles.",
+      "topRewards": "Recompensas Más Populares",
+      "noRewards": "Ninguna recompensa canjeada.",
+      "recentActivity": "Actividad Reciente (30 días)",
+      "pointsEarned30d": "Puntos ganados",
+      "redemptions30d": "Canjes realizados",
+      "newAccounts30d": "Nuevas cuentas"
     }
   }
 }

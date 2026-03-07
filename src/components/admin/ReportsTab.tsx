@@ -15,9 +15,9 @@ import { useTranslations, useLocale } from "next-intl";
 import type { LoyaltyTier } from "@/components/loyalty/TierBadge";
 
 const TIER_COLORS: Partial<Record<LoyaltyTier, string>> = {
-  BRONZE: "bg-amber-700",
+  BRONZE: "bg-orange-700",
   SILVER: "bg-gray-400",
-  GOLD: "bg-amber-400",
+  GOLD: "bg-primary",
   DIAMOND: "bg-cyan-400",
 };
 
@@ -29,7 +29,7 @@ export function ReportsTab() {
   if (isLoading || !data) {
     return (
       <div data-testid="reports-loading" className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -52,28 +52,28 @@ export function ReportsTab() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           testId="kpi-total-accounts"
-          icon={<Users className="h-5 w-5 text-amber-500" />}
+          icon={<Users className="h-5 w-5 text-primary" />}
           label={t("reports.totalAccounts")}
           value={data.totalAccounts}
           locale={locale}
         />
         <KpiCard
           testId="kpi-points-in-circulation"
-          icon={<Coins className="h-5 w-5 text-amber-500" />}
+          icon={<Coins className="h-5 w-5 text-primary" />}
           label={t("reports.pointsInCirculation")}
           value={data.totalPointsInCirculation}
           locale={locale}
         />
         <KpiCard
           testId="kpi-redemptions-month"
-          icon={<TicketCheck className="h-5 w-5 text-amber-500" />}
+          icon={<TicketCheck className="h-5 w-5 text-primary" />}
           label={t("reports.redemptionsMonth")}
           value={data.recentActivity.redemptionsLast30Days}
           locale={locale}
         />
         <KpiCard
           testId="kpi-redemption-rate"
-          icon={<TrendingUp className="h-5 w-5 text-amber-500" />}
+          icon={<TrendingUp className="h-5 w-5 text-primary" />}
           label={t("reports.redemptionRate")}
           value={`${redemptionRate}%`}
           locale={locale}
@@ -83,7 +83,7 @@ export function ReportsTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4 text-amber-500" />
+            <Users className="h-4 w-4 text-primary" />
             {t("reports.tierDistribution")}
           </h3>
           {Object.keys(data.tierDistribution).length === 0 ? (
@@ -103,7 +103,7 @@ export function ReportsTab() {
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div
                         data-testid={`tier-bar-${tier}`}
-                        className={`h-full rounded-full transition-all ${TIER_COLORS[tier as LoyaltyTier] ?? "bg-amber-500"}`}
+                        className={`h-full rounded-full transition-all ${TIER_COLORS[tier as LoyaltyTier] ?? "bg-primary"}`}
                         style={{
                           width: `${(tierCount / maxTierCount) * 100}%`,
                         }}
@@ -118,7 +118,7 @@ export function ReportsTab() {
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-primary" />
             {t("reports.topRewards")}
           </h3>
           {data.topRewards.length === 0 ? (
@@ -153,7 +153,7 @@ export function ReportsTab() {
 
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
         <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-          <Activity className="h-4 w-4 text-amber-500" />
+          <Activity className="h-4 w-4 text-primary" />
           {t("reports.recentActivity")}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

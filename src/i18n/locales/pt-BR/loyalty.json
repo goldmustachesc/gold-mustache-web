@@ -5,7 +5,13 @@
     "pointsBalance": "Saldo de Pontos",
     "currentTier": "Seu Nível Atual",
     "benefits": "Seus Benefícios",
-    "howItWorks": "Como funciona?"
+    "howItWorks": "Como funciona?",
+    "earnPoints": "Acumule Pontos",
+    "earnPointsDesc": "Ganhe pontos a cada agendamento realizado e concluído.",
+    "levelUp": "Suba de Nível",
+    "levelUpDesc": "Quanto mais serviços, melhor seu nível e suas vantagens.",
+    "redeemRewards": "Troque por Prêmios",
+    "redeemRewardsDesc": "Use seus pontos na aba Recompensas para resgatar serviços e descontos."
   },
   "tiers": {
     "bronze": "Bronze",
@@ -128,6 +134,21 @@
       "confirm": "Confirmar",
       "validateError": "Erro ao validar código",
       "useError": "Erro ao marcar resgate como usado"
+    },
+    "reports": {
+      "tab": "Relatórios",
+      "totalAccounts": "Contas Cadastradas",
+      "pointsInCirculation": "Pontos em Circulação",
+      "redemptionsMonth": "Resgates no Mês",
+      "redemptionRate": "Taxa de Resgate",
+      "tierDistribution": "Distribuição por Nível",
+      "noData": "Nenhum dado disponível.",
+      "topRewards": "Recompensas Mais Populares",
+      "noRewards": "Nenhuma recompensa resgatada.",
+      "recentActivity": "Atividade Recente (30 dias)",
+      "pointsEarned30d": "Pontos ganhos",
+      "redemptions30d": "Resgates realizados",
+      "newAccounts30d": "Novas contas"
     }
   }
 }

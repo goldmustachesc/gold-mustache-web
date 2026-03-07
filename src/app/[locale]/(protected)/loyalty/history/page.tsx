@@ -14,38 +14,36 @@ export default function LoyaltyHistoryPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   const getTypeIcon = (type: string) => {
     if (type === "EARNED" || type === "ADJUSTED_ADD") {
-      return <ArrowUpRight className="h-5 w-5 text-emerald-500" />;
+      return <ArrowUpRight className="h-5 w-5 text-success" />;
     }
-    return <ArrowDownRight className="h-5 w-5 text-red-500" />;
+    return <ArrowDownRight className="h-5 w-5 text-destructive" />;
   };
 
   const getTypeLabel = (type: string) => {
     const key = type.startsWith("ADJUSTED") ? "ADJUSTED" : type;
-    // In next-intl, if a key doesn't exist it returns the key path, so we can check it.
-    // For now, we assume the translations are mapped in `history.types.[type]`.
     return t(`types.${key}` as `types.${string}`) || type;
   };
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <History className="h-6 w-6 text-amber-500" />
+        <h2 className="text-2xl font-playfair font-bold flex items-center gap-2">
+          <History className="h-6 w-6 text-primary" />
           {t("title")}
         </h2>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs uppercase bg-zinc-800 text-zinc-400">
+            <thead className="text-xs uppercase bg-muted text-muted-foreground tracking-wider">
               <tr>
                 <th className="px-6 py-4">{t("columns.date")}</th>
                 <th className="px-6 py-4">{t("columns.description")}</th>
@@ -65,9 +63,9 @@ export default function LoyaltyHistoryPage() {
                   }) => (
                     <tr
                       key={tx.id}
-                      className="border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors"
+                      className="border-b border-border hover:bg-muted/50 transition-colors duration-150"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-zinc-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-foreground font-mono tabular-nums text-xs">
                         {new Intl.DateTimeFormat(
                           locale === "pt-BR" ? "pt-BR" : "en-US",
                           {
@@ -77,20 +75,20 @@ export default function LoyaltyHistoryPage() {
                           },
                         ).format(new Date(tx.createdAt))}
                       </td>
-                      <td className="px-6 py-4 text-zinc-300 font-medium">
+                      <td className="px-6 py-4 text-foreground font-medium">
                         {tx.description}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {getTypeIcon(tx.type)}
-                          <span className="text-zinc-400">
+                          <span className="text-muted-foreground">
                             {getTypeLabel(tx.type)}
                           </span>
                         </div>
                       </td>
                       <td
-                        className={`px-6 py-4 text-right font-black ${
-                          tx.points > 0 ? "text-emerald-500" : "text-red-500"
+                        className={`px-6 py-4 text-right font-black font-mono tabular-nums ${
+                          tx.points > 0 ? "text-success" : "text-destructive"
                         }`}
                       >
                         {tx.points > 0 ? "+" : ""}
@@ -103,7 +101,7 @@ export default function LoyaltyHistoryPage() {
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-6 py-12 text-center text-zinc-500"
+                    className="px-6 py-12 text-center text-muted-foreground"
                   >
                     {t("empty")}
                   </td>

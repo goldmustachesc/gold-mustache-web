@@ -42,8 +42,8 @@ export default function LoyaltyLayout({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -65,13 +65,13 @@ export default function LoyaltyLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white flex flex-col">
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-7xl w-full mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
           <div className="flex items-center gap-4">
             <Link
               href={`/${locale}/dashboard`}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors duration-200"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only lg:not-sr-only">Voltar</span>
@@ -91,14 +91,14 @@ export default function LoyaltyLayout({
             </div>
 
             <div className="flex items-center gap-2">
-              <Star className="h-6 w-6 text-amber-500" />
-              <h1 className="text-xl font-bold">Fidelidade</h1>
+              <Star className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-playfair font-bold">Fidelidade</h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
             {user?.email && (
-              <span className="text-sm text-zinc-400 hidden xl:inline">
+              <span className="text-sm text-muted-foreground hidden xl:inline">
                 {user.email}
               </span>
             )}
@@ -110,15 +110,12 @@ export default function LoyaltyLayout({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+                  className="text-muted-foreground hover:text-foreground hover:bg-accent"
                 >
                   <Menu className="h-6 w-6" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-56 bg-zinc-800 border-zinc-700"
-              >
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem asChild>
                   <Link
                     href={`/${locale}`}
@@ -152,7 +149,7 @@ export default function LoyaltyLayout({
         </div>
       </header>
 
-      <div className="border-b border-zinc-800 bg-zinc-900">
+      <div className="border-b border-border bg-background">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-center gap-6 overflow-x-auto no-scrollbar">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -160,10 +157,10 @@ export default function LoyaltyLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`py-4 whitespace-nowrap flex items-center gap-2 border-b-2 text-sm font-medium transition-colors ${
+                className={`py-4 whitespace-nowrap flex items-center gap-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
                   isActive
-                    ? "border-amber-500 text-amber-500"
-                    : "border-transparent text-zinc-400 hover:text-white hover:border-zinc-700"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 <item.icon className="w-4 h-4" />

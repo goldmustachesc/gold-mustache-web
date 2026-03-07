@@ -23,18 +23,23 @@ export function LoyaltyCard({
   const t = useTranslations("loyalty.dashboard");
 
   return (
-    <Card className={`w-full ${className}`}>
+    <Card
+      className={`w-full overflow-hidden border-border shadow-md ${className}`}
+    >
+      <div className="h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-2xl font-bold">{t("title")}</CardTitle>
+          <CardTitle className="text-2xl font-playfair font-bold">
+            {t("title")}
+          </CardTitle>
           <CardDescription>{t("description")}</CardDescription>
         </div>
         <TierBadge tier={tier} className="text-lg px-3 py-1" />
       </CardHeader>
       <CardContent className="mt-4">
-        <div className="text-5xl font-black text-primary mb-6">
+        <div className="text-5xl font-black text-primary mb-6 font-mono tabular-nums">
           {points}{" "}
-          <span className="text-sm font-normal text-muted-foreground uppercase">
+          <span className="text-sm font-sans font-normal text-muted-foreground uppercase tracking-wide">
             {t("pointsBalance")}
           </span>
         </div>

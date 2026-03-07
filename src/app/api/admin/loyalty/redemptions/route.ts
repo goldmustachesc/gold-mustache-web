@@ -4,6 +4,7 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiSuccess, apiError, apiCollection } from "@/lib/api/response";
 import { parsePagination, paginationMeta } from "@/lib/api/pagination";
 import { deriveRedemptionStatus } from "@/lib/loyalty/status";
+import { getAuthUserEmailMap } from "@/lib/supabase/admin";
 import type { RedemptionStatus } from "@/types/loyalty";
 import type { Prisma } from "@prisma/client";
 
@@ -26,11 +27,11 @@ function buildStatusFilter(
 const REDEMPTION_INCLUDE = {
   reward: { select: { name: true, type: true, value: true } },
   loyaltyAccount: {
-    include: { profile: { select: { fullName: true, email: true } } },
+    include: { profile: { select: { fullName: true, userId: true } } },
   },
 } as const;
 
-function mapRedemptionToResponse(r: {
+type RedemptionRow = {
   id: string;
   code: string;
   pointsSpent: number;
@@ -39,9 +40,14 @@ function mapRedemptionToResponse(r: {
   createdAt: Date;
   reward: { name: string; type: string; value: unknown };
   loyaltyAccount: {
-    profile: { fullName: string | null; email: string | null };
+    profile: { fullName: string | null; userId: string };
   };
-}) {
+};
+
+function mapRedemptionToResponse(
+  r: RedemptionRow,
+  emailMap: Map<string, string>,
+) {
   return {
     id: r.id,
     code: r.code,
@@ -51,7 +57,7 @@ function mapRedemptionToResponse(r: {
     createdAt: r.createdAt,
     status: deriveRedemptionStatus(r),
     clientName: r.loyaltyAccount.profile.fullName,
-    clientEmail: r.loyaltyAccount.profile.email,
+    clientEmail: emailMap.get(r.loyaltyAccount.profile.userId) ?? "",
     rewardName: r.reward.name,
     rewardType: r.reward.type,
     rewardValue: r.reward.value,
@@ -67,16 +73,19 @@ export async function GET(request: Request) {
 
     const code = searchParams.get("code");
     if (code) {
-      const redemption = await prisma.redemption.findUnique({
-        where: { code },
-        include: REDEMPTION_INCLUDE,
-      });
+      const [redemption, emailMap] = await Promise.all([
+        prisma.redemption.findUnique({
+          where: { code },
+          include: REDEMPTION_INCLUDE,
+        }),
+        getAuthUserEmailMap(),
+      ]);
 
       if (!redemption) {
         return apiError("NOT_FOUND", "Código de resgate não encontrado", 404);
       }
 
-      return apiSuccess(mapRedemptionToResponse(redemption));
+      return apiSuccess(mapRedemptionToResponse(redemption, emailMap));
     }
 
     const { page, limit, skip } = parsePagination(searchParams);
@@ -90,7 +99,7 @@ export async function GET(request: Request) {
       ? buildStatusFilter(status as RedemptionStatus)
       : {};
 
-    const [redemptions, total] = await Promise.all([
+    const [redemptions, total, emailMap] = await Promise.all([
       prisma.redemption.findMany({
         where,
         include: REDEMPTION_INCLUDE,
@@ -99,9 +108,10 @@ export async function GET(request: Request) {
         take: limit,
       }),
       prisma.redemption.count({ where }),
+      getAuthUserEmailMap(),
     ]);
 
-    const items = redemptions.map(mapRedemptionToResponse);
+    const items = redemptions.map((r) => mapRedemptionToResponse(r, emailMap));
     return apiCollection(items, paginationMeta(total, page, limit));
   } catch (error) {
     return handlePrismaError(error, "Erro ao listar resgates");

@@ -45,7 +45,7 @@ export default function LoyaltyRewardsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -63,23 +63,23 @@ export default function LoyaltyRewardsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold">{t("title")}</h2>
-        <p className="text-zinc-400">{t("description")}</p>
+        <h2 className="text-2xl font-playfair font-bold">{t("title")}</h2>
+        <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
-      <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
-        <span className="font-semibold text-zinc-300">
+      <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card shadow-sm">
+        <span className="font-semibold text-foreground">
           {t("currentBalance")}
         </span>
-        <span className="text-2xl font-black text-primary">
+        <span className="text-2xl font-black font-mono tabular-nums text-primary">
           {account?.currentPoints ?? 0} pts
         </span>
       </div>
 
       {rewardsError ? (
-        <div className="col-span-full text-center py-12 border border-dashed border-zinc-700 rounded-xl space-y-4">
-          <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
-          <p className="text-zinc-400">{t("errorLoading")}</p>
+        <div className="col-span-full text-center py-12 border border-dashed border-border rounded-xl space-y-4">
+          <AlertTriangle className="h-10 w-10 text-primary mx-auto" />
+          <p className="text-muted-foreground">{t("errorLoading")}</p>
           <Button variant="outline" onClick={() => refetchRewards()}>
             {t("retry")}
           </Button>
@@ -96,7 +96,7 @@ export default function LoyaltyRewardsPage() {
             />
           ))}
           {(!rewards || rewards.length === 0) && (
-            <div className="col-span-full text-center py-12 text-zinc-500 border border-dashed border-zinc-700 rounded-xl">
+            <div className="col-span-full text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl">
               {t("emptyState")}
             </div>
           )}
@@ -107,12 +107,12 @@ export default function LoyaltyRewardsPage() {
         open={!!successResult}
         onOpenChange={(open) => !open && setSuccessResult(null)}
       >
-        <DialogContent className="sm:max-w-md text-center bg-zinc-900 border-zinc-800">
+        <DialogContent className="sm:max-w-md text-center">
           <DialogHeader className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mb-4">
               <span className="text-3xl">🎉</span>
             </div>
-            <DialogTitle className="text-2xl text-emerald-500">
+            <DialogTitle className="text-2xl text-success">
               {t("successRedeem")}
             </DialogTitle>
             <DialogDescription className="text-base mt-2">
@@ -122,14 +122,14 @@ export default function LoyaltyRewardsPage() {
 
           {successResult?.reward?.name && (
             <p
-              className="text-lg font-semibold text-zinc-200"
+              className="text-lg font-semibold text-foreground"
               data-testid="success-reward-name"
             >
               {successResult.reward.name}
             </p>
           )}
 
-          <div className="bg-zinc-800 p-6 rounded-lg my-4 flex items-center justify-center gap-3">
+          <div className="bg-muted p-6 rounded-lg my-4 flex items-center justify-center gap-3">
             <p className="text-3xl font-mono font-black tracking-widest text-primary">
               {successResult?.code}
             </p>
@@ -138,7 +138,7 @@ export default function LoyaltyRewardsPage() {
               size="icon"
               onClick={() => successResult && copyCode(successResult.code)}
               aria-label={t("copyCode")}
-              className="h-9 w-9 text-zinc-400 hover:text-white shrink-0"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
             >
               {codeCopied ? (
                 <Check className="h-5 w-5" />
@@ -150,14 +150,14 @@ export default function LoyaltyRewardsPage() {
 
           {successResult?.expiresAt && (
             <p
-              className="text-sm text-zinc-400"
+              className="text-sm text-muted-foreground"
               data-testid="success-expiry-date"
             >
               {t("expiresAt")}: {formatDateShort(successResult.expiresAt)}
             </p>
           )}
 
-          <p className="text-sm text-zinc-400 mb-4 px-4">
+          <p className="text-sm text-muted-foreground mb-4 px-4">
             {t("redeemCodeInstruction")}
           </p>
 

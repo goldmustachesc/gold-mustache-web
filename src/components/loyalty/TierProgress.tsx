@@ -49,7 +49,7 @@ export function TierProgress({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <div className="flex justify-between text-sm text-muted-foreground">
+      <div className="flex justify-between text-sm font-medium text-muted-foreground">
         <span>
           {tTiers(
             currentTier.toLowerCase() as
@@ -72,9 +72,9 @@ export function TierProgress({
         </span>
       </div>
 
-      <Progress value={progressPercentage} className="h-2" />
+      <Progress value={progressPercentage} className="h-2.5" />
 
-      <div className="text-sm font-medium text-center text-muted-foreground mt-2">
+      <p className="text-sm text-center text-muted-foreground mt-2">
         {isMax
           ? t("max")
           : t("next", {
@@ -89,7 +89,7 @@ export function TierProgress({
                   )
                 : "",
             })}
-      </div>
+      </p>
     </div>
   );
 }

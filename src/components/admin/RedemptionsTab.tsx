@@ -30,9 +30,9 @@ import { ApiError } from "@/lib/api/client";
 import type { RedemptionStatus } from "@/types/loyalty";
 
 const STATUS_STYLES: Record<RedemptionStatus, string> = {
-  PENDING: "bg-amber-500/20 text-amber-500",
-  USED: "bg-green-500/20 text-green-500",
-  EXPIRED: "bg-zinc-500/20 text-zinc-400",
+  PENDING: "bg-warning/10 text-warning",
+  USED: "bg-success/10 text-success",
+  EXPIRED: "bg-muted text-muted-foreground",
 };
 
 function RedemptionStatusBadge({ status }: { status: RedemptionStatus }) {
@@ -111,7 +111,7 @@ export function RedemptionsTab() {
               onChange={(e) => setRedemptionCode(e.target.value.toUpperCase())}
               placeholder={t("redemptions.codePlaceholder") || "Ex: ABC123"}
               maxLength={6}
-              className="max-w-xs font-mono uppercase border-input bg-background focus-visible:ring-amber-500"
+              className="max-w-xs font-mono uppercase"
             />
             <Button
               onClick={handleValidateCode}
@@ -232,7 +232,7 @@ export function RedemptionsTab() {
           <div className="overflow-x-auto">
             {redemptionsLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : (
               <table className="w-full text-sm text-left">

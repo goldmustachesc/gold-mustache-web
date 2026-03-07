@@ -63,7 +63,7 @@ export default function LoyaltyReferralPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -71,22 +71,22 @@ export default function LoyaltyReferralPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 mt-4">
       <div className="text-center space-y-2">
-        <div className="mx-auto w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-6">
-          <Ticket className="h-8 w-8 text-amber-500" />
+        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <Ticket className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-3xl font-bold">{t("title")}</h2>
-        <p className="text-zinc-400 text-lg">
+        <h2 className="text-3xl font-playfair font-bold">{t("title")}</h2>
+        <p className="text-muted-foreground text-lg">
           {t("description", { points: LOYALTY_CONFIG.REFERRAL_BONUS })}
         </p>
       </div>
 
-      <div className="bg-zinc-800/40 border border-zinc-700 p-8 rounded-2xl text-center space-y-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="bg-card border border-border p-8 rounded-2xl text-center space-y-6 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {t("yourCode")}
         </h3>
 
-        <div className="bg-zinc-950 py-4 px-6 rounded-xl border border-zinc-800 flex justify-center items-center gap-4 max-w-sm mx-auto">
-          <span className="text-3xl font-mono font-black tracking-widest text-white">
+        <div className="bg-muted py-4 px-6 rounded-xl border border-border flex justify-center items-center gap-4 max-w-sm mx-auto">
+          <span className="text-3xl font-mono font-black tracking-widest text-foreground">
             {referralCode}
           </span>
         </div>
@@ -96,10 +96,8 @@ export default function LoyaltyReferralPage() {
             onClick={handleCopy}
             size="lg"
             variant={copied ? "secondary" : "default"}
-            className={`w-full font-bold transition-all ${
-              copied
-                ? "bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30"
-                : ""
+            className={`w-full font-bold transition-all duration-200 ${
+              copied ? "bg-success/20 text-success hover:bg-success/30" : ""
             }`}
           >
             {copied ? (
@@ -126,11 +124,13 @@ export default function LoyaltyReferralPage() {
         </div>
       </div>
 
-      <div className="bg-zinc-800/40 border border-zinc-700 p-6 rounded-2xl space-y-4">
+      <div className="bg-card border border-border p-6 rounded-2xl space-y-4 shadow-sm">
         <h3 className="text-lg font-semibold">{t("referredByTitle")}</h3>
 
         {alreadyReferred ? (
-          <p className="text-zinc-400 text-sm">{t("alreadyReferred")}</p>
+          <p className="text-muted-foreground text-sm">
+            {t("alreadyReferred")}
+          </p>
         ) : (
           <>
             <div className="flex gap-3">
@@ -152,7 +152,7 @@ export default function LoyaltyReferralPage() {
 
             {validateReferral.data && !applyReferral.isSuccess && (
               <div className="space-y-3">
-                <p className="text-emerald-400 text-sm flex items-center gap-2">
+                <p className="text-success text-sm flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   {t("referrerFound", {
                     name: validateReferral.data.referrerName,
@@ -171,21 +171,21 @@ export default function LoyaltyReferralPage() {
             )}
 
             {applyReferral.isSuccess && (
-              <p className="text-emerald-400 text-sm flex items-center gap-2">
+              <p className="text-success text-sm flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 {t("referralApplied")}
               </p>
             )}
 
             {validateReferral.isError && (
-              <p className="text-red-400 text-sm flex items-center gap-2">
+              <p className="text-destructive text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 {validateReferral.error?.message}
               </p>
             )}
 
             {applyReferral.isError && (
-              <p className="text-red-400 text-sm flex items-center gap-2">
+              <p className="text-destructive text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 {applyReferral.error?.message}
               </p>
@@ -194,18 +194,18 @@ export default function LoyaltyReferralPage() {
         )}
       </div>
 
-      <div className="flex items-center gap-3 bg-zinc-800/40 border border-zinc-700 p-4 rounded-xl">
-        <Users className="h-5 w-5 text-amber-500 shrink-0" />
-        <p className="text-sm text-zinc-300" data-testid="referrals-count">
+      <div className="flex items-center gap-3 bg-card border border-border p-4 rounded-xl shadow-sm">
+        <Users className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-sm text-foreground" data-testid="referrals-count">
           {t("referralsCount", { count: account?.referralsCount ?? 0 })}
         </p>
       </div>
 
-      <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
-        <h4 className="font-semibold text-amber-500 mb-2">
+      <div className="bg-primary/10 border border-primary/20 rounded-xl p-6">
+        <h4 className="font-semibold text-primary mb-2">
           {t("howItWorksTitle")}
         </h4>
-        <ol className="list-decimal list-inside text-sm text-zinc-300 space-y-2">
+        <ol className="list-decimal list-inside text-sm text-foreground space-y-2">
           <li>{t("howItWorksStep1")}</li>
           <li>{t("howItWorksStep2")}</li>
           <li>{t("howItWorksStep3")}</li>
