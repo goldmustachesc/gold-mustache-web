@@ -35,6 +35,7 @@ import {
 import { ApiError, apiMutate } from "@/lib/api/client";
 import { toast } from "sonner";
 import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailSheet";
+import { BarberChairIcon } from "./BarberChairIcon";
 
 interface DailyScheduleProps {
   date: Date;
@@ -75,30 +76,6 @@ function formatCurrency(value: number): string {
 
 function isFullDayAbsence(absence: BarberAbsenceData): boolean {
   return !absence.startTime || !absence.endTime;
-}
-
-// Barber chair icon for empty state (decorative)
-function BarberChairIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M5 18v2a1 1 0 0 0 1 1h2" />
-      <path d="M19 18v2a1 1 0 0 1-1 1h-2" />
-      <path d="M5 18H3a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1h2" />
-      <path d="M19 18h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2" />
-      <path d="M5 14v-3a7 7 0 0 1 14 0v3" />
-      <path d="M7 8h10" />
-      <rect x="7" y="14" width="10" height="4" rx="1" />
-    </svg>
-  );
 }
 
 // Extracted appointment card component for reuse
@@ -160,13 +137,13 @@ function AppointmentCard({
       }}
       className={cn(
         "relative overflow-hidden rounded-xl",
-        "bg-zinc-800/80 cursor-pointer",
-        "transition-all duration-200 hover:bg-zinc-800 hover:scale-[1.01]",
-        "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-zinc-900",
+        "bg-card/80 cursor-pointer",
+        "transition-all duration-200 hover:bg-card hover:scale-[1.01]",
+        "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background",
         isCancelled &&
-          "bg-red-950/30 border border-red-900/30 hover:bg-red-950/40",
+          "bg-destructive/10 border border-destructive/30 hover:bg-destructive/15",
         isNoShow &&
-          "bg-amber-950/30 border border-amber-900/30 hover:bg-amber-950/40",
+          "bg-warning/10 border border-warning/30 hover:bg-warning/15",
       )}
       style={{
         backgroundImage: isCancelled
@@ -192,8 +169,8 @@ function AppointmentCard({
           <span
             className={cn(
               "text-xs font-semibold px-2.5 py-1 rounded-md inline-block",
-              isNoShow && "bg-amber-500/20 text-amber-400",
-              isCancelled && "bg-red-500/20 text-red-400",
+              isNoShow && "bg-primary/20 text-primary",
+              isCancelled && "bg-destructive/20 text-destructive",
             )}
           >
             {isNoShow ? "Não compareceu" : "Cancelado"}
@@ -211,7 +188,9 @@ function AppointmentCard({
         <span
           className={cn(
             "text-sm",
-            isCancelled ? "text-zinc-500 line-through" : "text-zinc-300",
+            isCancelled
+              ? "text-muted-foreground line-through"
+              : "text-foreground",
           )}
         >
           {appointment.startTime} - {appointment.endTime}
@@ -222,7 +201,7 @@ function AppointmentCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-400 hover:text-amber-400 hover:bg-zinc-700"
+              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted"
               onClick={(e) => {
                 e.stopPropagation();
                 onSendReminder(appointment.id);
@@ -244,7 +223,7 @@ function AppointmentCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -265,7 +244,7 @@ function AppointmentCard({
                       }
                     }}
                     disabled={isCancelling && cancellingId === appointment.id}
-                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-500/10"
+                    className="text-red-600 dark:text-destructive focus:text-red-600 dark:focus:text-destructive focus:bg-red-500/10"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancelar
@@ -280,7 +259,7 @@ function AppointmentCard({
                     disabled={
                       isMarkingNoShow && markingNoShowId === appointment.id
                     }
-                    className="text-amber-600 dark:text-amber-400 focus:text-amber-600 dark:focus:text-amber-400 focus:bg-amber-500/10"
+                    className="text-warning dark:text-primary focus:text-warning dark:focus:text-primary focus:bg-warning/10"
                   >
                     Marcar não compareceu
                   </DropdownMenuItem>
@@ -308,7 +287,7 @@ function AppointmentCard({
         <p
           className={cn(
             "text-lg font-semibold",
-            isCancelled ? "text-zinc-500" : "text-white",
+            isCancelled ? "text-muted-foreground" : "text-foreground",
           )}
         >
           {appointment.client?.fullName ||
@@ -319,7 +298,7 @@ function AppointmentCard({
           <p
             className={cn(
               "text-sm uppercase tracking-wide",
-              isCancelled ? "text-zinc-600" : "text-zinc-400",
+              isCancelled ? "text-muted-foreground" : "text-muted-foreground",
             )}
           >
             {appointment.service.name}
@@ -327,7 +306,7 @@ function AppointmentCard({
           <p
             className={cn(
               "text-sm font-medium",
-              isCancelled ? "text-zinc-500" : "text-zinc-300",
+              isCancelled ? "text-muted-foreground" : "text-foreground",
             )}
           >
             {hideValues
@@ -580,18 +559,18 @@ export function DailySchedule({
       <div className="space-y-3">
         {hasFullDayAbsence ? (
           <>
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-4">
+            <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-4">
               <div className="flex items-start gap-3">
-                <CalendarOff className="h-5 w-5 text-amber-400 mt-0.5" />
+                <CalendarOff className="h-5 w-5 text-primary mt-0.5" />
                 <div>
-                  <p className="font-medium text-amber-800 dark:text-amber-200">
+                  <p className="font-medium text-foreground">
                     Agenda bloqueada por ausência
                   </p>
-                  <p className="text-sm mt-1 text-amber-700 dark:text-amber-100/80">
+                  <p className="text-sm mt-1 text-foreground/80">
                     Nenhum horário ficará disponível para este dia.
                   </p>
                   {fullDayAbsenceReason && (
-                    <p className="text-sm mt-2 text-amber-700 dark:text-amber-100/80">
+                    <p className="text-sm mt-2 text-foreground/80">
                       Motivo: {fullDayAbsenceReason}
                     </p>
                   )}
@@ -600,20 +579,20 @@ export function DailySchedule({
             </div>
             {appointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <BarberChairIcon className="h-16 w-16 text-zinc-600 mb-4" />
-                <p className="text-zinc-400 text-lg font-medium">
+                <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg font-medium">
                   Dia bloqueado
                 </p>
-                <p className="text-zinc-500 text-sm mt-1">
+                <p className="text-muted-foreground text-sm mt-1">
                   Ausência de dia inteiro registrada.
                 </p>
               </div>
             ) : (
               hours.map((hour) => (
                 <div key={hour} className="space-y-2">
-                  <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <span>{hour}:00</span>
-                    <div className="flex-1 h-px bg-zinc-800" />
+                    <div className="flex-1 h-px bg-border" />
                   </div>
                   {appointmentsByHour[hour].map((appointment) => (
                     <AppointmentCard
@@ -639,18 +618,22 @@ export function DailySchedule({
         ) : isDayOff ? (
           // Day off state
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <BarberChairIcon className="h-16 w-16 text-zinc-600 mb-4" />
-            <p className="text-zinc-400 text-lg font-medium">Dia de folga</p>
-            <p className="text-zinc-500 text-sm mt-1">
+            <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-lg font-medium">
+              Dia de folga
+            </p>
+            <p className="text-muted-foreground text-sm mt-1">
               Você não trabalha neste dia
             </p>
           </div>
         ) : !hasWorkingHours && appointments.length === 0 ? (
           // No working hours configured and no appointments
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <BarberChairIcon className="h-16 w-16 text-zinc-600 mb-4" />
-            <p className="text-zinc-400 text-lg font-medium">Dia livre!</p>
-            <p className="text-zinc-500 text-sm mt-1">
+            <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-lg font-medium">
+              Dia livre!
+            </p>
+            <p className="text-muted-foreground text-sm mt-1">
               Nenhum agendamento para este dia
             </p>
           </div>
@@ -658,9 +641,9 @@ export function DailySchedule({
           // Fallback: show only appointments (old behavior)
           hours.map((hour) => (
             <div key={hour} className="space-y-2">
-              <div className="flex items-center gap-2 text-zinc-500 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <span>{hour}:00</span>
-                <div className="flex-1 h-px bg-zinc-800" />
+                <div className="flex-1 h-px bg-border" />
               </div>
               {appointmentsByHour[hour].map((appointment) => (
                 <AppointmentCard
@@ -685,8 +668,8 @@ export function DailySchedule({
           // Full schedule with empty slots
           <>
             {hasPartialAbsences && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
+              <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
+                <p className="text-sm text-foreground">
                   Existem horários bloqueados por ausência neste dia.
                 </p>
               </div>
@@ -694,9 +677,9 @@ export function DailySchedule({
             {scheduleHours.map((hour) => (
               <div key={hour} className="space-y-2">
                 {/* Hour marker */}
-                <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <span>{hour}:00</span>
-                  <div className="flex-1 h-px bg-zinc-800" />
+                  <div className="flex-1 h-px bg-border" />
                 </div>
 
                 {/* Slots for this hour */}
@@ -731,8 +714,8 @@ export function DailySchedule({
                       className={cn(
                         "relative overflow-hidden rounded-xl px-4 py-3 border",
                         slot.isBlockedByAbsence
-                          ? "bg-amber-500/10 border-amber-500/30"
-                          : "bg-zinc-800/30 border-dashed border-zinc-700/50",
+                          ? "bg-warning/10 border-warning/30"
+                          : "bg-card/30 border-dashed border-border",
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -740,8 +723,8 @@ export function DailySchedule({
                           className={cn(
                             "text-sm",
                             slot.isBlockedByAbsence
-                              ? "text-amber-800 dark:text-amber-100/90"
-                              : "text-zinc-500",
+                              ? "text-foreground"
+                              : "text-muted-foreground",
                           )}
                         >
                           {slot.time} - {slot.endTime}
@@ -750,8 +733,8 @@ export function DailySchedule({
                           className={cn(
                             "text-xs uppercase tracking-wide",
                             slot.isBlockedByAbsence
-                              ? "text-amber-700 dark:text-amber-300"
-                              : "text-zinc-600",
+                              ? "text-muted-foreground"
+                              : "text-muted-foreground",
                           )}
                         >
                           {slot.isBlockedByAbsence
@@ -760,12 +743,12 @@ export function DailySchedule({
                         </span>
                       </div>
                       {slot.isBlockedByAbsence && slot.absenceReason && (
-                        <p className="text-xs mt-1 text-amber-700 dark:text-amber-100/80">
+                        <p className="text-xs mt-1 text-foreground/80">
                           {slot.absenceReason}
                         </p>
                       )}
                       {!slot.isBlockedByAbsence && hasSlotActions && (
-                        <p className="text-xs text-zinc-600 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Toque para cadastrar atendimento ou ausência
                         </p>
                       )}
@@ -810,7 +793,7 @@ export function DailySchedule({
                           onClick={() =>
                             onCreateAbsenceFromSlot?.(slot.time, slot.endTime)
                           }
-                          className="text-amber-600 dark:text-amber-300 focus:text-amber-600 dark:focus:text-amber-300 focus:bg-amber-500/10"
+                          className="text-warning dark:text-warning focus:text-warning dark:focus:text-warning focus:bg-warning/10"
                         >
                           Adicionar ausência neste horário
                         </DropdownMenuItem>
@@ -863,7 +846,7 @@ export function DailySchedule({
           <div className="text-center py-8">
             {hasFullDayAbsence ? (
               <>
-                <CalendarOff className="h-12 w-12 mx-auto text-amber-400/60 mb-3" />
+                <CalendarOff className="h-12 w-12 mx-auto text-primary/60 mb-3" />
                 <p className="text-muted-foreground">
                   Agenda bloqueada por ausência.
                 </p>

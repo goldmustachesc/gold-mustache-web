@@ -7,11 +7,11 @@ import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { BarberSidebar } from "./BarberSidebar";
 import { BarberStatsCards } from "./BarberStatsCards";
+import { QuickAction } from "./QuickAction";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useUser } from "@/hooks/useAuth";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
-import { cn } from "@/lib/utils";
 import {
   Calendar,
   CalendarOff,
@@ -32,68 +32,6 @@ interface BarberHubProps {
   locale: string;
 }
 
-interface QuickActionProps {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  description?: string;
-  variant?: "default" | "primary";
-}
-
-function QuickAction({
-  href,
-  icon,
-  label,
-  description,
-  variant = "default",
-}: QuickActionProps) {
-  return (
-    <Link href={href}>
-      <div
-        className={cn(
-          "group relative overflow-hidden rounded-xl p-4 transition-all duration-200",
-          "hover:scale-[1.02] hover:shadow-lg",
-          variant === "primary"
-            ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-500/20"
-            : "bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-100",
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-lg",
-              variant === "primary"
-                ? "bg-white/20"
-                : "bg-zinc-700/50 group-hover:bg-zinc-700",
-            )}
-          >
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold truncate">{label}</p>
-            {description && (
-              <p
-                className={cn(
-                  "text-xs truncate",
-                  variant === "primary" ? "text-white/80" : "text-zinc-400",
-                )}
-              >
-                {description}
-              </p>
-            )}
-          </div>
-          <ChevronRight
-            className={cn(
-              "h-5 w-5 transition-transform group-hover:translate-x-1",
-              variant === "primary" ? "text-white/60" : "text-zinc-500",
-            )}
-          />
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 function NextClientCard({
   time,
   clientName,
@@ -106,37 +44,37 @@ function NextClientCard({
   duration: number;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 p-5">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-success/20 to-success/10 border border-success/30 p-5">
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-3">
-          <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-sm font-medium text-emerald-400">
+          <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+          <span className="text-sm font-medium text-success">
             Próximo cliente
           </span>
         </div>
         <div className="space-y-1">
-          <p className="text-2xl font-bold text-white">{time}</p>
-          <p className="text-lg font-semibold text-zinc-200">{clientName}</p>
-          <p className="text-sm text-zinc-400">
+          <p className="text-2xl font-bold text-primary-foreground">{time}</p>
+          <p className="text-lg font-semibold text-foreground">{clientName}</p>
+          <p className="text-sm text-muted-foreground">
             {serviceName} • {duration} min
           </p>
         </div>
       </div>
-      <Sparkles className="absolute -right-4 -bottom-4 h-24 w-24 text-emerald-500/10" />
+      <Sparkles className="absolute -right-4 -bottom-4 h-24 w-24 text-success/10" />
     </div>
   );
 }
 
 function EmptyNextClient() {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-zinc-800/30 border border-zinc-700/50 p-5">
+    <div className="relative overflow-hidden rounded-2xl bg-card/30 border border-border p-5">
       <div className="flex items-center gap-4">
-        <div className="h-12 w-12 rounded-full bg-zinc-700/50 flex items-center justify-center">
-          <Calendar className="h-6 w-6 text-zinc-500" />
+        <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
+          <Calendar className="h-6 w-6 text-muted-foreground" />
         </div>
         <div>
-          <p className="font-semibold text-zinc-300">Nenhum cliente hoje</p>
-          <p className="text-sm text-zinc-500">
+          <p className="font-semibold text-foreground">Nenhum cliente hoje</p>
+          <p className="text-sm text-muted-foreground">
             Sua agenda está livre por enquanto
           </p>
         </div>
@@ -171,7 +109,7 @@ export function BarberHub({ locale }: BarberHubProps) {
   if (isLoading || !barberProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -208,7 +146,7 @@ export function BarberHub({ locale }: BarberHubProps) {
               href={`/${locale}/barbeiro/agendar`}
               className="hidden sm:block"
             >
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
+              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Agendar para Cliente
               </Button>
@@ -284,7 +222,7 @@ export function BarberHub({ locale }: BarberHubProps) {
             />
             <QuickAction
               href={`/${locale}/barbeiro/agendar`}
-              icon={<UserPlus className="h-5 w-5 text-amber-400" />}
+              icon={<UserPlus className="h-5 w-5 text-primary" />}
               label="Agendar para Cliente"
               description="Criar novo agendamento"
             />
@@ -302,7 +240,7 @@ export function BarberHub({ locale }: BarberHubProps) {
             />
             <QuickAction
               href={`/${locale}/barbeiro/horarios`}
-              icon={<Clock className="h-5 w-5 text-emerald-400" />}
+              icon={<Clock className="h-5 w-5 text-success" />}
               label="Meus Horários"
               description="Configurar disponibilidade"
             />
@@ -329,17 +267,17 @@ export function BarberHub({ locale }: BarberHubProps) {
 
         {/* Quick Share Link */}
         {bookingUrl && (
-          <div className="rounded-xl bg-zinc-800/30 border border-zinc-700/50 p-4">
+          <div className="rounded-xl bg-card/30 border border-border p-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                  <Link2 className="h-5 w-5 text-amber-400" />
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Link2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-zinc-200">
+                  <p className="font-medium text-foreground">
                     Seu link de agendamento
                   </p>
-                  <p className="text-sm text-zinc-500 truncate max-w-xs">
+                  <p className="text-sm text-muted-foreground truncate max-w-xs">
                     {bookingUrl}
                   </p>
                 </div>

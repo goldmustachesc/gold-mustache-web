@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { BarberChairIcon } from "./BarberChairIcon";
 
 interface BarberStatsCardsProps {
   todayCount: number;
@@ -8,30 +9,6 @@ interface BarberStatsCardsProps {
   weekCount: number;
   weekRevenue: number;
   hideValues?: boolean;
-}
-
-// Simple barber chair SVG icon (decorative)
-function BarberChairIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M5 18v2a1 1 0 0 0 1 1h2" />
-      <path d="M19 18v2a1 1 0 0 1-1 1h-2" />
-      <path d="M5 18H3a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1h2" />
-      <path d="M19 18h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2" />
-      <path d="M5 14v-3a7 7 0 0 1 14 0v3" />
-      <path d="M7 8h10" />
-      <rect x="7" y="14" width="10" height="4" rx="1" />
-    </svg>
-  );
 }
 
 function formatCurrency(value: number): string {
@@ -55,13 +32,13 @@ export function BarberStatsCards({
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl p-4",
-          "bg-gradient-to-br from-amber-500 to-amber-700",
-          "shadow-lg shadow-amber-500/20",
+          "bg-gradient-to-br from-primary to-primary/70",
+          "shadow-lg shadow-primary/20",
         )}
       >
         <div className="relative z-10">
-          <p className="text-sm font-medium text-white/90">Hoje</p>
-          <div className="mt-1 flex items-center gap-1.5 text-white/80">
+          <p className="text-sm font-medium text-primary-foreground/90">Hoje</p>
+          <div className="mt-1 flex items-center gap-1.5 text-primary-foreground/80">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -76,11 +53,13 @@ export function BarberStatsCards({
               {hideValues ? maskedValue : formatCurrency(todayRevenue)}
             </span>
           </div>
-          <p className="mt-4 text-5xl font-bold text-white">{todayCount}</p>
+          <p className="mt-4 text-5xl font-bold text-primary-foreground">
+            {todayCount}
+          </p>
         </div>
 
         {/* Background icon */}
-        <BarberChairIcon className="absolute -right-2 -bottom-2 h-24 w-24 text-white/10" />
+        <BarberChairIcon className="absolute -right-2 -bottom-2 h-24 w-24 text-primary-foreground/10" />
       </div>
 
       {/* Week Card - Light/Subtle */}

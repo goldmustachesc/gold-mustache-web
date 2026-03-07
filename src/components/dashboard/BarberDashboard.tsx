@@ -243,7 +243,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               href={`/${locale}/barbeiro/agendar`}
               className="hidden lg:block"
             >
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
+              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
               </Button>
@@ -251,7 +251,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
             <Link href={absencesPageHref} className="hidden lg:block">
               <Button
                 variant="outline"
-                className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400"
+                className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
               >
                 <CalendarOff className="h-4 w-4 mr-2" />
                 Nova Ausência
@@ -261,7 +261,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                className="text-primary hover:text-primary hover:bg-primary/10"
                 title="Adicionar ausência"
               >
                 <CalendarOff className="h-5 w-5" />
@@ -412,7 +412,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
         <Link href={`/${locale}/barbeiro/agendar`}>
           <Button
             size="lg"
-            className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-2xl shadow-lg shadow-amber-500/30 flex items-center justify-between px-6"
+            className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold text-lg rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-between px-6"
           >
             <span>Novo Agendamento</span>
             <ArrowRight className="h-5 w-5" />

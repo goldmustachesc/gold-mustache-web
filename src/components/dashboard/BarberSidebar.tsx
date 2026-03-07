@@ -243,8 +243,8 @@ export function BarberSidebar({
                     onClick={() => onOpenChange(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                      "text-amber-500/90 hover:text-amber-500 hover:bg-accent/60",
-                      isActive && "bg-accent text-amber-500",
+                      "text-primary/90 hover:text-primary hover:bg-accent/60",
+                      isActive && "bg-accent text-primary",
                     )}
                   >
                     {item.icon}

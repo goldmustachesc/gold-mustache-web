@@ -28,54 +28,54 @@ export function ClientStatsOverview({
 
   return (
     <div className="space-y-4">
-      {/* Visit History - Stats Cards */}
       {hasHistory && (
         <div className="grid grid-cols-2 gap-3">
-          {/* Total Visits Card */}
-          <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg shadow-amber-500/20">
+          <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-primary to-primary/70 shadow-lg shadow-primary/20">
             <div className="relative z-10">
-              <p className="text-sm font-medium text-white/90">Total Visitas</p>
-              <p className="mt-2 text-4xl font-bold text-white">
+              <p className="text-sm font-medium text-primary-foreground/90">
+                Total Visitas
+              </p>
+              <p className="mt-2 text-4xl font-bold text-primary-foreground">
                 {stats.totalVisits}
               </p>
             </div>
-            <Calendar className="absolute -right-2 -bottom-2 h-20 w-20 text-white/10" />
+            <Calendar className="absolute -right-2 -bottom-2 h-20 w-20 text-primary-foreground/10" />
           </div>
 
-          {/* Total Spent Card */}
-          <div className="relative overflow-hidden rounded-2xl p-4 bg-zinc-800/50 border border-zinc-700/50">
+          <div className="relative overflow-hidden rounded-2xl p-4 bg-card/50 border border-border">
             <div className="relative z-10">
-              <p className="text-sm font-medium text-zinc-400">Total Gasto</p>
-              <p className="mt-2 text-2xl font-bold text-zinc-100">
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Gasto
+              </p>
+              <p className="mt-2 text-2xl font-bold text-foreground">
                 R$ {stats.totalSpent.toFixed(2).replace(".", ",")}
               </p>
             </div>
-            <DollarSign className="absolute -right-2 -bottom-2 h-20 w-20 text-zinc-600/30" />
+            <DollarSign className="absolute -right-2 -bottom-2 h-20 w-20 text-muted/30" />
           </div>
         </div>
       )}
 
-      {/* Favorites */}
       {(stats.favoriteBarber || stats.favoriteService) && (
-        <div className="rounded-2xl bg-zinc-800/30 border border-zinc-700/50 p-4">
+        <div className="rounded-2xl bg-card/30 border border-border p-4">
           <div className="flex items-center gap-2 mb-4">
             <Heart className="h-5 w-5 text-pink-400" />
-            <h3 className="font-semibold text-zinc-200">Seus Favoritos</h3>
+            <h3 className="font-semibold text-foreground">Seus Favoritos</h3>
           </div>
           <div className="space-y-3">
             {stats.favoriteBarber && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Scissors className="h-4 w-4 text-zinc-500" />
-                  <span className="text-sm text-zinc-400">
+                  <Scissors className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     Barbeiro favorito
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium text-zinc-200">
+                  <p className="font-medium text-foreground">
                     {stats.favoriteBarber.name}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {stats.favoriteBarber.visitCount} visitas
                   </p>
                 </div>
@@ -84,16 +84,16 @@ export function ClientStatsOverview({
             {stats.favoriteService && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4 text-zinc-500" />
-                  <span className="text-sm text-zinc-400">
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     Serviço favorito
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium text-zinc-200">
+                  <p className="font-medium text-foreground">
                     {stats.favoriteService.name}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {stats.favoriteService.useCount} vezes
                   </p>
                 </div>
@@ -103,19 +103,18 @@ export function ClientStatsOverview({
         </div>
       )}
 
-      {/* Quick Rebook */}
       {isInternal && stats.lastService && (
-        <div className="rounded-2xl bg-zinc-800/30 border border-dashed border-zinc-700/50 p-4">
+        <div className="rounded-2xl bg-card/30 border border-dashed border-border p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                <RefreshCw className="h-5 w-5 text-amber-400" />
+              <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <RefreshCw className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm text-zinc-200">
+                <p className="font-medium text-sm text-foreground">
                   Repetir último serviço?
                 </p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted-foreground">
                   {stats.lastService.serviceName} com{" "}
                   {stats.lastService.barberName}
                 </p>
@@ -124,7 +123,7 @@ export function ClientStatsOverview({
             <Button
               asChild
               size="sm"
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
             >
               <Link
                 href={`/${locale}/agendar?barbeiro=${stats.lastService.barberId}`}
@@ -136,12 +135,11 @@ export function ClientStatsOverview({
         </div>
       )}
 
-      {/* View History */}
       {isInternal && hasHistory && (
         <Button
           asChild
           variant="outline"
-          className="w-full border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-100"
+          className="w-full border-border bg-card/50 hover:bg-card text-foreground"
         >
           <Link href={`/${locale}/meus-agendamentos`}>
             Ver todos os agendamentos

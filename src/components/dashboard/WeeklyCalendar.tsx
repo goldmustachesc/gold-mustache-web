@@ -66,7 +66,7 @@ export function WeeklyCalendar({
       <div className="space-y-4">
         {/* Week Range Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-zinc-400">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <CalendarDays className="h-5 w-5" />
             <span className="text-lg font-medium text-foreground">
               {formatWeekRangeCompact(weekStart)}
@@ -77,7 +77,7 @@ export function WeeklyCalendar({
               variant="ghost"
               size="icon"
               onClick={() => onWeekChange("prev")}
-              className="h-8 w-8 text-zinc-400 hover:text-foreground hover:bg-zinc-800"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -85,7 +85,7 @@ export function WeeklyCalendar({
               variant="ghost"
               size="icon"
               onClick={() => onWeekChange("next")}
-              className="h-8 w-8 text-zinc-400 hover:text-foreground hover:bg-zinc-800"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
@@ -108,16 +108,16 @@ export function WeeklyCalendar({
                 onClick={() => onDateSelect(date)}
                 className={cn(
                   "flex flex-col items-center py-2 px-1 rounded-xl transition-all",
-                  "focus:outline-none focus:ring-2 focus:ring-amber-500/50",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/50",
                   isSelected
-                    ? "bg-zinc-700 text-white"
-                    : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200",
+                    ? "bg-muted text-foreground"
+                    : "hover:bg-accent/50 text-muted-foreground hover:text-foreground",
                 )}
               >
                 <span
                   className={cn(
                     "text-[10px] font-semibold tracking-wide",
-                    isSelected ? "text-amber-400" : "text-zinc-500",
+                    isSelected ? "text-primary" : "text-muted-foreground",
                   )}
                 >
                   {WEEKDAYS_SHORT[index]}
@@ -125,8 +125,8 @@ export function WeeklyCalendar({
                 <span
                   className={cn(
                     "text-lg font-bold mt-0.5",
-                    isSelected ? "text-white" : "text-zinc-300",
-                    isToday && !isSelected && "text-amber-400",
+                    isSelected ? "text-foreground" : "text-foreground",
+                    isToday && !isSelected && "text-primary",
                   )}
                 >
                   {date.getDate().toString().padStart(2, "0")}
@@ -138,7 +138,7 @@ export function WeeklyCalendar({
                       data-testid="has-appointments-indicator"
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        isSelected ? "bg-emerald-400" : "bg-emerald-500",
+                        isSelected ? "bg-success" : "bg-success",
                       )}
                     />
                   )}
@@ -147,7 +147,7 @@ export function WeeklyCalendar({
                       data-testid="has-absence-indicator"
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        isSelected ? "bg-amber-300" : "bg-amber-500",
+                        isSelected ? "bg-warning/70" : "bg-warning",
                       )}
                     />
                   )}
@@ -247,7 +247,7 @@ export function WeeklyCalendar({
                   data-testid="has-absence-indicator"
                   className={cn(
                     "h-1.5 w-1.5 rounded-full mt-1",
-                    isSelected ? "bg-amber-200" : "bg-amber-500",
+                    isSelected ? "bg-warning/70" : "bg-warning",
                   )}
                 />
               )}
