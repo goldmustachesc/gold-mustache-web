@@ -38,7 +38,6 @@ export async function PATCH(
     } catch {
       return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
-    const { reason } = body;
 
     // Fetch the appointment first to determine the correct cancellation path
     const appointmentToCancel = await prisma.appointment.findUnique({
@@ -62,7 +61,7 @@ export async function PATCH(
       // Barber cancellation - requires reason
       const validation = cancelAppointmentByBarberSchema.safeParse({
         appointmentId,
-        reason,
+        reason: body.reason,
       });
 
       if (!validation.success) {
