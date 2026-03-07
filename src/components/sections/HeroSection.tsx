@@ -202,7 +202,7 @@ export function HeroSection() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-base md:text-lg px-8 py-6 h-auto font-semibold border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-300"
+                className="text-base md:text-lg px-8 py-6 h-auto font-semibold border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white transition-all duration-300"
                 asChild
               >
                 <Link href="#servicos" className="flex items-center gap-2">
