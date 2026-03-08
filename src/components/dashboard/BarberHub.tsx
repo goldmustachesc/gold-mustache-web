@@ -18,6 +18,8 @@ import {
   Link2,
   Loader2,
   Scissors,
+  Star,
+  User,
   UserPlus,
   Users,
   XCircle,
@@ -209,6 +211,18 @@ export function BarberHub({ locale }: BarberHubProps) {
               icon={<DollarSign className="h-5 w-5 text-green-400" />}
               label="Faturamento"
               description="Relatório financeiro"
+            />
+            <QuickAction
+              href={`/${locale}/barbeiro/feedbacks`}
+              icon={<Star className="h-5 w-5 text-yellow-400" />}
+              label="Minhas Avaliações"
+              description="Feedback dos clientes"
+            />
+            <QuickAction
+              href={`/${locale}/profile`}
+              icon={<User className="h-5 w-5 text-blue-400" />}
+              label="Meu Perfil"
+              description="Editar dados pessoais"
             />
           </div>
         </div>

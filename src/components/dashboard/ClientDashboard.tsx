@@ -11,13 +11,13 @@ import {
 import { getGreeting } from "@/lib/dashboard/greeting";
 import { NextAppointmentCard } from "./NextAppointmentCard";
 import { AdminOverview } from "./AdminOverview";
-import { ClientStatsOverview } from "./ClientStatsOverview";
 import { QuickAction } from "./QuickAction";
 import {
   Calendar,
   ClipboardList,
   Clock,
   DollarSign,
+  Gift,
   Home,
   Loader2,
   Scissors,
@@ -93,15 +93,6 @@ export function ClientDashboard({ locale }: ClientDashboardProps) {
           </section>
         )}
 
-        {isInternal &&
-          !statsLoading &&
-          stats?.client &&
-          stats.client.totalVisits > 0 && (
-            <section>
-              <ClientStatsOverview stats={stats.client} locale={locale} />
-            </section>
-          )}
-
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">
             Acesso rápido
@@ -126,6 +117,12 @@ export function ClientDashboard({ locale }: ClientDashboardProps) {
                 description="Ver e gerenciar"
               />
             )}
+            <QuickAction
+              href={`/${locale}/loyalty`}
+              icon={<Gift className="h-5 w-5 text-yellow-400" />}
+              label="Fidelidade"
+              description="Pontos e recompensas"
+            />
             <QuickAction
               href={`/${locale}/profile`}
               icon={<User className="h-5 w-5 text-blue-400" />}
