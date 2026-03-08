@@ -1,4 +1,5 @@
 import { AppToaster } from "@/components/ui/app-toaster";
+import { PrivateShell } from "@/components/private/PrivateShell";
 import { QueryProvider } from "@/providers/query-provider";
 
 export default function ProtectedLayout({
@@ -8,9 +9,7 @@ export default function ProtectedLayout({
 }) {
   return (
     <QueryProvider>
-      <div className="private-theme min-h-screen bg-background text-foreground">
-        {children}
-      </div>
+      <PrivateShell>{children}</PrivateShell>
       <AppToaster />
     </QueryProvider>
   );

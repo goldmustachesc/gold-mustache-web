@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useDeferredValue, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import { toast } from "sonner";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
-import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import {
@@ -26,19 +21,19 @@ import {
   useCreateAppointmentByBarber,
 } from "@/hooks/useBooking";
 import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import {
-  ArrowLeft,
   Calendar,
   Clock,
   Loader2,
   User,
   Scissors,
   Check,
-  Menu,
   Info,
   CheckCircle2,
   Receipt,
   UserCheck,
+  UserPlus,
   X,
   Search,
 } from "lucide-react";
@@ -69,9 +64,7 @@ export default function BarberAgendarPage() {
 
   const { data: user, isLoading: userLoading } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Form state
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>(initialSelectedDate);
   const [selectedTime, setSelectedTime] = useState<string>(initialSelectedTime);
@@ -79,14 +72,12 @@ export default function BarberAgendarPage() {
   const [clientPhone, setClientPhone] = useState("");
   const hasMounted = useRef(false);
 
-  // Client search state
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const deferredPhone = useDeferredValue(clientPhone);
 
-  // Data hooks
   const { data: services, isLoading: servicesLoading } = useServices(
     barberProfile?.id,
   );
@@ -96,7 +87,6 @@ export default function BarberAgendarPage() {
     selectedServiceId || null,
   );
 
-  // Client search - only search when phone has 6+ digits and no client selected
   const shouldSearch = deferredPhone.length >= 6 && !selectedClient;
   const { data: clientsResponse, isLoading: clientsLoading } = useBarberClients(
     shouldSearch ? deferredPhone : undefined,
@@ -105,7 +95,12 @@ export default function BarberAgendarPage() {
 
   const createAppointment = useCreateAppointmentByBarber();
 
-  // Redirect non-barbers
+  usePrivateHeader({
+    title: "Agendar para Cliente",
+    icon: UserPlus,
+    backHref: `/${locale}/barbeiro`,
+  });
+
   useEffect(() => {
     if (!userLoading && !user) {
       router.push(`/${locale}/login`);
@@ -119,7 +114,6 @@ export default function BarberAgendarPage() {
     }
   }, [barberProfile, barberLoading, user, router, locale]);
 
-  // Reset time when date or service changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on date/service change
   useEffect(() => {
     if (!hasMounted.current) {
@@ -129,14 +123,12 @@ export default function BarberAgendarPage() {
     setSelectedTime("");
   }, [selectedDate, selectedServiceId]);
 
-  // Show suggestions when we have results
   useEffect(() => {
     if (clientSuggestions.length > 0 && !selectedClient) {
       setShowSuggestions(true);
     }
   }, [clientSuggestions, selectedClient]);
 
-  // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -153,7 +145,6 @@ export default function BarberAgendarPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Format phone number for display: (XX) XXXXX-XXXX or (XX) XXXX-XXXX
   const formatPhoneDisplay = (phone: string): string => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length === 0) return "";
@@ -162,15 +153,12 @@ export default function BarberAgendarPage() {
     if (digits.length <= 10) {
       return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
     }
-    // 11 digits (with 9)
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow digits, max 11
     const value = e.target.value.replace(/\D/g, "").slice(0, 11);
     setClientPhone(value);
-    // Clear selected client when phone changes
     if (selectedClient) {
       setSelectedClient(null);
       setClientName("");
@@ -221,14 +209,12 @@ export default function BarberAgendarPage() {
 
       toast.success("Agendamento criado com sucesso!");
 
-      // Reset form
       setSelectedServiceId("");
       setSelectedTime("");
       setClientName("");
       setClientPhone("");
       setSelectedClient(null);
 
-      // Redirect to barber schedule
       setTimeout(() => {
         router.push(`/${locale}/barbeiro`);
       }, 1500);
@@ -243,8 +229,8 @@ export default function BarberAgendarPage() {
 
   if (isLoading || !user || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -252,7 +238,6 @@ export default function BarberAgendarPage() {
   const selectedService = services?.find((s) => s.id === selectedServiceId);
   const availableSlots = slots?.filter((s) => s.available) || [];
 
-  // Generate date options (today + next 30 days)
   const dateOptions = Array.from({ length: 30 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i);
@@ -267,7 +252,6 @@ export default function BarberAgendarPage() {
     /^\d{10,11}$/.test(clientPhone) &&
     !createAppointment.isPending;
 
-  // Calculate completion steps
   const completedSteps = [
     clientName.trim().length >= 2,
     /^\d{10,11}$/.test(clientPhone),
@@ -277,100 +261,23 @@ export default function BarberAgendarPage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="flex items-center justify-between px-4 py-4 lg:px-8">
-          {/* Back button + Logo (desktop) */}
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/${locale}/barbeiro`}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div className="hidden lg:flex items-center gap-3">
-              <Link href={`/${locale}`} className="flex items-center gap-3">
-                <Image
-                  src="/logo.png"
-                  alt="Gold Mustache"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-                <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
-              </Link>
-            </div>
-          </div>
-
-          {/* Title */}
-          <div className="flex items-center gap-2 lg:flex-1 lg:justify-center">
-            <Scissors className="h-5 w-5 text-amber-500" />
-            <h1 className="text-lg lg:text-xl font-bold">
-              Agendar para Cliente
-            </h1>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Desktop Quick Links */}
-            <Link href={`/${locale}/barbeiro`} className="hidden lg:block">
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Minha Agenda
-              </Button>
-            </Link>
-            <Link
-              href={`/${locale}/barbeiro/horarios`}
-              className="hidden lg:block"
-            >
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Meus Horários
-              </Button>
-            </Link>
-
-            {user?.id && <NotificationPanel userId={user.id} />}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        {/* Page Title - Desktop */}
         <div className="hidden lg:block mb-8">
           <h2 className="text-2xl font-bold">Novo Agendamento para Cliente</h2>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Crie um agendamento para um cliente presencial ou por telefone
           </p>
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-          {/* Left Column - Form */}
           <div className="lg:col-span-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Client Info & Service - Side by side on desktop */}
               <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
-                {/* Client Info */}
                 <div
                   className={cn(
-                    "bg-zinc-800/50 rounded-2xl p-6 border",
-                    selectedClient
-                      ? "border-emerald-500/30"
-                      : "border-zinc-700/50",
+                    "bg-muted/50 rounded-2xl p-6 border",
+                    selectedClient ? "border-emerald-500/30" : "border-border",
                   )}
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -380,20 +287,20 @@ export default function BarberAgendarPage() {
                           "h-10 w-10 rounded-xl flex items-center justify-center",
                           selectedClient
                             ? "bg-emerald-500/10"
-                            : "bg-amber-500/10",
+                            : "bg-primary/10",
                         )}
                       >
                         {selectedClient ? (
                           <UserCheck className="h-5 w-5 text-emerald-500" />
                         ) : (
-                          <User className="h-5 w-5 text-amber-500" />
+                          <User className="h-5 w-5 text-primary" />
                         )}
                       </div>
                       <div>
                         <h2 className="text-lg font-semibold">
                           Dados do Cliente
                         </h2>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-muted-foreground">
                           {selectedClient
                             ? "Cliente selecionado"
                             : "Digite o telefone para buscar"}
@@ -406,7 +313,7 @@ export default function BarberAgendarPage() {
                         variant="ghost"
                         size="sm"
                         onClick={handleClearSelection}
-                        className="text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="text-muted-foreground hover:text-foreground hover:bg-accent"
                       >
                         <X className="h-4 w-4 mr-1" />
                         Limpar
@@ -414,7 +321,6 @@ export default function BarberAgendarPage() {
                     )}
                   </div>
 
-                  {/* Selected client badge */}
                   {selectedClient && (
                     <div className="mb-4 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                       <div className="flex items-center gap-2">
@@ -428,7 +334,7 @@ export default function BarberAgendarPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {selectedClient.appointmentCount} agendamento
                         {selectedClient.appointmentCount !== 1 ? "s" : ""}{" "}
                         anterior
@@ -438,16 +344,15 @@ export default function BarberAgendarPage() {
                   )}
 
                   <div className="space-y-4">
-                    {/* Phone field with search */}
                     <div className="space-y-2">
-                      <Label htmlFor="clientPhone" className="text-zinc-300">
+                      <Label htmlFor="clientPhone" className="text-foreground">
                         Telefone
                       </Label>
                       <div className="relative">
                         {clientsLoading ? (
-                          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 animate-spin" />
+                          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
                         ) : (
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         )}
                         <Input
                           ref={phoneInputRef}
@@ -464,23 +369,22 @@ export default function BarberAgendarPage() {
                             }
                           }}
                           className={cn(
-                            "pl-10 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 h-11",
+                            "pl-10 bg-background border-border text-foreground placeholder:text-muted-foreground h-11",
                             selectedClient
                               ? "border-emerald-500/50 focus:border-emerald-500"
-                              : "focus:border-amber-500",
+                              : "focus:border-primary",
                           )}
                           maxLength={16}
                           required
                           readOnly={!!selectedClient}
                         />
 
-                        {/* Suggestions dropdown */}
                         {showSuggestions && clientSuggestions.length > 0 && (
                           <div
                             ref={suggestionsRef}
-                            className="absolute z-50 top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden"
+                            className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-xl overflow-hidden"
                           >
-                            <div className="p-2 text-xs text-zinc-500 border-b border-zinc-800">
+                            <div className="p-2 text-xs text-muted-foreground border-b border-border">
                               <Search className="h-3 w-3 inline mr-1" />
                               {clientSuggestions.length} cliente
                               {clientSuggestions.length !== 1 ? "s" : ""}{" "}
@@ -493,23 +397,23 @@ export default function BarberAgendarPage() {
                                   key={client.id}
                                   type="button"
                                   onClick={() => handleSelectClient(client)}
-                                  className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-zinc-800 transition-colors text-left"
+                                  className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-accent transition-colors text-left"
                                 >
                                   <div
                                     className={cn(
                                       "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium",
                                       client.type === "registered"
                                         ? "bg-emerald-500/20 text-emerald-400"
-                                        : "bg-amber-500/20 text-amber-400",
+                                        : "bg-primary/20 text-primary",
                                     )}
                                   >
                                     {client.fullName.charAt(0).toUpperCase()}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-white font-medium truncate">
+                                    <p className="text-sm text-foreground font-medium truncate">
                                       {client.fullName}
                                     </p>
-                                    <p className="text-xs text-zinc-500">
+                                    <p className="text-xs text-muted-foreground">
                                       {client.phone.length === 11
                                         ? client.phone.replace(
                                             /(\d{2})(\d{5})(\d{4})/,
@@ -521,7 +425,7 @@ export default function BarberAgendarPage() {
                                           )}
                                     </p>
                                   </div>
-                                  <div className="text-xs text-zinc-600">
+                                  <div className="text-xs text-muted-foreground">
                                     {client.appointmentCount} agend.
                                   </div>
                                 </button>
@@ -530,16 +434,15 @@ export default function BarberAgendarPage() {
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         {selectedClient
                           ? "Cliente selecionado automaticamente"
                           : "Digite o telefone para buscar ou criar novo cliente"}
                       </p>
                     </div>
 
-                    {/* Name field */}
                     <div className="space-y-2">
-                      <Label htmlFor="clientName" className="text-zinc-300">
+                      <Label htmlFor="clientName" className="text-foreground">
                         Nome do Cliente
                       </Label>
                       <Input
@@ -550,25 +453,26 @@ export default function BarberAgendarPage() {
                         required
                         readOnly={!!selectedClient}
                         className={cn(
-                          "bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 h-11",
+                          "bg-background border-border text-foreground placeholder:text-muted-foreground h-11",
                           selectedClient
-                            ? "border-emerald-500/50 bg-zinc-900/50 cursor-not-allowed"
-                            : "focus:border-amber-500",
+                            ? "border-emerald-500/50 bg-background/50 cursor-not-allowed"
+                            : "focus:border-primary",
                         )}
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Service Selection */}
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Scissors className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Scissors className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">Serviço</h2>
-                      <p className="text-xs text-zinc-500">Escolha o serviço</p>
+                      <p className="text-xs text-muted-foreground">
+                        Escolha o serviço
+                      </p>
                     </div>
                   </div>
                   <Select
@@ -580,7 +484,7 @@ export default function BarberAgendarPage() {
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border">
                       {servicesLoading ? (
-                        <div className="p-2 text-center text-zinc-400">
+                        <div className="p-2 text-center text-muted-foreground">
                           Carregando...
                         </div>
                       ) : (
@@ -592,7 +496,7 @@ export default function BarberAgendarPage() {
                           >
                             <div className="flex items-center justify-between w-full">
                               <span>{service.name}</span>
-                              <span className="text-zinc-400 ml-2">
+                              <span className="text-muted-foreground ml-2">
                                 {service.duration}min - R${" "}
                                 {service.price.toFixed(2).replace(".", ",")}
                               </span>
@@ -603,19 +507,18 @@ export default function BarberAgendarPage() {
                     </SelectContent>
                   </Select>
 
-                  {/* Service Preview */}
                   {selectedService && (
-                    <div className="mt-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-700/50">
+                    <div className="mt-4 p-4 bg-background/50 rounded-xl border border-border">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-foreground">
                           {selectedService.name}
                         </span>
-                        <span className="text-sm font-bold text-amber-500">
+                        <span className="text-sm font-bold text-primary">
                           R${" "}
                           {selectedService.price.toFixed(2).replace(".", ",")}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         <span>Duração: {selectedService.duration} min</span>
                       </div>
@@ -624,17 +527,17 @@ export default function BarberAgendarPage() {
                 </div>
               </div>
 
-              {/* Date & Time - Side by side on desktop */}
               <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
-                {/* Date Selection */}
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">Data</h2>
-                      <p className="text-xs text-zinc-500">Escolha a data</p>
+                      <p className="text-xs text-muted-foreground">
+                        Escolha a data
+                      </p>
                     </div>
                   </div>
                   <Select value={selectedDate} onValueChange={setSelectedDate}>
@@ -662,11 +565,11 @@ export default function BarberAgendarPage() {
                           >
                             <div className="flex items-center gap-2">
                               <span>{displayDate}</span>
-                              <span className="text-zinc-500 capitalize">
+                              <span className="text-muted-foreground capitalize">
                                 {weekday}
                               </span>
                               {isToday && (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary">
                                   Hoje
                                 </span>
                               )}
@@ -678,15 +581,14 @@ export default function BarberAgendarPage() {
                   </Select>
                 </div>
 
-                {/* Time Selection */}
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">Horário</h2>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         {selectedService
                           ? `Duração: ${selectedService.duration} min`
                           : "Selecione um serviço primeiro"}
@@ -695,7 +597,7 @@ export default function BarberAgendarPage() {
                   </div>
 
                   {!selectedServiceId ? (
-                    <div className="text-center py-6 text-zinc-500">
+                    <div className="text-center py-6 text-muted-foreground">
                       <Clock className="h-10 w-10 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">
                         Selecione um serviço para ver os horários
@@ -703,13 +605,13 @@ export default function BarberAgendarPage() {
                     </div>
                   ) : slotsLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     </div>
                   ) : availableSlots.length === 0 ? (
-                    <div className="text-center py-6 text-zinc-400">
+                    <div className="text-center py-6 text-muted-foreground">
                       <Clock className="h-10 w-10 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">Nenhum horário disponível</p>
-                      <p className="text-xs mt-1 text-zinc-500">
+                      <p className="text-xs mt-1 text-muted-foreground">
                         Tente outra data
                       </p>
                     </div>
@@ -723,8 +625,8 @@ export default function BarberAgendarPage() {
                           className={cn(
                             "px-2 py-2 rounded-lg text-sm font-medium transition-colors",
                             selectedTime === slot.time
-                              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
-                              : "bg-zinc-700/50 text-zinc-300 hover:bg-zinc-700 border border-zinc-600/50",
+                              ? "bg-gradient-to-r from-primary to-primary/80 text-foreground"
+                              : "bg-muted/50 text-foreground hover:bg-accent border border-border",
                           )}
                         >
                           {slot.time}
@@ -735,11 +637,10 @@ export default function BarberAgendarPage() {
                 </div>
               </div>
 
-              {/* Mobile Submit Button */}
               <div className="lg:hidden">
                 <Button
                   type="submit"
-                  className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                  className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold text-lg rounded-xl"
                   size="lg"
                   disabled={!canSubmit}
                 >
@@ -759,12 +660,10 @@ export default function BarberAgendarPage() {
             </form>
           </div>
 
-          {/* Right Column - Summary (Desktop) */}
           <div className="hidden lg:block lg:col-span-4 space-y-6">
-            {/* Progress Card */}
-            <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50">
+            <div className="bg-card/30 rounded-2xl p-6 border border-border">
               <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 className="h-5 w-5 text-amber-500" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">Progresso</h3>
               </div>
               <div className="space-y-3">
@@ -773,8 +672,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
                       clientName.trim().length >= 2
-                        ? "bg-emerald-500 text-white"
-                        : "bg-zinc-700 text-zinc-400",
+                        ? "bg-emerald-500 text-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {clientName.trim().length >= 2 ? (
@@ -787,8 +686,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "text-sm",
                       clientName.trim().length >= 2
-                        ? "text-white"
-                        : "text-zinc-500",
+                        ? "text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     Nome do cliente
@@ -799,8 +698,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
                       /^\d{10,11}$/.test(clientPhone)
-                        ? "bg-emerald-500 text-white"
-                        : "bg-zinc-700 text-zinc-400",
+                        ? "bg-emerald-500 text-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {/^\d{10,11}$/.test(clientPhone) ? (
@@ -813,8 +712,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "text-sm",
                       /^\d{10,11}$/.test(clientPhone)
-                        ? "text-white"
-                        : "text-zinc-500",
+                        ? "text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     Telefone válido
@@ -825,8 +724,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
                       selectedServiceId
-                        ? "bg-emerald-500 text-white"
-                        : "bg-zinc-700 text-zinc-400",
+                        ? "bg-emerald-500 text-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {selectedServiceId ? <Check className="h-3 w-3" /> : "3"}
@@ -834,7 +733,9 @@ export default function BarberAgendarPage() {
                   <span
                     className={cn(
                       "text-sm",
-                      selectedServiceId ? "text-white" : "text-zinc-500",
+                      selectedServiceId
+                        ? "text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     Serviço selecionado
@@ -845,8 +746,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
                       selectedDate
-                        ? "bg-emerald-500 text-white"
-                        : "bg-zinc-700 text-zinc-400",
+                        ? "bg-emerald-500 text-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {selectedDate ? <Check className="h-3 w-3" /> : "4"}
@@ -854,7 +755,9 @@ export default function BarberAgendarPage() {
                   <span
                     className={cn(
                       "text-sm",
-                      selectedDate ? "text-white" : "text-zinc-500",
+                      selectedDate
+                        ? "text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     Data selecionada
@@ -865,8 +768,8 @@ export default function BarberAgendarPage() {
                     className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium",
                       selectedTime
-                        ? "bg-emerald-500 text-white"
-                        : "bg-zinc-700 text-zinc-400",
+                        ? "bg-emerald-500 text-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {selectedTime ? <Check className="h-3 w-3" /> : "5"}
@@ -874,76 +777,77 @@ export default function BarberAgendarPage() {
                   <span
                     className={cn(
                       "text-sm",
-                      selectedTime ? "text-white" : "text-zinc-500",
+                      selectedTime
+                        ? "text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     Horário selecionado
                   </span>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-zinc-700/50">
+              <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-400">Progresso</span>
-                  <span className="font-bold text-amber-500">
+                  <span className="text-muted-foreground">Progresso</span>
+                  <span className="font-bold text-primary">
                     {completedSteps}/5
                   </span>
                 </div>
-                <div className="mt-2 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-300"
                     style={{ width: `${(completedSteps / 5) * 100}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Summary Card */}
             {selectedService && selectedTime && (
-              <div className="bg-zinc-800/50 rounded-2xl p-6 border border-amber-500/30">
+              <div className="bg-muted/50 rounded-2xl p-6 border border-primary/30">
                 <div className="flex items-center gap-2 mb-4">
-                  <Receipt className="h-5 w-5 text-amber-500" />
+                  <Receipt className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold">Resumo</h3>
                 </div>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Cliente:</span>
-                    <span className="font-medium text-white truncate ml-2 max-w-[140px]">
+                    <span className="text-muted-foreground">Cliente:</span>
+                    <span className="font-medium text-foreground truncate ml-2 max-w-[140px]">
                       {clientName || "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Telefone:</span>
-                    <span className="font-medium text-white">
+                    <span className="text-muted-foreground">Telefone:</span>
+                    <span className="font-medium text-foreground">
                       {clientPhone || "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Serviço:</span>
-                    <span className="font-medium text-white">
+                    <span className="text-muted-foreground">Serviço:</span>
+                    <span className="font-medium text-foreground">
                       {selectedService.name}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Data:</span>
-                    <span className="font-medium text-white">
+                    <span className="text-muted-foreground">Data:</span>
+                    <span className="font-medium text-foreground">
                       {selectedDate.split("-").reverse().join("/")}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Horário:</span>
-                    <span className="font-medium text-white">
+                    <span className="text-muted-foreground">Horário:</span>
+                    <span className="font-medium text-foreground">
                       {selectedTime}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Duração:</span>
-                    <span className="font-medium text-white">
+                    <span className="text-muted-foreground">Duração:</span>
+                    <span className="font-medium text-foreground">
                       {selectedService.duration} min
                     </span>
                   </div>
-                  <div className="flex justify-between pt-3 border-t border-zinc-700">
-                    <span className="text-zinc-400">Valor:</span>
-                    <span className="font-bold text-xl text-amber-500">
+                  <div className="flex justify-between pt-3 border-t border-border">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-bold text-xl text-primary">
                       R$ {selectedService.price.toFixed(2).replace(".", ",")}
                     </span>
                   </div>
@@ -951,12 +855,11 @@ export default function BarberAgendarPage() {
               </div>
             )}
 
-            {/* Submit Button - Desktop Sticky */}
             <div className="sticky top-24">
               <Button
                 type="button"
                 onClick={handleSubmit}
-                className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold text-lg rounded-xl"
                 size="lg"
                 disabled={!canSubmit}
               >
@@ -973,11 +876,10 @@ export default function BarberAgendarPage() {
                 )}
               </Button>
 
-              {/* Info Card */}
-              <div className="mt-4 bg-zinc-800/30 rounded-xl p-4 border border-zinc-700/50">
+              <div className="mt-4 bg-card/30 rounded-xl p-4 border border-border">
                 <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-zinc-400">
+                  <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
                     O agendamento será criado diretamente na sua agenda. O
                     cliente receberá confirmação por telefone se cadastrado.
                   </p>
@@ -987,13 +889,6 @@ export default function BarberAgendarPage() {
           </div>
         </div>
       </main>
-
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
     </div>
   );
 }

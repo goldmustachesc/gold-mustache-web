@@ -2,9 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
-import { BarberSidebar } from "./BarberSidebar";
 import { BarberStatsCards } from "./BarberStatsCards";
 import { WeeklyCalendar } from "./WeeklyCalendar";
 import { DailySchedule } from "./DailySchedule";
@@ -18,7 +16,18 @@ import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useMyWorkingHours } from "@/hooks/useBarberWorkingHours";
 import { useBarberAbsences } from "@/hooks/useBarberAbsences";
-import { Menu, ArrowRight, CalendarOff, Eye, EyeOff, Plus } from "lucide-react";
+import {
+  usePrivateHeader,
+  PrivateHeaderActions,
+} from "@/components/private/PrivateHeaderContext";
+import {
+  ArrowRight,
+  CalendarOff,
+  Eye,
+  EyeOff,
+  Plus,
+  Calendar,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   formatDateToString,
@@ -26,8 +35,6 @@ import {
   parseDateString,
 } from "@/utils/time-slots";
 import Link from "next/link";
-import Image from "next/image";
-import { NotificationPanel } from "@/components/notifications";
 
 interface BarberDashboardProps {
   locale: string;
@@ -58,7 +65,6 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const { data: stats } = useDashboardStats();
   const { data: workingHours } = useMyWorkingHours();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hideValues, setHideValues] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(() =>
     parseDateString(getBrazilDateString()),
@@ -189,6 +195,13 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const isLoading =
     userLoading || barberLoading || appointmentsLoading || absencesLoading;
 
+  const firstName = barberProfile?.name?.split(" ")[0] || "Barbeiro";
+
+  usePrivateHeader({
+    title: `Olá, ${firstName}`,
+    icon: Calendar,
+  });
+
   if (isLoading || !user || !barberProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -197,106 +210,48 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
     );
   }
 
-  const firstName = barberProfile.name?.split(" ")[0] || "Barbeiro";
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center justify-between px-4 py-4 lg:px-8">
-          {/* Logo (visible on desktop) */}
-          <div className="hidden lg:flex items-center gap-3">
-            <Link href={`/${locale}`} className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="Gold Mustache"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
-            </Link>
-          </div>
-
-          {/* Greeting (visible on mobile) */}
-          <div className="lg:hidden">
-            <h1 className="text-2xl font-bold">Olá, {firstName}</h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              Você está em sua agenda.
-              <span className="text-muted-foreground">▼</span>
-            </p>
-          </div>
-
-          {/* Desktop greeting */}
-          <div className="hidden lg:block flex-1 text-center">
-            <h1 className="text-xl font-bold">
-              Olá, {firstName}!{" "}
-              <span className="text-muted-foreground font-normal">
-                Você está em sua agenda.
-              </span>
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Desktop: New Appointment Button */}
-            <Link
-              href={`/${locale}/barbeiro/agendar`}
-              className="hidden lg:block"
-            >
-              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Agendamento
-              </Button>
-            </Link>
-            <Link href={absencesPageHref} className="hidden lg:block">
-              <Button
-                variant="outline"
-                className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-              >
-                <CalendarOff className="h-4 w-4 mr-2" />
-                Nova Ausência
-              </Button>
-            </Link>
-            <Link href={absencesPageHref} className="lg:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-primary hover:text-primary hover:bg-primary/10"
-                title="Adicionar ausência"
-              >
-                <CalendarOff className="h-5 w-5" />
-              </Button>
-            </Link>
-
-            {/* Notifications */}
-            {user?.id && <NotificationPanel userId={user.id} />}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setHideValues((prev) => !prev)}
-              className="text-muted-foreground hover:text-foreground hover:bg-accent"
-              title={hideValues ? "Mostrar valores" : "Ocultar valores"}
-            >
-              {hideValues ? (
-                <Eye className="h-5 w-5" />
-              ) : (
-                <EyeOff className="h-5 w-5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-muted-foreground hover:text-foreground hover:bg-accent"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div>
+      <PrivateHeaderActions>
+        <Link href={`/${locale}/barbeiro/agendar`} className="hidden lg:block">
+          <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Agendamento
+          </Button>
+        </Link>
+        <Link href={absencesPageHref} className="hidden lg:block">
+          <Button
+            variant="outline"
+            className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            <CalendarOff className="h-4 w-4 mr-2" />
+            Nova Ausência
+          </Button>
+        </Link>
+        <Link href={absencesPageHref} className="lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-primary hover:text-primary hover:bg-primary/10"
+            title="Adicionar ausência"
+          >
+            <CalendarOff className="h-5 w-5" />
+          </Button>
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setHideValues((prev) => !prev)}
+          className="text-muted-foreground hover:text-foreground hover:bg-accent"
+          title={hideValues ? "Mostrar valores" : "Ocultar valores"}
+        >
+          {hideValues ? (
+            <Eye className="h-5 w-5" />
+          ) : (
+            <EyeOff className="h-5 w-5" />
+          )}
+        </Button>
+      </PrivateHeaderActions>
       <main className="pb-24 lg:pb-8">
         {/* Mobile Layout */}
         <div className="lg:hidden">
@@ -419,13 +374,6 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
           </Button>
         </Link>
       </div>
-
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
     </div>
   );
 }

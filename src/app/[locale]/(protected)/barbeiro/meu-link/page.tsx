@@ -3,13 +3,10 @@
 import { useState } from "react";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { MyLinkCard } from "@/components/dashboard/MyLinkCard";
-import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
   Link2,
-  Menu,
-  UserPlus,
   QrCode,
   Share2,
   Eye,
@@ -20,7 +17,6 @@ import {
   Monitor,
   Download,
 } from "lucide-react";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,19 +24,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import Link from "next/link";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useUser } from "@/hooks/useAuth";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 
 export default function MeuLinkPage() {
   const params = useParams();
   const router = useRouter();
   const locale = params.locale as string;
   const { data: user, isLoading: userLoading } = useUser();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const {
@@ -48,6 +42,12 @@ export default function MeuLinkPage() {
     isLoading: barberLoading,
     error,
   } = useBarberProfile();
+
+  usePrivateHeader({
+    title: "Meu Link",
+    icon: Link2,
+    backHref: `/${locale}/barbeiro`,
+  });
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -66,13 +66,12 @@ export default function MeuLinkPage() {
 
   if (isLoading || !user || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
-  // Build the booking URL
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const bookingUrl = `${baseUrl}/${locale}/agendar?barbeiro=${barberProfile.id}`;
 
@@ -109,115 +108,18 @@ export default function MeuLinkPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="flex items-center justify-between px-4 py-4 lg:px-8">
-          {/* Logo (visible on desktop) */}
-          <div className="hidden lg:flex items-center gap-3">
-            <Link href={`/${locale}`} className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="Gold Mustache"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
-            </Link>
-          </div>
-
-          {/* Mobile Title */}
-          <div className="lg:hidden flex items-center gap-2">
-            <Link2 className="h-6 w-6 text-amber-500" />
-            <h1 className="text-xl font-bold">Meu Link</h1>
-          </div>
-
-          {/* Desktop Title */}
-          <div className="hidden lg:block flex-1 text-center">
-            <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-              <Link2 className="h-5 w-5 text-amber-500" />
-              Meu Link
-            </h1>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Desktop: Buttons */}
-            <Link
-              href={`/${locale}/barbeiro/agendar`}
-              className="hidden lg:block"
-            >
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Agendar para Cliente
-              </Button>
-            </Link>
-
-            {/* Desktop Quick Links */}
-            <Link
-              href={`/${locale}/barbeiro/horarios`}
-              className="hidden lg:block"
-            >
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Meus Horários
-              </Button>
-            </Link>
-            <Link
-              href={`/${locale}/barbeiro/ausencias`}
-              className="hidden lg:block"
-            >
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Ausências
-              </Button>
-            </Link>
-            <Link href={`/${locale}/barbeiro`} className="hidden lg:block">
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Minha Agenda
-              </Button>
-            </Link>
-
-            {/* Desktop Email */}
-            <span className="hidden lg:inline text-sm text-zinc-500 px-2">
-              {user?.email}
-            </span>
-
-            {/* Menu Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        {/* Page Title - Desktop */}
         <div className="hidden lg:block mb-8">
           <h2 className="text-2xl font-bold">
             Link de Agendamento de {barberProfile.name}
           </h2>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Compartilhe seu link personalizado e receba agendamentos diretamente
           </p>
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-          {/* Left Column - Main Card */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6">
             <MyLinkCard
               bookingUrl={bookingUrl}
@@ -225,46 +127,49 @@ export default function MeuLinkPage() {
               variant="dark"
             />
 
-            {/* Device Preview Section - Desktop Only */}
             <div className="hidden xl:block">
-              <div className="bg-zinc-800/30 rounded-2xl border border-zinc-700/50 p-6">
+              <div className="bg-card/30 rounded-2xl border border-border p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Monitor className="h-5 w-5 text-amber-500" />
+                  <Monitor className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold">Prévia em Dispositivos</h3>
                 </div>
-                <p className="text-sm text-zinc-400 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Veja como seus clientes visualizam a página de agendamento
                 </p>
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Desktop Preview */}
-                  <div className="bg-zinc-900 rounded-xl p-3 border border-zinc-700/50">
+                  <div className="bg-background rounded-xl p-3 border border-border">
                     <div className="flex items-center gap-2 mb-2">
-                      <Monitor className="h-4 w-4 text-zinc-500" />
-                      <span className="text-xs text-zinc-500">Desktop</span>
+                      <Monitor className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        Desktop
+                      </span>
                     </div>
-                    <div className="aspect-video bg-zinc-800 rounded-lg flex items-center justify-center">
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                       <div className="text-center">
-                        <div className="h-8 w-8 mx-auto mb-2 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                          <Link2 className="h-4 w-4 text-white" />
+                        <div className="h-8 w-8 mx-auto mb-2 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                          <Link2 className="h-4 w-4 text-foreground" />
                         </div>
-                        <div className="text-xs text-zinc-400">
+                        <div className="text-xs text-muted-foreground">
                           gold-mustache.com
                         </div>
                       </div>
                     </div>
                   </div>
-                  {/* Mobile Preview */}
-                  <div className="bg-zinc-900 rounded-xl p-3 border border-zinc-700/50">
+                  <div className="bg-background rounded-xl p-3 border border-border">
                     <div className="flex items-center gap-2 mb-2">
-                      <Smartphone className="h-4 w-4 text-zinc-500" />
-                      <span className="text-xs text-zinc-500">Mobile</span>
+                      <Smartphone className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        Mobile
+                      </span>
                     </div>
-                    <div className="aspect-[9/16] max-h-32 mx-auto bg-zinc-800 rounded-lg flex items-center justify-center">
+                    <div className="aspect-[9/16] max-h-32 mx-auto bg-muted rounded-lg flex items-center justify-center">
                       <div className="text-center">
-                        <div className="h-6 w-6 mx-auto mb-1 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                          <Link2 className="h-3 w-3 text-white" />
+                        <div className="h-6 w-6 mx-auto mb-1 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                          <Link2 className="h-3 w-3 text-foreground" />
                         </div>
-                        <div className="text-[10px] text-zinc-400">Agendar</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          Agendar
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -273,12 +178,10 @@ export default function MeuLinkPage() {
             </div>
           </div>
 
-          {/* Right Column - Stats & QR Code */}
           <div className="lg:col-span-5 xl:col-span-4 mt-6 lg:mt-0 space-y-6">
-            {/* QR Code Card - Desktop */}
-            <div className="hidden lg:block bg-zinc-800/30 rounded-2xl border border-zinc-700/50 p-6">
+            <div className="hidden lg:block bg-card/30 rounded-2xl border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <QrCode className="h-5 w-5 text-amber-500" />
+                <QrCode className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">QR Code</h3>
               </div>
               <div className="flex flex-col items-center">
@@ -291,7 +194,7 @@ export default function MeuLinkPage() {
                     includeMargin={false}
                   />
                 </div>
-                <p className="text-sm text-zinc-400 text-center mt-4 mb-4">
+                <p className="text-sm text-muted-foreground text-center mt-4 mb-4">
                   Imprima ou mostre para seus clientes escanearem
                 </p>
                 <div className="flex gap-2 w-full">
@@ -315,35 +218,34 @@ export default function MeuLinkPage() {
               </div>
             </div>
 
-            {/* Quick Stats Card - Desktop */}
-            <div className="hidden lg:block bg-zinc-800/30 rounded-2xl border border-zinc-700/50 p-6">
+            <div className="hidden lg:block bg-card/30 rounded-2xl border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="h-5 w-5 text-amber-500" />
+                <TrendingUp className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">Dicas para Mais Agendamentos</h3>
               </div>
-              <ul className="space-y-3 text-sm text-zinc-400">
+              <ul className="space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span className="text-primary mt-0.5">•</span>
                   <span>
                     Compartilhe o link em suas redes sociais regularmente
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span className="text-primary mt-0.5">•</span>
                   <span>
                     Adicione o QR Code em seu cartão de visita ou material
                     impresso
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span className="text-primary mt-0.5">•</span>
                   <span>
                     Envie o link diretamente pelo WhatsApp após atender um
                     cliente
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span className="text-primary mt-0.5">•</span>
                   <span>
                     Mantenha seus horários de trabalho sempre atualizados
                   </span>
@@ -351,14 +253,13 @@ export default function MeuLinkPage() {
               </ul>
             </div>
 
-            {/* Link Info Card - Desktop */}
-            <div className="hidden lg:block bg-zinc-800/30 rounded-2xl border border-zinc-700/50 p-6">
+            <div className="hidden lg:block bg-card/30 rounded-2xl border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Share2 className="h-5 w-5 text-amber-500" />
+                <Share2 className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">Seu Link Personalizado</h3>
               </div>
-              <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-700/50">
-                <code className="text-sm text-amber-400 break-all">
+              <div className="bg-background rounded-xl p-4 border border-border">
+                <code className="text-sm text-primary break-all">
                   {bookingUrl}
                 </code>
               </div>
@@ -368,7 +269,7 @@ export default function MeuLinkPage() {
                   "w-full mt-4 font-semibold",
                   copied
                     ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700",
+                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
                 )}
               >
                 {copied ? (
@@ -388,14 +289,6 @@ export default function MeuLinkPage() {
         </div>
       </main>
 
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
-
-      {/* QR Code Dialog */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent className="sm:max-w-md bg-popover border-border text-popover-foreground">
           <DialogHeader>
@@ -427,7 +320,7 @@ export default function MeuLinkPage() {
               </Button>
               <Button
                 onClick={handleCopyLink}
-                className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+                className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
               >
                 {copied ? (
                   <>

@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
-import { BarberSidebar } from "./BarberSidebar";
 import { BarberStatsCards } from "./BarberStatsCards";
 import { QuickAction } from "./QuickAction";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
-import { useUser } from "@/hooks/useAuth";
-import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import {
+  usePrivateHeader,
+  PrivateHeaderActions,
+} from "@/components/private/PrivateHeaderContext";
 import {
   Calendar,
   CalendarOff,
@@ -19,7 +17,6 @@ import {
   DollarSign,
   Link2,
   Loader2,
-  Menu,
   Scissors,
   UserPlus,
   Users,
@@ -84,15 +81,12 @@ function EmptyNextClient() {
 }
 
 export function BarberHub({ locale }: BarberHubProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: user } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
   const isLoading = barberLoading || statsLoading;
   const barberStats = stats?.barber;
 
-  // Greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Bom dia";
@@ -100,11 +94,15 @@ export function BarberHub({ locale }: BarberHubProps) {
     return "Boa noite";
   };
 
-  // Build the booking URL
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const bookingUrl = barberProfile
     ? `${baseUrl}/${locale}/agendar?barbeiro=${barberProfile.id}`
     : "";
+
+  usePrivateHeader({
+    title: "Início",
+    icon: Scissors,
+  });
 
   if (isLoading || !barberProfile) {
     return (
@@ -115,66 +113,16 @@ export function BarberHub({ locale }: BarberHubProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
-
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
-          {/* Logo */}
-          <Link href={`/${locale}`} className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="Gold Mustache"
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-            <BrandWordmark className="hidden sm:inline text-xl">
-              GOLD MUSTACHE
-            </BrandWordmark>
-          </Link>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 lg:gap-4">
-            <Link
-              href={`/${locale}/barbeiro/agendar`}
-              className="hidden sm:block"
-            >
-              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Agendar para Cliente
-              </Button>
-            </Link>
-
-            {user?.email && (
-              <span className="text-sm text-muted-foreground hidden xl:inline">
-                {user.email}
-              </span>
-            )}
-
-            {user?.id && <NotificationPanel userId={user.id} />}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-muted-foreground hover:text-foreground hover:bg-accent"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div>
+      <PrivateHeaderActions>
+        <Link href={`/${locale}/barbeiro/agendar`} className="hidden sm:block">
+          <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Agendar para Cliente
+          </Button>
+        </Link>
+      </PrivateHeaderActions>
       <main className="max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8 space-y-6">
-        {/* Greeting */}
         <div className="space-y-1">
           <h1 className="text-2xl lg:text-3xl font-bold">
             {getGreeting()}, {barberProfile.name.split(" ")[0]}! 👋

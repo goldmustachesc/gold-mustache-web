@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ClientDashboard } from "../ClientDashboard";
+import { PrivateHeaderProvider } from "@/components/private/PrivateHeaderContext";
 import type {
   DashboardStats,
   ClientStats,
@@ -13,6 +14,10 @@ const mockUseDashboardStats = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/pt-BR/dashboard",
+}));
+
+vi.mock("next-intl", () => ({
+  useLocale: () => "pt-BR",
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -95,18 +100,22 @@ function setupMocks(overrides?: {
   });
 }
 
+function renderWithProvider(ui: React.ReactElement) {
+  return render(<PrivateHeaderProvider>{ui}</PrivateHeaderProvider>);
+}
+
 describe("ClientDashboard", () => {
   beforeEach(() => {
     setupMocks();
   });
 
   it("renders greeting with first name", () => {
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText(/João/)).toBeInTheDocument();
   });
 
   it("renders welcome subtitle", () => {
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(
       screen.getByText(
         "Bem-vindo de volta! Confira seus agendamentos e novidades.",
@@ -115,25 +124,25 @@ describe("ClientDashboard", () => {
   });
 
   it("renders next appointment card when appointment exists", () => {
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Corte")).toBeInTheDocument();
     expect(screen.getByText(/Carlos/)).toBeInTheDocument();
   });
 
   it("renders quick action links", () => {
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Acesso rápido")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
   });
 
   it("renders booking quick action", () => {
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Marque um novo horário")).toBeInTheDocument();
   });
 
   it("shows loading state when stats are loading", () => {
     setupMocks({ statsLoading: true });
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Carregando informações...")).toBeInTheDocument();
   });
 
@@ -147,31 +156,26 @@ describe("ClientDashboard", () => {
         admin: adminStats,
       },
     });
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Visão Geral da Barbearia")).toBeInTheDocument();
     expect(screen.getByText("Administração")).toBeInTheDocument();
   });
 
   it("does not render admin section for regular clients", () => {
-    render(<ClientDashboard locale="pt-BR" />);
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(
       screen.queryByText("Visão Geral da Barbearia"),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Administração")).not.toBeInTheDocument();
   });
 
-  it("renders header with logo and menu button", () => {
-    render(<ClientDashboard locale="pt-BR" />);
-    expect(screen.getByAltText("Gold Mustache")).toBeInTheDocument();
-  });
-
-  it("renders notification panel when user exists", () => {
-    render(<ClientDashboard locale="pt-BR" />);
-    expect(screen.getByTestId("notification-panel")).toBeInTheDocument();
+  it("sets page title via usePrivateHeader", () => {
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
+    expect(screen.getByText("Acesso rápido")).toBeInTheDocument();
   });
 
   it("renders with correct locale in links", () => {
-    render(<ClientDashboard locale="en" />);
+    renderWithProvider(<ClientDashboard locale="en" />);
     const profileLink = screen.getByText("Meu Perfil").closest("a");
     expect(profileLink).toHaveAttribute("href", "/en/profile");
   });

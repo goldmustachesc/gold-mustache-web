@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 const mockUseUser = vi.fn();
-const mockUseSignOut = vi.fn();
 const mockUseClientAppointments = vi.fn();
 const mockUseDashboardStats = vi.fn();
 const mockUseCancelAppointment = vi.fn();
@@ -13,7 +12,7 @@ const mockUseCreateFeedback = vi.fn();
 
 vi.mock("@/hooks/useAuth", () => ({
   useUser: () => mockUseUser(),
-  useSignOut: () => mockUseSignOut(),
+  useSignOut: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock("@/hooks/useBooking", () => ({
@@ -31,6 +30,32 @@ vi.mock("@/hooks/useFeedback", () => ({
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: "pt-BR" }),
+  usePathname: () => "/pt-BR/meus-agendamentos",
+}));
+
+vi.mock("next-intl", () => ({
+  useLocale: () => "pt-BR",
+}));
+
+vi.mock("@/hooks/useProfileMe", () => ({
+  useProfileMe: () => ({ data: null }),
+}));
+
+vi.mock("@/hooks/useBookingSettings", () => ({
+  useBookingSettings: () => ({
+    bookingHref: null,
+    shouldShowBooking: false,
+    isExternal: false,
+    isInternal: true,
+  }),
+}));
+
+vi.mock("@/components/notifications/NotificationPanel", () => ({
+  NotificationPanel: () => <div data-testid="notification-panel" />,
+}));
+
+vi.mock("@/components/ui/theme-toggle", () => ({
+  ThemeToggle: () => <button type="button">theme-toggle</button>,
 }));
 
 vi.mock("next/image", () => ({
@@ -90,7 +115,6 @@ function createWrapper() {
 describe("MeusAgendamentosClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSignOut.mockReturnValue({ mutate: vi.fn(), isPending: false });
     mockUseCancelAppointment.mockReturnValue({
       mutateAsync: vi.fn(),
     });
@@ -101,7 +125,7 @@ describe("MeusAgendamentosClient", () => {
     mockUseDashboardStats.mockReturnValue({ data: null });
   });
 
-  it("shows loading state while checking user", async () => {
+  it("shows loading skeleton while checking user", async () => {
     mockUseUser.mockReturnValue({ data: null, isLoading: true });
     mockUseClientAppointments.mockReturnValue({
       data: undefined,
@@ -111,7 +135,7 @@ describe("MeusAgendamentosClient", () => {
     render(<MeusAgendamentosClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("auth-skeleton")).toBeInTheDocument();
+      expect(screen.getByText("Meus Agendamentos")).toBeInTheDocument();
     });
   });
 
@@ -176,9 +200,9 @@ describe("MeusAgendamentosClient", () => {
     });
   });
 
-  it("shows user email in header when authenticated", async () => {
+  it("renders shared header with page title when authenticated", async () => {
     mockUseUser.mockReturnValue({
-      data: { email: "test@example.com" },
+      data: { id: "u1", email: "test@example.com" },
       isLoading: false,
     });
     mockUseClientAppointments.mockReturnValue({ data: [], isLoading: false });
@@ -186,7 +210,7 @@ describe("MeusAgendamentosClient", () => {
     render(<MeusAgendamentosClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("test@example.com")).toBeInTheDocument();
+      expect(screen.getByText("Meus Agendamentos")).toBeInTheDocument();
     });
   });
 });

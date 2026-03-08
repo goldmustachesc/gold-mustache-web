@@ -1,33 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
-import { useUser } from "@/hooks/useAuth";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
+import {
+  usePrivateHeader,
+  PrivateHeaderActions,
+} from "@/components/private/PrivateHeaderContext";
 import { getGreeting } from "@/lib/dashboard/greeting";
 import { NextAppointmentCard } from "./NextAppointmentCard";
 import { AdminOverview } from "./AdminOverview";
 import { ClientStatsOverview } from "./ClientStatsOverview";
-import { ClientSidebar } from "./ClientSidebar";
 import { QuickAction } from "./QuickAction";
-import { NotificationPanel } from "@/components/notifications";
 import {
   Calendar,
   ClipboardList,
   Clock,
   DollarSign,
+  Home,
   Loader2,
-  Menu,
   Scissors,
   Settings,
   Star,
   User,
   Users,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 interface ClientDashboardProps {
@@ -35,8 +33,6 @@ interface ClientDashboardProps {
 }
 
 export function ClientDashboard({ locale }: ClientDashboardProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: user } = useUser();
   const { data: profileMe } = useProfileMe();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { bookingHref, shouldShowBooking, isExternal, isInternal } =
@@ -45,65 +41,29 @@ export function ClientDashboard({ locale }: ClientDashboardProps) {
   const isAdmin = profileMe?.role === "ADMIN";
   const firstName = profileMe?.fullName?.split(" ")[0] || "";
 
+  usePrivateHeader({
+    title: "Início",
+    icon: Home,
+  });
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <ClientSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
-
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
-          <Link href={`/${locale}`} className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="Gold Mustache"
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-            <BrandWordmark className="hidden sm:inline text-xl">
-              GOLD MUSTACHE
-            </BrandWordmark>
-          </Link>
-
-          <div className="flex items-center gap-2 lg:gap-4">
-            {shouldShowBooking && bookingHref && (
-              <Link
-                href={bookingHref}
-                className="hidden sm:block"
-                {...(isExternal
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-              >
-                <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Agendar
-                </Button>
-              </Link>
-            )}
-
-            {user?.email && (
-              <span className="text-sm text-muted-foreground hidden xl:inline">
-                {user.email}
-              </span>
-            )}
-
-            {user?.id && <NotificationPanel userId={user.id} />}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-muted-foreground hover:text-foreground hover:bg-accent"
-            >
-              <Menu className="h-6 w-6" />
+    <div>
+      <PrivateHeaderActions>
+        {shouldShowBooking && bookingHref ? (
+          <Link
+            href={bookingHref}
+            className="hidden sm:block"
+            {...(isExternal
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
+          >
+            <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
+              <Calendar className="h-4 w-4 mr-2" />
+              Agendar
             </Button>
-          </div>
-        </div>
-      </header>
-
+          </Link>
+        ) : null}
+      </PrivateHeaderActions>
       <main className="max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8 space-y-6">
         <div className="space-y-1">
           <h1 className="text-2xl lg:text-3xl font-bold">

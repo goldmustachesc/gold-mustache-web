@@ -3,21 +3,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
 import { CancelledAppointmentCard } from "@/components/barber/CancelledAppointmentCard";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useUser } from "@/hooks/useAuth";
 import { useCancelledAppointments } from "@/hooks/useCancelledAppointments";
-import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Menu,
   XCircle,
   Plus,
   CalendarX,
@@ -28,7 +23,6 @@ export default function CanceladosPage() {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [page, setPage] = useState(1);
 
@@ -43,6 +37,12 @@ export default function CanceladosPage() {
   const appointments = response?.data ?? [];
   const meta = response?.meta;
   const totalAppointments = meta?.total ?? appointments.length;
+
+  usePrivateHeader({
+    title: "Cancelados",
+    icon: XCircle,
+    backHref: `/${locale}/barbeiro`,
+  });
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -61,105 +61,30 @@ export default function CanceladosPage() {
 
   if (isLoading || !user || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
-
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/${locale}/barbeiro`}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="sr-only lg:not-sr-only">Voltar</span>
-            </Link>
-
-            {/* Logo (visible on desktop) */}
-            <div className="hidden lg:flex items-center gap-3">
-              <Link href={`/${locale}`} className="flex items-center gap-3">
-                <Image
-                  src="/logo.png"
-                  alt="Gold Mustache"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-                <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
-              </Link>
-            </div>
-
-            {/* Page Title */}
-            <div className="flex items-center gap-2">
-              <CalendarX className="h-6 w-6 text-amber-500" />
-              <h1 className="text-xl font-bold">Cancelados</h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 lg:gap-4">
-            {/* Desktop: Quick Action */}
-            <Link
-              href={`/${locale}/barbeiro/agendar`}
-              className="hidden lg:block"
-            >
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Agendamento
-              </Button>
-            </Link>
-
-            {user?.email && (
-              <span className="text-sm text-zinc-400 hidden xl:inline">
-                {user.email}
-              </span>
-            )}
-
-            {user?.id && <NotificationPanel userId={user.id} />}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Content */}
+    <div>
       <main className="max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8">
-        {/* Page Header */}
         <div className="mb-6 lg:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-white mb-1">
+              <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
                 Agendamentos Cancelados
               </h2>
-              <p className="text-zinc-400">
+              <p className="text-muted-foreground">
                 {totalAppointments === 0
                   ? "Nenhum agendamento cancelado encontrado"
                   : `${totalAppointments} agendamento${totalAppointments > 1 ? "s" : ""} cancelado${totalAppointments > 1 ? "s" : ""}`}
               </p>
             </div>
 
-            {/* Mobile: Quick Action */}
             <Link href={`/${locale}/barbeiro/agendar`} className="lg:hidden">
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
               </Button>
@@ -167,30 +92,29 @@ export default function CanceladosPage() {
           </div>
         </div>
 
-        {/* List */}
         {appointmentsLoading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl bg-zinc-800/30 border border-zinc-700/50">
+          <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl bg-card/30 border border-border">
             <XCircle className="h-12 w-12 text-red-400 mb-4" />
             <p className="text-red-400 font-medium text-lg">
               Erro ao carregar cancelamentos
             </p>
-            <p className="text-zinc-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Tente novamente mais tarde
             </p>
           </div>
         ) : appointments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl bg-zinc-800/30 border border-zinc-700/50">
-            <div className="w-20 h-20 rounded-full bg-zinc-700/50 flex items-center justify-center mb-6">
-              <CalendarX className="h-10 w-10 text-zinc-500" />
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl bg-card/30 border border-border">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-6">
+              <CalendarX className="h-10 w-10 text-muted-foreground" />
             </div>
-            <p className="text-zinc-200 font-semibold text-xl mb-2">
+            <p className="text-foreground font-semibold text-xl mb-2">
               Nenhum agendamento cancelado
             </p>
-            <p className="text-zinc-500 text-sm max-w-md">
+            <p className="text-muted-foreground text-sm max-w-md">
               Quando agendamentos forem cancelados por você ou seus clientes,
               eles aparecerão aqui para referência e histórico.
             </p>
@@ -212,19 +136,19 @@ export default function CanceladosPage() {
                   variant="outline"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="border-zinc-700 hover:bg-zinc-800"
+                  className="border-border hover:bg-accent"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Anterior
                 </Button>
-                <span className="text-sm text-zinc-400">
+                <span className="text-sm text-muted-foreground">
                   Página {page} de {meta.totalPages}
                 </span>
                 <Button
                   variant="outline"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= meta.totalPages}
-                  className="border-zinc-700 hover:bg-zinc-800"
+                  className="border-border hover:bg-accent"
                 >
                   Próxima
                   <ChevronRight className="h-4 w-4 ml-1" />

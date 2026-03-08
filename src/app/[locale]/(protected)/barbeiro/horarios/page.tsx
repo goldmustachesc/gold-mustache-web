@@ -2,15 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import { toast } from "sonner";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
-import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import {
@@ -20,9 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   Clock,
-  Menu,
   Loader2,
-  Plus,
   CalendarDays,
   Coffee,
   CheckCircle2,
@@ -71,7 +65,7 @@ function toWorkingHoursDraft(day: BarberWorkingHoursDay): WorkingHoursDraft {
 function createDefaultDraft(): WorkingHoursDraft[] {
   return DAYS_OF_WEEK.map((day) => ({
     dayOfWeek: day.value,
-    isWorking: day.value !== 0, // Closed on Sunday by default
+    isWorking: day.value !== 0,
     startTime: DEFAULT_START_TIME,
     endTime: DEFAULT_END_TIME,
     breakStart: DEFAULT_BREAK_START,
@@ -90,9 +84,14 @@ export default function BarberWorkingHoursPage() {
   const { data: workingHours, isLoading: hoursLoading } = useMyWorkingHours();
   const updateHours = useUpdateMyWorkingHours();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draft, setDraft] = useState<WorkingHoursDraft[]>(createDefaultDraft());
   const [initialized, setInitialized] = useState(false);
+
+  usePrivateHeader({
+    title: "Meus Horários",
+    icon: Clock,
+    backHref: `/${locale}/barbeiro`,
+  });
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -107,7 +106,6 @@ export default function BarberWorkingHoursPage() {
     }
   }, [barberProfile, barberLoading, user, router, locale]);
 
-  // Initialize draft from server data
   useEffect(() => {
     if (workingHours && !initialized) {
       setDraft(workingHours.map(toWorkingHoursDraft));
@@ -119,8 +117,8 @@ export default function BarberWorkingHoursPage() {
 
   if (isLoading || !user || !barberProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -151,7 +149,6 @@ export default function BarberWorkingHoursPage() {
     }
   };
 
-  // Calculate stats
   const workingDays = draft.filter((d) => d.isWorking).length;
   const totalHours = draft
     .filter((d) => d.isWorking)
@@ -166,130 +163,48 @@ export default function BarberWorkingHoursPage() {
     }, 0);
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="flex items-center justify-between px-4 py-4 lg:px-8">
-          {/* Logo (desktop) */}
-          <div className="hidden lg:flex items-center gap-3">
-            <Link href={`/${locale}`} className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="Gold Mustache"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
-            </Link>
-          </div>
-
-          {/* Mobile Title */}
-          <div className="lg:hidden flex items-center gap-2">
-            <Clock className="h-6 w-6 text-amber-500" />
-            <h1 className="text-xl font-bold">Meus Horários</h1>
-          </div>
-
-          {/* Desktop Title */}
-          <div className="hidden lg:block flex-1 text-center">
-            <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-              <Clock className="h-5 w-5 text-amber-500" />
-              Meus Horários
-            </h1>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Desktop Quick Links */}
-            <Link
-              href={`/${locale}/barbeiro/agendar`}
-              className="hidden lg:block"
-            >
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Agendamento
-              </Button>
-            </Link>
-            <Link
-              href={`/${locale}/barbeiro/ausencias`}
-              className="hidden lg:block"
-            >
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Ausências
-              </Button>
-            </Link>
-            <Link href={`/${locale}/barbeiro`} className="hidden lg:block">
-              <Button
-                variant="ghost"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                Minha Agenda
-              </Button>
-            </Link>
-
-            {user?.id && <NotificationPanel userId={user.id} />}
-
-            <Button
-              variant="ghost"
-              onClick={() => router.push(`/${locale}/barbeiro`)}
-              className="lg:hidden text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              Voltar
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        {/* Page Title - Desktop */}
         <div className="hidden lg:block mb-8">
           <h2 className="text-2xl font-bold">
             Configurar Horários de Trabalho
           </h2>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Defina seus dias e horários de atendimento para que os clientes
             possam agendar
           </p>
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-          {/* Left Column - Stats & Info (Desktop) */}
           <div className="hidden lg:block lg:col-span-4 xl:col-span-3 space-y-6">
-            {/* Quick Stats */}
-            <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+            <div className="bg-muted/50 rounded-2xl p-6 border border-border">
               <div className="flex items-center gap-2 mb-4">
-                <CalendarDays className="h-5 w-5 text-amber-500" />
+                <CalendarDays className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">Resumo da Semana</h3>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Dias de trabalho</span>
-                  <span className="text-xl font-bold text-amber-500">
+                  <span className="text-muted-foreground">
+                    Dias de trabalho
+                  </span>
+                  <span className="text-xl font-bold text-primary">
                     {workingDays}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Horas por semana</span>
-                  <span className="text-xl font-bold text-amber-500">
+                  <span className="text-muted-foreground">
+                    Horas por semana
+                  </span>
+                  <span className="text-xl font-bold text-primary">
                     ~{totalHours}h
                   </span>
                 </div>
               </div>
 
-              {/* Week Overview */}
-              <div className="mt-6 pt-4 border-t border-zinc-700/50">
-                <p className="text-xs text-zinc-500 mb-3">Visão da semana</p>
+              <div className="mt-6 pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-3">
+                  Visão da semana
+                </p>
                 <div className="flex gap-1">
                   {draft.map((day) => {
                     const dayInfo = DAYS_OF_WEEK.find(
@@ -301,8 +216,8 @@ export default function BarberWorkingHoursPage() {
                         className={cn(
                           "flex-1 h-8 rounded flex items-center justify-center text-xs font-medium transition-colors",
                           day.isWorking
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                            : "bg-zinc-800 text-zinc-600",
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "bg-muted text-muted-foreground",
                         )}
                         title={dayInfo?.label}
                       >
@@ -314,32 +229,31 @@ export default function BarberWorkingHoursPage() {
               </div>
             </div>
 
-            {/* Info Card */}
-            <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50">
+            <div className="bg-card/30 rounded-2xl p-6 border border-border">
               <div className="flex items-center gap-2 mb-4">
-                <Info className="h-5 w-5 text-amber-500" />
+                <Info className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">Como funciona</h3>
               </div>
-              <ul className="space-y-3 text-sm text-zinc-400">
+              <ul className="space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                   <span>
                     Configure os dias que você trabalha marcando a opção
-                    "Trabalho neste dia"
+                    &quot;Trabalho neste dia&quot;
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                   <span>
                     Defina o horário de início e fim do seu expediente
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Coffee className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <Coffee className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <span>Adicione um intervalo para almoço se necessário</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                   <span>
                     Os clientes só poderão agendar nos horários definidos
                   </span>
@@ -347,12 +261,11 @@ export default function BarberWorkingHoursPage() {
               </ul>
             </div>
 
-            {/* Save Button - Desktop Sticky */}
             <div className="sticky top-24">
               <Button
                 onClick={handleSave}
                 disabled={updateHours.isPending}
-                className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold text-lg rounded-xl"
               >
                 {updateHours.isPending ? (
                   <>
@@ -369,17 +282,14 @@ export default function BarberWorkingHoursPage() {
             </div>
           </div>
 
-          {/* Right Column - Days Grid */}
           <div className="lg:col-span-8 xl:col-span-9">
-            {/* Mobile Description */}
             <div className="lg:hidden mb-6">
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-muted-foreground">
                 Configure os dias e horários que você está disponível para
                 atendimento.
               </p>
             </div>
 
-            {/* Days Grid - Desktop: 2 columns */}
             <div className="grid gap-4 lg:grid-cols-2">
               {draft.map((day) => {
                 const dayInfo = DAYS_OF_WEEK.find(
@@ -391,19 +301,18 @@ export default function BarberWorkingHoursPage() {
                     className={cn(
                       "rounded-2xl border p-5 transition-all",
                       day.isWorking
-                        ? "border-zinc-700/50 bg-zinc-800/30"
-                        : "border-zinc-800 bg-zinc-900/50 opacity-75",
+                        ? "border-border bg-card/30"
+                        : "border-border bg-background/50 opacity-75",
                     )}
                   >
-                    {/* Day Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div
                           className={cn(
                             "h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold",
                             day.isWorking
-                              ? "bg-amber-500/20 text-amber-400"
-                              : "bg-zinc-800 text-zinc-600",
+                              ? "bg-primary/20 text-primary"
+                              : "bg-muted text-muted-foreground",
                           )}
                         >
                           {dayInfo?.shortLabel}
@@ -411,7 +320,7 @@ export default function BarberWorkingHoursPage() {
                         <span
                           className={cn(
                             "font-medium",
-                            !day.isWorking && "text-zinc-500",
+                            !day.isWorking && "text-muted-foreground",
                           )}
                         >
                           {dayInfo?.label}
@@ -426,12 +335,14 @@ export default function BarberWorkingHoursPage() {
                               isWorking: e.target.checked,
                             })
                           }
-                          className="h-5 w-5 rounded border-zinc-600 bg-zinc-900 text-amber-500 focus:ring-amber-500 focus:ring-offset-zinc-900"
+                          className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
                         />
                         <span
                           className={cn(
                             "hidden sm:inline",
-                            day.isWorking ? "text-zinc-300" : "text-zinc-500",
+                            day.isWorking
+                              ? "text-foreground"
+                              : "text-muted-foreground",
                           )}
                         >
                           Ativo
@@ -445,12 +356,11 @@ export default function BarberWorkingHoursPage() {
                         !day.isWorking && "opacity-40 pointer-events-none",
                       )}
                     >
-                      {/* Working Hours */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="grid gap-1.5">
                           <Label
                             htmlFor={`start-${day.dayOfWeek}`}
-                            className="text-zinc-500 text-xs"
+                            className="text-muted-foreground text-xs"
                           >
                             Início
                           </Label>
@@ -464,13 +374,13 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking}
-                            className="bg-zinc-900 border-zinc-700 text-white focus:border-amber-500 h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-10"
                           />
                         </div>
                         <div className="grid gap-1.5">
                           <Label
                             htmlFor={`end-${day.dayOfWeek}`}
-                            className="text-zinc-500 text-xs"
+                            className="text-muted-foreground text-xs"
                           >
                             Fim
                           </Label>
@@ -484,14 +394,13 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking}
-                            className="bg-zinc-900 border-zinc-700 text-white focus:border-amber-500 h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-10"
                           />
                         </div>
                       </div>
 
-                      {/* Break Toggle */}
-                      <label className="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 transition-colors">
-                        <Coffee className="h-4 w-4 text-zinc-500" />
+                      <label className="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg bg-background/50 border border-border hover:border-border transition-colors">
+                        <Coffee className="h-4 w-4 text-muted-foreground" />
                         <input
                           type="checkbox"
                           checked={day.hasBreak}
@@ -501,12 +410,11 @@ export default function BarberWorkingHoursPage() {
                             })
                           }
                           disabled={!day.isWorking}
-                          className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-amber-500 focus:ring-amber-500 focus:ring-offset-zinc-900"
+                          className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
                         />
-                        <span className="text-zinc-400">Intervalo</span>
+                        <span className="text-muted-foreground">Intervalo</span>
                       </label>
 
-                      {/* Break Times */}
                       <div
                         className={cn(
                           "grid grid-cols-2 gap-3 transition-opacity",
@@ -516,7 +424,7 @@ export default function BarberWorkingHoursPage() {
                         <div className="grid gap-1.5">
                           <Label
                             htmlFor={`break-start-${day.dayOfWeek}`}
-                            className="text-zinc-500 text-xs"
+                            className="text-muted-foreground text-xs"
                           >
                             Início intervalo
                           </Label>
@@ -530,13 +438,13 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking || !day.hasBreak}
-                            className="bg-zinc-900 border-zinc-700 text-white focus:border-amber-500 h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-10"
                           />
                         </div>
                         <div className="grid gap-1.5">
                           <Label
                             htmlFor={`break-end-${day.dayOfWeek}`}
-                            className="text-zinc-500 text-xs"
+                            className="text-muted-foreground text-xs"
                           >
                             Fim intervalo
                           </Label>
@@ -550,7 +458,7 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking || !day.hasBreak}
-                            className="bg-zinc-900 border-zinc-700 text-white focus:border-amber-500 h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-10"
                           />
                         </div>
                       </div>
@@ -560,12 +468,11 @@ export default function BarberWorkingHoursPage() {
               })}
             </div>
 
-            {/* Mobile Save Button */}
             <div className="lg:hidden mt-6">
               <Button
                 onClick={handleSave}
                 disabled={updateHours.isPending}
-                className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold text-lg rounded-xl"
               >
                 {updateHours.isPending ? (
                   <>
@@ -583,13 +490,6 @@ export default function BarberWorkingHoursPage() {
           </div>
         </div>
       </main>
-
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
     </div>
   );
 }

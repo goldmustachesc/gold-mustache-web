@@ -2,8 +2,10 @@
 
 import { GuestAppointmentsLookup } from "@/components/booking/GuestAppointmentsLookup";
 import { FeedbackModal } from "@/components/feedback";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
+import { PrivateShell } from "@/components/private/PrivateShell";
 import { Button } from "@/components/ui/button";
-import { useSignOut, useUser } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useAuth";
 import { useAppointmentActions } from "@/hooks/useAppointmentActions";
 import {
   useCancelAppointment,
@@ -15,12 +17,11 @@ import { filterAppointments } from "@/lib/booking/appointment-filters";
 import { getAppointmentCancellationStatus } from "@/lib/booking/cancellation";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
-import { Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
-import { AppointmentsHeader } from "./components/AppointmentsHeader";
 import { AppointmentsLoadingSkeleton } from "./components/AppointmentsLoadingSkeleton";
 import { AppointmentHistory } from "./components/AppointmentHistory";
 import { EmptyAppointmentsState } from "./components/EmptyAppointmentsState";
@@ -37,7 +38,6 @@ function MeusAgendamentosContent() {
   }, []);
 
   const { data: user, isLoading: userLoading } = useUser();
-  const { mutate: signOut, isPending: signOutPending } = useSignOut();
   const { data: appointments, isLoading: appointmentsLoading } =
     useClientAppointments();
   const { data: stats } = useDashboardStats();
@@ -69,16 +69,14 @@ function MeusAgendamentosContent() {
 
   const { upcoming, history } = filterAppointments(appointments);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <AppointmentsHeader
-        locale={locale}
-        isLoading={isUserLoading}
-        user={user ?? null}
-        onSignOut={() => signOut()}
-        isSigningOut={signOutPending}
-      />
+  usePrivateHeader({
+    title: "Meus Agendamentos",
+    icon: ClipboardList,
+    backHref: `/${locale}/dashboard`,
+  });
 
+  return (
+    <div>
       <main className="container mx-auto px-4 py-6 lg:py-8">
         {isGuest && (
           <div className="max-w-lg mx-auto">
@@ -155,16 +153,18 @@ function MeusAgendamentosContent() {
 
 export function MeusAgendamentosClient() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">
-            Carregando...
+    <PrivateShell>
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">
+              Carregando...
+            </div>
           </div>
-        </div>
-      }
-    >
-      <MeusAgendamentosContent />
-    </Suspense>
+        }
+      >
+        <MeusAgendamentosContent />
+      </Suspense>
+    </PrivateShell>
   );
 }

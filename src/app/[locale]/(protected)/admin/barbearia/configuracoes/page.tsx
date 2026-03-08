@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { toast } from "sonner";
-import { BrandWordmark } from "@/components/ui/brand-wordmark";
+import {
+  usePrivateHeader,
+  PrivateHeaderActions,
+} from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,8 +28,6 @@ import {
   Calendar,
   Save,
   Loader2,
-  ArrowLeft,
-  Menu,
   Settings,
   CheckCircle2,
   Instagram,
@@ -38,7 +38,6 @@ import {
 } from "lucide-react";
 import { maskPhone } from "@/utils/masks";
 import { cn } from "@/lib/utils";
-import { BarberSidebar } from "@/components/dashboard/BarberSidebar";
 
 type FormData = Omit<
   BarbershopSettingsResponse,
@@ -95,17 +94,14 @@ export default function AdminSettingsPage() {
 
   const [formData, setFormData] = useState<FormData | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("empresa");
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!userLoading && !user) {
       router.push(`/${locale}/login`);
     }
   }, [user, userLoading, router, locale]);
 
-  // Redirect if not admin
   useEffect(() => {
     if (!profileLoading && profile && profile.role !== "ADMIN") {
       toast.error("Acesso restrito a administradores");
@@ -113,7 +109,6 @@ export default function AdminSettingsPage() {
     }
   }, [profile, profileLoading, router, locale]);
 
-  // Initialize form with settings data
   useEffect(() => {
     if (settings && !initialized) {
       setFormData({
@@ -143,44 +138,6 @@ export default function AdminSettingsPage() {
       setInitialized(true);
     }
   }, [settings, initialized]);
-
-  const isLoading = userLoading || profileLoading || settingsLoading;
-
-  if (isLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-      </div>
-    );
-  }
-
-  if (profileError) {
-    return (
-      <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400">Erro ao carregar perfil.</p>
-          <Button
-            variant="ghost"
-            className="mt-4 text-amber-500"
-            onClick={() => router.push(`/${locale}/dashboard`)}
-          >
-            Voltar ao Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!profile || profile.role !== "ADMIN") {
-    return null;
-  }
-
-  const updateField = <K extends keyof FormData>(
-    field: K,
-    value: FormData[K],
-  ) => {
-    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
-  };
 
   const handleSave = async () => {
     if (!formData) return;
@@ -218,18 +175,61 @@ export default function AdminSettingsPage() {
     }
   };
 
+  usePrivateHeader({
+    title: "Dados da Barbearia",
+    icon: Building2,
+    backHref: `/${locale}/barbeiro`,
+  });
+
+  const isLoading = userLoading || profileLoading || settingsLoading;
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400">Erro ao carregar perfil.</p>
+          <Button
+            variant="ghost"
+            className="mt-4 text-primary"
+            onClick={() => router.push(`/${locale}/dashboard`)}
+          >
+            Voltar ao Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile || profile.role !== "ADMIN") {
+    return null;
+  }
+
+  const updateField = <K extends keyof FormData>(
+    field: K,
+    value: FormData[K],
+  ) => {
+    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
+  };
+
   if (!formData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <div className="flex flex-col items-center gap-2 text-zinc-400">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span>Carregando configurações...</span>
         </div>
       </div>
     );
   }
 
-  // Calculate completion
   const completedFields = {
     empresa: [!!formData.name, !!formData.shortName, !!formData.tagline].filter(
       Boolean,
@@ -283,98 +283,45 @@ export default function AdminSettingsPage() {
   ];
 
   const inputClassName =
-    "bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 h-11";
-  const labelClassName = "text-zinc-300 text-sm font-medium";
+    "bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary h-11";
+  const labelClassName = "text-foreground text-sm font-medium";
   const selectClassName =
-    "flex h-11 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2";
+    "flex h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="flex items-center justify-between px-4 py-4 lg:px-8">
-          {/* Left side */}
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/${locale}/dashboard`}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="sr-only lg:not-sr-only">Voltar</span>
-            </Link>
-
-            {/* Logo (desktop) */}
-            <div className="hidden lg:flex items-center gap-3">
-              <Link href={`/${locale}`} className="flex items-center gap-3">
-                <Image
-                  src="/logo.png"
-                  alt="Gold Mustache"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-                <BrandWordmark className="text-xl">GOLD MUSTACHE</BrandWordmark>
-              </Link>
-            </div>
-          </div>
-
-          {/* Center - Title */}
-          <div className="flex items-center gap-2 lg:flex-1 lg:justify-center">
-            <Settings className="h-5 w-5 text-amber-500" />
-            <h1 className="text-lg lg:text-xl font-bold">
-              Configurações da Barbearia
-            </h1>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            {/* Save Button - Desktop */}
-            <Button
-              onClick={handleSave}
-              disabled={updateSettings.isPending || !initialized}
-              className="hidden lg:flex bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold"
-            >
-              {updateSettings.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Alterações
-                </>
-              )}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div>
+      <PrivateHeaderActions>
+        <Button
+          onClick={handleSave}
+          disabled={updateSettings.isPending || !initialized}
+          className="hidden lg:flex bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold"
+        >
+          {updateSettings.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Alterações
+            </>
+          )}
+        </Button>
+      </PrivateHeaderActions>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        {/* Page Title - Desktop */}
         <div className="hidden lg:block mb-8">
           <h2 className="text-2xl font-bold">Gerenciar Configurações</h2>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Atualize as informações da sua barbearia
           </p>
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-          {/* Left Column - Navigation & Info (Desktop) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            {/* Navigation Card */}
-            <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50 sticky top-24">
+            <div className="bg-card/30 rounded-2xl p-6 border border-border sticky top-24">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-amber-500" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 Seções
               </h3>
               <nav className="space-y-2">
@@ -386,8 +333,8 @@ export default function AdminSettingsPage() {
                     className={cn(
                       "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-left",
                       activeTab === tab.id
-                        ? "bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30 text-white"
-                        : "bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-transparent",
+                        ? "bg-gradient-to-r from-primary/20 to-primary/20 border border-primary/30 text-foreground"
+                        : "bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground border border-transparent",
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -395,8 +342,8 @@ export default function AdminSettingsPage() {
                         className={cn(
                           "h-4 w-4",
                           activeTab === tab.id
-                            ? "text-amber-500"
-                            : "text-zinc-500",
+                            ? "text-primary"
+                            : "text-muted-foreground",
                         )}
                       />
                       <span className="text-sm font-medium">{tab.label}</span>
@@ -406,7 +353,7 @@ export default function AdminSettingsPage() {
                         "text-xs px-2 py-0.5 rounded-full",
                         tab.completed === tab.total
                           ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-zinc-700 text-zinc-400",
+                          : "bg-muted text-muted-foreground",
                       )}
                     >
                       {tab.completed}/{tab.total}
@@ -415,12 +362,11 @@ export default function AdminSettingsPage() {
                 ))}
               </nav>
 
-              {/* Info Card */}
-              <div className="mt-6 p-4 bg-zinc-900/50 rounded-xl border border-zinc-700/50">
+              <div className="mt-6 p-4 bg-background/50 rounded-xl border border-border">
                 <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       As alterações só serão aplicadas após clicar em "Salvar
                       Alterações".
                     </p>
@@ -428,18 +374,17 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* Quick Links */}
               <div className="mt-6 space-y-2">
                 <Link
                   href={`/${locale}/admin/barbearia/horarios`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors text-sm"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors text-sm"
                 >
                   <Calendar className="h-4 w-4" />
                   Horários de Funcionamento
                 </Link>
                 <Link
                   href={`/${locale}/admin/barbearia/servicos`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors text-sm"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors text-sm"
                 >
                   <Settings className="h-4 w-4" />
                   Gerenciar Serviços
@@ -448,57 +393,54 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* Right Column - Form */}
           <div className="lg:col-span-9">
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              {/* Mobile Tabs */}
-              <TabsList className="lg:hidden grid w-full grid-cols-4 bg-zinc-800/50 p-1 rounded-xl">
+              <TabsList className="lg:hidden grid w-full grid-cols-4 bg-muted/50 p-1 rounded-xl">
                 <TabsTrigger
                   value="empresa"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-lg gap-1"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Building2 className="h-4 w-4" />
                   <span className="hidden sm:inline">Empresa</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="endereco"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-lg gap-1"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <MapPin className="h-4 w-4" />
                   <span className="hidden sm:inline">Endereço</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="contato"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-lg gap-1"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Phone className="h-4 w-4" />
                   <span className="hidden sm:inline">Contato</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="agendamento"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-lg gap-1"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Calendar className="h-4 w-4" />
                   <span className="hidden sm:inline">Agendar</span>
                 </TabsTrigger>
               </TabsList>
 
-              {/* Empresa */}
               <TabsContent value="empresa" className="space-y-6">
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">
                         Dados da Empresa
                       </h2>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Informações básicas da barbearia
                       </p>
                     </div>
@@ -559,9 +501,9 @@ export default function AdminSettingsPage() {
                         }
                         placeholder="Descrição da barbearia para SEO e redes sociais..."
                         rows={4}
-                        className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 resize-none"
+                        className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary resize-none"
                       />
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Esta descrição será usada em SEO e compartilhamentos em
                         redes sociais
                       </p>
@@ -586,34 +528,33 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
 
-                {/* Preview Card */}
-                <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50">
-                  <h3 className="font-medium text-sm text-zinc-400 mb-4">
+                <div className="bg-card/30 rounded-2xl p-6 border border-border">
+                  <h3 className="font-medium text-sm text-muted-foreground mb-4">
                     Prévia
                   </h3>
-                  <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-700/50">
+                  <div className="bg-background rounded-xl p-4 border border-border">
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                        <span className="text-foreground font-bold text-lg">
                           {formData.shortName?.charAt(0) || "G"}
                         </span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-white">
+                        <h4 className="font-bold text-foreground">
                           {formData.name || "Nome da Barbearia"}
                         </h4>
-                        <p className="text-sm text-amber-500">
+                        <p className="text-sm text-primary">
                           {formData.tagline || "Slogan"}
                         </p>
                       </div>
                     </div>
                     {formData.description && (
-                      <p className="mt-3 text-sm text-zinc-400 line-clamp-2">
+                      <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
                         {formData.description}
                       </p>
                     )}
                     {formData.foundingYear && (
-                      <p className="mt-2 text-xs text-zinc-500">
+                      <p className="mt-2 text-xs text-muted-foreground">
                         Desde {formData.foundingYear} •{" "}
                         {new Date().getFullYear() - formData.foundingYear} anos
                         de tradição
@@ -623,16 +564,15 @@ export default function AdminSettingsPage() {
                 </div>
               </TabsContent>
 
-              {/* Endereço */}
               <TabsContent value="endereco" className="space-y-6">
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <MapPin className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">Endereço</h2>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Localização da barbearia
                       </p>
                     </div>
@@ -717,7 +657,7 @@ export default function AdminSettingsPage() {
                             <option
                               key={state}
                               value={state}
-                              className="bg-zinc-900"
+                              className="bg-background"
                             >
                               {state}
                             </option>
@@ -742,17 +682,16 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
 
-                {/* Coordinates Card */}
-                <div className="bg-zinc-800/30 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-card/30 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-xl bg-zinc-800 flex items-center justify-center">
-                      <MapPinned className="h-5 w-5 text-zinc-400" />
+                    <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                      <MapPinned className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <h3 className="font-semibold">
                         Coordenadas (Google Maps)
                       </h3>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Para exibição no mapa
                       </p>
                     </div>
@@ -790,23 +729,22 @@ export default function AdminSettingsPage() {
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-500 mt-3 flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                     <Info className="h-3 w-3" />
                     Use o Google Maps para obter as coordenadas exatas
                   </p>
                 </div>
               </TabsContent>
 
-              {/* Contato */}
               <TabsContent value="contato" className="space-y-6">
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">Contato</h2>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Telefones e e-mail
                       </p>
                     </div>
@@ -841,7 +779,7 @@ export default function AdminSettingsPage() {
                           placeholder="Ex: +5547989046178"
                           className={inputClassName}
                         />
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-muted-foreground">
                           Formato internacional com +55
                         </p>
                       </div>
@@ -852,7 +790,7 @@ export default function AdminSettingsPage() {
                         E-mail *
                       </Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="email"
                           type="email"
@@ -866,15 +804,14 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
 
-                {/* Social Media Card */}
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                       <Instagram className="h-5 w-5 text-white" />
                     </div>
                     <div>
                       <h3 className="font-semibold">Redes Sociais</h3>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Instagram e Google Maps
                       </p>
                     </div>
@@ -926,7 +863,7 @@ export default function AdminSettingsPage() {
                         Link do Google Maps
                       </Label>
                       <div className="relative">
-                        <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="googleMapsUrl"
                           type="url"
@@ -943,31 +880,29 @@ export default function AdminSettingsPage() {
                 </div>
               </TabsContent>
 
-              {/* Agendamento */}
               <TabsContent value="agendamento" className="space-y-6">
-                <div className="bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700/50">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-amber-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">
                         Configurações de Agendamento
                       </h2>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Controle o agendamento online
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-6">
-                    {/* Booking Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-xl border border-zinc-700/50">
+                    <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border">
                       <div className="space-y-1">
-                        <div className="font-medium text-white">
+                        <div className="font-medium text-foreground">
                           Agendamento Online
                         </div>
-                        <div className="text-sm text-zinc-400">
+                        <div className="text-sm text-muted-foreground">
                           Permite que clientes agendem pelo site
                         </div>
                       </div>
@@ -976,7 +911,7 @@ export default function AdminSettingsPage() {
                         onCheckedChange={(checked) =>
                           updateField("bookingEnabled", checked)
                         }
-                        className="data-[state=checked]:bg-amber-500"
+                        className="data-[state=checked]:bg-primary"
                       />
                     </div>
 
@@ -988,7 +923,7 @@ export default function AdminSettingsPage() {
                         URL de Agendamento Externo
                       </Label>
                       <div className="relative">
-                        <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="externalBookingUrl"
                           type="url"
@@ -1003,7 +938,7 @@ export default function AdminSettingsPage() {
                           className={cn(inputClassName, "pl-10")}
                         />
                       </div>
-                      <p className="text-xs text-zinc-500 flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Info className="h-3 w-3" />
                         Link para sistema externo (ex: Inbarber). Deixe vazio
                         para usar o agendamento interno.
@@ -1012,7 +947,6 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
 
-                {/* Status Card */}
                 <div
                   className={cn(
                     "rounded-2xl p-6 border",
@@ -1052,7 +986,7 @@ export default function AdminSettingsPage() {
                           ? "Agendamento Ativo"
                           : "Agendamento Desativado"}
                       </h3>
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-muted-foreground">
                         {formData.bookingEnabled
                           ? formData.externalBookingUrl
                             ? "Redirecionando para sistema externo"
@@ -1065,12 +999,11 @@ export default function AdminSettingsPage() {
               </TabsContent>
             </Tabs>
 
-            {/* Mobile Save Button */}
             <div className="lg:hidden mt-6">
               <Button
                 onClick={handleSave}
                 disabled={updateSettings.isPending || !initialized}
-                className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-lg rounded-xl"
+                className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold text-lg rounded-xl"
               >
                 {updateSettings.isPending ? (
                   <>
@@ -1088,13 +1021,6 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </main>
-
-      {/* Sidebar */}
-      <BarberSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        locale={locale}
-      />
     </div>
   );
 }
