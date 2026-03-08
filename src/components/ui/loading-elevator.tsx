@@ -13,7 +13,7 @@ export function LoadingElevator({
   onAnimationComplete,
 }: Readonly<LoadingElevatorProps>) {
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
+    <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
       {/* Dark Background */}
       <motion.div
         initial={{ opacity: 1 }}
