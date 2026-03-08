@@ -10,7 +10,6 @@ import {
 import { useAdminRewards } from "@/hooks/useAdminRewards";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeft,
   Loader2,
   Plus,
   ArrowLeftRight,
@@ -21,8 +20,8 @@ import {
   TicketCheck,
   BarChart3,
 } from "lucide-react";
-import Image from "next/image";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +43,6 @@ import { ReportsTab } from "@/components/admin/ReportsTab";
 
 export default function AdminLoyaltyPage() {
   const t = useTranslations("loyalty.admin");
-  const router = useRouter();
   const params = useParams();
   const locale = (params.locale as string) || "pt-BR";
 
@@ -60,6 +58,12 @@ export default function AdminLoyaltyPage() {
   const [adjustAmount, setAdjustAmount] = useState<string>("");
   const [adjustReason, setAdjustReason] = useState<string>("");
   const [isNewRewardModalOpen, setIsNewRewardModalOpen] = useState(false);
+
+  usePrivateHeader({
+    title: t("title") || "Gestão de Fidelidade",
+    icon: Settings,
+    backHref: `/${locale}/dashboard`,
+  });
 
   const handleOpenAdjust = (acc: AdminLoyaltyAccount) => {
     setSelectedAccount(acc);
@@ -103,43 +107,13 @@ export default function AdminLoyaltyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push(`/${locale}/dashboard`)}
-                className="text-muted-foreground hover:text-foreground hover:bg-accent"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Image
-                src="/logo.png"
-                alt="Gold Mustache"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <div>
-                <h1 className="text-lg font-playfair font-bold text-primary flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-primary hidden sm:block" />
-                  {t("title") || "Gestão de Fidelidade"}
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  {accounts?.length ?? 0} {t("accountsCount")} •{" "}
-                  {rewards?.length ?? 0} {t("rewardsCount")}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
+          <p className="text-sm text-muted-foreground">
+            {accounts?.length ?? 0} {t("accountsCount")} •{" "}
+            {rewards?.length ?? 0} {t("rewardsCount")}
+          </p>
           <Tabs defaultValue="accounts" className="w-full">
             <TabsList className="mb-6 bg-muted border border-border flex h-12 w-full max-w-xl rounded-xl p-1">
               <TabsTrigger
@@ -376,6 +350,6 @@ export default function AdminLoyaltyPage() {
         open={isNewRewardModalOpen}
         onOpenChange={setIsNewRewardModalOpen}
       />
-    </div>
+    </>
   );
 }
