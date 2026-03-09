@@ -61,6 +61,7 @@
   },
   "history": {
     "title": "Points History",
+    "empty": "No points activity yet.",
     "columns": {
       "date": "Date",
       "description": "Description",

@@ -32,6 +32,19 @@ function collectInvalidKeys(value: JsonValue, path: string[] = []): string[] {
   return [];
 }
 
+function getNestedValue(
+  value: JsonValue,
+  path: string[],
+): JsonValue | undefined {
+  return path.reduce<JsonValue | undefined>((current, segment) => {
+    if (!current || typeof current !== "object" || Array.isArray(current)) {
+      return undefined;
+    }
+
+    return current[segment];
+  }, value);
+}
+
 describe("loyalty locale messages", () => {
   const locales = [
     { locale: "pt-BR", messages: ptBR },
@@ -47,6 +60,13 @@ describe("loyalty locale messages", () => {
         invalidKeys,
         `Invalid mustache placeholders found in ${locale}: ${invalidKeys.join(", ")}`,
       ).toEqual([]);
+    });
+
+    it(`defines history.empty in ${locale}`, () => {
+      const emptyMessage = getNestedValue(messages, ["history", "empty"]);
+
+      expect(emptyMessage).toEqual(expect.any(String));
+      expect(emptyMessage).not.toBe("");
     });
   }
 });

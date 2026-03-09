@@ -58,14 +58,10 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  // biome-ignore lint/performance/noImgElement: Test mock must use plain <img> — not a real render
-  default: (props: Record<string, unknown>) => (
-    <img
-      alt={props.alt as string}
-      src={props.src as string}
-      data-testid="next-image"
-    />
-  ),
+  default: function MockImage({ src, alt }: { src?: string; alt?: string }) {
+    // biome-ignore lint/performance/noImgElement: test mock for next/image
+    return <img src={src ?? ""} alt={alt ?? ""} />;
+  },
 }));
 
 vi.mock("next/link", () => ({

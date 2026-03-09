@@ -59,9 +59,10 @@ vi.mock("@/components/ui/theme-toggle", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: Record<string, unknown>) => (
-    <img {...props} src={props.src as string} alt={props.alt as string} />
-  ),
+  default: function MockImage({ src, alt }: { src?: string; alt?: string }) {
+    // biome-ignore lint/performance/noImgElement: test mock for next/image
+    return <img src={src ?? ""} alt={alt ?? ""} />;
+  },
 }));
 
 vi.mock("next/link", () => ({

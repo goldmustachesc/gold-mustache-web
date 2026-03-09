@@ -61,6 +61,7 @@
   },
   "history": {
     "title": "Extrato de Pontos",
+    "empty": "Nenhuma movimentação de pontos ainda.",
     "columns": {
       "date": "Data",
       "description": "Descrição",

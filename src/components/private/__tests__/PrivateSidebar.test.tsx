@@ -58,9 +58,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ alt, ...props }: Record<string, unknown>) => (
-    <img alt={alt as string} {...props} />
-  ),
+  default: function MockImage({ alt, ...props }: Record<string, unknown>) {
+    // biome-ignore lint/performance/noImgElement: test mock for next/image
+    return <img alt={alt as string} {...props} />;
+  },
 }));
 
 vi.mock("next-intl", () => ({

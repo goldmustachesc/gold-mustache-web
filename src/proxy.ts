@@ -19,7 +19,7 @@ function getPathnameWithoutLocale(pathname: string): string {
   return pathname.replace(localePattern, "") || "/";
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (pathname.startsWith("/api") && isPublicApiRoute(pathname)) {
@@ -34,17 +34,14 @@ export async function middleware(request: NextRequest) {
 
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
 
-  // Check if route is protected
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathnameWithoutLocale.startsWith(route),
   );
 
-  // Check if route is auth route
   const isAuthRoute = authRoutes.some((route) =>
     pathnameWithoutLocale.startsWith(route),
   );
 
-  // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !user) {
     const locale = pathname.split("/")[1] || defaultLocale;
     const loginUrl = new URL(`/${locale}/login`, request.url);
@@ -52,16 +49,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && user) {
     const locale = pathname.split("/")[1] || defaultLocale;
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
-  // Apply i18n middleware
   const intlResponse = intlMiddleware(request);
 
-  // Merge cookies from Supabase response
   for (const cookie of supabaseResponse.cookies.getAll()) {
     intlResponse.cookies.set(cookie.name, cookie.value, cookie);
   }
