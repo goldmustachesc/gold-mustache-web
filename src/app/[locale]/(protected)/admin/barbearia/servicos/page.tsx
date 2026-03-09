@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Image from "next/image";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,6 @@ import {
   type AdminServiceData,
 } from "@/hooks/useAdminServices";
 import {
-  ArrowLeft,
   Calendar,
   Clock,
   DollarSign,
@@ -143,6 +142,12 @@ export default function AdminServicesPage() {
     createService.isPending ||
     updateService.isPending ||
     toggleStatus.isPending;
+
+  usePrivateHeader({
+    title: "Serviços da Barbearia",
+    icon: Scissors,
+    backHref: `/${locale}/dashboard`,
+  });
 
   if (isLoading || !user) {
     return (
@@ -271,51 +276,7 @@ export default function AdminServicesPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/80">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push(`/${locale}/dashboard`)}
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Image
-                src="/logo.png"
-                alt="Gold Mustache"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
-                  Serviços da Barbearia
-                </h1>
-                <p className="text-sm text-zinc-400">
-                  {activeServices.length} serviços ativos
-                </p>
-              </div>
-            </div>
-
-            {formMode === "edit" && (
-              <Button
-                variant="outline"
-                onClick={handleCancelEdit}
-                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancelar Edição
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
+    <div>
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-6">
@@ -577,7 +538,7 @@ export default function AdminServicesPage() {
                     <Button
                       variant="outline"
                       onClick={handleCancelEdit}
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 lg:hidden"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Cancelar
@@ -686,7 +647,6 @@ export default function AdminServicesPage() {
                         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-700/30">
                           <Button
                             variant="ghost"
-                            size="sm"
                             onClick={() => handleEdit(service)}
                             disabled={isMutating}
                             className="flex-1 text-zinc-400 hover:text-white hover:bg-zinc-700/50"
@@ -696,7 +656,6 @@ export default function AdminServicesPage() {
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
                             onClick={() => handleToggleStatus(service)}
                             disabled={isMutating}
                             className={cn(

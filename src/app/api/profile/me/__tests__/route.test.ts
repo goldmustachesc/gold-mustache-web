@@ -5,6 +5,8 @@ const mockProfileFindUnique = vi.fn();
 const mockProfileCreate = vi.fn();
 const mockProfileUpdate = vi.fn();
 const mockLinkGuestAppointments = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetUserRateLimitIdentifier = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -29,17 +31,48 @@ vi.mock("@/services/guest-linking", () => ({
     mockLinkGuestAppointments(...args),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getUserRateLimitIdentifier: (...args: unknown[]) =>
+    mockGetUserRateLimitIdentifier(...args),
+}));
+
 import { GET, PUT } from "../route";
 
 describe("GET /api/profile/me", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 60_000,
+    });
+    mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
+      return `auth:${String(userId)}`;
+    });
+  });
+
+  it("returns 429 when rate limited", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+    });
+
+    const request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("RATE_LIMITED");
   });
 
   it("returns 401 when not authenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -70,12 +103,14 @@ describe("GET /api/profile/me", () => {
       updatedAt: new Date("2025-01-02T00:00:00.000Z"),
     });
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.data.profile.id).toBe("profile-1");
     expect(body.data.email).toBe("user@test.com");
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 
   it("creates profile when missing and links guest appointments", async () => {
@@ -109,7 +144,8 @@ describe("GET /api/profile/me", () => {
       updatedAt: new Date("2025-01-02T00:00:00.000Z"),
     });
 
-    const response = await GET();
+    const request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -124,6 +160,34 @@ describe("GET /api/profile/me", () => {
 describe("PUT /api/profile/me", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 60_000,
+    });
+    mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
+      return `auth:${String(userId)}`;
+    });
+  });
+
+  it("returns 429 when rate limited", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+    });
+
+    const response = await PUT(
+      new Request("http://localhost:3001/api/profile/me", {
+        method: "PUT",
+        body: JSON.stringify({}),
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("RATE_LIMITED");
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -196,5 +260,6 @@ describe("PUT /api/profile/me", () => {
       "profile-1",
       "11999998888",
     );
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 });

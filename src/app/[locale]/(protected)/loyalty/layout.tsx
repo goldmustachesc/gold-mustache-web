@@ -19,7 +19,7 @@ export default function LoyaltyLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: user, isLoading: userLoading } = useUser();
+  const { isLoading: userLoading } = useUser();
   const params = useParams();
   const pathname = usePathname();
   const locale = params.locale as string;
@@ -64,7 +64,7 @@ export default function LoyaltyLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`py-4 whitespace-nowrap flex items-center gap-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
+                className={`py-4 min-h-11 whitespace-nowrap flex items-center gap-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
                   isActive
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"

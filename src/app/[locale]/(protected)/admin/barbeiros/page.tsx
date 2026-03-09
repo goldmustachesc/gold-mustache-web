@@ -75,7 +75,7 @@ export default function AdminBarbersPage() {
   usePrivateHeader({
     title: "Gerenciar Barbeiros",
     icon: Users,
-    backHref: `/${locale}/barbeiro`,
+    backHref: `/${locale}/dashboard`,
   });
 
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function AdminBarbersPage() {
         </Button>
       </PrivateHeaderActions>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        <div className="hidden lg:block mb-8">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold">Equipe de Barbeiros</h2>
           <p className="text-muted-foreground mt-1">
             Gerencie os profissionais da sua barbearia
@@ -336,7 +336,6 @@ export default function AdminBarbersPage() {
                         >
                           <Button
                             variant="outline"
-                            size="sm"
                             className="w-full border-border text-foreground hover:bg-accent hover:text-foreground"
                           >
                             <Clock className="h-4 w-4 mr-2 text-primary" />
@@ -470,7 +469,6 @@ export default function AdminBarbersPage() {
                       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() =>
                             handleToggleActive(barber.id, barber.active)
                           }

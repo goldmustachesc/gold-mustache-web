@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { maskPhone } from "@/utils/masks";
 import { cn } from "@/lib/utils";
+import { mobileStickyOffsetClassName } from "@/components/private/mobile-nav-layout";
 
 type FormData = Omit<
   BarbershopSettingsResponse,
@@ -178,7 +179,7 @@ export default function AdminSettingsPage() {
   usePrivateHeader({
     title: "Dados da Barbearia",
     icon: Building2,
-    backHref: `/${locale}/barbeiro`,
+    backHref: `/${locale}/dashboard`,
   });
 
   const isLoading = userLoading || profileLoading || settingsLoading;
@@ -310,7 +311,7 @@ export default function AdminSettingsPage() {
         </Button>
       </PrivateHeaderActions>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        <div className="hidden lg:block mb-8">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold">Gerenciar Configurações</h2>
           <p className="text-muted-foreground mt-1">
             Atualize as informações da sua barbearia
@@ -405,28 +406,28 @@ export default function AdminSettingsPage() {
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Building2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Empresa</span>
+                  <span className="text-xs sm:text-sm">Empresa</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="endereco"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <MapPin className="h-4 w-4" />
-                  <span className="hidden sm:inline">Endereço</span>
+                  <span className="text-xs sm:text-sm">Endereço</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="contato"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Phone className="h-4 w-4" />
-                  <span className="hidden sm:inline">Contato</span>
+                  <span className="text-xs sm:text-sm">Contato</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="agendamento"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Agendar</span>
+                  <span className="text-xs sm:text-sm">Agendar</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -999,7 +1000,12 @@ export default function AdminSettingsPage() {
               </TabsContent>
             </Tabs>
 
-            <div className="lg:hidden mt-6">
+            <div
+              className={cn(
+                "lg:hidden sticky z-10 py-4 bg-background/95 backdrop-blur-sm border-t border-border",
+                mobileStickyOffsetClassName,
+              )}
+            >
               <Button
                 onClick={handleSave}
                 disabled={updateSettings.isPending || !initialized}

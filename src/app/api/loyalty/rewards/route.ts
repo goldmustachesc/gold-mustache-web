@@ -40,7 +40,12 @@ export async function GET() {
       stock: reward.stock,
     }));
 
-    return apiSuccess(formattedRewards);
+    const response = apiSuccess(formattedRewards);
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=300",
+    );
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar recompensas");
   }

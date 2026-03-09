@@ -143,6 +143,16 @@ export async function checkRateLimit(
 }
 
 /**
+ * Build a stable rate-limit identifier for an authenticated user.
+ *
+ * Using the authenticated user ID prevents unrelated users behind the same IP
+ * address from sharing the same limiter bucket on protected routes.
+ */
+export function getUserRateLimitIdentifier(userId: string): string {
+  return `auth:${userId}`;
+}
+
+/**
  * Get client identifier from request headers.
  * Uses X-Forwarded-For for proxied requests (Vercel, Cloudflare),
  * falls back to a generic identifier.
@@ -153,15 +163,15 @@ export async function checkRateLimit(
 export function getClientIdentifier(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
+    return `ip:${forwardedFor.split(",")[0].trim()}`;
   }
 
   const realIp = request.headers.get("x-real-ip");
   if (realIp) {
-    return realIp;
+    return `ip:${realIp}`;
   }
 
-  return "anonymous";
+  return "ip:anonymous";
 }
 
 /**

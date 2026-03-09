@@ -136,7 +136,7 @@ export default function CanceladosPage() {
                   variant="outline"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="border-border hover:bg-accent"
+                  className="border-border hover:bg-accent min-h-11"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Anterior
@@ -148,7 +148,7 @@ export default function CanceladosPage() {
                   variant="outline"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= meta.totalPages}
-                  className="border-border hover:bg-accent"
+                  className="border-border hover:bg-accent min-h-11"
                 >
                   Próxima
                   <ChevronRight className="h-4 w-4 ml-1" />

@@ -118,28 +118,28 @@ export default function AdminLoyaltyPage() {
             <TabsList className="mb-6 bg-muted border border-border flex h-12 w-full max-w-xl rounded-xl p-1">
               <TabsTrigger
                 value="accounts"
-                className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <Users className="h-4 w-4 mr-2" />
                 {t("users") || "Contas"}
               </TabsTrigger>
               <TabsTrigger
                 value="catalog"
-                className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <Gift className="h-4 w-4 mr-2" />
                 {t("catalog") || "Catálogo"}
               </TabsTrigger>
               <TabsTrigger
                 value="redemptions"
-                className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <TicketCheck className="h-4 w-4 mr-2" />
                 {t("redemptions.tab") || "Resgates"}
               </TabsTrigger>
               <TabsTrigger
                 value="reports"
-                className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 {t("reports.tab") || "Relatórios"}
@@ -147,7 +147,7 @@ export default function AdminLoyaltyPage() {
             </TabsList>
 
             <TabsContent value="accounts" className="space-y-6 md:space-y-8">
-              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+              <div className="hidden lg:block bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="text-xs uppercase bg-muted text-muted-foreground border-b border-border">
@@ -181,7 +181,6 @@ export default function AdminLoyaltyPage() {
                           <td className="px-6 py-4 text-right">
                             <Button
                               variant="outline"
-                              size="sm"
                               onClick={() => handleOpenAdjust(acc)}
                             >
                               <ArrowLeftRight className="h-4 w-4 mr-2" />
@@ -204,13 +203,54 @@ export default function AdminLoyaltyPage() {
                   </table>
                 </div>
               </div>
+
+              <div className="lg:hidden space-y-3">
+                {accounts?.map((acc) => (
+                  <div
+                    key={acc.id}
+                    className="bg-card border border-border rounded-xl p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-foreground truncate">
+                          {acc.fullName}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {acc.email}
+                        </div>
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <div className="font-black font-mono tabular-nums text-primary text-lg">
+                          {acc.points}
+                        </div>
+                        <TierBadge tier={acc.tier} />
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleOpenAdjust(acc)}
+                        className="w-full"
+                      >
+                        <ArrowLeftRight className="h-4 w-4 mr-2" />
+                        {t("adjustPoints") || "Ajustar"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {(!accounts || accounts.length === 0) && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Nenhuma conta encontrada.
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="catalog" className="space-y-6">
               <div className="bg-card border border-border rounded-xl overflow-hidden p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold">Itens do Catálogo</h3>
-                  <Button size="sm" onClick={handleOpenNewReward}>
+                  <Button onClick={handleOpenNewReward}>
                     <Plus className="h-4 w-4 mr-2" /> Novo Item
                   </Button>
                 </div>

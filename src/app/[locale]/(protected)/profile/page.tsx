@@ -41,10 +41,44 @@ export default function ProfilePage() {
           </p>
         </div>
 
+        <div className="xl:hidden p-4 rounded-xl bg-muted/50 border border-border mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="min-h-11 min-w-11 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {profile?.fullName || "Não informado"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-3">
+              {isBarber && (
+                <span className="text-primary text-xs font-medium px-2 py-0.5 bg-primary/10 rounded-full">
+                  Barbeiro
+                </span>
+              )}
+              {profile?.emailVerified ? (
+                <span className="text-emerald-400 text-xs font-medium px-2 py-0.5 bg-emerald-500/10 rounded-full">
+                  Verificado
+                </span>
+              ) : (
+                <span className="text-primary text-xs font-medium px-2 py-0.5 bg-primary/10 rounded-full">
+                  Pendente
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
           <div className="xl:col-span-7 space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b border-border">
-              <div className="p-2 bg-primary/10 rounded-lg">
+              <div className="p-2 min-h-11 min-w-11 flex items-center justify-center bg-primary/10 rounded-lg">
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -62,7 +96,7 @@ export default function ProfilePage() {
 
           <div className="xl:col-span-5 space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b border-border">
-              <div className="p-2 bg-primary/10 rounded-lg">
+              <div className="p-2 min-h-11 min-w-11 flex items-center justify-center bg-primary/10 rounded-lg">
                 <Shield className="h-5 w-5 text-primary" />
               </div>
               <div>

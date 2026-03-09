@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { mobileStickyOffsetClassName } from "@/components/private/mobile-nav-layout";
 import { useUser } from "@/hooks/useAuth";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import {
@@ -164,7 +165,7 @@ export default function AdminShopHoursPage() {
   usePrivateHeader({
     title: "Horários da Barbearia",
     icon: Clock,
-    backHref: `/${locale}/barbeiro`,
+    backHref: `/${locale}/dashboard`,
   });
 
   useEffect(() => {
@@ -250,7 +251,7 @@ export default function AdminShopHoursPage() {
   }, 0);
 
   const inputClassName =
-    "bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary h-10";
+    "bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary h-11";
   const labelClassName = "text-muted-foreground text-xs font-medium";
 
   return (
@@ -275,7 +276,7 @@ export default function AdminShopHoursPage() {
         </Button>
       </PrivateHeaderActions>
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        <div className="hidden lg:block mb-8">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold">
             Gerenciar Horários de Funcionamento
           </h2>
@@ -464,7 +465,7 @@ export default function AdminShopHoursPage() {
                                     : {}),
                                 });
                               }}
-                              className="h-4 w-4 rounded border-border bg-muted text-primary focus:ring-primary focus:ring-offset-background"
+                              className="h-5 w-5 rounded border-border bg-muted text-primary focus:ring-primary focus:ring-offset-background"
                             />
                             <span
                               className={cn(
@@ -592,7 +593,7 @@ export default function AdminShopHoursPage() {
                       type="checkbox"
                       checked={closureAllDay}
                       onChange={(e) => setClosureAllDay(e.target.checked)}
-                      className="h-4 w-4 rounded border-border bg-muted text-primary focus:ring-primary focus:ring-offset-background"
+                      className="h-5 w-5 rounded border-border bg-muted text-primary focus:ring-primary focus:ring-offset-background"
                     />
                     <div>
                       <span className="text-sm font-medium text-foreground">
@@ -743,7 +744,12 @@ export default function AdminShopHoursPage() {
               </div>
             </div>
 
-            <div className="lg:hidden">
+            <div
+              className={cn(
+                "lg:hidden sticky z-10 py-4 bg-background/95 backdrop-blur-sm border-t border-border",
+                mobileStickyOffsetClassName,
+              )}
+            >
               <Button
                 onClick={handleSaveHours}
                 disabled={updateHours.isPending || hoursLoading || !initialized}

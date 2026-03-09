@@ -4,6 +4,7 @@ import { markAppointmentAsNoShow } from "@/services/booking";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
 
 export async function PATCH(
   request: Request,
@@ -21,6 +22,18 @@ export async function PATCH(
 
     if (!user) {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(user.id),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
     }
 
     // Check if user is a barber

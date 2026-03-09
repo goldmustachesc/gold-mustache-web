@@ -81,6 +81,17 @@ describe("/api/loyalty/rewards", () => {
       expect(data.data).toEqual([]);
     });
 
+    it("should include Cache-Control header on success", async () => {
+      vi.mocked(prisma.reward.findMany).mockResolvedValue([] as never);
+
+      const response = await GET();
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Cache-Control")).toBe(
+        "public, s-maxage=60, stale-while-revalidate=300",
+      );
+    });
+
     it("should only return active rewards (not inactive ones)", async () => {
       vi.mocked(prisma.reward.findMany).mockResolvedValue([] as never);
 

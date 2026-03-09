@@ -87,12 +87,17 @@ vi.mock("@/components/admin/RedemptionsTab", () => ({
   RedemptionsTab: () => <div data-testid="redemptions-tab-mock" />,
 }));
 
+import { PrivateHeaderProvider } from "@/components/private/PrivateHeaderContext";
 import AdminLoyaltyPage from "../page";
+
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return <PrivateHeaderProvider>{children}</PrivateHeaderProvider>;
+}
 
 describe("AdminLoyaltyPage — catalog", () => {
   it("should display inactive rewards in the catalog using admin endpoint", async () => {
     const user = userEvent.setup();
-    render(<AdminLoyaltyPage />);
+    render(<AdminLoyaltyPage />, { wrapper: Wrapper });
 
     const catalogTab = screen.getByRole("tab", { name: /catalog/i });
     await user.click(catalogTab);
@@ -102,7 +107,7 @@ describe("AdminLoyaltyPage — catalog", () => {
 
   it("should show 'Inativo' badge on inactive rewards", async () => {
     const user = userEvent.setup();
-    render(<AdminLoyaltyPage />);
+    render(<AdminLoyaltyPage />, { wrapper: Wrapper });
 
     const catalogTab = screen.getByRole("tab", { name: /catalog/i });
     await user.click(catalogTab);
@@ -112,7 +117,7 @@ describe("AdminLoyaltyPage — catalog", () => {
 
   it("should have unchecked switch for inactive rewards and checked for active", async () => {
     const user = userEvent.setup();
-    render(<AdminLoyaltyPage />);
+    render(<AdminLoyaltyPage />, { wrapper: Wrapper });
 
     const catalogTab = screen.getByRole("tab", { name: /catalog/i });
     await user.click(catalogTab);

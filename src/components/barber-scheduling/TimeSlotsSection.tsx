@@ -51,14 +51,14 @@ export function TimeSlotsSection({
           <p className="text-xs mt-1 text-muted-foreground">Tente outra data</p>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1">
           {slots.map((slot) => (
             <button
               key={slot.time}
               type="button"
               onClick={() => onSelect(slot.time)}
               className={cn(
-                "px-2 py-2 rounded-lg text-sm font-medium transition-colors",
+                "px-2 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors",
                 selectedTime === slot.time
                   ? "bg-gradient-to-r from-primary to-primary/80 text-foreground"
                   : "bg-muted/50 text-foreground hover:bg-accent border border-border",

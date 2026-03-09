@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,8 +10,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  usePrivateHeader,
+  PrivateHeaderActions,
+} from "@/components/private/PrivateHeaderContext";
+import {
   Loader2,
-  ArrowLeft,
   FileText,
   Calendar,
   DollarSign,
@@ -44,7 +46,6 @@ import Link from "next/link";
 interface FinancialPageProps {
   locale: string;
   isAdmin?: boolean;
-  onBack?: () => void;
 }
 
 function formatCurrency(value: number): string {
@@ -54,11 +55,7 @@ function formatCurrency(value: number): string {
   });
 }
 
-export function FinancialPage({
-  locale,
-  isAdmin = false,
-  onBack,
-}: FinancialPageProps) {
+export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
   const months = getLastMonths(4);
   const currentMonth = months[months.length - 1];
 
@@ -88,6 +85,12 @@ export function FinancialPage({
     ? ((adminQuery.data as AdminFinancialResponse | undefined)?.barbers ?? [])
     : [];
 
+  usePrivateHeader({
+    title: "Faturamento",
+    icon: DollarSign,
+    backHref: `/${locale}/${isAdmin ? "dashboard" : "barbeiro"}`,
+  });
+
   const handleMonthSelect = (month: number, year: number) => {
     setSelectedMonth(month);
     setSelectedYear(year);
@@ -112,65 +115,24 @@ export function FinancialPage({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/80">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {onBack ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onBack}
-                  className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              ) : (
-                <Link
-                  href={`/${locale}/${isAdmin ? "dashboard" : "barbeiro"}`}
-                  className="text-zinc-400 hover:text-white p-2 rounded-lg hover:bg-zinc-800 transition-colors"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              )}
-              <Image
-                src="/logo.png"
-                alt="Gold Mustache"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
-                  Faturamento
-                </h1>
-                <p className="text-sm text-zinc-400">
-                  {isAdmin
-                    ? barberName || "Todos os Barbeiros"
-                    : "Relatório Financeiro"}
-                </p>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGeneratePdf}
-              disabled={isGeneratingPdf || !stats}
-              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-            >
-              {isGeneratingPdf ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4 mr-2" />
-              )}
-              Gerar PDF
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div>
+      <PrivateHeaderActions>
+        <Button
+          variant="outline"
+          onClick={handleGeneratePdf}
+          disabled={isGeneratingPdf || !stats}
+          aria-label="Gerar PDF"
+          title="Gerar PDF"
+          className="border-border hover:bg-accent"
+        >
+          {isGeneratingPdf ? (
+            <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4 sm:mr-2" />
+          )}
+          <span className="hidden sm:inline">Gerar PDF</span>
+        </Button>
+      </PrivateHeaderActions>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">

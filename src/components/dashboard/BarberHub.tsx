@@ -117,12 +117,19 @@ export function BarberHub({ locale }: BarberHubProps) {
   return (
     <div>
       <PrivateHeaderActions>
-        <Link href={`/${locale}/barbeiro/agendar`} className="hidden sm:block">
-          <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Agendar para Cliente
-          </Button>
-        </Link>
+        <Button
+          asChild
+          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold"
+        >
+          <Link
+            href={`/${locale}/barbeiro/agendar`}
+            aria-label="Agendar para Cliente"
+            title="Agendar para Cliente"
+          >
+            <UserPlus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Agendar para Cliente</span>
+          </Link>
+        </Button>
       </PrivateHeaderActions>
       <main className="max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8 space-y-6">
         <div className="space-y-1">
@@ -247,7 +254,6 @@ export function BarberHub({ locale }: BarberHubProps) {
               <Link href={`/${locale}/barbeiro/meu-link`}>
                 <Button
                   variant="outline"
-                  size="sm"
                   className="border-border hover:bg-accent text-foreground"
                 >
                   Compartilhar

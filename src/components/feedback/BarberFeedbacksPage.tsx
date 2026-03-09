@@ -1,33 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FeedbackCard, FeedbackEmptyState } from "./FeedbackCard";
 import { FeedbackStats } from "./FeedbackStats";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import {
   useBarberFeedbacks,
   useBarberFeedbackStats,
 } from "@/hooks/useFeedback";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Star,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Star } from "lucide-react";
 
 interface BarberFeedbacksPageProps {
   locale: string;
   barberName: string;
 }
 
-export function BarberFeedbacksPage({
-  locale,
-  barberName,
-}: BarberFeedbacksPageProps) {
+export function BarberFeedbacksPage({ locale }: BarberFeedbacksPageProps) {
   const [page, setPage] = useState(1);
   const limit = 10;
+
+  usePrivateHeader({
+    title: "Minhas Avaliações",
+    icon: Star,
+    backHref: `/${locale}/barbeiro`,
+  });
 
   const { data: feedbacksData, isLoading: feedbacksLoading } =
     useBarberFeedbacks(page, limit);
@@ -47,30 +44,7 @@ export function BarberFeedbacksPage({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="max-w-4xl mx-auto flex items-center gap-4 px-4 py-4">
-          <Link href={`/${locale}/barbeiro`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-zinc-400 hover:text-white"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-400" />
-              Minhas Avaliações
-            </h1>
-            <p className="text-sm text-zinc-400">{barberName}</p>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div>
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -114,13 +88,13 @@ export function BarberFeedbacksPage({
                     variant="outline"
                     onClick={handlePrevPage}
                     disabled={page === 1}
-                    className="border-zinc-700 hover:bg-zinc-800"
+                    className="border-border hover:bg-accent min-h-11"
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Anterior
                   </Button>
 
-                  <span className="text-sm text-zinc-400">
+                  <span className="text-sm text-muted-foreground">
                     Página {page} de {feedbacksData.totalPages}
                   </span>
 
@@ -128,7 +102,7 @@ export function BarberFeedbacksPage({
                     variant="outline"
                     onClick={handleNextPage}
                     disabled={page >= feedbacksData.totalPages}
-                    className="border-zinc-700 hover:bg-zinc-800"
+                    className="border-border hover:bg-accent min-h-11"
                   >
                     Próxima
                     <ChevronRight className="h-4 w-4 ml-1" />

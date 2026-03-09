@@ -5,6 +5,7 @@ import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -15,6 +16,18 @@ export async function GET() {
 
     if (!user) {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(user.id),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
     }
 
     let profile = await prisma.profile.findUnique({
@@ -82,6 +95,18 @@ export async function PUT(request: Request) {
 
     if (!user) {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(user.id),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
     }
 
     const body = await request.json();

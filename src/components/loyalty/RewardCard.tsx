@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -43,7 +43,7 @@ interface RewardCardProps {
   isRedeeming?: boolean;
 }
 
-export function RewardCard({
+export const RewardCard = memo(function RewardCard({
   reward,
   userPoints,
   onRedeem,
@@ -149,4 +149,4 @@ export function RewardCard({
       </CardFooter>
     </Card>
   );
-}
+});

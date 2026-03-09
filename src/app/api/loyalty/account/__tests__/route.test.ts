@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const mockGetUser = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetUserRateLimitIdentifier = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -19,6 +21,12 @@ vi.mock("@/services/loyalty/loyalty.service", () => ({
   LoyaltyService: {
     getOrCreateAccount: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getUserRateLimitIdentifier: (...args: unknown[]) =>
+    mockGetUserRateLimitIdentifier(...args),
 }));
 
 import { GET } from "../route";
@@ -65,6 +73,14 @@ describe("/api/loyalty/account", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 60_000,
+    });
+    mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
+      return `auth:${String(userId)}`;
+    });
   });
 
   afterEach(() => {
@@ -73,10 +89,27 @@ describe("/api/loyalty/account", () => {
   });
 
   describe("GET", () => {
+    it("should return 429 when rate limited", async () => {
+      authenticatedUser();
+      mockCheckRateLimit.mockResolvedValue({
+        success: false,
+        remaining: 0,
+        reset: Date.now() + 60_000,
+      });
+
+      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(429);
+      expect(data.error).toBe("RATE_LIMITED");
+    });
+
     it("should return 401 when not authenticated", async () => {
       unauthenticatedUser();
 
-      const response = await GET();
+      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -87,7 +120,8 @@ describe("/api/loyalty/account", () => {
       authenticatedUser();
       vi.mocked(prisma.profile.findUnique).mockResolvedValue(null);
 
-      const response = await GET();
+      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -100,7 +134,8 @@ describe("/api/loyalty/account", () => {
       mockAccount();
       vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(3);
 
-      const response = await GET();
+      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -113,6 +148,7 @@ describe("/api/loyalty/account", () => {
         referredById: null,
         referralsCount: 3,
       });
+      expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
     });
 
     it("should call LoyaltyService.getOrCreateAccount with profile ID", async () => {
@@ -121,7 +157,8 @@ describe("/api/loyalty/account", () => {
       mockAccount();
       vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(0);
 
-      await GET();
+      const request = new Request("http://localhost:3001/api/loyalty/account");
+      await GET(request);
 
       expect(LoyaltyService.getOrCreateAccount).toHaveBeenCalledWith(
         "profile-42",

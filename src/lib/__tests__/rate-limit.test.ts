@@ -88,13 +88,13 @@ describe("rate-limit module", () => {
       vi.doMock("@/lib/redis", () => ({ redis: null }));
     });
 
-    it("extracts first IP from x-forwarded-for", async () => {
+    it("extracts first IP from x-forwarded-for with ip: prefix", async () => {
       const { getClientIdentifier } = await import("../rate-limit");
       const request = new Request("http://localhost/api/test", {
         headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
       });
 
-      expect(getClientIdentifier(request)).toBe("1.2.3.4");
+      expect(getClientIdentifier(request)).toBe("ip:1.2.3.4");
     });
 
     it("uses x-real-ip when x-forwarded-for is absent", async () => {
@@ -103,14 +103,73 @@ describe("rate-limit module", () => {
         headers: { "x-real-ip": "10.0.0.1" },
       });
 
-      expect(getClientIdentifier(request)).toBe("10.0.0.1");
+      expect(getClientIdentifier(request)).toBe("ip:10.0.0.1");
     });
 
-    it("returns 'anonymous' when no IP headers present", async () => {
+    it("returns 'ip:anonymous' when no IP headers present", async () => {
       const { getClientIdentifier } = await import("../rate-limit");
       const request = new Request("http://localhost/api/test");
 
-      expect(getClientIdentifier(request)).toBe("anonymous");
+      expect(getClientIdentifier(request)).toBe("ip:anonymous");
+    });
+  });
+
+  describe("getUserRateLimitIdentifier", () => {
+    beforeEach(() => {
+      vi.resetModules();
+      vi.doMock("@/lib/redis", () => ({ redis: null }));
+    });
+
+    it("prefixes authenticated user IDs with auth:", async () => {
+      const { getUserRateLimitIdentifier } = await import("../rate-limit");
+
+      expect(getUserRateLimitIdentifier("user-123")).toBe("auth:user-123");
+    });
+  });
+
+  describe("namespace isolation", () => {
+    beforeEach(() => {
+      vi.resetModules();
+      vi.doMock("@/lib/redis", () => ({ redis: null }));
+    });
+
+    it("auth and client identifiers never share the same bucket", async () => {
+      const { getUserRateLimitIdentifier, getClientIdentifier } = await import(
+        "../rate-limit"
+      );
+
+      const authId = getUserRateLimitIdentifier("user-123");
+      const request = new Request("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "user-123" },
+      });
+      const clientId = getClientIdentifier(request);
+
+      expect(authId).not.toBe(clientId);
+      expect(authId).toBe("auth:user-123");
+      expect(clientId).toBe("ip:user-123");
+    });
+
+    it("crafted header cannot target an authenticated user bucket", async () => {
+      const {
+        checkRateLimit,
+        getUserRateLimitIdentifier,
+        getClientIdentifier,
+      } = await import("../rate-limit");
+
+      const authId = getUserRateLimitIdentifier("victim-id");
+      const spoofedRequest = new Request("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "auth:victim-id" },
+      });
+      const spoofedClientId = getClientIdentifier(spoofedRequest);
+
+      expect(spoofedClientId).not.toBe(authId);
+
+      for (let i = 0; i < 3; i++) {
+        await checkRateLimit("sensitive", spoofedClientId);
+      }
+
+      const authResult = await checkRateLimit("sensitive", authId);
+      expect(authResult.success).toBe(true);
     });
   });
 });

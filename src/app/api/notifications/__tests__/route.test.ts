@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockGetUser = vi.fn();
 const mockGetNotifications = vi.fn();
 const mockGetUnreadCount = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetUserRateLimitIdentifier = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -17,11 +19,42 @@ vi.mock("@/services/notification", () => ({
   getUnreadCount: (...args: unknown[]) => mockGetUnreadCount(...args),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getUserRateLimitIdentifier: (...args: unknown[]) =>
+    mockGetUserRateLimitIdentifier(...args),
+}));
+
 import { GET } from "../route";
 
 describe("GET /api/notifications", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 60_000,
+    });
+    mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
+      return `auth:${String(userId)}`;
+    });
+  });
+
+  it("returns 429 when rate limited", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+    });
+
+    const response = await GET(
+      new Request("http://localhost:3001/api/notifications"),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("RATE_LIMITED");
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -58,6 +91,7 @@ describe("GET /api/notifications", () => {
       limit: 20,
       totalPages: 1,
     });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 
   it("returns 500 on service error", async () => {

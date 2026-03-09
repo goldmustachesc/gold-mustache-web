@@ -20,6 +20,7 @@ import {
   usePrivateHeader,
   PrivateHeaderActions,
 } from "@/components/private/PrivateHeaderContext";
+import { mobileFabOffsetClassName } from "@/components/private/mobile-nav-layout";
 import {
   ArrowRight,
   CalendarOff,
@@ -363,7 +364,9 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
       </main>
 
       {/* Floating Action Button - Mobile Only */}
-      <div className="fixed bottom-6 left-4 right-4 z-20 lg:hidden">
+      <div
+        className={`fixed left-4 right-4 z-20 lg:hidden ${mobileFabOffsetClassName}`}
+      >
         <Link href={`/${locale}/barbeiro/agendar`}>
           <Button
             size="lg"

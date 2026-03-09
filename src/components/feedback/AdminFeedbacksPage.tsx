@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FeedbackCard, FeedbackEmptyState } from "./FeedbackCard";
 import { FeedbackStatsGrid } from "./FeedbackStats";
 import { StarRatingDisplay } from "@/components/ui/star-rating";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import {
   useAdminFeedbacks,
   useAdminFeedbackStats,
@@ -22,7 +23,6 @@ import {
 } from "@/hooks/useFeedback";
 import type { FeedbackFilters } from "@/types/feedback";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Crown,
@@ -54,6 +54,12 @@ export function AdminFeedbacksPage({
 
   const isLoading = feedbacksLoading || statsLoading || rankingLoading;
 
+  usePrivateHeader({
+    title: "Avaliações",
+    icon: Star,
+    backHref: `/${locale}/dashboard`,
+  });
+
   const handleFilterChange = (
     key: keyof FeedbackFilters,
     value: string | undefined,
@@ -83,32 +89,7 @@ export function AdminFeedbacksPage({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-        <div className="max-w-6xl mx-auto flex items-center gap-4 px-4 py-4">
-          <Link href={`/${locale}/dashboard`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-zinc-400 hover:text-white"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-400" />
-              Avaliações dos Clientes
-            </h1>
-            <p className="text-sm text-zinc-400">
-              Visão geral de todas as avaliações
-            </p>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div>
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -192,7 +173,7 @@ export function AdminFeedbacksPage({
                 value={filters.barberId || "all"}
                 onValueChange={(v) => handleFilterChange("barberId", v)}
               >
-                <SelectTrigger className="w-[180px] bg-zinc-800 border-zinc-700">
+                <SelectTrigger className="w-full sm:w-[180px] bg-zinc-800 border-zinc-700">
                   <SelectValue placeholder="Todos os barbeiros" />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,7 +192,7 @@ export function AdminFeedbacksPage({
                   handleFilterChange("rating", v === "all" ? undefined : v)
                 }
               >
-                <SelectTrigger className="w-[150px] bg-zinc-800 border-zinc-700">
+                <SelectTrigger className="w-full sm:w-[150px] bg-zinc-800 border-zinc-700">
                   <SelectValue placeholder="Todas as notas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,7 +241,7 @@ export function AdminFeedbacksPage({
                     variant="outline"
                     onClick={handlePrevPage}
                     disabled={page === 1}
-                    className="border-zinc-700 hover:bg-zinc-800"
+                    className="min-h-11 border-zinc-700 hover:bg-zinc-800"
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Anterior
@@ -274,7 +255,7 @@ export function AdminFeedbacksPage({
                     variant="outline"
                     onClick={handleNextPage}
                     disabled={page >= feedbacksData.totalPages}
-                    className="border-zinc-700 hover:bg-zinc-800"
+                    className="min-h-11 border-zinc-700 hover:bg-zinc-800"
                   >
                     Próxima
                     <ChevronRight className="h-4 w-4 ml-1" />

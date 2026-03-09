@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StarRatingDisplay } from "@/components/ui/star-rating";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,7 +20,7 @@ interface FeedbackCardProps {
   className?: string;
 }
 
-export function FeedbackCard({
+export const FeedbackCard = memo(function FeedbackCard({
   feedback,
   showBarber = false,
   compact = false,
@@ -108,7 +109,7 @@ export function FeedbackCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 /**
  * Empty state when no feedbacks are available

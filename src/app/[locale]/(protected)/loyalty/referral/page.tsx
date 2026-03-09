@@ -133,7 +133,7 @@ export default function LoyaltyReferralPage() {
           </p>
         ) : (
           <>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Input
                 value={referralInput}
                 onChange={(e) => setReferralInput(e.target.value)}

@@ -54,7 +54,7 @@ export function PrivateHeader() {
                 <Link
                   href={backHref}
                   aria-label="Voltar"
-                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  className="flex items-center justify-center min-h-11 min-w-11 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors shrink-0"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Link>

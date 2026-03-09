@@ -427,10 +427,11 @@ export default function BarberAbsencesPage() {
 
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => deleteAbsence.mutate(a.id)}
                           disabled={deleteAbsence.isPending}
-                          className="gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0 sm:w-auto sm:px-3 sm:gap-2"
+                          aria-label="Remover ausência"
                         >
                           <Trash2 className="h-4 w-4" />
                           <span className="hidden sm:inline">Remover</span>

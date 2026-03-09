@@ -77,7 +77,7 @@ export function WeeklyCalendar({
               variant="ghost"
               size="icon"
               onClick={() => onWeekChange("prev")}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -85,7 +85,7 @@ export function WeeklyCalendar({
               variant="ghost"
               size="icon"
               onClick={() => onWeekChange("next")}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
@@ -107,7 +107,7 @@ export function WeeklyCalendar({
                 key={dateStr}
                 onClick={() => onDateSelect(date)}
                 className={cn(
-                  "flex flex-col items-center py-2 px-1 rounded-xl transition-all",
+                  "flex flex-col items-center py-2.5 px-1 rounded-xl transition-all min-h-11",
                   "focus:outline-none focus:ring-2 focus:ring-primary/50",
                   isSelected
                     ? "bg-muted text-foreground"
@@ -116,7 +116,7 @@ export function WeeklyCalendar({
               >
                 <span
                   className={cn(
-                    "text-[10px] font-semibold tracking-wide",
+                    "text-xs font-semibold tracking-wide",
                     isSelected ? "text-primary" : "text-muted-foreground",
                   )}
                 >

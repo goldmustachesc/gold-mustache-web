@@ -179,7 +179,7 @@ export default function MeuLinkPage() {
           </div>
 
           <div className="lg:col-span-5 xl:col-span-4 mt-6 lg:mt-0 space-y-6">
-            <div className="hidden lg:block bg-card/30 rounded-2xl border border-border p-6">
+            <div className="bg-card/30 rounded-2xl border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <QrCode className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">QR Code</h3>
@@ -218,6 +218,39 @@ export default function MeuLinkPage() {
               </div>
             </div>
 
+            <div className="bg-card/30 rounded-2xl border border-border p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Share2 className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Seu Link Personalizado</h3>
+              </div>
+              <div className="bg-background rounded-xl p-4 border border-border">
+                <code className="text-sm text-primary break-all">
+                  {bookingUrl}
+                </code>
+              </div>
+              <Button
+                onClick={handleCopyLink}
+                className={cn(
+                  "w-full mt-4 font-semibold",
+                  copied
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
+                )}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Link Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar Link Completo
+                  </>
+                )}
+              </Button>
+            </div>
+
             <div className="hidden lg:block bg-card/30 rounded-2xl border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -251,39 +284,6 @@ export default function MeuLinkPage() {
                   </span>
                 </li>
               </ul>
-            </div>
-
-            <div className="hidden lg:block bg-card/30 rounded-2xl border border-border p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Share2 className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">Seu Link Personalizado</h3>
-              </div>
-              <div className="bg-background rounded-xl p-4 border border-border">
-                <code className="text-sm text-primary break-all">
-                  {bookingUrl}
-                </code>
-              </div>
-              <Button
-                onClick={handleCopyLink}
-                className={cn(
-                  "w-full mt-4 font-semibold",
-                  copied
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
-                )}
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Link Copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copiar Link Completo
-                  </>
-                )}
-              </Button>
             </div>
           </div>
         </div>

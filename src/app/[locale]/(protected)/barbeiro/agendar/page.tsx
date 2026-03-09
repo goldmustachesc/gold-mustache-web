@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, UserPlus } from "lucide-react";
 import { useBarberSchedulingForm } from "@/hooks/useBarberSchedulingForm";
 import {
   ClientSearchSection,
@@ -11,11 +11,20 @@ import {
   BookingSummary,
   SubmitButton,
 } from "@/components/barber-scheduling";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { isValidClientName, isValidPhone } from "@/utils/scheduling";
+import { useLocale } from "next-intl";
 
 export default function BarberAgendarPage() {
   const { formState, auth, loading, clientSearch, computed, handlers } =
     useBarberSchedulingForm();
+  const locale = useLocale();
+
+  usePrivateHeader({
+    title: "Novo Agendamento",
+    icon: UserPlus,
+    backHref: `/${locale}/barbeiro`,
+  });
 
   if (loading.isInitializing || !auth.user || !auth.barberProfile) {
     return (

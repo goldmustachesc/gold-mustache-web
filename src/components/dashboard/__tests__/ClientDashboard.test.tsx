@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ClientDashboard } from "../ClientDashboard";
 import { PrivateHeaderProvider } from "@/components/private/PrivateHeaderContext";
+import { PrivateHeader } from "@/components/private/PrivateHeader";
 import type {
   DashboardStats,
   ClientStats,
@@ -42,13 +43,13 @@ vi.mock("@/hooks/useBookingSettings", () => ({
   }),
 }));
 
-vi.mock("@/components/notifications", () => ({
+vi.mock("@/components/notifications/NotificationPanel", () => ({
   NotificationPanel: () => <div data-testid="notification-panel" />,
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: Record<string, unknown>) => (
-    <img {...props} src={props.src as string} alt={props.alt as string} />
+  default: ({ alt }: Record<string, unknown>) => (
+    <div role="img" data-testid="next-image" aria-label={alt as string} />
   ),
 }));
 
@@ -138,6 +139,20 @@ describe("ClientDashboard", () => {
   it("renders booking quick action", () => {
     renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Marque um novo horário")).toBeInTheDocument();
+  });
+
+  it("provides an accessible name for the header booking action", () => {
+    renderWithProvider(
+      <>
+        <PrivateHeader />
+        <ClientDashboard locale="pt-BR" />
+      </>,
+    );
+
+    return waitFor(() => {
+      const bookingLink = screen.getByRole("link", { name: "Agendar" });
+      expect(bookingLink).toHaveAttribute("aria-label", "Agendar");
+    });
   });
 
   it("shows loading state when stats are loading", () => {

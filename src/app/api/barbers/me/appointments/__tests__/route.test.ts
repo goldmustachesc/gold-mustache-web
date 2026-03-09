@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRequireBarber = vi.fn();
 const mockCreateAppointmentByBarber = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetUserRateLimitIdentifier = vi.fn();
 
 vi.mock("@/lib/auth/requireBarber", () => ({
   requireBarber: (...args: unknown[]) => mockRequireBarber(...args),
@@ -10,6 +12,12 @@ vi.mock("@/lib/auth/requireBarber", () => ({
 vi.mock("@/services/booking", () => ({
   createAppointmentByBarber: (...args: unknown[]) =>
     mockCreateAppointmentByBarber(...args),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getUserRateLimitIdentifier: (...args: unknown[]) =>
+    mockGetUserRateLimitIdentifier(...args),
 }));
 
 import { POST } from "../route";
@@ -33,6 +41,34 @@ const validBody = {
 describe("POST /api/barbers/me/appointments", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 60_000,
+    });
+    mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
+      return `auth:${String(userId)}`;
+    });
+  });
+
+  it("returns 429 when rate limited", async () => {
+    mockRequireBarber.mockResolvedValue({
+      ok: true,
+      userId: "user-1",
+      barberId: "barber-1",
+      barberName: "Carlos",
+    });
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+    });
+
+    const response = await POST(createRequest(validBody));
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("RATE_LIMITED");
   });
 
   it("returns auth error when requireBarber fails", async () => {
@@ -49,7 +85,9 @@ describe("POST /api/barbers/me/appointments", () => {
   it("returns 422 for invalid body", async () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
+      userId: "user-1",
       barberId: "barber-1",
+      barberName: "Carlos",
     });
 
     const response = await POST(createRequest({ serviceId: "bad" }));
@@ -62,7 +100,9 @@ describe("POST /api/barbers/me/appointments", () => {
   it("creates appointment on success", async () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
+      userId: "user-1",
       barberId: "barber-1",
+      barberName: "Carlos",
     });
     mockCreateAppointmentByBarber.mockResolvedValue({
       id: "apt-1",
@@ -78,12 +118,18 @@ describe("POST /api/barbers/me/appointments", () => {
       validBody,
       "barber-1",
     );
+    expect(mockCheckRateLimit).toHaveBeenCalledWith(
+      "appointments",
+      "auth:user-1",
+    );
   });
 
   it("maps SLOT_OCCUPIED domain error to 409", async () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
+      userId: "user-1",
       barberId: "barber-1",
+      barberName: "Carlos",
     });
     mockCreateAppointmentByBarber.mockRejectedValue(new Error("SLOT_OCCUPIED"));
 
@@ -97,7 +143,9 @@ describe("POST /api/barbers/me/appointments", () => {
   it("maps SLOT_IN_PAST domain error to 400", async () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
+      userId: "user-1",
       barberId: "barber-1",
+      barberName: "Carlos",
     });
     mockCreateAppointmentByBarber.mockRejectedValue(new Error("SLOT_IN_PAST"));
 

@@ -185,6 +185,11 @@
  * screens follow light/dark/system without forcing a full refactor now.
  */
 .private-theme {
+  --private-mobile-bottom-nav-height: 3.5rem;
+  --private-mobile-bottom-nav-offset: calc(
+    var(--private-mobile-bottom-nav-height) +
+    env(safe-area-inset-bottom, 0px)
+  );
   --color-zinc-950: var(--background);
   --color-zinc-900: var(--background);
   --color-zinc-800: var(--card);
@@ -280,5 +285,17 @@
 
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  .touch-target {
+    position: relative;
+  }
+
+  .touch-target::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    min-height: 44px;
+    min-width: 44px;
   }
 }

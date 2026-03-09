@@ -47,4 +47,7 @@ next-env.d.ts
 .claude
 CLAUDE.md
 
+# Cursor (may contain MCP secrets)
+.cursor/mcp.json
+
 /src/generated/prisma

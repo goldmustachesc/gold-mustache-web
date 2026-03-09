@@ -40,7 +40,60 @@ export default function LoyaltyHistoryPage() {
         </h2>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+      <div className="lg:hidden space-y-3">
+        {transactions && transactions.length > 0 ? (
+          transactions.map(
+            (tx: {
+              id: string;
+              createdAt: string;
+              description: string;
+              type: string;
+              points: number;
+            }) => (
+              <div
+                key={tx.id}
+                className="bg-card border border-border rounded-xl p-4 space-y-2 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getTypeIcon(tx.type)}
+                    <span className="text-sm text-muted-foreground">
+                      {getTypeLabel(tx.type)}
+                    </span>
+                  </div>
+                  <span
+                    className={`font-black font-mono tabular-nums text-sm ${
+                      tx.points > 0 ? "text-success" : "text-destructive"
+                    }`}
+                  >
+                    {tx.points > 0 ? "+" : ""}
+                    {tx.points}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  {tx.description}
+                </p>
+                <p className="text-xs font-mono tabular-nums text-muted-foreground">
+                  {new Intl.DateTimeFormat(
+                    locale === "pt-BR" ? "pt-BR" : "en-US",
+                    {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    },
+                  ).format(new Date(tx.createdAt))}
+                </p>
+              </div>
+            ),
+          )
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
+            {t("empty")}
+          </div>
+        )}
+      </div>
+
+      <div className="hidden lg:block bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs uppercase bg-muted text-muted-foreground tracking-wider">

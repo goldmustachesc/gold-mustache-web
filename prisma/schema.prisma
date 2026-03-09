@@ -35,6 +35,7 @@ model Profile {
   birthDate      DateTime?       @map("birth_date") @db.Date // Para bônus de aniversário
   loyaltyAccount LoyaltyAccount?
 
+  @@index([role])
   @@map("profiles")
 }
 
@@ -388,6 +389,7 @@ model LoyaltyAccount {
   transactions PointTransaction[]
   redemptions  Redemption[]
 
+  @@index([referredById])
   @@map("loyalty_accounts")
 }
 
@@ -404,6 +406,8 @@ model PointTransaction {
   loyaltyAccount LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id], onDelete: Cascade)
 
   @@index([loyaltyAccountId])
+  @@index([loyaltyAccountId, createdAt])
+  @@index([expiresAt])
   @@index([referenceId])
   @@map("point_transactions")
 }

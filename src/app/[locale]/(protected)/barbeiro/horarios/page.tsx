@@ -339,7 +339,6 @@ export default function BarberWorkingHoursPage() {
                         />
                         <span
                           className={cn(
-                            "hidden sm:inline",
                             day.isWorking
                               ? "text-foreground"
                               : "text-muted-foreground",
@@ -374,7 +373,7 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking}
-                            className="bg-background border-border text-foreground focus:border-primary h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-11"
                           />
                         </div>
                         <div className="grid gap-1.5">
@@ -394,12 +393,12 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking}
-                            className="bg-background border-border text-foreground focus:border-primary h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-11"
                           />
                         </div>
                       </div>
 
-                      <label className="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg bg-background/50 border border-border hover:border-border transition-colors">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer p-3 min-h-11 rounded-lg bg-background/50 border border-border hover:border-border transition-colors">
                         <Coffee className="h-4 w-4 text-muted-foreground" />
                         <input
                           type="checkbox"
@@ -410,7 +409,7 @@ export default function BarberWorkingHoursPage() {
                             })
                           }
                           disabled={!day.isWorking}
-                          className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                          className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
                         />
                         <span className="text-muted-foreground">Intervalo</span>
                       </label>
@@ -438,7 +437,7 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking || !day.hasBreak}
-                            className="bg-background border-border text-foreground focus:border-primary h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-11"
                           />
                         </div>
                         <div className="grid gap-1.5">
@@ -458,7 +457,7 @@ export default function BarberWorkingHoursPage() {
                               })
                             }
                             disabled={!day.isWorking || !day.hasBreak}
-                            className="bg-background border-border text-foreground focus:border-primary h-10"
+                            className="bg-background border-border text-foreground focus:border-primary h-11"
                           />
                         </div>
                       </div>

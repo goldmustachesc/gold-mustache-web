@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ClientData } from "@/hooks/useBarberClients";
@@ -33,7 +34,11 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-export function ClientCard({ client, onViewHistory, onEdit }: ClientCardProps) {
+export const ClientCard = memo(function ClientCard({
+  client,
+  onViewHistory,
+  onEdit,
+}: ClientCardProps) {
   const handleWhatsApp = () => {
     const digits = client.phone.replace(/\D/g, "");
     const phoneWithCountry = digits.startsWith("55") ? digits : `55${digits}`;
@@ -89,7 +94,7 @@ export function ClientCard({ client, onViewHistory, onEdit }: ClientCardProps) {
           variant="ghost"
           size="icon"
           onClick={handleWhatsApp}
-          className="text-zinc-400 hover:text-[#25D366] hover:bg-[#25D366]/10 h-9 w-9"
+          className="text-zinc-400 hover:text-[#25D366] hover:bg-[#25D366]/10"
           title="Enviar WhatsApp"
         >
           <WhatsAppIcon className="h-4.5 w-4.5" />
@@ -99,7 +104,7 @@ export function ClientCard({ client, onViewHistory, onEdit }: ClientCardProps) {
           variant="ghost"
           size="icon"
           onClick={() => onViewHistory?.(client)}
-          className="text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 h-9 w-9"
+          className="text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10"
           title="Ver histórico"
         >
           <Calendar className="h-4.5 w-4.5" />
@@ -109,7 +114,7 @@ export function ClientCard({ client, onViewHistory, onEdit }: ClientCardProps) {
           variant="ghost"
           size="icon"
           onClick={() => onEdit?.(client)}
-          className="text-zinc-400 hover:text-white hover:bg-zinc-700/50 h-9 w-9"
+          className="text-zinc-400 hover:text-white hover:bg-zinc-700/50"
           title="Editar cliente"
         >
           <Pencil className="h-4.5 w-4.5" />
@@ -117,4 +122,4 @@ export function ClientCard({ client, onViewHistory, onEdit }: ClientCardProps) {
       </div>
     </div>
   );
-}
+});

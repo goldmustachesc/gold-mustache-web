@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockGetUser = vi.fn();
 const mockMarkAppointmentAsNoShow = vi.fn();
 const mockBarberFindUnique = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetUserRateLimitIdentifier = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -25,6 +27,12 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getUserRateLimitIdentifier: (...args: unknown[]) =>
+    mockGetUserRateLimitIdentifier(...args),
+}));
+
 import { PATCH } from "../no-show/route";
 
 function createRequest() {
@@ -36,6 +44,31 @@ function createRequest() {
 describe("PATCH /api/appointments/[id]/no-show", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 60_000,
+    });
+    mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
+      return `auth:${String(userId)}`;
+    });
+  });
+
+  it("returns 429 when rate limited", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+    });
+
+    const response = await PATCH(createRequest(), {
+      params: Promise.resolve({ id: "apt-1" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("RATE_LIMITED");
   });
 
   it("returns 401 when user is not authenticated", async () => {
@@ -79,6 +112,7 @@ describe("PATCH /api/appointments/[id]/no-show", () => {
       "apt-1",
       "barber-1",
     );
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 
   it("maps known service errors to HTTP codes", async () => {

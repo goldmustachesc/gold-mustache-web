@@ -5,11 +5,8 @@ import { Prisma } from "@prisma/client";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { requireBarber } from "@/lib/auth/requireBarber";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
 
-/**
- * POST /api/barbers/me/appointments
- * Creates an appointment for a client on behalf of the barber
- */
 export async function POST(request: Request) {
   try {
     const originError = requireValidOrigin(request);
@@ -17,6 +14,18 @@ export async function POST(request: Request) {
 
     const auth = await requireBarber();
     if (!auth.ok) return auth.response;
+
+    const rateLimitResult = await checkRateLimit(
+      "appointments",
+      getUserRateLimitIdentifier(auth.userId),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
+    }
 
     const body = await request.json();
 

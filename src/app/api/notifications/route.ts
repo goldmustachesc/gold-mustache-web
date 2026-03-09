@@ -3,12 +3,8 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getNotifications, getUnreadCount } from "@/services/notification";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { parsePagination, paginationMeta } from "@/lib/api/pagination";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
 
-/**
- * GET /api/notifications
- * Returns paginated notifications with unread count.
- * Query params: page, limit
- */
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
@@ -18,6 +14,18 @@ export async function GET(request: Request) {
 
     if (!user) {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(user.id),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
     }
 
     const { searchParams } = new URL(request.url);

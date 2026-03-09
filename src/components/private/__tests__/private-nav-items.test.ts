@@ -45,7 +45,7 @@ describe("private-nav-items", () => {
     });
 
     it("every item has an iconName, href, and label", () => {
-      for (const role of ["BARBER", "CLIENT"] as const) {
+      for (const role of ["BARBER", "CLIENT", "ADMIN"] as const) {
         const items = getNavItems(role, LOCALE);
         for (const item of items) {
           expect(item.iconName).toBeTruthy();
@@ -55,10 +55,18 @@ describe("private-nav-items", () => {
       }
     });
 
-    it("ADMIN role gets barber-level items", () => {
+    it("ADMIN role home points to dashboard, not barber page", () => {
       const adminItems = getNavItems("ADMIN", LOCALE);
-      const barberItems = getNavItems("BARBER", LOCALE);
-      expect(adminItems).toEqual(barberItems);
+      expect(adminItems[0].href).toBe(`/${LOCALE}/dashboard`);
+      expect(adminItems[0].label).toBe("Início");
+    });
+
+    it("ADMIN role does not include barber home route", () => {
+      const adminItems = getNavItems("ADMIN", LOCALE);
+      const barberHome = adminItems.find(
+        (i) => i.href === `/${LOCALE}/barbeiro`,
+      );
+      expect(barberHome).toBeUndefined();
     });
   });
 

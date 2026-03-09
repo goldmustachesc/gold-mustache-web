@@ -58,6 +58,53 @@ function barberNavItems(locale: string): NavItemDef[] {
   ];
 }
 
+function adminNavItems(locale: string): NavItemDef[] {
+  return [
+    { href: `/${locale}/dashboard`, label: "Início", iconName: "Home" },
+    {
+      href: `/${locale}/barbeiro/meu-link`,
+      label: "Meu Link",
+      iconName: "Link2",
+    },
+    {
+      href: `/${locale}/barbeiro/clientes`,
+      label: "Clientes",
+      iconName: "Users",
+    },
+    {
+      href: `/${locale}/barbeiro/agendar`,
+      label: "Agendar para Cliente",
+      iconName: "UserPlus",
+    },
+    {
+      href: `/${locale}/barbeiro/horarios`,
+      label: "Meus Horários",
+      iconName: "Clock",
+    },
+    {
+      href: `/${locale}/barbeiro/ausencias`,
+      label: "Ausências",
+      iconName: "CalendarOff",
+    },
+    {
+      href: `/${locale}/barbeiro/cancelados`,
+      label: "Cancelados",
+      iconName: "XCircle",
+    },
+    {
+      href: `/${locale}/barbeiro/faturamento`,
+      label: "Faturamento",
+      iconName: "DollarSign",
+    },
+    {
+      href: `/${locale}/barbeiro/feedbacks`,
+      label: "Minhas Avaliações",
+      iconName: "Star",
+    },
+    { href: `/${locale}/profile`, label: "Meu Perfil", iconName: "User" },
+  ];
+}
+
 function clientNavItems(locale: string): NavItemDef[] {
   return [
     { href: `/${locale}/dashboard`, label: "Início", iconName: "Home" },
@@ -67,7 +114,10 @@ function clientNavItems(locale: string): NavItemDef[] {
 }
 
 export function getNavItems(role: UserRole, locale: string): NavItemDef[] {
-  if (role === "BARBER" || role === "ADMIN") {
+  if (role === "ADMIN") {
+    return adminNavItems(locale);
+  }
+  if (role === "BARBER") {
     return barberNavItems(locale);
   }
   return clientNavItems(locale);

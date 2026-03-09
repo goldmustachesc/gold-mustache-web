@@ -4,14 +4,8 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { formatPrismaDateToString } from "@/utils/time-slots";
 import type { DashboardStats } from "@/types/dashboard";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
 
-/**
- * GET /api/dashboard/stats
- * Returns dashboard statistics based on user role:
- * - Clients: upcoming appointments, visit history, favorite barber/service
- * - Barbers: today's schedule, earnings, weekly stats
- * - Admin: shop-wide statistics
- */
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -22,6 +16,18 @@ export async function GET() {
 
     if (authError || !user) {
       return apiError("UNAUTHORIZED", "Não autorizado", 401);
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(user.id),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
     }
 
     const [profile, barberProfile] = await Promise.all([
@@ -290,7 +296,12 @@ export async function GET() {
       };
     }
 
-    return apiSuccess(stats);
+    const response = apiSuccess(stats);
+    response.headers.set(
+      "Cache-Control",
+      "private, s-maxage=30, stale-while-revalidate=60",
+    );
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao carregar estatísticas");
   }

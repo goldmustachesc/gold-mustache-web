@@ -76,7 +76,6 @@ export function ClientSearchSection({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             onClick={onClearSelection}
             className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
@@ -153,7 +152,7 @@ export function ClientSearchSection({
                       key={client.id}
                       type="button"
                       onClick={() => onSelectClient(client)}
-                      className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-accent transition-colors text-left"
+                      className="w-full px-3 py-3 min-h-11 flex items-center gap-3 hover:bg-accent transition-colors text-left"
                     >
                       <div
                         className={cn(

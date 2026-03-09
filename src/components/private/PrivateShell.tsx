@@ -1,11 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { BottomNav } from "./BottomNav";
 import { PrivateHeader } from "./PrivateHeader";
 import {
   PrivateHeaderProvider,
   usePrivateSidebarState,
 } from "./PrivateHeaderContext";
+import { mobileOffsetClassName } from "./mobile-nav-layout";
 import { PrivateSidebar } from "./PrivateSidebar";
 
 function ShellInner({ children }: { children: ReactNode }) {
@@ -14,7 +16,8 @@ function ShellInner({ children }: { children: ReactNode }) {
   return (
     <div className="private-theme min-h-screen bg-background text-foreground">
       <PrivateHeader />
-      {children}
+      <div className={mobileOffsetClassName}>{children}</div>
+      <BottomNav />
       <PrivateSidebar open={open} onOpenChange={onOpenChange} />
     </div>
   );

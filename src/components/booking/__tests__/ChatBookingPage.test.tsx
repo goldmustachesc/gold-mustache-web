@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { ChatBookingPage } from "../ChatBookingPage";
@@ -41,6 +42,20 @@ function stubFetch(data: unknown) {
     vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data }),
+    }),
+  );
+}
+
+function stubFetchByUrl(barbers: unknown, services: unknown) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation((url: string | URL) => {
+      const urlStr = typeof url === "string" ? url : url.toString();
+      const data = urlStr.includes("services") ? services : barbers;
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ data }),
+      });
     }),
   );
 }
@@ -88,6 +103,53 @@ describe("ChatBookingPage", () => {
     await waitFor(
       () => {
         expect(screen.getByText("Recomeçar")).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+  });
+
+  it("shows empty barbers message when barbers list is empty", async () => {
+    stubFetch([]);
+
+    render(<ChatBookingPage />, { wrapper: createWrapper() });
+
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText("Nenhum barbeiro disponível no momento."),
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+  });
+
+  it("shows services after barber is selected", async () => {
+    const barbers = [{ id: "b-1", name: "Carlos", avatarUrl: null }];
+    const services = [
+      {
+        id: "s-1",
+        name: "Corte",
+        price: 50,
+        duration: 30,
+        description: null,
+      },
+    ];
+    stubFetchByUrl(barbers, services);
+
+    render(<ChatBookingPage />, { wrapper: createWrapper() });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Carlos")).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    await userEvent.click(screen.getByText("Carlos"));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Corte")).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
