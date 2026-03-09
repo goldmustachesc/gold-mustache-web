@@ -14,6 +14,7 @@ const PROTECTED_ROUTES = [
   "/dashboard",
   "/barbeiro",
   "/admin",
+  "/loyalty",
   "/profile",
   "/settings",
   "/meus-agendamentos",
