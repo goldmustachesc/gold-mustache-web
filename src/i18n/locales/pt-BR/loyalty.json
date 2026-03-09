@@ -19,8 +19,8 @@
     "gold": "Ouro",
     "diamond": "Diamante",
     "progress": {
-      "reached": "Você está no nível {{tier}}",
-      "next": "Faltam {{points}} pontos para o nível {{nextTier}}",
+      "reached": "Você está no nível {tier}",
+      "next": "Faltam {points} pontos para o nível {nextTier}",
       "max": "Você atingiu o nível máximo!"
     }
   },
@@ -76,7 +76,7 @@
   },
   "referral": {
     "title": "Indique e Ganhe",
-    "description": "Compartilhe seu código com amigos e ambos ganham {{points}} pontos.",
+    "description": "Compartilhe seu código com amigos e ambos ganham {points} pontos.",
     "yourCode": "Seu Código de Indicação",
     "copy": "Copiar",
     "copied": "Copiado!",
@@ -88,10 +88,10 @@
     "confirmReferral": "Confirmar Indicação",
     "applying": "Confirmando...",
     "referralApplied": "Indicação confirmada com sucesso!",
-    "referrerFound": "Indicado por {{name}}",
-    "referralsCount": "Você indicou {{count}} amigo(s)",
+    "referrerFound": "Indicado por {name}",
+    "referralsCount": "Você indicou {count} amigo(s)",
     "shareWhatsApp": "Compartilhar no WhatsApp",
-    "shareMessage": "Use meu código {{code}} na Gold Mustache e ganhe pontos de fidelidade!",
+    "shareMessage": "Use meu código {code} na Gold Mustache e ganhe pontos de fidelidade!",
     "howItWorksTitle": "Como funciona?",
     "howItWorksStep1": "Copie seu código de indicação único.",
     "howItWorksStep2": "Envie para amigos que ainda não conhecem a Gold Mustache.",

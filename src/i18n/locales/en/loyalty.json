@@ -19,8 +19,8 @@
     "gold": "Gold",
     "diamond": "Diamond",
     "progress": {
-      "reached": "You are at {{tier}} tier",
-      "next": "{{points}} points away from {{nextTier}}",
+      "reached": "You are at {tier} tier",
+      "next": "{points} points away from {nextTier}",
       "max": "You reached the maximum tier!"
     }
   },
@@ -76,7 +76,7 @@
   },
   "referral": {
     "title": "Refer & Earn",
-    "description": "Share your code with friends and both get {{points}} points.",
+    "description": "Share your code with friends and both get {points} points.",
     "yourCode": "Your Referral Code",
     "copy": "Copy",
     "copied": "Copied!",
@@ -88,10 +88,10 @@
     "confirmReferral": "Confirm Referral",
     "applying": "Confirming...",
     "referralApplied": "Referral confirmed successfully!",
-    "referrerFound": "Referred by {{name}}",
-    "referralsCount": "You referred {{count}} friend(s)",
+    "referrerFound": "Referred by {name}",
+    "referralsCount": "You referred {count} friend(s)",
     "shareWhatsApp": "Share on WhatsApp",
-    "shareMessage": "Use my code {{code}} at Gold Mustache and earn loyalty points!",
+    "shareMessage": "Use my code {code} at Gold Mustache and earn loyalty points!",
     "howItWorksTitle": "How does it work?",
     "howItWorksStep1": "Copy your unique referral code.",
     "howItWorksStep2": "Send it to friends who haven't tried Gold Mustache yet.",
