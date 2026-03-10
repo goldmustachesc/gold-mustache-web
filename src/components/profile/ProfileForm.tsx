@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { User, MapPin, Loader2, Save } from "lucide-react";
+import { Loader2, MapPin, Save, User } from "lucide-react";
 import { toast } from "sonner";
 import { apiMutate } from "@/lib/api/client";
 import type { ProfileMeData, ProfileUpdateInput } from "@/types/profile";
 import { maskPhone, maskZipCode } from "@/utils/masks";
-import { cn } from "@/lib/utils";
 
 interface ProfileFormProps {
   profile: ProfileMeData | undefined;
@@ -22,8 +22,6 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   const queryClient = useQueryClient();
   const t = useTranslations("profile");
   const [isLoading, setIsLoading] = useState(false);
-
-  // Form state - aplica máscaras aos valores iniciais
   const [formData, setFormData] = useState<ProfileUpdateInput>({
     fullName: profile?.fullName || "",
     phone: profile?.phone ? maskPhone(profile.phone) : "",
@@ -38,8 +36,6 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    // Aplica máscaras conforme o campo
     let maskedValue = value;
     if (name === "phone") {
       maskedValue = maskPhone(value);
@@ -66,7 +62,6 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
     }
   };
 
-  // Handle CEP lookup (Brazil specific)
   const handleCepBlur = async () => {
     const cep = formData.zipCode?.replace(/\D/g, "");
     if (cep && cep.length === 8) {
@@ -83,37 +78,33 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           }));
         }
       } catch {
-        // Silently fail - user can still enter address manually
+        return;
       }
     }
   };
 
-  const inputClassName = cn(
-    "bg-zinc-900/50 border-zinc-700/50 rounded-lg",
-    "text-white placeholder:text-zinc-500",
-    "focus:border-amber-500/50 focus:ring-amber-500/20",
-  );
-
-  const labelClassName = "text-zinc-300 text-sm font-medium";
+  const inputClassName = "bg-background";
+  const labelClassName = "text-sm font-medium text-foreground";
+  const sectionHeaderClassName =
+    "flex items-start gap-3 border-b border-border bg-muted/35 px-6 py-5";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Personal Information */}
-      <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
-        <div className="p-4 border-b border-zinc-700/50 flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <User className="h-5 w-5 text-amber-500" />
+      <Card className="overflow-hidden border-border bg-card shadow-none">
+        <CardHeader className={sectionHeaderClassName}>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <User className="h-5 w-5" />
           </div>
-          <div>
-            <h3 className="font-semibold text-white">
+          <div className="space-y-1">
+            <CardTitle className="text-base">
               {t("personalInfo.title")}
-            </h3>
-            <p className="text-sm text-zinc-400">
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
               {t("personalInfo.description")}
             </p>
           </div>
-        </div>
-        <div className="p-5 space-y-4">
+        </CardHeader>
+        <CardContent className="space-y-4 py-6">
           <div className="space-y-2">
             <Label htmlFor="email" className={labelClassName}>
               {t("personalInfo.email")}
@@ -123,9 +114,9 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               type="email"
               value={userEmail || ""}
               disabled
-              className="bg-zinc-800/50 border-zinc-700/50 text-zinc-400"
+              className="bg-muted text-muted-foreground"
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               {t("personalInfo.emailHint")}
             </p>
           </div>
@@ -160,21 +151,22 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClassName}
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Address */}
-      <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
-        <div className="p-4 border-b border-zinc-700/50 flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <MapPin className="h-5 w-5 text-amber-500" />
+      <Card className="overflow-hidden border-border bg-card shadow-none">
+        <CardHeader className={sectionHeaderClassName}>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <MapPin className="h-5 w-5" />
           </div>
-          <div>
-            <h3 className="font-semibold text-white">{t("address.title")}</h3>
-            <p className="text-sm text-zinc-400">{t("address.description")}</p>
+          <div className="space-y-1">
+            <CardTitle className="text-base">{t("address.title")}</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {t("address.description")}
+            </p>
           </div>
-        </div>
-        <div className="p-5 space-y-4">
+        </CardHeader>
+        <CardContent className="space-y-4 py-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="zipCode" className={labelClassName}>
@@ -284,13 +276,12 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClassName}
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Submit Button */}
       <Button
         type="submit"
-        className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-semibold h-12"
+        className="h-11 w-full sm:w-auto"
         disabled={isLoading}
       >
         {isLoading ? (

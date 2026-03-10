@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, CheckCircle2, Loader2, Send, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle2, Clock, Loader2, Mail, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { authService } from "@/services/auth";
 
@@ -18,6 +19,7 @@ export function EmailVerificationCard({
   isVerified,
 }: EmailVerificationCardProps) {
   const t = useTranslations("profile.emailVerification");
+  const tProfile = useTranslations("profile");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleResendVerification = async () => {
@@ -36,52 +38,53 @@ export function EmailVerificationCard({
   };
 
   return (
-    <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
-      <div className="p-4 border-b border-zinc-700/50 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <Mail className="h-5 w-5 text-amber-500" />
+    <Card className="overflow-hidden border-border bg-card shadow-none">
+      <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-border bg-muted/35 px-6 py-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <Mail className="h-5 w-5" />
           </div>
-          <div>
-            <h3 className="font-semibold text-white">{t("title")}</h3>
-            <p className="text-sm text-zinc-400">{t("description")}</p>
+          <div className="space-y-1">
+            <CardTitle className="text-base">{t("title")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("description")}</p>
           </div>
         </div>
         {isVerified ? (
-          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+          <Badge variant="success">
             <CheckCircle2 className="mr-1 h-3 w-3" />
             {t("verified")}
           </Badge>
         ) : (
-          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+          <Badge variant="warning">
             <Clock className="mr-1 h-3 w-3" />
             {t("pending")}
           </Badge>
         )}
-      </div>
-      <div className="p-5">
+      </CardHeader>
+      <CardContent className="py-6">
         {isVerified ? (
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="flex items-center gap-3 rounded-xl border border-success/20 bg-success/10 p-4 text-sm text-success">
+            <CheckCircle2 className="h-4 w-4" />
             <span>{t("verifiedMessage", { email: email || "" })}</span>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p className="text-sm text-amber-400">{t("unverifiedWarning")}</p>
+            <div className="rounded-xl border border-warning/20 bg-warning/10 p-4">
+              <p className="text-sm text-warning">{t("unverifiedWarning")}</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
               <div className="flex-1">
-                <p className="text-sm text-zinc-400">
-                  Email: <span className="font-medium text-white">{email}</span>
+                <p className="text-sm text-muted-foreground">
+                  {tProfile("personalInfo.email")}:{" "}
+                  <span className="font-medium text-foreground">{email}</span>
                 </p>
               </div>
               <Button
                 variant="outline"
                 onClick={handleResendVerification}
                 disabled={isLoading || !email}
-                className="border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 hover:text-white"
+                className="w-full sm:w-auto"
               >
                 {isLoading ? (
                   <>
@@ -97,10 +100,10 @@ export function EmailVerificationCard({
               </Button>
             </div>
 
-            <p className="text-xs text-zinc-500">{t("hint")}</p>
+            <p className="text-xs text-muted-foreground">{t("hint")}</p>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

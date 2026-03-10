@@ -8,15 +8,17 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, params?: Record<string, string>) => {
     const translations: Record<string, string> = {
       title: "Excluir Conta",
-      description: "Exclua permanentemente sua conta e todos os dados",
+      description:
+        "Exclua permanentemente sua conta e os dados pessoais da sua área",
       button: "Excluir Minha Conta",
       confirmWord: "EXCLUIR",
       success: "Sua conta foi excluída com sucesso.",
       error: "Erro ao excluir conta. Tente novamente.",
       "warning.title": "Esta ação é irreversível!",
       "warning.item1": "Todos os seus dados pessoais serão excluídos",
-      "warning.item2": "Seu histórico de agendamentos será removido",
-      "warning.item3": "Você não poderá recuperar sua conta",
+      "warning.item2":
+        "O histórico de agendamentos pode ser mantido sem identificação pessoal para fins operacionais",
+      "warning.item3": "Você perderá o acesso à sua conta e preferências",
       "dialog.title": "Tem certeza?",
       "dialog.description":
         "Esta ação não pode ser desfeita. Isso excluirá permanentemente sua conta.",
@@ -76,11 +78,18 @@ describe("DeleteAccountCard", () => {
 
     expect(screen.getByText("Excluir Conta")).toBeInTheDocument();
     expect(
-      screen.getByText("Exclua permanentemente sua conta e todos os dados"),
+      screen.getByText(
+        "Exclua permanentemente sua conta e os dados pessoais da sua área",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("Esta ação é irreversível!")).toBeInTheDocument();
     expect(
       screen.getByText("Todos os seus dados pessoais serão excluídos"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "O histórico de agendamentos pode ser mantido sem identificação pessoal para fins operacionais",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /excluir minha conta/i }),

@@ -1,10 +1,68 @@
 {
   "title": "My Profile",
-  "subtitle": "Manage your personal information",
+  "subtitle": "Take care of your account, your data, and your next steps.",
+  "loading": "Loading...",
   "backToDashboard": "Back to Dashboard",
+  "hero": {
+    "eyebrow": "Client card",
+    "greeting": "Your personal space at Gold Mustache",
+    "description": "Track your account, keep your details up to date, and handle everything from one place.",
+    "verified": "Email verified",
+    "pending": "Verification pending",
+    "barberRole": "Barber account",
+    "customerRole": "Client account",
+    "adminRole": "Admin account",
+    "noName": "Gold Mustache client",
+    "noPhone": "Add a phone number to speed up your next appointments.",
+    "completionLabel": "Profile completion",
+    "nextAppointment": "Next appointment",
+    "loadingAppointment": "Loading your next appointment...",
+    "noUpcoming": "No upcoming appointments right now.",
+    "pendingTitle": "Next steps",
+    "pendingNone": "Your account is ready for your next appointments.",
+    "pendingVerification": "Confirm your email",
+    "pendingPhone": "Add a phone number",
+    "pendingAddress": "Complete your address"
+  },
+  "quickActions": {
+    "title": "Quick actions",
+    "description": "Shortcuts for the tasks you use most often.",
+    "bookingLabel": "Book appointment",
+    "bookingDescription": "Schedule your next visit",
+    "appointmentsLabel": "My appointments",
+    "appointmentsDescription": "See upcoming visits and history",
+    "exportLabel": "Export my data",
+    "exportDescription": "Download a file with your data",
+    "securityLabel": "Account security",
+    "securityDescription": "Review password and verification"
+  },
+  "sections": {
+    "personal": {
+      "title": "Personal details",
+      "description": "Basic information and address for reference."
+    },
+    "security": {
+      "title": "Account health",
+      "description": "Password, verification, and account safety signals."
+    },
+    "privacy": {
+      "title": "Privacy and data rights",
+      "description": "Access your data and understand how your account is handled."
+    },
+    "danger": {
+      "title": "Sensitive zone",
+      "description": "Irreversible actions require extra confirmation."
+    }
+  },
+  "appointment": {
+    "service": "Service",
+    "date": "Date",
+    "time": "Time",
+    "barber": "Barber"
+  },
   "personalInfo": {
-    "title": "Personal Information",
-    "description": "Your basic identification data",
+    "title": "Personal information",
+    "description": "Your main details for service and contact.",
     "email": "Email",
     "emailHint": "Email cannot be changed here",
     "fullName": "Full name",
@@ -14,13 +72,13 @@
   },
   "address": {
     "title": "Address",
-    "description": "Your address for reference (optional)",
-    "zipCode": "ZIP Code",
+    "description": "Your address for reference and account organization.",
+    "zipCode": "ZIP code",
     "zipCodePlaceholder": "00000-000",
     "state": "State",
     "statePlaceholder": "SP",
     "city": "City",
-    "cityPlaceholder": "São Paulo",
+    "cityPlaceholder": "Sao Paulo",
     "neighborhood": "Neighborhood",
     "neighborhoodPlaceholder": "Downtown",
     "street": "Street",
@@ -31,14 +89,14 @@
     "complementPlaceholder": "Apt 101, Block A"
   },
   "save": {
-    "button": "Save Changes",
+    "button": "Save changes",
     "saving": "Saving...",
     "success": "Profile updated successfully!",
     "error": "Error updating profile. Please try again."
   },
   "emailVerification": {
-    "title": "Email Verification",
-    "description": "Confirm your email for better security",
+    "title": "Email verification",
+    "description": "Confirm your email to strengthen account security.",
     "verified": "Verified",
     "pending": "Pending",
     "verifiedMessage": "Your email {email} is verified.",
@@ -50,25 +108,44 @@
     "hint": "An email will be sent with a link to confirm your address. Also check your spam folder."
   },
   "password": {
-    "title": "Change Password",
-    "description": "Update your access password",
+    "title": "Change password",
+    "description": "Update your access password.",
     "newPassword": "New password",
     "newPasswordPlaceholder": "Minimum 6 characters",
     "confirmPassword": "Confirm new password",
     "confirmPasswordPlaceholder": "Repeat the new password",
-    "button": "Change Password",
+    "button": "Change password",
     "changing": "Changing...",
     "success": "Your password has been changed successfully!",
     "error": "Error changing password. Please try again.",
+    "ariaShowNewPassword": "Show new password",
+    "ariaHideNewPassword": "Hide new password",
+    "ariaShowConfirmPassword": "Show password confirmation",
+    "ariaHideConfirmPassword": "Hide password confirmation",
     "validation": {
       "required": "New password is required",
       "minLength": "Password must have at least 6 characters",
       "mismatch": "Passwords do not match"
     }
   },
+  "dataRights": {
+    "badge": "Privacy",
+    "title": "LGPD export",
+    "description": "Download a JSON file with the data associated with your account.",
+    "includes": {
+      "accountTitle": "Account and profile data",
+      "accountDescription": "Registration details, account metadata, and your core profile information.",
+      "appointmentsTitle": "Appointments and preferences",
+      "appointmentsDescription": "Service history, appointment data, and consents linked to your access."
+    },
+    "hint": "The file is generated at request time and may include account history, appointments, and recorded consents.",
+    "exportTitle": "Take your data with you",
+    "exportBody": "Whenever you need it, export a full snapshot of your account for review, portability, or personal records.",
+    "exportButton": "Download my data"
+  },
   "deleteAccount": {
     "title": "Delete Account",
-    "description": "Permanently delete your account and all data",
+    "description": "Permanently delete your account and the personal data in your area",
     "button": "Delete My Account",
     "confirmWord": "DELETE",
     "success": "Your account has been successfully deleted.",
@@ -76,12 +153,12 @@
     "warning": {
       "title": "This action is irreversible!",
       "item1": "All your personal data will be deleted",
-      "item2": "Your appointment history will be removed",
-      "item3": "You will not be able to recover your account"
+      "item2": "Appointment history may be retained without personal identification for operational purposes",
+      "item3": "You will lose access to your account and preferences"
     },
     "dialog": {
       "title": "Are you sure?",
-      "description": "This action cannot be undone. This will permanently delete your account and remove all your data from our servers.",
+      "description": "This action cannot be undone. This will permanently delete your account and remove the personal data linked to your access.",
       "confirmLabel": "Type \"{word}\" to confirm:",
       "cancel": "Cancel",
       "confirm": "Delete Account",

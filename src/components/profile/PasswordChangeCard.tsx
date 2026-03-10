@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Lock, Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
-import { authService } from "@/services/auth";
 import { cn } from "@/lib/utils";
+import { authService } from "@/services/auth";
+import { CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 export function PasswordChangeCard() {
   const t = useTranslations("profile.password");
@@ -16,13 +17,10 @@ export function PasswordChangeCard() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
-
   const [formData, setFormData] = useState({
-    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +57,6 @@ export function PasswordChangeCard() {
       await authService.updatePassword(formData.newPassword);
       toast.success(t("success"));
       setFormData({
-        currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
@@ -72,30 +69,26 @@ export function PasswordChangeCard() {
     }
   };
 
-  const inputClassName = cn(
-    "bg-zinc-900/50 border-zinc-700/50 rounded-lg pr-10",
-    "text-white placeholder:text-zinc-500",
-    "focus:border-amber-500/50 focus:ring-amber-500/20",
-  );
-
-  const labelClassName = "text-zinc-300 text-sm font-medium";
+  const inputClassName = "bg-background pr-10";
+  const labelClassName = "text-sm font-medium text-foreground";
 
   return (
-    <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 overflow-hidden">
-      <div className="p-4 border-b border-zinc-700/50 flex items-center gap-3">
-        <div className="p-2 bg-amber-500/10 rounded-lg">
-          <Lock className="h-5 w-5 text-amber-500" />
+    <Card className="overflow-hidden border-border bg-card shadow-none">
+      <CardHeader className="flex flex-row items-start gap-3 border-b border-border bg-muted/35 px-6 py-5">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+          <Lock className="h-5 w-5" />
         </div>
-        <div>
-          <h3 className="font-semibold text-white">{t("title")}</h3>
-          <p className="text-sm text-zinc-400">{t("description")}</p>
+        <div className="space-y-1">
+          <CardTitle className="text-base">{t("title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
-      </div>
-      <div className="p-5">
+      </CardHeader>
+
+      <CardContent className="py-6">
         {success ? (
-          <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-            <span className="text-sm text-emerald-400">{t("success")}</span>
+          <div className="flex items-center gap-3 rounded-xl border border-success/20 bg-success/10 p-4">
+            <CheckCircle2 className="h-5 w-5 text-success" />
+            <span className="text-sm text-success">{t("success")}</span>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -113,13 +106,18 @@ export function PasswordChangeCard() {
                   placeholder={t("newPasswordPlaceholder")}
                   className={cn(
                     inputClassName,
-                    errors.newPassword && "border-red-500",
+                    errors.newPassword && "border-destructive",
                   )}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={
+                    showNewPassword
+                      ? t("ariaHideNewPassword")
+                      : t("ariaShowNewPassword")
+                  }
+                  onClick={() => setShowNewPassword((prev) => !prev)}
                 >
                   {showNewPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -128,9 +126,9 @@ export function PasswordChangeCard() {
                   )}
                 </button>
               </div>
-              {errors.newPassword && (
-                <p className="text-sm text-red-400">{errors.newPassword}</p>
-              )}
+              {errors.newPassword ? (
+                <p className="text-sm text-destructive">{errors.newPassword}</p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -147,13 +145,18 @@ export function PasswordChangeCard() {
                   placeholder={t("confirmPasswordPlaceholder")}
                   className={cn(
                     inputClassName,
-                    errors.confirmPassword && "border-red-500",
+                    errors.confirmPassword && "border-destructive",
                   )}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={
+                    showConfirmPassword
+                      ? t("ariaHideConfirmPassword")
+                      : t("ariaShowConfirmPassword")
+                  }
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -162,16 +165,14 @@ export function PasswordChangeCard() {
                   )}
                 </button>
               </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-red-400">{errors.confirmPassword}</p>
-              )}
+              {errors.confirmPassword ? (
+                <p className="text-sm text-destructive">
+                  {errors.confirmPassword}
+                </p>
+              ) : null}
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-semibold"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -186,7 +187,7 @@ export function PasswordChangeCard() {
             </Button>
           </form>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

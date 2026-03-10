@@ -22,7 +22,11 @@ vi.mock("sonner", () => ({
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, params?: Record<string, string>) =>
-    params ? `${key}:${JSON.stringify(params)}` : key,
+    (
+      ({
+        "personalInfo.email": "Email traduzido",
+      }) as Record<string, string>
+    )[key] || (params ? `${key}:${JSON.stringify(params)}` : key),
 }));
 
 beforeEach(() => {
@@ -70,5 +74,11 @@ describe("EmailVerificationCard", () => {
     render(<EmailVerificationCard email={undefined} isVerified={false} />);
     const button = screen.getByRole("button", { name: /sendButton/i });
     expect(button).toBeDisabled();
+  });
+
+  it("uses translated label for the email field in the pending state", () => {
+    render(<EmailVerificationCard email="test@test.com" isVerified={false} />);
+
+    expect(screen.getByText(/Email traduzido:/)).toBeInTheDocument();
   });
 });

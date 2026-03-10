@@ -21,7 +21,15 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string) =>
+    (
+      ({
+        ariaShowNewPassword: "Mostrar nova senha traduzida",
+        ariaHideNewPassword: "Ocultar nova senha traduzida",
+        ariaShowConfirmPassword: "Mostrar confirmacao traduzida",
+        ariaHideConfirmPassword: "Ocultar confirmacao traduzida",
+      }) as Record<string, string>
+    )[key] || key,
 }));
 
 beforeEach(() => {
@@ -103,5 +111,27 @@ describe("PasswordChangeCard", () => {
     await waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalledWith("error");
     });
+  });
+
+  it("uses translated aria-labels for password visibility toggles", async () => {
+    const user = userEvent.setup();
+    render(<PasswordChangeCard />);
+
+    const newPasswordToggle = screen.getByRole("button", {
+      name: "Mostrar nova senha traduzida",
+    });
+    const confirmPasswordToggle = screen.getByRole("button", {
+      name: "Mostrar confirmacao traduzida",
+    });
+
+    await user.click(newPasswordToggle);
+    await user.click(confirmPasswordToggle);
+
+    expect(
+      screen.getByRole("button", { name: "Ocultar nova senha traduzida" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ocultar confirmacao traduzida" }),
+    ).toBeInTheDocument();
   });
 });
