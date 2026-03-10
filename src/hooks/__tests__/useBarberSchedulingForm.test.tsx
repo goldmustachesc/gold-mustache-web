@@ -96,7 +96,10 @@ vi.mock("@/hooks/useBooking", () => ({
     data: mocks.services,
     isLoading: mocks.state.servicesLoading,
   }),
-  useSlots: () => ({ data: mocks.slots, isLoading: mocks.state.slotsLoading }),
+  useBarberSlots: () => ({
+    data: mocks.slots,
+    isLoading: mocks.state.slotsLoading,
+  }),
   useCreateAppointmentByBarber: () => ({
     mutateAsync: mocks.mutateAsync,
     isPending: false,

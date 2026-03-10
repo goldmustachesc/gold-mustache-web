@@ -15,6 +15,8 @@ import { apiGet, apiMutate, ApiError } from "@/lib/api/client";
 
 const SLOT_ERROR_MESSAGES: Record<string, string> = {
   SLOT_IN_PAST: "Este horário já passou. Por favor, escolha outro horário.",
+  SLOT_TOO_SOON:
+    "Agendamento deve ser feito com pelo menos 1 hora de antecedência.",
   SHOP_CLOSED:
     "A barbearia não atende neste horário. Por favor, escolha outro.",
   BARBER_UNAVAILABLE:
@@ -71,6 +73,21 @@ export function useSlots(
     queryFn: () =>
       apiGet<TimeSlot[]>(
         `/api/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
+      ),
+    enabled: !!date && !!barberId && !!serviceId,
+  });
+}
+
+export function useBarberSlots(
+  date: string | null,
+  barberId: string | null,
+  serviceId: string | null,
+) {
+  return useQuery({
+    queryKey: ["barberSlots", date, barberId, serviceId],
+    queryFn: () =>
+      apiGet<TimeSlot[]>(
+        `/api/barbers/me/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
       ),
     enabled: !!date && !!barberId && !!serviceId,
   });

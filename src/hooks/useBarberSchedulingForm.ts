@@ -14,7 +14,7 @@ import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import {
   useServices,
-  useSlots,
+  useBarberSlots,
   useCreateAppointmentByBarber,
 } from "@/hooks/useBooking";
 import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
@@ -69,7 +69,7 @@ export function useBarberSchedulingForm() {
   const { data: services, isLoading: servicesLoading } = useServices(
     barberProfile?.id,
   );
-  const { data: slots, isLoading: slotsLoading } = useSlots(
+  const { data: slots, isLoading: slotsLoading } = useBarberSlots(
     selectedDate,
     barberProfile?.id || null,
     selectedServiceId || null,

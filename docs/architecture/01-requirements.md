@@ -77,6 +77,7 @@
 
 - WHEN o cliente seleciona data, barbeiro e serviço THEN o sistema calcula slots disponíveis considerando working hours, ausências, fechamentos e agendamentos existentes
 - WHEN não há slots disponíveis THEN o sistema retorna lista vazia
+- WHEN o horário do slot tiver menos de 60 minutos de antecedência THEN o sistema marca o slot como indisponível (regra aplica-se a clientes e convidados; barbeiros consultam slots sem esta restrição)
 
 ### US-BOOK-04: Criar agendamento
 **Como** Cliente, **quero** agendar um horário, **para que** eu garanta meu atendimento.
@@ -85,6 +86,7 @@
 - WHEN o slot já está ocupado THEN o sistema retorna erro 409
 - WHEN o agendamento online está desabilitado THEN o sistema retorna erro 403
 - WHEN o agendamento é criado THEN o sistema envia notificação de confirmação
+- WHEN o cliente tenta agendar com menos de 60 minutos de antecedência THEN o sistema retorna erro 400 (SLOT_TOO_SOON). Com exatamente 60 minutos, o agendamento é permitido
 
 ### US-BOOK-05: Ver meus agendamentos
 **Como** Cliente, **quero** ver meus agendamentos futuros e passados, **para que** eu acompanhe minha agenda.
@@ -108,6 +110,7 @@
 
 - WHEN o convidado submete agendamento com nome e telefone THEN o sistema cria GuestClient, Appointment e retorna accessToken
 - WHEN o telefone já existe como GuestClient THEN o sistema reutiliza o registro
+- WHEN o convidado tenta agendar com menos de 60 minutos de antecedência THEN o sistema retorna erro 400 (SLOT_TOO_SOON), mesma regra do cliente autenticado
 
 ### US-GUEST-02: Consultar agendamentos por token
 **Como** Convidado, **quero** ver meus agendamentos usando meu token, **para que** eu acompanhe o status.

@@ -11,6 +11,7 @@ import {
   getAbsenceSlotError,
   getShopSlotError,
 } from "@/lib/booking/availability-policy";
+import { isSlotTooSoonForClient } from "@/lib/booking/lead-time";
 import {
   generateTimeSlots,
   filterAvailableSlots,
@@ -227,11 +228,17 @@ export async function getServices(barberId?: string): Promise<ServiceData[]> {
  * Slots are generated based on the service duration to ensure perfect scheduling.
  * Falls back to shop hours if the barber hasn't configured their own working hours.
  */
+export interface GetAvailableSlotsOptions {
+  applyLeadTime?: boolean;
+}
+
 export async function getAvailableSlots(
   date: Date,
   barberId: string,
   serviceId: string,
+  options: GetAvailableSlotsOptions = {},
 ): Promise<TimeSlot[]> {
+  const { applyLeadTime = false } = options;
   const dateStr = formatDateToString(date);
   const businessDate = parseIsoDateYyyyMmDdAsSaoPauloDate(dateStr);
   const dayOfWeek = businessDate.getUTCDay();
@@ -341,6 +348,18 @@ export async function getAvailableSlots(
   // Filter out slots that have already passed (for today)
   const validSlots = filterPastSlots(availableSlots, businessDate);
 
+  if (applyLeadTime) {
+    return validSlots.map((slot) => {
+      if (!slot.available) return { ...slot, barberId };
+      const minutesUntil = getMinutesUntilAppointment(dateStr, slot.time);
+      return {
+        ...slot,
+        available: !isSlotTooSoonForClient(minutesUntil),
+        barberId,
+      };
+    });
+  }
+
   return validSlots.map((slot) => ({
     ...slot,
     barberId,
@@ -378,6 +397,10 @@ export async function createAppointment(
   // Validate that the appointment is not in the past
   if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
+  }
+
+  if (isSlotTooSoonForClient(getMinutesUntilAppointment(date, startTime))) {
+    throw new Error("SLOT_TOO_SOON");
   }
 
   const policyError = await getBookingPolicyError({
@@ -512,6 +535,10 @@ export async function createGuestAppointment(
   // Validate that the appointment is not in the past
   if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
+  }
+
+  if (isSlotTooSoonForClient(getMinutesUntilAppointment(date, startTime))) {
+    throw new Error("SLOT_TOO_SOON");
   }
 
   const policyError = await getBookingPolicyError({

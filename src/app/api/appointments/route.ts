@@ -210,6 +210,12 @@ export async function POST(request: Request) {
           error: "SLOT_IN_PAST",
           message: "Não é possível agendar em horários que já passaram",
         },
+        SLOT_TOO_SOON: {
+          status: 400,
+          error: "SLOT_TOO_SOON",
+          message:
+            "Agendamento deve ser feito com pelo menos 1 hora de antecedência",
+        },
         SHOP_CLOSED: {
           status: 400,
           error: "SHOP_CLOSED",

@@ -28,6 +28,7 @@ Sistema de agendamento moderno para a barbearia Gold Mustache que permite aos cl
 3. WHEN a client confirms a booking with valid service, date, and time THEN the Booking_System SHALL create an Appointment with status "confirmed"
 4. WHEN a client attempts to book an already occupied time slot THEN the Booking_System SHALL reject the booking and display an error message
 5. WHEN an Appointment is created THEN the Booking_System SHALL persist the Appointment to the database immediately
+6. WHEN a client or guest attempts to book a time slot less than 60 minutes from now THEN the Booking_System SHALL reject the booking with SLOT_TOO_SOON error (exactly 60 minutes is allowed). This rule does NOT apply to barbers creating appointments internally
 
 ### Requirement 2
 

@@ -1,14 +1,20 @@
 import { getAvailableSlots } from "@/services/booking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getSlotsQuerySchema } from "@/lib/validations/booking";
-import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
+import { requireBarber } from "@/lib/auth/requireBarber";
 
 export async function GET(request: Request) {
   try {
-    const clientId = getClientIdentifier(request);
-    const rateLimitResult = await checkRateLimit("api", clientId);
+    const auth = await requireBarber();
+    if (!auth.ok) return auth.response;
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(auth.userId),
+    );
     if (!rateLimitResult.success) {
       const res = apiError(
         "RATE_LIMITED",
@@ -28,7 +34,6 @@ export async function GET(request: Request) {
     const barberId = searchParams.get("barberId");
     const serviceId = searchParams.get("serviceId");
 
-    // Validate query params
     const validation = getSlotsQuerySchema.safeParse({
       date,
       barberId,
@@ -48,7 +53,6 @@ export async function GET(request: Request) {
       parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.date),
       validation.data.barberId,
       validation.data.serviceId,
-      { applyLeadTime: true },
     );
 
     return apiSuccess(slots);

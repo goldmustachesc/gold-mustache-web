@@ -53,6 +53,7 @@ describe("GET /api/slots", () => {
       expect.any(Date),
       barberId,
       serviceId,
+      { applyLeadTime: true },
     );
     expect(body.data).toEqual(slots);
   });
