@@ -39,20 +39,19 @@ export async function PATCH(
       return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
-    // Fetch the appointment first to determine the correct cancellation path
-    const appointmentToCancel = await prisma.appointment.findUnique({
-      where: { id: appointmentId },
-      select: { barberId: true, clientId: true },
-    });
+    const [appointmentToCancel, barber] = await Promise.all([
+      prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        select: { barberId: true, clientId: true },
+      }),
+      prisma.barber.findUnique({
+        where: { userId: user.id },
+      }),
+    ]);
 
     if (!appointmentToCancel) {
       return apiError("NOT_FOUND", "Agendamento não encontrado", 404);
     }
-
-    // Check if user is a barber and is THE barber of this specific appointment
-    const barber = await prisma.barber.findUnique({
-      where: { userId: user.id },
-    });
 
     const isBarberOfThisAppointment =
       barber && appointmentToCancel.barberId === barber.id;

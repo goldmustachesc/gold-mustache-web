@@ -26,17 +26,6 @@ export async function GET(request: Request) {
       return apiError("UNAUTHORIZED", "Não autenticado", 401);
     }
 
-    // Verify user is admin
-    const profile = await prisma.profile.findUnique({
-      where: { userId: user.id },
-      select: { role: true },
-    });
-
-    if (!profile || profile.role !== "ADMIN") {
-      return apiError("FORBIDDEN", "Acesso restrito a administradores", 403);
-    }
-
-    // Parse query params
     const { searchParams } = new URL(request.url);
     const query = querySchema.safeParse({
       month: searchParams.get("month"),
@@ -52,14 +41,23 @@ export async function GET(request: Request) {
       );
     }
 
-    const { month, year, barberId } = query.data;
+    const [profile, barbers] = await Promise.all([
+      prisma.profile.findUnique({
+        where: { userId: user.id },
+        select: { role: true },
+      }),
+      prisma.barber.findMany({
+        where: { active: true },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
-    // Fetch barbers for dropdown
-    const barbers = await prisma.barber.findMany({
-      where: { active: true },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    });
+    if (!profile || profile.role !== "ADMIN") {
+      return apiError("FORBIDDEN", "Acesso restrito a administradores", 403);
+    }
+
+    const { month, year, barberId } = query.data;
 
     // If barberId is provided, calculate for that barber only
     // Otherwise, calculate aggregate for all barbers
@@ -274,20 +272,20 @@ async function buildStats(
   let closedMinutes = 0;
 
   if (barberId) {
-    // Single barber calculation
-    const workingHours = await prisma.workingHours.findMany({
-      where: { barberId },
-    });
-
-    const absences = await prisma.barberAbsence.findMany({
-      where: {
-        barberId,
-        date: {
-          gte: new Date(year, month - 1, 1),
-          lte: endDate,
+    const [workingHours, absences] = await Promise.all([
+      prisma.workingHours.findMany({
+        where: { barberId },
+      }),
+      prisma.barberAbsence.findMany({
+        where: {
+          barberId,
+          date: {
+            gte: new Date(year, month - 1, 1),
+            lte: endDate,
+          },
         },
-      },
-    });
+      }),
+    ]);
 
     const result = calculateAvailableHours(
       workingHours,

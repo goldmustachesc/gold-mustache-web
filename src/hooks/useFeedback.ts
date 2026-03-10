@@ -91,6 +91,7 @@ export function useBarberFeedbacks(page = 1, limit = 10) {
       apiGet<PaginatedFeedbacks>(
         `/api/barbers/me/feedbacks?page=${page}&limit=${limit}`,
       ),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -98,6 +99,7 @@ export function useBarberFeedbackStats() {
   return useQuery({
     queryKey: ["barber-feedback-stats"],
     queryFn: () => apiGet<FeedbackStats>("/api/barbers/me/feedbacks/stats"),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -124,6 +126,7 @@ export function useAdminFeedbacks(
   return useQuery({
     queryKey: ["admin-feedbacks", filters, page, limit],
     queryFn: () => apiGet<PaginatedFeedbacks>(`/api/admin/feedbacks?${params}`),
+    staleTime: 60 * 1000,
   });
 }
 
@@ -131,6 +134,7 @@ export function useAdminFeedbackStats() {
   return useQuery({
     queryKey: ["admin-feedback-stats"],
     queryFn: () => apiGet<FeedbackStats>("/api/admin/feedbacks/stats"),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -138,6 +142,7 @@ export function useBarberRanking() {
   return useQuery({
     queryKey: ["barber-ranking"],
     queryFn: () => apiGet<BarberRanking[]>("/api/admin/barbers/ranking"),
+    staleTime: 2 * 60 * 1000,
   });
 }
 

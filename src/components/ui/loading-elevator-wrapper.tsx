@@ -8,16 +8,23 @@ export function LoadingElevatorWrapper() {
   const [shouldRender, setShouldRender] = useState(true);
 
   useEffect(() => {
-    // Wait for initial content to be ready, then trigger opening animation
-    const timer = setTimeout(() => {
+    if (document.readyState === "complete") {
       setIsLoading(false);
-    }, 1500);
+      return;
+    }
 
-    return () => clearTimeout(timer);
+    const onReady = () => setIsLoading(false);
+    window.addEventListener("load", onReady);
+
+    const fallback = setTimeout(onReady, 500);
+
+    return () => {
+      window.removeEventListener("load", onReady);
+      clearTimeout(fallback);
+    };
   }, []);
 
   const handleAnimationComplete = () => {
-    // Remove component from DOM after opening animation completes
     setShouldRender(false);
   };
 

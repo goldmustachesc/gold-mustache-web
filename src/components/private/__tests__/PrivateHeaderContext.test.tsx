@@ -96,16 +96,14 @@ describe("PrivateHeaderContext", () => {
   });
 
   describe("context boundary", () => {
-    it("throws when usePrivateHeaderConfig is used outside provider", () => {
-      expect(() => {
-        renderHook(() => usePrivateHeaderConfig());
-      }).toThrow();
+    it("returns default config when used outside provider", () => {
+      const { result } = renderHook(() => usePrivateHeaderConfig());
+      expect(result.current.title).toBe("");
     });
 
-    it("throws when usePrivateSidebarState is used outside provider", () => {
-      expect(() => {
-        renderHook(() => usePrivateSidebarState());
-      }).toThrow();
+    it("returns default sidebar state when used outside provider", () => {
+      const { result } = renderHook(() => usePrivateSidebarState());
+      expect(result.current.open).toBe(false);
     });
   });
 });

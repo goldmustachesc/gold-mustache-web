@@ -40,6 +40,7 @@ export function useBarberAbsences(startDate?: string, endDate?: string) {
       apiGet<BarberAbsenceData[]>(
         `/api/barbers/me/absences${query ? `?${query}` : ""}`,
       ),
+    staleTime: 60 * 1000,
   });
 }
 

@@ -22,6 +22,7 @@ export function useAdminLoyaltyAccounts() {
   return useQuery({
     queryKey: ["admin", "loyalty", "accounts"],
     queryFn: () => apiGet<AdminLoyaltyAccount[]>("/api/admin/loyalty/accounts"),
+    staleTime: 60 * 1000,
   });
 }
 
@@ -154,6 +155,7 @@ export function useAdminLoyaltyReports() {
   return useQuery({
     queryKey: ["admin", "loyalty", "reports"],
     queryFn: () => apiGet<LoyaltyReportsData>("/api/admin/loyalty/reports"),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -185,6 +187,7 @@ export function useAdminRedemptions(status?: string, page = 1, limit = 20) {
       apiGetCollection<AdminRedemption>(
         `/api/admin/loyalty/redemptions?${params}`,
       ),
+    staleTime: 30 * 1000,
   });
 }
 

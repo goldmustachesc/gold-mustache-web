@@ -17,6 +17,7 @@ export function useUser() {
     queryKey: ["user"],
     queryFn: () => authService.getUser(),
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -25,6 +26,7 @@ export function useSession() {
     queryKey: ["session"],
     queryFn: () => authService.getSession(),
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

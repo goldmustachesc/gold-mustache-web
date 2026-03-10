@@ -46,6 +46,7 @@ export function useBarbers() {
   return useQuery({
     queryKey: ["barbers"],
     queryFn: () => apiGet<BarberData[]>("/api/barbers"),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -56,6 +57,7 @@ export function useServices(barberId?: string) {
       apiGet<ServiceData[]>(
         barberId ? `/api/services?barberId=${barberId}` : "/api/services",
       ),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -82,6 +84,7 @@ export function useClientAppointments() {
   return useQuery({
     queryKey: ["appointments", "client"],
     queryFn: () => apiGet<AppointmentWithDetails[]>("/api/appointments"),
+    staleTime: 30 * 1000,
   });
 }
 

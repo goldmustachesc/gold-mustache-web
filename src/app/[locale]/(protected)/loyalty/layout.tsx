@@ -1,9 +1,7 @@
 "use client";
 
-import { useUser } from "@/hooks/useAuth";
 import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import {
-  Loader2,
   Star,
   LayoutDashboard,
   Gift,
@@ -19,7 +17,6 @@ export default function LoyaltyLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading: userLoading } = useUser();
   const params = useParams();
   const pathname = usePathname();
   const locale = params.locale as string;
@@ -29,14 +26,6 @@ export default function LoyaltyLayout({
     icon: Star,
     backHref: `/${locale}/dashboard`,
   });
-
-  if (userLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   const navItems = [
     { name: "Dashboard", href: `/${locale}/loyalty`, icon: LayoutDashboard },

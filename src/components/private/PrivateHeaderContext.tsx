@@ -23,19 +23,20 @@ interface SidebarState {
   onOpenChange: (open: boolean) => void;
 }
 
-interface PrivateHeaderContextValue {
-  config: HeaderConfig;
-  setConfig: (config: HeaderConfig) => void;
-  sidebar: SidebarState;
-  actionsContainerRef: React.RefObject<HTMLDivElement | null>;
-}
+const DEFAULT_CONFIG: HeaderConfig = { title: "" };
 
-const DEFAULT_CONFIG: HeaderConfig = {
-  title: "",
-};
-
-const PrivateHeaderContext = createContext<PrivateHeaderContextValue | null>(
-  null,
+const HeaderConfigContext = createContext<HeaderConfig>(DEFAULT_CONFIG);
+const HeaderSetConfigContext = createContext<(config: HeaderConfig) => void>(
+  () => {},
+);
+const SidebarContext = createContext<SidebarState>({
+  open: false,
+  onOpenChange: () => {},
+});
+const ActionsRefContext = createContext<React.RefObject<HTMLDivElement | null>>(
+  {
+    current: null,
+  },
 );
 
 export function PrivateHeaderProvider({ children }: { children: ReactNode }) {
@@ -48,26 +49,17 @@ export function PrivateHeaderProvider({ children }: { children: ReactNode }) {
     [sidebarOpen],
   );
 
-  const value = useMemo<PrivateHeaderContextValue>(
-    () => ({ config, setConfig, sidebar, actionsContainerRef }),
-    [config, sidebar],
-  );
-
   return (
-    <PrivateHeaderContext.Provider value={value}>
-      {children}
-    </PrivateHeaderContext.Provider>
+    <HeaderSetConfigContext.Provider value={setConfig}>
+      <HeaderConfigContext.Provider value={config}>
+        <SidebarContext.Provider value={sidebar}>
+          <ActionsRefContext.Provider value={actionsContainerRef}>
+            {children}
+          </ActionsRefContext.Provider>
+        </SidebarContext.Provider>
+      </HeaderConfigContext.Provider>
+    </HeaderSetConfigContext.Provider>
   );
-}
-
-function usePrivateHeaderContext() {
-  const ctx = useContext(PrivateHeaderContext);
-  if (!ctx) {
-    throw new Error(
-      "usePrivateHeaderContext must be used within PrivateHeaderProvider",
-    );
-  }
-  return ctx;
 }
 
 interface UsePrivateHeaderOptions {
@@ -81,7 +73,7 @@ export function usePrivateHeader({
   icon,
   backHref,
 }: UsePrivateHeaderOptions) {
-  const { setConfig } = usePrivateHeaderContext();
+  const setConfig = useContext(HeaderSetConfigContext);
 
   useEffect(() => {
     setConfig({ title, icon, backHref });
@@ -89,7 +81,7 @@ export function usePrivateHeader({
 }
 
 export function PrivateHeaderActions({ children }: { children: ReactNode }) {
-  const { actionsContainerRef } = usePrivateHeaderContext();
+  const actionsContainerRef = useContext(ActionsRefContext);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -104,13 +96,13 @@ export function PrivateHeaderActions({ children }: { children: ReactNode }) {
 }
 
 export function usePrivateHeaderConfig(): HeaderConfig {
-  return usePrivateHeaderContext().config;
+  return useContext(HeaderConfigContext);
 }
 
 export function usePrivateSidebarState(): SidebarState {
-  return usePrivateHeaderContext().sidebar;
+  return useContext(SidebarContext);
 }
 
 export function useActionsContainerRef() {
-  return usePrivateHeaderContext().actionsContainerRef;
+  return useContext(ActionsRefContext);
 }

@@ -9,6 +9,7 @@ export function useDashboardStats() {
     queryKey: ["dashboard", "stats"],
     queryFn: () => apiGet<DashboardStats>("/api/dashboard/stats"),
     refetchInterval: 60000,
+    refetchIntervalInBackground: false,
     staleTime: 30000,
   });
 }

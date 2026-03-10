@@ -22,22 +22,21 @@ export default async function FeedbacksAdminPage({
     redirect(`/${locale}/login`);
   }
 
-  // Check if user is admin
-  const profile = await prisma.profile.findUnique({
-    where: { userId: user.id },
-    select: { role: true },
-  });
+  const [profile, barbers] = await Promise.all([
+    prisma.profile.findUnique({
+      where: { userId: user.id },
+      select: { role: true },
+    }),
+    prisma.barber.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   if (!profile || profile.role !== "ADMIN") {
     redirect(`/${locale}/dashboard`);
   }
-
-  // Get barbers for filter dropdown
-  const barbers = await prisma.barber.findMany({
-    where: { active: true },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
 
   return <AdminFeedbacksPage locale={locale} barbers={barbers} />;
 }

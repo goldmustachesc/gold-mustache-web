@@ -17,5 +17,6 @@ export function useProfileMe() {
     queryKey: ["profile-me", user?.id ?? null],
     queryFn: fetchProfileMe,
     enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
   });
 }

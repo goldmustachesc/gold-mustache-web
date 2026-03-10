@@ -203,6 +203,8 @@ model Appointment {
   // Uniqueness for active bookings is enforced via a PARTIAL unique index in SQL
   // (status = 'CONFIRMED') plus an advisory-lock + overlap-check in `src/services/booking.ts`.
   @@index([barberId, date, startTime])
+  @@index([barberId, date, status])
+  @@index([date, status])
   @@index([clientId])
   @@index([guestClientId])
   @@index([status])

@@ -26,5 +26,6 @@ export function useBarberProfile() {
     queryKey: ["barber-profile", user?.id],
     queryFn: fetchBarberProfile,
     enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
   });
 }
