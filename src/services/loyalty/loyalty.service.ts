@@ -176,10 +176,48 @@ async function debitPoints({
   });
 }
 
+/**
+ * Penalizes an account by deducting points without balance check (can go negative).
+ * Does not affect lifetimePoints or tier.
+ */
+async function penalizePoints({
+  accountId,
+  points,
+  description,
+  referenceId,
+}: {
+  accountId: string;
+  points: number;
+  description?: string;
+  referenceId?: string;
+}): Promise<void> {
+  if (points <= 0) return;
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.pointTransaction.create({
+      data: {
+        loyaltyAccountId: accountId,
+        type: "PENALTY_NO_SHOW",
+        points: -Math.abs(points),
+        description,
+        referenceId,
+      },
+    });
+
+    await tx.loyaltyAccount.update({
+      where: { id: accountId },
+      data: {
+        currentPoints: { decrement: points },
+      },
+    });
+  });
+}
+
 export const LoyaltyService = {
   createAccount,
   getOrCreateAccount,
   recalculateTier,
   creditPoints,
   debitPoints,
+  penalizePoints,
 };

@@ -24,6 +24,24 @@ vi.mock("@/lib/prisma", () => {
   return { prisma };
 });
 
+vi.mock("../loyalty/loyalty.service", () => ({
+  LoyaltyService: {
+    getOrCreateAccount: vi.fn().mockResolvedValue({
+      id: "acc-mock",
+      tier: "BRONZE",
+    }),
+    penalizePoints: vi.fn(),
+  },
+}));
+
+vi.mock("../loyalty/points.calculator", () => ({
+  calculateAppointmentPoints: vi.fn().mockReturnValue({
+    base: 0,
+    bonus: 0,
+    total: 0,
+  }),
+}));
+
 import { prisma } from "@/lib/prisma";
 import {
   canClientCancel,

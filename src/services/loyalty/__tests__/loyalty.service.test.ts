@@ -221,4 +221,102 @@ describe("services/loyalty.service", () => {
       expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
+
+  describe("penalizePoints", () => {
+    it("should return early if points is <= 0", async () => {
+      await LoyaltyService.penalizePoints({
+        accountId: "acc-1",
+        points: 0,
+        description: "No-show",
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("should create negative transaction and decrement currentPoints without balance check", async () => {
+      const mockTxCreate = vi.fn();
+      const mockTxUpdate = vi.fn();
+
+      asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+        const callback = cb as (tx: unknown) => Promise<unknown>;
+        const tx = {
+          pointTransaction: { create: mockTxCreate },
+          loyaltyAccount: { update: mockTxUpdate },
+        };
+        return await callback(tx);
+      });
+
+      await LoyaltyService.penalizePoints({
+        accountId: "acc-penalty",
+        points: 50,
+        description: "Não compareceu: Corte",
+        referenceId: "apt-noshow",
+      });
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(mockTxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          loyaltyAccountId: "acc-penalty",
+          type: PointTransactionType.PENALTY_NO_SHOW,
+          points: -50,
+          description: "Não compareceu: Corte",
+          referenceId: "apt-noshow",
+        }),
+      });
+      expect(mockTxUpdate).toHaveBeenCalledWith({
+        where: { id: "acc-penalty" },
+        data: {
+          currentPoints: { decrement: 50 },
+        },
+      });
+    });
+
+    it("should allow penalty even when account has zero points", async () => {
+      const mockTxCreate = vi.fn();
+      const mockTxUpdate = vi.fn();
+
+      asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+        const callback = cb as (tx: unknown) => Promise<unknown>;
+        const tx = {
+          pointTransaction: { create: mockTxCreate },
+          loyaltyAccount: { update: mockTxUpdate },
+        };
+        return await callback(tx);
+      });
+
+      await LoyaltyService.penalizePoints({
+        accountId: "acc-zero",
+        points: 30,
+        description: "No-show penalty",
+      });
+
+      expect(mockTxUpdate).toHaveBeenCalledWith({
+        where: { id: "acc-zero" },
+        data: {
+          currentPoints: { decrement: 30 },
+        },
+      });
+    });
+
+    it("should not touch lifetimePoints", async () => {
+      const mockTxUpdate = vi.fn();
+
+      asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+        const callback = cb as (tx: unknown) => Promise<unknown>;
+        const tx = {
+          pointTransaction: { create: vi.fn() },
+          loyaltyAccount: { update: mockTxUpdate },
+        };
+        return await callback(tx);
+      });
+
+      await LoyaltyService.penalizePoints({
+        accountId: "acc-1",
+        points: 100,
+        description: "Penalty test",
+      });
+
+      const updateCall = mockTxUpdate.mock.calls[0][0];
+      expect(updateCall.data).not.toHaveProperty("lifetimePoints");
+    });
+  });
 });

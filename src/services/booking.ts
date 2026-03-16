@@ -1287,7 +1287,6 @@ export async function markAppointmentAsNoShow(
     throw new Error("APPOINTMENT_NOT_STARTED");
   }
 
-  // Update the appointment
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
@@ -1325,6 +1324,30 @@ export async function markAppointmentAsNoShow(
       },
     },
   });
+
+  if (updated.clientId && updated.client) {
+    try {
+      const { LoyaltyService } = await import("./loyalty/loyalty.service");
+      const { calculateAppointmentPoints } = await import(
+        "./loyalty/points.calculator"
+      );
+
+      const account = await LoyaltyService.getOrCreateAccount(updated.clientId);
+      const pointsData = calculateAppointmentPoints(
+        Number(updated.service.price),
+        account.tier,
+      );
+
+      await LoyaltyService.penalizePoints({
+        accountId: account.id,
+        points: pointsData.total,
+        description: `Não compareceu: ${updated.service.name}`,
+        referenceId: updated.id,
+      });
+    } catch (error) {
+      console.error("Falha ao aplicar penalidade de pontos", error);
+    }
+  }
 
   return {
     id: updated.id,

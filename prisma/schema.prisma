@@ -394,6 +394,7 @@ enum PointTransactionType {
   REDEEMED // Resgatou recompensa
   EXPIRED // Pontos expirados
   ADJUSTED // Ajuste manual (admin)
+  PENALTY_NO_SHOW // Penalidade por não comparecimento
 }
 
 model LoyaltyAccount {
