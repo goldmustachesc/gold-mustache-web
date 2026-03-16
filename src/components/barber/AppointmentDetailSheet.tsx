@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Bell,
   BarChart3,
+  CheckCircle2,
   Pencil,
   Loader2,
   X,
@@ -32,6 +33,8 @@ interface AppointmentDetailSheetProps {
   isCancelling?: boolean;
   onMarkNoShow?: (id: string) => void;
   isMarkingNoShow?: boolean;
+  onMarkComplete?: (id: string) => void;
+  isMarkingComplete?: boolean;
   onViewClientHistory?: (
     clientId: string,
     clientType: "registered" | "guest",
@@ -158,6 +161,8 @@ export function AppointmentDetailSheet({
   isCancelling = false,
   onMarkNoShow,
   isMarkingNoShow = false,
+  onMarkComplete,
+  isMarkingComplete = false,
   onViewClientHistory,
 }: AppointmentDetailSheetProps) {
   const [sendingReminder, setSendingReminder] = useState(false);
@@ -186,6 +191,7 @@ export function AppointmentDetailSheet({
   const isPast = minutesUntil <= 0;
   const canCancel = isConfirmed && !isPast;
   const canMarkNoShow = isConfirmed && isPast && !!onMarkNoShow;
+  const canMarkComplete = isConfirmed && isPast && !!onMarkComplete;
 
   // Gera código do ticket baseado no ID
   const ticketCode = `${appointment.date.replace(/-/g, "")} ${appointment.startTime.replace(":", "")} ${appointment.id.slice(-4).toUpperCase()}`;
@@ -234,6 +240,12 @@ export function AppointmentDetailSheet({
   const handleMarkNoShow = () => {
     if (onMarkNoShow) {
       onMarkNoShow(appointment.id);
+    }
+  };
+
+  const handleMarkComplete = () => {
+    if (onMarkComplete) {
+      onMarkComplete(appointment.id);
     }
   };
 
@@ -419,8 +431,19 @@ export function AppointmentDetailSheet({
           )}
 
           {/* Actions */}
-          {(canCancel || canMarkNoShow) && (
+          {(canCancel || canMarkNoShow || canMarkComplete) && (
             <div className="space-y-2 pt-2">
+              {canMarkComplete && (
+                <Button
+                  variant="outline"
+                  className="w-full h-12 rounded-xl text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                  onClick={handleMarkComplete}
+                  disabled={isMarkingComplete}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {isMarkingComplete ? "Concluindo..." : "Concluir atendimento"}
+                </Button>
+              )}
               {canMarkNoShow && (
                 <Button
                   variant="outline"

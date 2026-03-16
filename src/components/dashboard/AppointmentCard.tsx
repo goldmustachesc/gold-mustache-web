@@ -3,7 +3,14 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import type { AppointmentWithDetails } from "@/types/booking";
-import { Bell, Loader2, MoreHorizontal, Phone, X } from "lucide-react";
+import {
+  Bell,
+  CheckCircle2,
+  Loader2,
+  MoreHorizontal,
+  Phone,
+  X,
+} from "lucide-react";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +39,9 @@ export interface AppointmentCardProps {
   onMarkNoShow?: (id: string) => void;
   isMarkingNoShow?: boolean;
   markingNoShowId?: string | null;
+  onMarkComplete?: (id: string) => void;
+  isMarkingComplete?: boolean;
+  markingCompleteId?: string | null;
   hideValues: boolean;
   maskedValue: string;
 }
@@ -47,6 +57,9 @@ export const AppointmentCard = memo(function AppointmentCard({
   onMarkNoShow,
   isMarkingNoShow,
   markingNoShowId,
+  onMarkComplete,
+  isMarkingComplete,
+  markingCompleteId,
   hideValues,
   maskedValue,
 }: AppointmentCardProps) {
@@ -62,8 +75,10 @@ export const AppointmentCard = memo(function AppointmentCard({
   const isPast = minutesUntil <= 0;
   const canCancel = isConfirmed && !isPast;
   const canMarkNoShow = isConfirmed && isPast && !!onMarkNoShow;
+  const canMarkComplete = isConfirmed && isPast && !!onMarkComplete;
   const canCallClient = isNoShow && !!appointment.guestClient?.phone;
-  const hasActions = canCancel || canMarkNoShow || canCallClient;
+  const hasActions =
+    canCancel || canMarkNoShow || canMarkComplete || canCallClient;
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: Cannot use button as it would nest buttons (inner action buttons)
@@ -186,6 +201,21 @@ export const AppointmentCard = memo(function AppointmentCard({
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancelar
+                  </DropdownMenuItem>
+                )}
+                {canMarkComplete && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMarkComplete?.(appointment.id);
+                    }}
+                    disabled={
+                      isMarkingComplete && markingCompleteId === appointment.id
+                    }
+                    className="text-emerald-600 dark:text-emerald-400 focus:text-emerald-600 dark:focus:text-emerald-400 focus:bg-emerald-500/10"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Concluir
                   </DropdownMenuItem>
                 )}
                 {canMarkNoShow && (

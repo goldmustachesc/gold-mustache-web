@@ -288,6 +288,39 @@ export function useMarkNoShow() {
   });
 }
 
+export function useMarkCompleted() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ appointmentId }: { appointmentId: string }) => {
+      try {
+        return await apiMutate<AppointmentWithDetails>(
+          `/api/appointments/${appointmentId}/complete`,
+          "PATCH",
+        );
+      } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.code === "PRECONDITION_FAILED") {
+            throw new Error(
+              "Só é possível concluir após o horário do agendamento.",
+            );
+          }
+          if (error.code === "CONFLICT") {
+            throw new Error("Este agendamento não pode ser concluído.");
+          }
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+    },
+  });
+}
+
 interface CreateAppointmentByBarberInput {
   serviceId: string;
   date: string;

@@ -10,6 +10,7 @@ import {
   useBarberAppointments,
   useCancelAppointmentByBarber,
   useMarkNoShow,
+  useMarkCompleted,
 } from "@/hooks/useBooking";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useUser } from "@/hooks/useAuth";
@@ -102,8 +103,12 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
 
   const cancelAppointment = useCancelAppointmentByBarber();
   const markNoShow = useMarkNoShow();
+  const markCompleted = useMarkCompleted();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [markingNoShowId, setMarkingNoShowId] = useState<string | null>(null);
+  const [markingCompleteId, setMarkingCompleteId] = useState<string | null>(
+    null,
+  );
 
   const handleCancelAppointment = async (
     appointmentId: string,
@@ -131,6 +136,20 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
       );
     } finally {
       setMarkingNoShowId(null);
+    }
+  };
+
+  const handleMarkComplete = async (appointmentId: string) => {
+    setMarkingCompleteId(appointmentId);
+    try {
+      await markCompleted.mutateAsync({ appointmentId });
+      toast.success("Atendimento concluído com sucesso!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao concluir atendimento",
+      );
+    } finally {
+      setMarkingCompleteId(null);
     }
   };
 
@@ -291,6 +310,9 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               onMarkNoShow={handleMarkNoShow}
               isMarkingNoShow={markNoShow.isPending}
               markingNoShowId={markingNoShowId}
+              onMarkComplete={handleMarkComplete}
+              isMarkingComplete={markCompleted.isPending}
+              markingCompleteId={markingCompleteId}
               variant="compact"
               hideValues={hideValues}
               workingHours={selectedDayWorkingHours}
@@ -347,6 +369,9 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
                     onMarkNoShow={handleMarkNoShow}
                     isMarkingNoShow={markNoShow.isPending}
                     markingNoShowId={markingNoShowId}
+                    onMarkComplete={handleMarkComplete}
+                    isMarkingComplete={markCompleted.isPending}
+                    markingCompleteId={markingCompleteId}
                     variant="compact"
                     hideValues={hideValues}
                     workingHours={selectedDayWorkingHours}

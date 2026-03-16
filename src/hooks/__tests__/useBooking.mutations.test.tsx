@@ -8,6 +8,7 @@ import {
   useCancelAppointment,
   useCancelAppointmentByBarber,
   useMarkNoShow,
+  useMarkCompleted,
   useCreateAppointmentByBarber,
   useCancelGuestAppointment,
 } from "../useBooking";
@@ -214,6 +215,41 @@ describe("useMarkNoShow", () => {
     stubFetchError("PRECONDITION_FAILED", 412);
 
     const { result } = renderHook(() => useMarkNoShow(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("após o horário");
+  });
+});
+
+describe("useMarkCompleted", () => {
+  it("calls PATCH complete endpoint", async () => {
+    stubFetchSuccess({ id: "apt-1", status: "COMPLETED" });
+
+    const { result } = renderHook(() => useMarkCompleted(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-1" });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/appointments/apt-1/complete",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+  });
+
+  it("translates PRECONDITION_FAILED error", async () => {
+    stubFetchError("PRECONDITION_FAILED", 412);
+
+    const { result } = renderHook(() => useMarkCompleted(), {
       wrapper: createWrapper(),
     });
 

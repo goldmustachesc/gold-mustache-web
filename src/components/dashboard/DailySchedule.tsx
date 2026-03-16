@@ -35,6 +35,9 @@ interface DailyScheduleProps {
   onMarkNoShow?: (id: string) => void;
   isMarkingNoShow?: boolean;
   markingNoShowId?: string | null;
+  onMarkComplete?: (id: string) => void;
+  isMarkingComplete?: boolean;
+  markingCompleteId?: string | null;
   variant?: "default" | "compact";
   hideValues?: boolean;
   workingHours?: BarberWorkingHoursDay | null;
@@ -76,6 +79,9 @@ export function DailySchedule({
   onMarkNoShow,
   isMarkingNoShow,
   markingNoShowId,
+  onMarkComplete,
+  isMarkingComplete,
+  markingCompleteId,
   variant = "default",
   hideValues = false,
   workingHours,
@@ -349,6 +355,9 @@ export function DailySchedule({
                       onMarkNoShow={onMarkNoShow}
                       isMarkingNoShow={isMarkingNoShow}
                       markingNoShowId={markingNoShowId}
+                      onMarkComplete={onMarkComplete}
+                      isMarkingComplete={isMarkingComplete}
+                      markingCompleteId={markingCompleteId}
                       hideValues={hideValues}
                       maskedValue={maskedValue}
                     />
@@ -400,6 +409,9 @@ export function DailySchedule({
                   onMarkNoShow={onMarkNoShow}
                   isMarkingNoShow={isMarkingNoShow}
                   markingNoShowId={markingNoShowId}
+                  onMarkComplete={onMarkComplete}
+                  isMarkingComplete={isMarkingComplete}
+                  markingCompleteId={markingCompleteId}
                   hideValues={hideValues}
                   maskedValue={maskedValue}
                 />
@@ -440,6 +452,9 @@ export function DailySchedule({
                         onMarkNoShow={onMarkNoShow}
                         isMarkingNoShow={isMarkingNoShow}
                         markingNoShowId={markingNoShowId}
+                        onMarkComplete={onMarkComplete}
+                        isMarkingComplete={isMarkingComplete}
+                        markingCompleteId={markingCompleteId}
                         hideValues={hideValues}
                         maskedValue={maskedValue}
                       />
@@ -475,6 +490,10 @@ export function DailySchedule({
           onMarkNoShow={onMarkNoShow}
           isMarkingNoShow={
             isMarkingNoShow && markingNoShowId === selectedAppointment?.id
+          }
+          onMarkComplete={onMarkComplete}
+          isMarkingComplete={
+            isMarkingComplete && markingCompleteId === selectedAppointment?.id
           }
         />
       </div>
@@ -578,6 +597,20 @@ export function DailySchedule({
                                 }
                               >
                                 Cancelar
+                              </Button>
+                            )}
+                            {isConfirmed && isPast && onMarkComplete && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                                onClick={() => onMarkComplete(appointment.id)}
+                                disabled={
+                                  isMarkingComplete &&
+                                  markingCompleteId === appointment.id
+                                }
+                              >
+                                Concluir
                               </Button>
                             )}
                             {isConfirmed && isPast && onMarkNoShow && (
