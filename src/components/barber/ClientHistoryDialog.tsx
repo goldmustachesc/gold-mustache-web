@@ -32,27 +32,27 @@ const STATUS_CONFIG = {
   CONFIRMED: {
     label: "Confirmado",
     icon: Clock,
-    color: "text-amber-400 bg-amber-500/10",
+    color: "text-warning bg-warning/10",
   },
   COMPLETED: {
     label: "Concluído",
     icon: CheckCircle,
-    color: "text-green-400 bg-green-500/10",
+    color: "text-success bg-success/10",
   },
   CANCELLED_BY_CLIENT: {
     label: "Cancelado",
     icon: XCircle,
-    color: "text-red-400 bg-red-500/10",
+    color: "text-destructive bg-destructive/10",
   },
   CANCELLED_BY_BARBER: {
     label: "Cancelado",
     icon: XCircle,
-    color: "text-red-400 bg-red-500/10",
+    color: "text-destructive bg-destructive/10",
   },
   NO_SHOW: {
     label: "Não compareceu",
     icon: XCircle,
-    color: "text-zinc-400 bg-zinc-500/10",
+    color: "text-muted-foreground bg-muted",
   },
 } as const;
 
@@ -83,45 +83,43 @@ export function ClientHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-zinc-900 border-zinc-700 text-white max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-amber-500" />
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
             Histórico de Agendamentos
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            {client?.fullName}
-          </DialogDescription>
+          <DialogDescription>{client?.fullName}</DialogDescription>
         </DialogHeader>
 
-        {/* Stats */}
         {!isLoading && appointments.length > 0 && (
           <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
-              <p className="text-zinc-400 text-xs">Total de visitas</p>
-              <p className="text-xl font-bold text-white">
+            <div className="bg-card rounded-lg p-3 border border-border">
+              <p className="text-muted-foreground text-xs">Total de visitas</p>
+              <p className="text-xl font-bold text-foreground">
                 {appointments.filter((a) => a.status === "COMPLETED").length}
               </p>
             </div>
-            <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
-              <p className="text-zinc-400 text-xs">Total gasto</p>
-              <p className="text-xl font-bold text-amber-500">
+            <div className="bg-card rounded-lg p-3 border border-border">
+              <p className="text-muted-foreground text-xs">Total gasto</p>
+              <p className="text-xl font-bold text-primary">
                 {formatCurrency(totalSpent)}
               </p>
             </div>
           </div>
         )}
 
-        {/* Appointments List */}
         <div className="flex-1 overflow-y-auto mt-4 -mx-6 px-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : appointments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Calendar className="h-12 w-12 text-zinc-700 mb-3" />
-              <p className="text-zinc-400">Nenhum agendamento encontrado</p>
+              <Calendar className="h-12 w-12 text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground">
+                Nenhum agendamento encontrado
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -136,18 +134,18 @@ export function ClientHistoryDialog({
                     key={apt.id}
                     className={cn(
                       "p-3 rounded-lg",
-                      "bg-zinc-800/50 border border-zinc-700/50",
+                      "bg-card border border-border",
                     )}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <Scissors className="h-4 w-4 text-amber-500 shrink-0" />
-                          <span className="text-white font-medium truncate">
+                          <Scissors className="h-4 w-4 text-primary shrink-0" />
+                          <span className="text-foreground font-medium truncate">
                             {apt.serviceName}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {formatDate(apt.date)}
@@ -157,13 +155,13 @@ export function ClientHistoryDialog({
                             {apt.startTime}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 mt-1 text-xs text-zinc-500">
+                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                           <User className="h-3 w-3" />
                           {apt.barberName}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-amber-500 font-semibold text-sm">
+                        <span className="text-primary font-semibold text-sm">
                           {formatCurrency(apt.servicePrice)}
                         </span>
                         <span

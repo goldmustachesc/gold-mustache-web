@@ -96,13 +96,13 @@ export function EditClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-700 text-white">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-            <Pencil className="h-5 w-5 text-amber-500" />
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Pencil className="h-5 w-5 text-primary" />
             Editar Cliente
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
+          <DialogDescription>
             {isRegistered
               ? "Clientes cadastrados gerenciam seus próprios dados."
               : "Atualize as informações do cliente convidado."}
@@ -111,7 +111,7 @@ export function EditClientDialog({
 
         {isRegistered ? (
           <div className="py-6 text-center">
-            <p className="text-zinc-400">
+            <p className="text-muted-foreground">
               Este cliente possui uma conta cadastrada e pode editar seus dados
               pelo próprio perfil.
             </p>
@@ -119,30 +119,24 @@ export function EditClientDialog({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="editFullName" className="text-zinc-300">
-                Nome completo
-              </Label>
+              <Label htmlFor="editFullName">Nome completo</Label>
               <Input
                 id="editFullName"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Digite o nome do cliente"
-                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500"
                 disabled={updateClient.isPending}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="editPhone" className="text-zinc-300">
-                Telefone
-              </Label>
+              <Label htmlFor="editPhone">Telefone</Label>
               <Input
                 id="editPhone"
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
                 placeholder="(00) 00000-0000"
-                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500"
                 disabled={updateClient.isPending}
               />
             </div>
@@ -153,14 +147,14 @@ export function EditClientDialog({
                 variant="outline"
                 onClick={handleClose}
                 disabled={updateClient.isPending}
-                className="flex-1 bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                className="flex-1"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={updateClient.isPending}
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                className="flex-1"
               >
                 {updateClient.isPending ? (
                   <>

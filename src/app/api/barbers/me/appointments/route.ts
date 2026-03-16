@@ -52,6 +52,11 @@ export async function POST(request: Request) {
         string,
         { status: number; error: string; message: string }
       > = {
+        CLIENT_BANNED: {
+          status: 403,
+          error: "CLIENT_BANNED",
+          message: "Este cliente está banido e não pode agendar.",
+        },
         SLOT_IN_PAST: {
           status: 400,
           error: "SLOT_IN_PAST",

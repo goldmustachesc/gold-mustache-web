@@ -205,6 +205,12 @@ export async function POST(request: Request) {
         string,
         { status: number; error: string; message: string }
       > = {
+        CLIENT_BANNED: {
+          status: 403,
+          error: "CLIENT_BANNED",
+          message:
+            "Sua conta foi suspensa. Entre em contato com a barbearia para mais informações.",
+        },
         SLOT_IN_PAST: {
           status: 400,
           error: "SLOT_IN_PAST",

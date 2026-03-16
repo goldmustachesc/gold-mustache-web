@@ -14,6 +14,7 @@ export interface ClientData {
   type: "registered" | "guest";
   appointmentCount: number;
   lastAppointment: string | null;
+  isBanned: boolean;
 }
 
 const createClientSchema = z.object({
@@ -67,6 +68,7 @@ export async function GET(request: Request) {
         take: 1,
         select: { date: true },
       },
+      bannedClient: { select: { id: true } },
     };
 
     const registeredWhere = { appointments: { some: {} }, ...searchFilter };
@@ -100,6 +102,7 @@ export async function GET(request: Request) {
         lastAppointment: client.appointments[0]?.date
           ? client.appointments[0].date.toISOString().split("T")[0]
           : null,
+        isBanned: !!client.bannedClient,
       })),
       ...guestClients.map((client) => ({
         id: client.id,
@@ -110,6 +113,7 @@ export async function GET(request: Request) {
         lastAppointment: client.appointments[0]?.date
           ? client.appointments[0].date.toISOString().split("T")[0]
           : null,
+        isBanned: !!client.bannedClient,
       })),
     ];
 
@@ -189,6 +193,7 @@ export async function POST(request: Request) {
       type: "guest",
       appointmentCount: 0,
       lastAppointment: null,
+      isBanned: false,
     };
 
     return apiSuccess(clientData, 201);

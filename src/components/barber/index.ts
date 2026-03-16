@@ -1,8 +1,10 @@
 export { ClientListPage } from "./ClientListPage";
 export { ClientCard } from "./ClientCard";
 export { AddClientDialog } from "./AddClientDialog";
+export { BanClientDialog } from "./BanClientDialog";
 export { ClientHistoryDialog } from "./ClientHistoryDialog";
 export { EditClientDialog } from "./EditClientDialog";
+export { UnbanClientDialog } from "./UnbanClientDialog";
 export { CancelledAppointmentsPage } from "./CancelledAppointmentsPage";
 export { CancelledAppointmentCard } from "./CancelledAppointmentCard";
 export { AppointmentDetailSheet } from "./AppointmentDetailSheet";

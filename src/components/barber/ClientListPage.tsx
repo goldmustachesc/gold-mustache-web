@@ -23,9 +23,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useDeferredValue } from "react";
 import { AddClientDialog } from "./AddClientDialog";
+import { BanClientDialog } from "./BanClientDialog";
 import { ClientCard } from "./ClientCard";
 import { ClientHistoryDialog } from "./ClientHistoryDialog";
 import { EditClientDialog } from "./EditClientDialog";
+import { UnbanClientDialog } from "./UnbanClientDialog";
 
 export function ClientListPage() {
   const params = useParams();
@@ -43,6 +45,8 @@ export function ClientListPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [unbanDialogOpen, setUnbanDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
 
   const {
@@ -67,6 +71,16 @@ export function ClientListPage() {
   const handleEdit = (client: ClientData) => {
     setSelectedClient(client);
     setEditDialogOpen(true);
+  };
+
+  const handleBan = (client: ClientData) => {
+    setSelectedClient(client);
+    setBanDialogOpen(true);
+  };
+
+  const handleUnban = (client: ClientData) => {
+    setSelectedClient(client);
+    setUnbanDialogOpen(true);
   };
 
   const registeredClients = clients.filter((c) => c.type === "registered");
@@ -150,6 +164,8 @@ export function ClientListPage() {
                       client={client}
                       onViewHistory={handleViewHistory}
                       onEdit={handleEdit}
+                      onBan={handleBan}
+                      onUnban={handleUnban}
                     />
                   ))}
                 </div>
@@ -366,6 +382,8 @@ export function ClientListPage() {
                               client={client}
                               onViewHistory={handleViewHistory}
                               onEdit={handleEdit}
+                              onBan={handleBan}
+                              onUnban={handleUnban}
                             />
                           ))}
                         </div>
@@ -426,6 +444,18 @@ export function ClientListPage() {
         client={selectedClient}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
+      />
+
+      <BanClientDialog
+        client={selectedClient}
+        open={banDialogOpen}
+        onOpenChange={setBanDialogOpen}
+      />
+
+      <UnbanClientDialog
+        client={selectedClient}
+        open={unbanDialogOpen}
+        onOpenChange={setUnbanDialogOpen}
       />
     </div>
   );

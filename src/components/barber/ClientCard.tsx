@@ -5,12 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ClientData } from "@/hooks/useBarberClients";
 import { cn } from "@/lib/utils";
-import { Calendar, Pencil, User, UserCheck } from "lucide-react";
+import {
+  Ban,
+  Calendar,
+  Pencil,
+  ShieldCheck,
+  User,
+  UserCheck,
+} from "lucide-react";
 
 interface ClientCardProps {
   client: ClientData;
   onViewHistory?: (client: ClientData) => void;
   onEdit?: (client: ClientData) => void;
+  onBan?: (client: ClientData) => void;
+  onUnban?: (client: ClientData) => void;
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -23,7 +32,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 function formatPhone(phone: string): string {
-  // Format: +55 47 99635-8807
   const digits = phone.replace(/\D/g, "");
   if (digits.length === 11) {
     return `+55 ${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`;
@@ -38,6 +46,8 @@ export const ClientCard = memo(function ClientCard({
   client,
   onViewHistory,
   onEdit,
+  onBan,
+  onUnban,
 }: ClientCardProps) {
   const handleWhatsApp = () => {
     const digits = client.phone.replace(/\D/g, "");
@@ -51,50 +61,64 @@ export const ClientCard = memo(function ClientCard({
     <div
       className={cn(
         "flex items-center justify-between p-4 rounded-xl transition-all duration-200",
-        "bg-zinc-800/50 border border-zinc-700/50",
-        "hover:border-zinc-600/50 hover:bg-zinc-800/70",
+        "bg-card/50 border border-border",
+        "hover:border-border hover:bg-card/70",
+        client.isBanned && "border-destructive/30 bg-destructive/10",
       )}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        {/* Avatar */}
         <div
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-            isRegistered
-              ? "bg-gradient-to-br from-amber-500 to-yellow-600 text-black"
-              : "bg-zinc-700 text-zinc-400",
+            client.isBanned
+              ? "bg-destructive/15 text-destructive"
+              : isRegistered
+                ? "bg-gradient-to-br from-amber-500 to-yellow-600 text-black"
+                : "bg-muted text-muted-foreground",
           )}
         >
-          {isRegistered ? (
+          {client.isBanned ? (
+            <Ban className="h-5 w-5" />
+          ) : isRegistered ? (
             <UserCheck className="h-5 w-5" />
           ) : (
             <User className="h-5 w-5" />
           )}
         </div>
 
-        {/* Info */}
         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-white font-semibold uppercase tracking-wide truncate">
+            <h3
+              className={cn(
+                "font-semibold uppercase tracking-wide truncate",
+                client.isBanned ? "text-destructive" : "text-foreground",
+              )}
+            >
               {client.fullName}
             </h3>
-            {!isRegistered && (
-              <Badge className="bg-zinc-700/50 text-zinc-400 border-zinc-600/50 text-xs px-1.5 py-0">
+            {client.isBanned && (
+              <Badge className="bg-destructive/10 text-destructive border-destructive/30 text-xs px-1.5 py-0">
+                Banido
+              </Badge>
+            )}
+            {!isRegistered && !client.isBanned && (
+              <Badge className="bg-muted text-muted-foreground border-border text-xs px-1.5 py-0">
                 Convidado
               </Badge>
             )}
           </div>
-          <p className="text-zinc-400 text-sm">{formatPhone(client.phone)}</p>
+          <p className="text-muted-foreground text-sm">
+            {formatPhone(client.phone)}
+          </p>
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
           onClick={handleWhatsApp}
-          className="text-zinc-400 hover:text-[#25D366] hover:bg-[#25D366]/10"
+          className="text-muted-foreground hover:text-[#25D366] hover:bg-[#25D366]/10"
           title="Enviar WhatsApp"
         >
           <WhatsAppIcon className="h-4.5 w-4.5" />
@@ -104,7 +128,7 @@ export const ClientCard = memo(function ClientCard({
           variant="ghost"
           size="icon"
           onClick={() => onViewHistory?.(client)}
-          className="text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10"
+          className="text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10"
           title="Ver histórico"
         >
           <Calendar className="h-4.5 w-4.5" />
@@ -114,11 +138,33 @@ export const ClientCard = memo(function ClientCard({
           variant="ghost"
           size="icon"
           onClick={() => onEdit?.(client)}
-          className="text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+          className="text-muted-foreground hover:text-accent-foreground hover:bg-accent"
           title="Editar cliente"
         >
           <Pencil className="h-4.5 w-4.5" />
         </Button>
+
+        {client.isBanned ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onUnban?.(client)}
+            className="text-success hover:text-success hover:bg-success/10"
+            title="Desbanir cliente"
+          >
+            <ShieldCheck className="h-4.5 w-4.5" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onBan?.(client)}
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            title="Banir cliente"
+          >
+            <Ban className="h-4.5 w-4.5" />
+          </Button>
+        )}
       </div>
     </div>
   );

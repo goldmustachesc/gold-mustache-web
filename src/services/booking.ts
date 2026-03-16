@@ -37,6 +37,7 @@ import type {
   DateRange,
 } from "@/types/booking";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
+import { isClientBanned } from "@/services/banned-client";
 
 // ============================================
 // Helper Functions
@@ -379,7 +380,6 @@ export async function createAppointment(
 ): Promise<AppointmentWithDetails> {
   const { serviceId, barberId, date, startTime } = input;
 
-  // Get service to calculate end time
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
   });
@@ -388,13 +388,15 @@ export async function createAppointment(
     throw new Error("Service not found");
   }
 
+  if (await isClientBanned({ profileId: clientId })) {
+    throw new Error("CLIENT_BANNED");
+  }
+
   const endTime = calculateEndTime(startTime, service.duration);
 
-  // Parse date for local (business logic) and UTC (DB) usage
   const appointmentDateLocal = parseDateString(date);
   const appointmentDateDb = parseDateStringToUTC(date);
 
-  // Validate that the appointment is not in the past
   if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
   }
@@ -517,7 +519,6 @@ export async function createGuestAppointment(
   const { serviceId, barberId, date, startTime, clientName, clientPhone } =
     input;
 
-  // Get service to calculate end time
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
   });
@@ -526,13 +527,23 @@ export async function createGuestAppointment(
     throw new Error("Service not found");
   }
 
+  const normalizedPhone = normalizePhoneDigits(clientPhone);
+  const existingGuest = await prisma.guestClient.findUnique({
+    where: { phone: normalizedPhone },
+    select: { id: true },
+  });
+  if (
+    existingGuest &&
+    (await isClientBanned({ guestClientId: existingGuest.id }))
+  ) {
+    throw new Error("CLIENT_BANNED");
+  }
+
   const endTime = calculateEndTime(startTime, service.duration);
 
-  // Parse date for local (business logic) and UTC (DB) usage
   const appointmentDateLocal = parseDateString(date);
   const appointmentDateDb = parseDateStringToUTC(date);
 
-  // Validate that the appointment is not in the past
   if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
   }
@@ -553,9 +564,6 @@ export async function createGuestAppointment(
     throw new Error(policyError);
   }
 
-  const normalizedPhone = normalizePhoneDigits(clientPhone);
-
-  // Same concurrency protection for guest bookings.
   const result = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
 
@@ -671,7 +679,6 @@ export async function createAppointmentByBarber(
 ): Promise<AppointmentWithDetails> {
   const { serviceId, date, startTime, clientName, clientPhone } = input;
 
-  // Get service to calculate end time
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
   });
@@ -680,13 +687,23 @@ export async function createAppointmentByBarber(
     throw new Error("Service not found");
   }
 
+  const normalizedPhone = normalizePhoneDigits(clientPhone);
+  const existingGuest = await prisma.guestClient.findUnique({
+    where: { phone: normalizedPhone },
+    select: { id: true },
+  });
+  if (
+    existingGuest &&
+    (await isClientBanned({ guestClientId: existingGuest.id }))
+  ) {
+    throw new Error("CLIENT_BANNED");
+  }
+
   const endTime = calculateEndTime(startTime, service.duration);
 
-  // Parse date for local (business logic) and UTC (DB) usage
   const appointmentDateLocal = parseDateString(date);
   const appointmentDateDb = parseDateStringToUTC(date);
 
-  // Validate that the appointment is not in the past
   if (isDateTimeInPast(appointmentDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
   }
@@ -702,10 +719,6 @@ export async function createAppointmentByBarber(
   if (policyError) {
     throw new Error(policyError);
   }
-
-  const normalizedPhone = normalizePhoneDigits(clientPhone);
-
-  // Same concurrency protection for barber bookings
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
 

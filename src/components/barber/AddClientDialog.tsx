@@ -71,42 +71,34 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-700 text-white">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-white">
-            Novo Cliente
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
+          <DialogTitle className="text-xl font-bold">Novo Cliente</DialogTitle>
+          <DialogDescription>
             Cadastre um novo cliente para agendar horários futuros.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-zinc-300">
-              Nome completo
-            </Label>
+            <Label htmlFor="fullName">Nome completo</Label>
             <Input
               id="fullName"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Digite o nome do cliente"
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500"
               disabled={createClient.isPending}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-zinc-300">
-              Telefone
-            </Label>
+            <Label htmlFor="phone">Telefone</Label>
             <Input
               id="phone"
               type="tel"
               value={phone}
               onChange={handlePhoneChange}
               placeholder="(00) 00000-0000"
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500"
               disabled={createClient.isPending}
             />
           </div>
@@ -117,14 +109,14 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
               variant="outline"
               onClick={handleClose}
               disabled={createClient.isPending}
-              className="flex-1 bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              className="flex-1"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={createClient.isPending}
-              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+              className="flex-1"
             >
               {createClient.isPending ? (
                 <>

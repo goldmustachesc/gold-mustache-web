@@ -3,7 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ClientData } from "@/app/api/barbers/me/clients/route";
 import type { ClientAppointmentData } from "@/app/api/barbers/me/clients/[id]/appointments/route";
-import { apiGet, apiGetCollection, apiMutate } from "@/lib/api/client";
+import {
+  apiGet,
+  apiGetCollection,
+  apiMutate,
+  apiAction,
+} from "@/lib/api/client";
 
 interface CreateClientInput {
   fullName: string;
@@ -62,6 +67,35 @@ export function useUpdateClient() {
   return useMutation({
     mutationFn: ({ id, ...input }: UpdateClientInput) =>
       apiMutate<ClientData>(`/api/barbers/me/clients/${id}`, "PATCH", input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["barber-clients"] });
+    },
+  });
+}
+
+interface BanClientInput {
+  clientId: string;
+  reason?: string;
+}
+
+export function useBanClient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ clientId, reason }: BanClientInput) =>
+      apiMutate(`/api/barbers/me/clients/${clientId}/ban`, "POST", { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["barber-clients"] });
+    },
+  });
+}
+
+export function useUnbanClient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (clientId: string) =>
+      apiAction(`/api/barbers/me/clients/${clientId}/ban`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["barber-clients"] });
     },

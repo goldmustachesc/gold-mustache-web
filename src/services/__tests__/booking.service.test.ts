@@ -17,6 +17,7 @@ vi.mock("@/lib/prisma", () => {
       update: vi.fn(),
     },
     guestClient: { findUnique: vi.fn() },
+    bannedClient: { findFirst: vi.fn() },
     $transaction: vi.fn(),
   };
 
