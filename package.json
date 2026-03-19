@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "COVERAGE_SCOPE=core pnpm exec vitest --run --coverage",
     "test:coverage:all": "COVERAGE_SCOPE=all pnpm exec vitest --run --coverage",
-    "test:coverage:all:check": "COVERAGE_SCOPE=all COVERAGE_ENFORCE=true pnpm exec vitest --run --coverage",
+    "test:coverage:all:check": "COVERAGE_SCOPE=all COVERAGE_ENFORCE=true COVERAGE_TARGET=project-wide pnpm exec vitest --run --coverage",
     "test:coverage:app-api": "COVERAGE_SCOPE=app-api pnpm exec vitest --run --coverage",
     "test:coverage:services": "COVERAGE_SCOPE=services pnpm exec vitest --run --coverage",
     "test:coverage:integrations": "COVERAGE_SCOPE=integrations pnpm exec vitest --run --coverage",

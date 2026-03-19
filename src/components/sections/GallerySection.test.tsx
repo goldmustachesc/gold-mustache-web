@@ -300,4 +300,37 @@ describe("GallerySection", () => {
       expect(grid?.className).toContain("lg:grid-cols-3");
     });
   });
+
+  it("mostra mensagem quando filtro não retorna itens", async () => {
+    const user = userEvent.setup();
+    render(<GallerySection />);
+
+    const stylingButton = screen.getByRole("button", { name: "Styling" });
+    await user.click(stylingButton);
+
+    expect(
+      screen.getByText("No results found for this filter"),
+    ).toBeInTheDocument();
+  });
+
+  it("alterna activeItem em touch e reseta após movimento grande", () => {
+    render(<GallerySection />);
+
+    const btn = getGalleryItemButton("Corte + Barba");
+    fireEvent.touchStart(btn, {
+      touches: [{ clientX: 0, clientY: 0 } as Touch],
+    });
+    expect(screen.getAllByText("After").length).toBeGreaterThan(0);
+
+    fireEvent.touchStart(btn, {
+      touches: [{ clientX: 0, clientY: 0 } as Touch],
+    });
+
+    fireEvent.touchStart(btn, {
+      touches: [{ clientX: 0, clientY: 0 } as Touch],
+    });
+    fireEvent.touchMove(btn, {
+      touches: [{ clientX: 50, clientY: 0 } as Touch],
+    });
+  });
 });

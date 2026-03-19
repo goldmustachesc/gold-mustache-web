@@ -87,21 +87,27 @@ function buildAppointment(
 
 function renderAppointmentCard(
   appointment: AppointmentWithDetails = buildAppointment(),
+  options?: {
+    hideValues?: boolean;
+    sendingReminderId?: string | null;
+  },
 ) {
   const onOpenDetail = vi.fn();
   const onSendReminder = vi.fn();
   const onCancelAppointment = vi.fn();
   const onMarkNoShow = vi.fn();
+  const onMarkComplete = vi.fn();
 
   render(
     <AppointmentCard
       appointment={appointment}
       onOpenDetail={onOpenDetail}
       onSendReminder={onSendReminder}
-      sendingReminderId={null}
+      sendingReminderId={options?.sendingReminderId ?? null}
       onCancelAppointment={onCancelAppointment}
       onMarkNoShow={onMarkNoShow}
-      hideValues={false}
+      onMarkComplete={onMarkComplete}
+      hideValues={options?.hideValues ?? false}
       maskedValue="R$ ***,**"
     />,
   );
@@ -111,6 +117,7 @@ function renderAppointmentCard(
     onSendReminder,
     onCancelAppointment,
     onMarkNoShow,
+    onMarkComplete,
   };
 }
 
@@ -144,6 +151,19 @@ describe("dashboard AppointmentCard", () => {
     );
   });
 
+  it("opens the detail sheet with space key", () => {
+    const { onOpenDetail } = renderAppointmentCard();
+    const card = screen.getByText("João Silva").closest('[role="button"]');
+
+    expect(card).not.toBeNull();
+
+    fireEvent.keyDown(card as HTMLElement, { key: " " });
+
+    expect(onOpenDetail).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "apt-1" }),
+    );
+  });
+
   it("sends a reminder from the reminder action", async () => {
     const user = userEvent.setup();
     const { onSendReminder } = renderAppointmentCard();
@@ -167,6 +187,16 @@ describe("dashboard AppointmentCard", () => {
     );
   });
 
+  it("does not cancel when prompt returns empty", async () => {
+    const user = userEvent.setup();
+    mockPrompt.mockReturnValue("");
+    const { onCancelAppointment } = renderAppointmentCard();
+
+    await user.click(screen.getByText("Cancelar"));
+
+    expect(onCancelAppointment).not.toHaveBeenCalled();
+  });
+
   it("marks a past confirmed appointment as no-show", async () => {
     const user = userEvent.setup();
     mockGetMinutesUntilAppointment.mockReturnValue(-10);
@@ -175,6 +205,16 @@ describe("dashboard AppointmentCard", () => {
     await user.click(screen.getByText("Marcar não compareceu"));
 
     expect(onMarkNoShow).toHaveBeenCalledWith("apt-1");
+  });
+
+  it("marks a past confirmed appointment as complete", async () => {
+    const user = userEvent.setup();
+    mockGetMinutesUntilAppointment.mockReturnValue(-10);
+    const { onMarkComplete } = renderAppointmentCard();
+
+    await user.click(screen.getByText("Concluir"));
+
+    expect(onMarkComplete).toHaveBeenCalledWith("apt-1");
   });
 
   it("renders a tel link for no-show guest appointments with phone", () => {
@@ -195,5 +235,25 @@ describe("dashboard AppointmentCard", () => {
     expect(
       screen.getByRole("link", { name: "Ligar para cliente" }),
     ).toHaveAttribute("href", "tel:11888888888");
+  });
+
+  it("masks the service price when hideValues is enabled", () => {
+    renderAppointmentCard(buildAppointment(), { hideValues: true });
+
+    expect(screen.getByText("R$ ***,**")).toBeInTheDocument();
+    expect(screen.queryByText("R$ 50,00")).not.toBeInTheDocument();
+  });
+
+  it("renders cancelled appointments with badge and without reminder action", () => {
+    renderAppointmentCard(
+      buildAppointment({
+        status: "CANCELLED_BY_BARBER",
+      }),
+    );
+
+    expect(screen.getByText("Cancelado")).toBeInTheDocument();
+    expect(
+      screen.queryByTitle("Enviar lembrete ao cliente"),
+    ).not.toBeInTheDocument();
   });
 });

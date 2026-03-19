@@ -27,9 +27,21 @@ Saídas:
 
 #### Gerar cobertura do projeto todo (escopo “all”)
 
+Este escopo e usado como **baseline amplo** do projeto, mas ainda nao representa a regua final de "90% no projeto inteiro".
+
 ```bash
 pnpm test:coverage:all
 ```
+
+Hoje esse escopo inclui `src/**/*.{ts,tsx}`, mas ainda exclui algumas areas por decisao tecnica atual da configuracao:
+- `src/app/**`
+- `src/i18n/**`
+- `src/lib/supabase/**`
+- `src/lib/auth/**`
+- `src/lib/prisma.ts`
+- `src/lib/validations/**`
+
+Essas exclusoes nao devem ser tratadas como definitivas para a meta final de cobertura global. Elas precisam ser reavaliadas antes de declarar o projeto com 90% real.
 
 #### Gerar relatório de cobertura de services (escopo “services”)
 
@@ -93,5 +105,21 @@ Por padrão, o coverage exclui:
 - `src/app/**` (rotas e páginas do Next — melhor cobrir com integração/e2e)
 - `src/i18n/**` (catálogo de mensagens)
 - artefatos gerados e arquivos de configuração
+
+#### Meta final de 90% no projeto inteiro
+
+A meta final do projeto e chegar a pelo menos **90%** em:
+- lines
+- functions
+- statements
+- branches
+
+Essa regua global ja esta definida na configuracao, mas **nao esta sendo endurecida por padrao ainda** para o escopo `all`. O endurecimento final deve acontecer apenas quando a cobertura real estiver proxima da meta e depois da revisao do escopo excluido.
+
+Para validar explicitamente a regua final do projeto inteiro:
+
+```bash
+COVERAGE_TARGET=project-wide pnpm test:coverage:all:check
+```
 
 

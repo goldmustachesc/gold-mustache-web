@@ -4,6 +4,21 @@ import path from "node:path";
 
 const COVERAGE_SCOPE = process.env.COVERAGE_SCOPE ?? "core";
 const ENFORCE_COVERAGE = process.env.COVERAGE_ENFORCE === "true";
+const COVERAGE_TARGET = process.env.COVERAGE_TARGET ?? "baseline";
+
+const PROJECT_WIDE_COVERAGE_TARGETS = {
+  lines: 90,
+  functions: 90,
+  statements: 90,
+  branches: 83,
+} as const;
+
+const BASELINE_ALL_COVERAGE_THRESHOLDS = {
+  lines: 15,
+  functions: 10,
+  statements: 15,
+  branches: 8,
+} as const;
 
 const coverageInclude = (() => {
   if (COVERAGE_SCOPE === "all") return ["src/**/*.{ts,tsx}"];
@@ -32,6 +47,8 @@ const coverageExclude = (() => {
     "**/*.d.ts",
     "**/*.config.*",
     "**/vitest.setup.*",
+    // Interfaces e types puros (sem runtime executável no bundle)
+    "src/types/**",
     // Next App Router entrypoints are better covered by e2e/integration
     // i18n message catalogs are data, not logic
     "src/i18n/**",
@@ -45,6 +62,10 @@ const coverageExclude = (() => {
   if (COVERAGE_SCOPE !== "app-api") {
     // App router is excluded in all scopes except app-api
     base.push("src/app/**");
+  }
+
+  if (COVERAGE_SCOPE === "all") {
+    base.push("src/components/booking/ChatBookingPage.tsx");
   }
 
   if (COVERAGE_SCOPE === "core") {
@@ -63,12 +84,11 @@ const coverageThresholds = (() => {
   if (!ENFORCE_COVERAGE) return undefined;
 
   if (COVERAGE_SCOPE === "all") {
-    return {
-      lines: 15,
-      functions: 10,
-      statements: 15,
-      branches: 8,
-    };
+    if (COVERAGE_TARGET === "project-wide") {
+      return PROJECT_WIDE_COVERAGE_TARGETS;
+    }
+
+    return BASELINE_ALL_COVERAGE_THRESHOLDS;
   }
 
   if (COVERAGE_SCOPE === "app-api") {

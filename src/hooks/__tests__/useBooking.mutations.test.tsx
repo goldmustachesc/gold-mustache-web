@@ -2,11 +2,13 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { ApiError } from "@/lib/api/client";
 import {
   useCreateAppointment,
   useCreateGuestAppointment,
   useCancelAppointment,
   useCancelAppointmentByBarber,
+  useGuestAppointments,
   useMarkNoShow,
   useMarkCompleted,
   useCreateAppointmentByBarber,
@@ -90,6 +92,26 @@ describe("useCreateAppointment", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ["slots"] }),
     );
+  });
+
+  it("repropaga erro que não é ApiError", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("rede fora")));
+
+    const { result } = renderHook(() => useCreateAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        serviceId: "s-1",
+        barberId: "b-1",
+        date: "2026-03-10",
+        startTime: "09:00",
+      });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("rede fora");
   });
 
   it("translates SLOT_OCCUPIED ApiError", async () => {
@@ -225,6 +247,23 @@ describe("useMarkNoShow", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toContain("após o horário");
   });
+
+  it("translates CONFLICT error", async () => {
+    stubFetchError("CONFLICT", 409);
+
+    const { result } = renderHook(() => useMarkNoShow(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain(
+      "não pode ser marcado como ausência",
+    );
+  });
 });
 
 describe("useMarkCompleted", () => {
@@ -259,6 +298,21 @@ describe("useMarkCompleted", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toContain("após o horário");
+  });
+
+  it("translates CONFLICT error", async () => {
+    stubFetchError("CONFLICT", 409);
+
+    const { result } = renderHook(() => useMarkCompleted(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("não pode ser concluído");
   });
 });
 
@@ -351,5 +405,79 @@ describe("useCancelGuestAppointment", () => {
         }),
       }),
     );
+  });
+
+  it("translates unauthorized guest cancellation errors", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    stubFetchError("UNAUTHORIZED", 403);
+
+    const { result } = renderHook(() => useCancelGuestAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-g1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("não tem permissão");
+  });
+
+  it("traduz cancelamento de convidado no passado", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    stubFetchError("APPOINTMENT_IN_PAST", 400);
+
+    const { result } = renderHook(() => useCancelGuestAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-g1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("já passou");
+  });
+
+  it("translates missing token errors returned by the API", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    stubFetchError("MISSING_TOKEN", 401);
+
+    const { result } = renderHook(() => useCancelGuestAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-g1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("Sessão expirada");
+  });
+});
+
+describe("useGuestAppointments", () => {
+  it("returns empty list when guest lookup responds 401", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    stubFetchError("UNAUTHORIZED", 401);
+
+    const { result } = renderHook(() => useGuestAppointments(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+  });
+
+  it("falha quando o token é válido mas a API retorna outro erro", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    stubFetchError("SERVER_ERROR", 500);
+
+    const { result } = renderHook(() => useGuestAppointments(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(ApiError);
   });
 });

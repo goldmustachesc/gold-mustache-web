@@ -145,6 +145,48 @@ afterEach(() => {
 });
 
 describe("useBarberSchedulingForm", () => {
+  it("redireciona para login quando não há usuário autenticado", () => {
+    mocks.state.userData = undefined;
+    mocks.state.userLoading = false;
+
+    renderHook(() => useBarberSchedulingForm(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(mocks.push).toHaveBeenCalledWith("/pt-BR/login");
+  });
+
+  it("bloqueia acesso quando o usuário não tem perfil de barbeiro", () => {
+    mocks.state.barberData = null;
+
+    renderHook(() => useBarberSchedulingForm(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      "Acesso restrito a barbeiros",
+    );
+    expect(mocks.push).toHaveBeenCalledWith("/pt-BR/dashboard");
+  });
+
+  it("limpa horário ao mudar data após o mount inicial", () => {
+    const { result } = renderHook(() => useBarberSchedulingForm(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.handlers.onTimeChange("09:30");
+    });
+
+    expect(result.current.formState.selectedTime).toBe("09:30");
+
+    act(() => {
+      result.current.handlers.onDateChange("2025-12-20");
+    });
+
+    expect(result.current.formState.selectedTime).toBe("");
+  });
+
   describe("initialization", () => {
     it("initializes with empty form state", () => {
       const { result } = renderHook(() => useBarberSchedulingForm(), {
@@ -380,6 +422,32 @@ describe("useBarberSchedulingForm", () => {
       );
     });
 
+    it("mostra erro quando o nome do cliente é inválido", async () => {
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handlers.onNameChange("A");
+        result.current.handlers.onPhoneChange("11999887766");
+        result.current.handlers.onServiceChange("svc-1");
+        result.current.handlers.onDateChange("2025-12-15");
+      });
+
+      act(() => {
+        result.current.handlers.onTimeChange("09:30");
+      });
+
+      await act(async () => {
+        await result.current.handlers.onSubmit();
+      });
+
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        "Nome do cliente deve ter pelo menos 2 caracteres",
+      );
+      expect(mocks.mutateAsync).not.toHaveBeenCalled();
+    });
+
     it("shows validation error when required fields are missing", async () => {
       const { result } = renderHook(() => useBarberSchedulingForm(), {
         wrapper: createWrapper(),
@@ -407,6 +475,24 @@ describe("useBarberSchedulingForm", () => {
       });
 
       expect(mocks.toastError).toHaveBeenCalledWith("Slot unavailable");
+    });
+
+    it("usa mensagem genérica quando o erro não é instância de Error", async () => {
+      mocks.mutateAsync.mockRejectedValue("falha-opaca");
+
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      fillForm(result);
+
+      await act(async () => {
+        await result.current.handlers.onSubmit();
+      });
+
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        "Erro ao criar agendamento",
+      );
     });
 
     it("resets form after successful submission", async () => {

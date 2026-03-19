@@ -82,6 +82,51 @@ describe("rate-limit module", () => {
     });
   });
 
+  describe("distributed Redis limiter", () => {
+    const mockLimit = vi.fn();
+
+    beforeEach(() => {
+      vi.resetModules();
+      mockLimit.mockResolvedValue({
+        success: true,
+        remaining: 42,
+        reset: 123456,
+      });
+
+      vi.doMock("@/lib/redis", () => ({
+        redis: { url: "fake-url", token: "fake-token" },
+      }));
+
+      vi.doMock("@upstash/ratelimit", () => ({
+        Ratelimit: class MockRatelimit {
+          static slidingWindow() {
+            return "mock-algorithm";
+          }
+          limit = mockLimit;
+        },
+      }));
+    });
+
+    it("uses the distributed limiter when Redis is configured", async () => {
+      const { checkRateLimit } = await import("../rate-limit");
+
+      const result = await checkRateLimit("guestAppointments", "client-1");
+
+      expect(mockLimit).toHaveBeenCalledWith("client-1");
+      expect(result).toEqual({
+        success: true,
+        remaining: 42,
+        reset: 123456,
+      });
+    });
+
+    it("reports distributed mode as active", async () => {
+      const { isDistributedRateLimiting } = await import("../rate-limit");
+
+      expect(isDistributedRateLimiting()).toBe(true);
+    });
+  });
+
   describe("getClientIdentifier", () => {
     beforeEach(() => {
       vi.resetModules();
@@ -124,6 +169,12 @@ describe("rate-limit module", () => {
       const { getUserRateLimitIdentifier } = await import("../rate-limit");
 
       expect(getUserRateLimitIdentifier("user-123")).toBe("auth:user-123");
+    });
+
+    it("reports in-memory mode when Redis is absent", async () => {
+      const { isDistributedRateLimiting } = await import("../rate-limit");
+
+      expect(isDistributedRateLimiting()).toBe(false);
     });
   });
 

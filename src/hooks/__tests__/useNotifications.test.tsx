@@ -303,4 +303,134 @@ describe("useNotifications", () => {
 
     expect(mockRemoveChannel).toHaveBeenCalled();
   });
+
+  it("markAsRead não atualiza cache quando a action falha", async () => {
+    mockMarkAsRead.mockResolvedValueOnce({
+      success: false,
+      error: "x",
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const before = result.current.notifications;
+
+    await act(async () => {
+      await result.current.markAsRead("n-1");
+    });
+
+    expect(result.current.notifications).toEqual(before);
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("markAsRead engole exceções de rede", async () => {
+    mockMarkAsRead.mockRejectedValueOnce(new Error("boom"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.markAsRead("n-1");
+    });
+
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("markAllAsRead ignora quando userId é null", async () => {
+    const { result } = renderHook(() => useNotifications({ userId: null }), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.markAllAsRead();
+    });
+
+    expect(mockMarkAllAsRead).not.toHaveBeenCalled();
+  });
+
+  it("markAllAsRead não altera estado quando a action retorna erro", async () => {
+    mockMarkAllAsRead.mockResolvedValueOnce({ success: false, error: "nope" });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const snap = result.current.notifications;
+
+    await act(async () => {
+      await result.current.markAllAsRead();
+    });
+
+    expect(result.current.notifications).toEqual(snap);
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("em páginas >1 não insere notificação realtime no topo", async () => {
+    const { result } = renderHook(
+      () => useNotifications({ userId: "u-1", page: 2 }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const len = result.current.notifications.length;
+
+    act(() => {
+      channelCallback?.({
+        new: {
+          id: "n-99",
+          user_id: "u-1",
+          type: "INFO",
+          title: "T",
+          message: "M",
+          data: null,
+          read: false,
+          created_at: "2026-03-09",
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.notifications).toHaveLength(len);
+    });
+  });
+
+  it("notificação realtime já lida não incrementa unreadCount", async () => {
+    const { result } = renderHook(() => useNotifications({ userId: "u-1" }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const unreadBefore = result.current.unreadCount;
+
+    act(() => {
+      channelCallback?.({
+        new: {
+          id: "n-read",
+          user_id: "u-1",
+          type: "INFO",
+          title: "T",
+          message: "M",
+          data: null,
+          read: true,
+          created_at: "2026-03-10",
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.unreadCount).toBe(unreadBefore);
+    });
+  });
 });
