@@ -223,6 +223,10 @@ vi.mock("@/utils/time-slots", async () => {
   return {
     ...actual,
     getBrazilDateString: () => "2026-03-19",
+    parseDateString: (dateStr: string) => {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      return new Date(year, month - 1, day, 12, 0, 0);
+    },
   };
 });
 

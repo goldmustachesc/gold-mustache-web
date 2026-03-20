@@ -42,6 +42,8 @@ describe("siteConfig", () => {
   it("faz fallback para development quando as envs nao definem ambiente valido", async () => {
     process.env.NEXT_PUBLIC_ENVIRONMENT = "qa";
     delete process.env.VERCEL_ENV;
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.VERCEL_URL;
 
     const { siteConfig } = await importFreshSiteConfig();
 
