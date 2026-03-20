@@ -1,19 +1,21 @@
 # Gate: GitHub Actions CI
 
-**Data:** 2026-03-19
+**Data:** 2026-03-20
 **Branch:** staging
-**Commit:** aef97ff
+**Commit:** bcfb711
 **Resultado:** PASS (completed / success)
-**Duração:** 9m 4s
-**Run ID:** 23324214579
+**Run ID:** 23355795305
+**URL:** https://github.com/goldmustachesc/gold-mustache-web/actions/runs/23355795305
 
 ## Histórico recente
 
-| Commit | Status | Duração |
-|--------|--------|---------|
-| `aef97ff` — fix(tests): corrige falhas de CI | ✅ success | 9m 4s |
-| `5791c8c` — feat: enhance test coverage config | ❌ failure | 2m 30s |
-| `222835e` — feat: add penalty for no-show | ✅ success | 7m 21s |
+| Commit | Status | Data |
+|--------|--------|------|
+| `bcfb711` — docs: evidência de smoke automatizado | ✅ success | 2026-03-20T17:55Z |
+| `3abe8a4` — docs: atualiza evidências do gate | ✅ success | 2026-03-20T02:16Z |
+| `aef97ff` — fix(tests): corrige falhas de CI | ✅ success | 2026-03-20T00:52Z |
+| `5791c8c` — feat: enhance test coverage config | ❌ failure | 2026-03-19T23:12Z |
+| `222835e` — feat: add penalty for no-show | ✅ success | 2026-03-16T21:30Z |
 
 ## O que o CI valida (`.github/workflows/ci.yml`)
 

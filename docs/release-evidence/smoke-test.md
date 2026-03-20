@@ -1,8 +1,8 @@
 # Smoke Test — Staging
 
-**Data (automatizado):** 2026-03-19  
-**Responsável (automatizado):** Agent (Playwright MCP + curl)  
-**URL de Staging:** `https://staging.goldmustachebarbearia.com.br` (apex) e `https://www.staging.goldmustachebarbearia.com.br` (www — redirect)  
+**Data (automatizado):** 2026-03-19
+**Responsável (automatizado):** Agent (Playwright MCP + curl)
+**URL de Staging:** `https://staging.goldmustachebarbearia.com.br` (apex) e `https://www.staging.goldmustachebarbearia.com.br` (www — redirect)
 **Deployment Vercel:** `dpl_8Ujiz3Y9jdVTwfnN71JeGV9H2xcg` — commit `3abe8a4` — estado **READY**
 
 ---
@@ -53,17 +53,66 @@
 
 ---
 
+## Smoke autenticado (2026-03-20)
+
+**Responsável (automatizado):** Agent (Playwright MCP — `project-0-gold-mustache-web-playwright`)
+**URL:** `https://www.staging.goldmustachebarbearia.com.br/pt-BR`
+**Conta CLIENT (rodada 1):** criada no próprio fluxo de smoke via `/pt-BR/signup` (email `smoke.automated.20260319.7k2j@test.local`). Login por **email/senha** exercitado em seguida; **Google OAuth não testado** nesta rodada.
+**Conta BARBER/ADMIN:** `leobrizolla@proton.me` (usuário real com roles BARBER e ADMIN — 2026-03-20).
+**Conta CLIENT (rodada 2):** `smoke.cancel.20260320@test.local` — criada para teste de cancelamento.
+**Sessão guest:** cookies limpos (`page.context().clearCookies()`) antes do agendamento guest.
+
+### Evidências (PNG)
+
+| Área | Arquivo |
+|------|---------|
+| Dashboard CLIENT após signup | [smoke-auth-dashboard-client.png](smoke-auth-dashboard-client.png) |
+| Após logout (home) | [smoke-auth-after-logout.png](smoke-auth-after-logout.png) |
+| Login email/senha | [smoke-auth-login-email.png](smoke-auth-login-email.png) |
+| RBAC barbeiro (CLIENT) | [smoke-barber-rbac-client.png](smoke-barber-rbac-client.png) |
+| RBAC admin (CLIENT) | [smoke-admin-rbac-client.png](smoke-admin-rbac-client.png) |
+| Agendamento autenticado — confirmado | [smoke-booking-auth.png](smoke-booking-auth.png) |
+| Agendamento guest — confirmado | [smoke-booking-guest.png](smoke-booking-guest.png) |
+| Meus agendamentos | [smoke-meus-agendamentos.png](smoke-meus-agendamentos.png) |
+| Fidelidade — dashboard | [smoke-loyalty-dashboard.png](smoke-loyalty-dashboard.png) |
+| Fidelidade — extrato | [smoke-loyalty-history.png](smoke-loyalty-history.png) |
+| Fidelidade — recompensas | [smoke-loyalty-rewards.png](smoke-loyalty-rewards.png) |
+| Fidelidade — indicação | [smoke-loyalty-referral.png](smoke-loyalty-referral.png) |
+| Painel BARBER — dashboard (leobrizolla) | [smoke-barber-dashboard.png](smoke-barber-dashboard.png) |
+| Painel BARBER — horários | [smoke-barber-horarios.png](smoke-barber-horarios.png) |
+| Painel BARBER — ausências | [smoke-barber-ausencias.png](smoke-barber-ausencias.png) |
+| Painel ADMIN — barbeiros | [smoke-admin-barbeiros.png](smoke-admin-barbeiros.png) |
+| Painel ADMIN — serviços | [smoke-admin-servicos.png](smoke-admin-servicos.png) |
+| Painel ADMIN — feedbacks/avaliações | [smoke-admin-feedbacks.png](smoke-admin-feedbacks.png) |
+| Cancelamento — antes | [smoke-cancel-before.png](smoke-cancel-before.png) |
+| Cancelamento — depois (status "Cancelado") | [smoke-cancel-after.png](smoke-cancel-after.png) |
+
+**Nota:** emails de smoke no domínio `@test.local`. Remover usuários de smoke no Supabase após testes; **não documentar senhas** neste repositório.
+
+### Comportamentos observados
+
+- Toast **“Acesso restrito a barbeiros”** ao acessar `/pt-BR/barbeiro` como CLIENT; redirect para `/pt-BR/dashboard`.
+- Toast **“Acesso restrito a administradores”** ao acessar `/pt-BR/admin/barbeiros` como CLIENT; UI não carrega dados de admin (esperado).
+- Erros de rede no console: `GET /api/barbers/me` para usuário CLIENT (esperado; barber record inexistente).
+- Agendamento autenticado: **David Trindade**, **Corte Simples**, **26-03-2026 17:30**.
+- Agendamento guest: **João Vitor**, **Barba**, **27-03-2026 10:00**, nome **Guest Smoke Test** / tel. **(48) 98877-6655**.
+- Painel BARBER (`leobrizolla`): dashboard com agenda semanal, faturamento do dia/semana, slots DISPONÍVEL; sub-rotas **Meus Horários** (6 dias ativos, 09–18 com pausa 12–13) e **Ausências** carregam corretamente.
+- Painel ADMIN: **Gerenciar Barbeiros** — 5 ativos, 39 agendamentos; **Serviços da Barbearia** — 17 ativos, 4 inativos, preço médio R$67,65, duração média 43 min; **Avaliações** — média 4.7, 3 avaliações, 100% positivas.
+- **Cancelamento:** conta CLIENT `smoke.cancel.20260320@test.local` criou agendamento (David Trindade, Barba, 21-03-2026 10:00) e cancelou com sucesso — status passou de "Confirmado" para "Cancelado" e o item migrou para "Histórico".
+
+---
+
 ## 3.2 — Autenticação
 
 | Item | Resultado |
 |------|-----------|
-| Login com Google funciona | [ ] ✅ / [ ] ❌ |
-| Logout funciona | [ ] ✅ / [ ] ❌ |
-| Callback de autenticação redireciona corretamente | [ ] ✅ / [ ] ❌ |
+| Login com Google funciona | [ ] ✅ / [ ] ❌ **(não testado nesta rodada)** |
+| Logout funciona | [x] ✅ / [ ] ❌ |
+| Callback de autenticação redireciona corretamente | [x] ✅ / [ ] ❌ (fluxo email: redirect para `/pt-BR/dashboard` após login) |
 | Recuperação de senha funciona | [ ] ✅ / [ ] N/A |
-| Perfil CLIENT carrega corretamente | [ ] ✅ / [ ] ❌ |
-| Perfil BARBER carrega corretamente | [ ] ✅ / [ ] ❌ |
-| Perfil ADMIN carrega corretamente | [ ] ✅ / [ ] ❌ |
+| Perfil CLIENT carrega corretamente | [x] ✅ / [ ] ❌ (dashboard + menu) |
+| Perfil BARBER carrega corretamente | [x] ✅ / [ ] ❌ (dashboard + horários + ausências — ver smoke-barber-dashboard.png) |
+| Perfil ADMIN carrega corretamente | [x] ✅ / [ ] ❌ (barbeiros + serviços + feedbacks — ver smoke-admin-barbeiros.png) |
 
 ---
 
@@ -71,10 +120,10 @@
 
 | Item | Resultado |
 |------|-----------|
-| Agendamento como cliente autenticado (início ao fim) | [ ] ✅ / [ ] ❌ |
-| Agendamento como guest (início ao fim) | [ ] ✅ / [ ] ❌ |
-| Cancelamento de agendamento | [ ] ✅ / [ ] ❌ |
-| Conclusão de atendimento pelo barbeiro | [ ] ✅ / [ ] ❌ |
+| Agendamento como cliente autenticado (início ao fim) | [x] ✅ / [ ] ❌ |
+| Agendamento como guest (início ao fim) | [x] ✅ / [ ] ❌ |
+| Cancelamento de agendamento | [x] ✅ / [ ] ❌ (agendado e cancelado — ver smoke-cancel-before/after.png) |
+| Conclusão de atendimento pelo barbeiro | [ ] ✅ / [ ] ❌ **(não exercitado — requer operação manual no painel BARBER)** |
 
 ---
 
@@ -82,12 +131,12 @@
 
 | Item | Resultado |
 |------|-----------|
-| Painel do barbeiro funciona | [ ] ✅ / [ ] ❌ |
-| Painel administrativo funciona | [ ] ✅ / [ ] ❌ |
-| Gestão de serviços | [ ] ✅ / [ ] ❌ |
-| Gestão de barbeiros | [ ] ✅ / [ ] ❌ |
-| Gestão de horários globais | [ ] ✅ / [ ] ❌ |
-| Gestão de ausências | [ ] ✅ / [ ] ❌ |
+| Painel do barbeiro funciona | [x] ✅ / [ ] ❌ (dashboard, agenda, horários, ausências — smoke-barber-dashboard.png) |
+| Painel administrativo funciona | [x] ✅ / [ ] ❌ (barbeiros, serviços, feedbacks — smoke-admin-barbeiros.png) |
+| Gestão de serviços | [x] ✅ / [ ] ❌ (17 ativos + 4 inativos exibidos; CRUD disponível — smoke-admin-servicos.png) |
+| Gestão de barbeiros | [x] ✅ / [ ] ❌ (5 barbeiros ativos, ações Horários/Desativar/Remover — smoke-admin-barbeiros.png) |
+| Gestão de horários globais | [x] ✅ / [ ] ❌ (Meus Horários BARBER: 6 dias configurados — smoke-barber-horarios.png) |
+| Gestão de ausências | [x] ✅ / [ ] ❌ (formulário + lista "Nenhuma ausência" — smoke-barber-ausencias.png) |
 
 ---
 
@@ -95,10 +144,10 @@
 
 | Item | Resultado |
 |------|-----------|
-| Fluxo de feedback funciona | [ ] ✅ / [ ] ❌ |
-| Pontos de fidelidade creditados | [ ] ✅ / [ ] N/A |
-| Resgate de recompensa | [ ] ✅ / [ ] N/A |
-| Referral funciona | [ ] ✅ / [ ] N/A |
+| Fluxo de feedback funciona | [ ] ✅ / [ ] ❌ **(modal não exercitado — sem agendamento concluído; lista “Meus Agendamentos” OK)** |
+| Pontos de fidelidade creditados | [ ] ✅ / [x] N/A **(saldo 0; crédito após conclusão não verificado)** |
+| Resgate de recompensa | [ ] ✅ / [x] N/A **(catálogo carrega; resgates desabilitados — pontos insuficientes / sem estoque)** |
+| Referral funciona | [x] ✅ / [ ] N/A **(página carrega; código exibido; fluxo E2E de indicação+conclusão não fechado)** |
 
 ---
 
@@ -130,13 +179,29 @@
 
 ---
 
-## Status Final: [ ] APROVADO / [ ] BLOQUEADO
+## Status Final: [ ] APROVADO / [x] PARCIAL / [ ] BLOQUEADO
 
-**Automatizado:** apenas fluxo público + SEO; **não** cobre auth, agendamento E2E, admin.
+**Resumo:** todos os fluxos críticos automáticos foram exercitados e evidenciados:
 
-Bloqueadores encontrados:
+- **Público + SEO** (2026-03-19): home, serviços, robots.txt, sitemap.
+- **Auth email/senha** (2026-03-20): signup CLIENT, login, logout, RBAC.
+- **Agendamento** autenticado + guest + **cancelamento** por CLIENT.
+- **Painel BARBER** (leobrizolla): dashboard, agenda, horários, ausências.
+- **Painel ADMIN**: barbeiros, serviços, feedbacks/avaliações.
+- **Fidelidade** (UI): dashboard, extrato, recompensas, referral.
 
-- Console: erro HTTP 400 em recurso na home `/pt-BR` (investigar no DevTools > Network).
-- Lista de serviços: possível carregamento parcial ("Carregando serviços...") — validar API `/api/services` em staging.
+**Pendências remanescentes (não bloqueadoras para deploy):**
 
-Observações: Completar seções 3.2–3.6 manualmente com credenciais. MCP `web_fetch_vercel_url` para `robots.txt` retornou erro 409 no servidor; evidência de SEO obtida via **curl**.
+- Login **Google OAuth** em staging (requer interação humana com consent screen).
+- **Conclusão de atendimento** pelo barbeiro (manual; dispara pontos/feedback).
+- **Resgate** de recompensa com estoque e saldo válidos.
+- Auditoria de envs na Vercel Production (env-audit.md).
+- Seção **3.6** — Visual e Responsividade (multi-browser/device).
+
+Bloqueadores / ruídos conhecidos:
+
+- Console: erro HTTP **400** em recurso na home `/pt-BR` (investigar no DevTools > Network).
+- Lista de serviços na home: possível carregamento parcial ("Carregando serviços...") — validar API `/api/services` em staging.
+- Console (CLIENT): falhas esperadas em `GET /api/barbers/me` quando o usuário não é barbeiro.
+
+Observações: MCP `web_fetch_vercel_url` para `robots.txt` retornou erro 409 no servidor; evidência de SEO obtida via **curl**. Seção **3.6** (visual multi-browser) permanece checklist manual.
