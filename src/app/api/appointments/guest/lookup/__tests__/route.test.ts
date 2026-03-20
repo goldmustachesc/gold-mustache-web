@@ -1,10 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockGetGuestAppointments = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetClientIdentifier = vi.fn();
 
 vi.mock("@/services/booking", () => ({
   getGuestAppointmentsByToken: (...args: unknown[]) =>
     mockGetGuestAppointments(...args),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getClientIdentifier: (...args: unknown[]) => mockGetClientIdentifier(...args),
 }));
 
 import { GET } from "../route";
@@ -12,6 +19,12 @@ import { GET } from "../route";
 describe("GET /api/appointments/guest/lookup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: 0,
+    });
+    mockGetClientIdentifier.mockReturnValue("ip:test");
   });
 
   it("returns 401 when token is missing", async () => {

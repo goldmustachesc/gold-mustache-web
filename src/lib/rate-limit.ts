@@ -14,22 +14,24 @@ import { redis } from "@/lib/redis";
  * lightweight fallback that requires no external dependencies).
  */
 
+const env = process.env.NEXT_PUBLIC_ENVIRONMENT ?? "development";
+
 const RATE_LIMIT_CONFIGS = {
   appointments: {
     maxRequests: 10,
     windowMs: 60_000,
-    prefix: "ratelimit:appointments",
+    prefix: `ratelimit:${env}:appointments`,
   },
   guestAppointments: {
     maxRequests: 5,
     windowMs: 60_000,
-    prefix: "ratelimit:guest",
+    prefix: `ratelimit:${env}:guest`,
   },
-  api: { maxRequests: 100, windowMs: 60_000, prefix: "ratelimit:api" },
+  api: { maxRequests: 100, windowMs: 60_000, prefix: `ratelimit:${env}:api` },
   sensitive: {
     maxRequests: 3,
     windowMs: 60_000,
-    prefix: "ratelimit:sensitive",
+    prefix: `ratelimit:${env}:sensitive`,
   },
 } as const;
 

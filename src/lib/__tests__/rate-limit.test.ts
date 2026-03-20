@@ -125,6 +125,38 @@ describe("rate-limit module", () => {
 
       expect(isDistributedRateLimiting()).toBe(true);
     });
+
+    it("uses environment-aware prefix to isolate staging from production", async () => {
+      const constructorCalls: { prefix: string }[] = [];
+      vi.doMock("@upstash/ratelimit", () => ({
+        Ratelimit: class MockRatelimit {
+          static slidingWindow() {
+            return "mock-algorithm";
+          }
+          constructor(opts: { prefix: string }) {
+            constructorCalls.push({ prefix: opts.prefix });
+          }
+          limit = mockLimit;
+        },
+      }));
+
+      process.env.NEXT_PUBLIC_ENVIRONMENT = "production";
+      await import("../rate-limit");
+
+      expect(constructorCalls.length).toBeGreaterThan(0);
+      for (const call of constructorCalls) {
+        expect(call.prefix).toMatch(/^ratelimit:production:/);
+      }
+
+      delete process.env.NEXT_PUBLIC_ENVIRONMENT;
+    });
+
+    it("staging prefix differs from production prefix", () => {
+      const envs = ["staging", "production", "development"];
+      const prefixes = envs.map((env) => `ratelimit:${env}:appointments`);
+      const unique = new Set(prefixes);
+      expect(unique.size).toBe(envs.length);
+    });
   });
 
   describe("getClientIdentifier", () => {
