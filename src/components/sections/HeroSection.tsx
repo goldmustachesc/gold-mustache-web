@@ -2,14 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useInView,
-  useMotionValue,
-  useSpring,
-} from "framer-motion";
+import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -88,13 +81,6 @@ export function HeroSection() {
     ? { target: "_blank" as const, rel: "noopener noreferrer" }
     : {};
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end start"],
-  });
-  const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
-
   const stats = [
     {
       value: 1000,
@@ -114,20 +100,17 @@ export function HeroSection() {
   ];
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative min-h-[calc(100vh-3.5rem)] lg:min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden"
-    >
-      <motion.div className="absolute inset-0" style={{ y: backgroundY }}>
+    <section className="relative min-h-[calc(100vh-3.5rem)] lg:min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0">
         <Image
           src="/images/interno/interno-01.webp"
           alt="Interior da Gold Mustache Barbearia"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center scale-110"
+          className="object-cover object-center"
         />
-      </motion.div>
+      </div>
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80 dark:from-black/80 dark:via-black/60 dark:to-black/90" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)]" />

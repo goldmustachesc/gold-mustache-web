@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   canClientCancelOutsideWindow,
@@ -1911,3 +1912,26 @@ export async function cancelAppointmentByGuest(
     },
   };
 }
+
+export const getPublicServicesWithCache = unstable_cache(
+  () => getServices(),
+  ["public-services"],
+  { revalidate: 300 },
+);
+
+export async function getActiveBarbers(): Promise<
+  import("@/types/booking").BarberData[]
+> {
+  const barbers = await prisma.barber.findMany({
+    where: { active: true },
+    select: { id: true, name: true, avatarUrl: true },
+    orderBy: { name: "asc" },
+  });
+  return barbers;
+}
+
+export const getPublicBarbersWithCache = unstable_cache(
+  () => getActiveBarbers(),
+  ["public-barbers"],
+  { revalidate: 300 },
+);

@@ -1,21 +1,25 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getInstagramCache } from "@/lib/instagram-cache";
+import { InstagramPostCard } from "../InstagramPostCard";
 import { InstagramSection } from "../InstagramSection";
 
-const apiGetMock = vi.fn();
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: () => Promise<unknown>) => fn,
+}));
 
-vi.mock("@/lib/api/client", () => ({
-  apiGet: (...args: unknown[]) => apiGetMock(...args),
+vi.mock("@/lib/instagram-cache", () => ({
+  getInstagramCache: vi.fn(),
+}));
+
+vi.mock("next-intl/server", () => ({
+  getLocale: () => Promise.resolve("pt-BR"),
+  getTranslations: () => Promise.resolve((key: string) => `instagram.${key}`),
 }));
 
 vi.mock("next/image", () => ({
   default: ({ alt }: { alt: string }) => <div role="img" aria-label={alt} />,
-}));
-
-vi.mock("next-intl", () => ({
-  useTranslations: (namespace: string) => (key: string) =>
-    `${namespace}.${key}`,
 }));
 
 vi.mock("@/constants/brand", () => ({
@@ -76,13 +80,15 @@ vi.mock("@/components/shared/ResponsiveCardGrid", () => ({
   ),
 }));
 
+const mockedGetInstagramCache = vi.mocked(getInstagramCache);
+
 describe("InstagramSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("usa posts da API quando a resposta tem itens", async () => {
-    apiGetMock.mockResolvedValue({
+  it("usa posts do cache quando há itens", async () => {
+    mockedGetInstagramCache.mockResolvedValue({
       posts: [
         {
           id: "api-1",
@@ -91,70 +97,83 @@ describe("InstagramSection", () => {
           url: "https://instagram.com/p/api",
         },
       ],
+      lastUpdated: new Date().toISOString(),
+      source: "api",
     });
 
-    render(<InstagramSection />);
-
-    await waitFor(() => {
-      expect(screen.getByText("API caption")).toBeInTheDocument();
+    await act(async () => {
+      render(await InstagramSection());
     });
-    expect(apiGetMock).toHaveBeenCalledWith("/api/instagram/posts");
+
+    expect(screen.getByText("API caption")).toBeInTheDocument();
+    expect(mockedGetInstagramCache).toHaveBeenCalled();
   });
 
-  it("usa fallback mock quando API retorna lista vazia", async () => {
-    apiGetMock.mockResolvedValue({ posts: [] });
-
-    render(<InstagramSection />);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Agenda aberta para transformar/i),
-      ).toBeInTheDocument();
+  it("usa fallback mock quando cache está vazio", async () => {
+    mockedGetInstagramCache.mockResolvedValue({
+      posts: [],
+      lastUpdated: new Date().toISOString(),
+      source: "mock",
     });
+
+    await act(async () => {
+      render(await InstagramSection());
+    });
+
+    expect(
+      screen.getByText(/Agenda aberta para transformar/i),
+    ).toBeInTheDocument();
   });
 
-  it("usa fallback mock quando API falha e em dev loga warn", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const prevEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
-    apiGetMock.mockRejectedValue(new Error("network"));
+  it("usa fallback mock quando leitura do cache falha", async () => {
+    mockedGetInstagramCache.mockRejectedValue(new Error("redis"));
 
-    render(<InstagramSection />);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Agenda aberta para transformar/i),
-      ).toBeInTheDocument();
+    await act(async () => {
+      render(await InstagramSection());
     });
-    expect(warnSpy).toHaveBeenCalled();
 
-    process.env.NODE_ENV = prevEnv;
-    warnSpy.mockRestore();
+    expect(
+      screen.getByText(/Agenda aberta para transformar/i),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("InstagramPostCard", () => {
+  it("renderiza imagem do post", () => {
+    render(
+      <InstagramPostCard
+        post={{
+          id: "1",
+          image: "/test.jpg",
+          caption: "Caption text",
+          url: "https://instagram.com/p/1/",
+        }}
+        viewLabel="Ver no Instagram"
+      />,
+    );
+
+    expect(
+      screen.getByRole("img", { name: "Instagram post" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Caption text")).toBeInTheDocument();
   });
 
-  it("abre post no window.open ao clicar em ver no instagram", async () => {
-    apiGetMock.mockResolvedValue({
-      posts: [
-        {
+  it("abre post no window.open ao clicar no botão", () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    render(
+      <InstagramPostCard
+        post={{
           id: "x",
           image: "/x.jpg",
           caption: "Short",
           url: "https://instagram.com/p/x/",
-        },
-      ],
-    });
-    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+        }}
+        viewLabel="Ver no Instagram"
+      />,
+    );
 
-    render(<InstagramSection />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Short")).toBeInTheDocument();
-    });
-
-    const viewBtn = screen.getByRole("button", {
-      name: /instagram.viewOnInstagram/i,
-    });
-    fireEvent.click(viewBtn);
+    fireEvent.click(screen.getByRole("button", { name: "Ver no Instagram" }));
 
     expect(openSpy).toHaveBeenCalledWith(
       "https://instagram.com/p/x/",

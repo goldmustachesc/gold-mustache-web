@@ -3,7 +3,6 @@ import {
   GoogleTagManager,
   GoogleTagManagerNoScript,
 } from "@/components/analytics/GoogleTagManager";
-import { Layout } from "@/components/layout/Layout";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
@@ -223,7 +222,7 @@ export default async function LocaleLayout({
                 externalBookingUrl={settings.externalBookingUrl}
                 locale={locale}
               >
-                <Layout>{children}</Layout>
+                {children}
               </BookingSettingsProvider>
             </ThemeProvider>
           </QueryProvider>

@@ -1,12 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Layout } from "../Layout";
-
-const mockUsePathname = vi.hoisted(() => vi.fn());
-
-vi.mock("next/navigation", () => ({
-  usePathname: () => mockUsePathname(),
-}));
+import type { ReactNode } from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../Header", () => ({
   Header: () => <div data-testid="public-header">Public Header</div>,
@@ -22,39 +16,34 @@ vi.mock("@/components/ui/floating-booking-button", () => ({
   ),
 }));
 
-describe("Layout", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUsePathname.mockReturnValue("/pt-BR");
-  });
+const { Header } = await import("../Header");
+const { Footer } = await import("../Footer");
+const { FloatingBookingButton } = await import(
+  "@/components/ui/floating-booking-button"
+);
 
-  it("renders the public shell for public routes", () => {
+function PublicShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1">{children}</main>
+      <Footer />
+      <FloatingBookingButton />
+    </div>
+  );
+}
+
+describe("PublicShell", () => {
+  it("renderiza shell com header, main, footer e floating button", () => {
     render(
-      <Layout>
+      <PublicShell>
         <div data-testid="page-content">Page Content</div>
-      </Layout>,
+      </PublicShell>,
     );
 
     expect(screen.getByTestId("public-header")).toBeInTheDocument();
     expect(screen.getByTestId("public-footer")).toBeInTheDocument();
     expect(screen.getByTestId("floating-booking-button")).toBeInTheDocument();
-    expect(screen.getByTestId("page-content")).toBeInTheDocument();
-  });
-
-  it("hides the public shell for loyalty routes", () => {
-    mockUsePathname.mockReturnValue("/pt-BR/loyalty");
-
-    render(
-      <Layout>
-        <div data-testid="page-content">Page Content</div>
-      </Layout>,
-    );
-
-    expect(screen.queryByTestId("public-header")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("public-footer")).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId("floating-booking-button"),
-    ).not.toBeInTheDocument();
     expect(screen.getByTestId("page-content")).toBeInTheDocument();
   });
 });

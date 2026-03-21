@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
-import { type ReactNode, useRef } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -14,13 +13,6 @@ interface RevealOnScrollProps {
   once?: boolean;
 }
 
-const directionOffset: Record<Direction, { x: number; y: number }> = {
-  up: { x: 0, y: 24 },
-  down: { x: 0, y: -24 },
-  left: { x: 24, y: 0 },
-  right: { x: -24, y: 0 },
-};
-
 export function RevealOnScroll({
   children,
   delay = 0,
@@ -30,27 +22,47 @@ export function RevealOnScroll({
   once = true,
 }: RevealOnScrollProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once, margin: "-60px 0px" });
 
-  const offset = directionOffset[direction];
+  const style = {
+    "--reveal-duration": `${duration}s`,
+    "--reveal-delay": `${delay}s`,
+  } as CSSProperties;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            if (once) {
+              observer.unobserve(entry.target);
+            }
+          } else if (!once) {
+            entry.target.classList.remove("visible");
+          }
+        }
+      },
+      { rootMargin: "-60px 0px" },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [once]);
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, x: offset.x, y: offset.y }}
-      animate={
-        isInView
-          ? { opacity: 1, x: 0, y: 0 }
-          : { opacity: 0, x: offset.x, y: offset.y }
-      }
-      transition={{
-        duration,
-        delay,
-        ease: [0.25, 0.1, 0.25, 1],
-      }}
       className={className}
+      data-direction={direction}
+      data-reveal=""
+      style={style}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

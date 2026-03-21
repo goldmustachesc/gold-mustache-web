@@ -299,3 +299,78 @@
     min-width: 44px;
   }
 }
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-down {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+[data-reveal] {
+  opacity: 0;
+}
+
+[data-reveal].visible {
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+  animation-duration: var(--reveal-duration, 0.5s);
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+[data-reveal][data-direction="up"].visible {
+  animation-name: reveal-up;
+}
+
+[data-reveal][data-direction="down"].visible {
+  animation-name: reveal-down;
+}
+
+[data-reveal][data-direction="left"].visible {
+  animation-name: reveal-left;
+}
+
+[data-reveal][data-direction="right"].visible {
+  animation-name: reveal-right;
+}

@@ -1,10 +1,7 @@
-"use client";
-
 import { RevealOnScroll } from "@/components/shared/RevealOnScroll";
 import { ResponsiveCardGrid } from "@/components/shared/ResponsiveCardGrid";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -15,12 +12,14 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BRAND } from "@/constants/brand";
-import { useBookingSettings } from "@/hooks/useBookingSettings";
-import { useServices } from "@/hooks/useBooking";
-import { Calendar, Clock, Loader2, Scissors, Star } from "lucide-react";
+import { buildBookingHref, resolveBookingMode } from "@/lib/booking-mode";
+import { getBarbershopSettings } from "@/services/barbershop-settings";
+import { getPublicServicesWithCache } from "@/services/booking";
+import type { ServiceData } from "@/types/booking";
+import { Clock, Scissors, Star } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
+import { ServiceBookingButton } from "./ServiceBookingButton";
 
 const SERVICE_IMAGES: Record<string, string> = {
   "corte-americano": "/images/services/americano.webp",
@@ -34,10 +33,7 @@ const SERVICE_IMAGES: Record<string, string> = {
 };
 
 function formatPrice(price: number): string {
-  return price.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+  return price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function formatDuration(minutes: number): string {
@@ -49,17 +45,10 @@ function formatDuration(minutes: number): string {
 }
 
 interface ServiceCardProps {
-  service: {
-    id: string;
-    slug: string;
-    name: string;
-    description: string | null;
-    price: number;
-    duration: number;
-  };
+  service: ServiceData;
   bookingHref: string | null;
   shouldShowBooking: boolean;
-  bookingLinkProps: { target?: string; rel?: string };
+  isExternal: boolean;
   bookLabel: string;
 }
 
@@ -67,7 +56,7 @@ function ServiceCard({
   service,
   bookingHref,
   shouldShowBooking,
-  bookingLinkProps,
+  isExternal,
   bookLabel,
 }: ServiceCardProps) {
   const imageUrl = SERVICE_IMAGES[service.slug];
@@ -112,30 +101,34 @@ function ServiceCard({
 
       {shouldShowBooking && bookingHref && (
         <CardFooter className="mt-auto">
-          <Button className="w-full cursor-pointer" variant="default" asChild>
-            <Link
-              href={bookingHref}
-              className="flex items-center justify-center"
-              {...bookingLinkProps}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              {bookLabel} {service.name}
-            </Link>
-          </Button>
+          <ServiceBookingButton
+            bookingHref={bookingHref}
+            isExternal={isExternal}
+            label={`${bookLabel} ${service.name}`}
+          />
         </CardFooter>
       )}
     </Card>
   );
 }
 
-export function ServicesSection() {
-  const t = useTranslations("services");
-  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
-  const bookingLinkProps = isExternal
-    ? { target: "_blank", rel: "noopener noreferrer" }
-    : {};
+export async function ServicesSection() {
+  const [locale, settings, services] = await Promise.all([
+    getLocale(),
+    getBarbershopSettings(),
+    getPublicServicesWithCache(),
+  ]);
 
-  const { data: services = [], isLoading, isError } = useServices();
+  const t = await getTranslations({ locale, namespace: "services" });
+
+  const mode = resolveBookingMode(settings);
+  const bookingHref = buildBookingHref({
+    mode,
+    locale,
+    externalBookingUrl: settings.externalBookingUrl,
+  });
+  const shouldShowBooking = mode !== "disabled" && !!bookingHref;
+  const isExternal = mode === "external";
 
   const { originalPrice, discountedPrice } = BRAND.featuredCombo;
   const featuredSavings = originalPrice - discountedPrice;
@@ -186,47 +179,25 @@ export function ServicesSection() {
 
             {shouldShowBooking && bookingHref && (
               <CardFooter className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="default"
-                  className="w-full max-w-xs mx-auto cursor-pointer"
-                  asChild
-                >
-                  <Link
-                    href={bookingHref}
-                    className="flex items-center"
-                    {...bookingLinkProps}
-                  >
-                    <Calendar className="h-5 w-5 mr-2" />
-                    {t("featured.cta")}
-                  </Link>
-                </Button>
+                <ServiceBookingButton
+                  bookingHref={bookingHref}
+                  isExternal={isExternal}
+                  label={t("featured.cta")}
+                  className="max-w-xs mx-auto"
+                />
               </CardFooter>
             )}
           </Card>
         </div>
       </RevealOnScroll>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">{t("loading")}</span>
-        </div>
-      )}
-
-      {isError && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>{t("error.title")}</p>
-          <p className="text-sm mt-2">{t("error.message")}</p>
-        </div>
-      )}
-
-      {!isLoading && !isError && services.length === 0 && (
+      {services.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <p>{t("empty")}</p>
         </div>
       )}
 
-      {!isLoading && !isError && services.length > 0 && (
+      {services.length > 0 && (
         <ResponsiveCardGrid
           items={services}
           keyExtractor={(s) => s.id}
@@ -236,7 +207,7 @@ export function ServicesSection() {
               service={service}
               bookingHref={bookingHref}
               shouldShowBooking={shouldShowBooking}
-              bookingLinkProps={bookingLinkProps}
+              isExternal={isExternal}
               bookLabel={t("labels.book")}
             />
           )}
