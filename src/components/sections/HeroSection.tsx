@@ -2,12 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
-import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function AnimatedCounter({
   target,
@@ -19,58 +18,46 @@ function AnimatedCounter({
   duration?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const motionValue = useMotionValue(0);
-  const springValue = useSpring(motionValue, {
-    damping: 40,
-    stiffness: 100,
-    duration: duration * 1000,
-  });
-  const isInView = useInView(ref, { once: true });
+  const [display, setDisplay] = useState(0);
+  const startedRef = useRef(false);
 
   useEffect(() => {
-    if (isInView) {
-      motionValue.set(target);
-    }
-  }, [isInView, motionValue, target]);
+    const el = ref.current;
+    if (!el) return;
 
-  useEffect(() => {
-    const unsubscribe = springValue.on("change", (latest) => {
-      if (ref.current) {
-        ref.current.textContent = `${Math.floor(latest)}${suffix}`;
-      }
-    });
-    return unsubscribe;
-  }, [springValue, suffix]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || startedRef.current) return;
+        startedRef.current = true;
+        const start = performance.now();
+        const durationMs = duration * 1000;
 
-  return <span ref={ref}>0{suffix}</span>;
+        const tick = (now: number) => {
+          const t = Math.min(1, (now - start) / durationMs);
+          const eased = 1 - (1 - t) ** 3;
+          setDisplay(Math.floor(eased * target));
+          if (t < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            setDisplay(target);
+          }
+        };
+        requestAnimationFrame(tick);
+      },
+      { rootMargin: "0px", threshold: 0.2 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return (
+    <span ref={ref}>
+      {display}
+      {suffix}
+    </span>
+  );
 }
-
-const stagger = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
-  },
-};
-
-const easeOut: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: easeOut },
-  },
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.85 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.7, ease: easeOut },
-  },
-};
 
 export function HeroSection() {
   const t = useTranslations("hero");
@@ -107,6 +94,7 @@ export function HeroSection() {
           alt="Interior da Gold Mustache Barbearia"
           fill
           priority
+          fetchPriority="high"
           sizes="100vw"
           className="object-cover object-center"
         />
@@ -116,13 +104,11 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)]" />
 
       <div className="container relative z-10 px-4 py-12 md:py-16 lg:py-20">
-        <motion.div
-          className="max-w-2xl mx-auto text-center space-y-6 md:space-y-8"
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div className="flex justify-center" variants={scaleIn}>
+        <div className="max-w-2xl mx-auto text-center space-y-6 md:space-y-8">
+          <div
+            className="flex justify-center hero-anim-logo"
+            style={{ animationDelay: "0.2s" }}
+          >
             <div className="relative">
               <Image
                 src="/logo.png"
@@ -131,15 +117,17 @@ export function HeroSection() {
                 height={140}
                 className="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-full object-cover ring-2 ring-primary/40 shadow-2xl"
                 sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, 176px"
-                priority
               />
               <div className="absolute inset-0 -z-10 rounded-full bg-primary/20 blur-2xl scale-150" />
             </div>
-          </motion.div>
+          </div>
 
           <h1 className="sr-only">Gold Mustache Barbearia</h1>
 
-          <motion.div variants={fadeUp} className="space-y-2">
+          <div
+            className="space-y-2 hero-anim-fade-up"
+            style={{ animationDelay: "0.35s" }}
+          >
             <div className="flex items-center justify-center gap-3 text-xs md:text-sm text-white/60 tracking-widest uppercase">
               <span>{t("badges.location")}</span>
               <span className="w-1 h-1 rounded-full bg-primary" />
@@ -147,26 +135,26 @@ export function HeroSection() {
               <span className="w-1 h-1 rounded-full bg-primary" />
               <span>{t("badges.experience")}</span>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.p
-            variants={fadeUp}
-            className="text-lg md:text-xl lg:text-2xl font-playfair font-medium text-white/90 tracking-wide"
+          <p
+            className="text-lg md:text-xl lg:text-2xl font-playfair font-medium text-white/90 tracking-wide hero-anim-fade-up"
+            style={{ animationDelay: "0.5s" }}
           >
             {tBrand("tagline")}
-          </motion.p>
+          </p>
 
-          <motion.p
-            variants={fadeUp}
-            className="text-sm md:text-base lg:text-lg text-white/70 leading-relaxed max-w-xl mx-auto"
+          <p
+            className="text-sm md:text-base lg:text-lg text-white/70 leading-relaxed max-w-xl mx-auto hero-anim-fade-up"
+            style={{ animationDelay: "0.65s" }}
           >
             {t("description")}
-          </motion.p>
+          </p>
 
           {shouldShowBooking && bookingHref && (
-            <motion.div
-              variants={fadeUp}
-              className="pt-2 md:pt-4 flex flex-col sm:flex-row gap-3 justify-center"
+            <div
+              className="pt-2 md:pt-4 flex flex-col sm:flex-row gap-3 justify-center hero-anim-fade-up"
+              style={{ animationDelay: "0.8s" }}
             >
               <Button
                 size="lg"
@@ -192,12 +180,12 @@ export function HeroSection() {
                   {t("cta.services")}
                 </Link>
               </Button>
-            </motion.div>
+            </div>
           )}
 
-          <motion.div
-            variants={fadeUp}
-            className="pt-6 md:pt-10 grid grid-cols-3 gap-4 md:gap-8 max-w-lg mx-auto"
+          <div
+            className="pt-6 md:pt-10 grid grid-cols-3 gap-4 md:gap-8 max-w-lg mx-auto hero-anim-fade-up"
+            style={{ animationDelay: "0.95s" }}
           >
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
@@ -209,8 +197,8 @@ export function HeroSection() {
                 </div>
               </div>
             ))}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -5,9 +5,16 @@ import { LoadingElevator } from "./loading-elevator";
 
 export function LoadingElevatorWrapper() {
   const [isLoading, setIsLoading] = useState(true);
-  const [shouldRender, setShouldRender] = useState(true);
+  const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 769px)");
+    if (!mq.matches) {
+      return;
+    }
+
+    setShouldRender(true);
+
     if (document.readyState === "complete") {
       setIsLoading(false);
       return;

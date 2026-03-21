@@ -38,32 +38,35 @@ vi.mock("@/hooks/useBookingSettings", () => ({
   useBookingSettings: () => mocks.useBookingSettings(),
 }));
 
-vi.mock("framer-motion", () => {
-  const Div = ({
-    children,
-    ...props
-  }: {
-    children?: ReactNode;
-    className?: string;
-    style?: Record<string, unknown>;
-  }) => <div {...props}>{children}</div>;
+class MockIntersectionObserver implements IntersectionObserver {
+  constructor(private readonly callback: IntersectionObserverCallback) {}
 
-  return {
-    motion: {
-      div: Div,
-      p: Div,
-    },
-    useScroll: () => ({ scrollYProgress: 0 }),
-    useTransform: () => "0%",
-    useInView: () => false,
-    useMotionValue: () => ({ set: vi.fn() }),
-    useSpring: () => ({ on: () => () => {} }),
-  };
-});
+  observe(el: Element) {
+    this.callback(
+      [{ isIntersecting: true, target: el } as IntersectionObserverEntry],
+      this,
+    );
+  }
+
+  disconnect() {}
+
+  unobserve() {}
+
+  takeRecords() {
+    return [];
+  }
+
+  readonly root = null;
+
+  readonly rootMargin = "";
+
+  readonly thresholds = [];
+}
 
 describe("HeroSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
   });
 
   it("renderiza conteúdo principal e CTA de agendamento externo", () => {

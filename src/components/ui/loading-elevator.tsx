@@ -74,7 +74,6 @@ export function LoadingElevator({
               filter:
                 "drop-shadow(0 0 40px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.6))",
             }}
-            priority
           />
         </div>
       </div>

@@ -68,52 +68,6 @@ vi.mock("@/components/ui/language-switcher", () => ({
   ),
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({
-      children,
-      ...props
-    }: {
-      children?: React.ReactNode;
-      [key: string]: unknown;
-    }) => {
-      const safeProps: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(props)) {
-        if (
-          typeof v === "string" ||
-          typeof v === "number" ||
-          typeof v === "boolean"
-        ) {
-          safeProps[k] = v;
-        }
-      }
-      return <div {...safeProps}>{children}</div>;
-    },
-    nav: ({
-      children,
-      ...props
-    }: {
-      children?: React.ReactNode;
-      [key: string]: unknown;
-    }) => {
-      const safeProps: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(props)) {
-        if (
-          typeof v === "string" ||
-          typeof v === "number" ||
-          typeof v === "boolean"
-        ) {
-          safeProps[k] = v;
-        }
-      }
-      return <nav {...safeProps}>{children}</nav>;
-    },
-  },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-}));
-
 const defaultNavLinks = [
   { href: "/pt-BR", label: "Início" },
   { href: "/pt-BR#servicos", label: "Serviços" },

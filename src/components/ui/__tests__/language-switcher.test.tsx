@@ -1,6 +1,5 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageSwitcher } from "../language-switcher";
 
@@ -18,23 +17,6 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({
   useLocale: () => mocks.locale,
 }));
-
-vi.mock("framer-motion", () => {
-  const Div = ({
-    children,
-    ...rest
-  }: {
-    children?: ReactNode;
-    className?: string;
-  }) => <div {...rest}>{children}</div>;
-
-  return {
-    motion: { div: Div },
-    AnimatePresence: ({ children }: { children?: ReactNode }) => (
-      <>{children}</>
-    ),
-  };
-});
 
 describe("LanguageSwitcher", () => {
   beforeEach(() => {

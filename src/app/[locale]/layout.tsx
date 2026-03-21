@@ -194,6 +194,12 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/images/interno/interno-01.webp"
+          fetchPriority="high"
+        />
         <SchemaMarkup />
         <GoogleTagManager
           gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
