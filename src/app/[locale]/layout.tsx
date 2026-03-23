@@ -9,8 +9,10 @@ import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper
 import { barbershopConfig } from "@/config/barbershop";
 import { locales } from "@/i18n/config";
 import { QueryProvider } from "@/providers/query-provider";
+import { FeatureFlagsProvider } from "@/providers/feature-flags-provider";
 import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
+import { getClientFeatureFlags } from "@/services/feature-flags";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -186,9 +188,10 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const [messages, settings] = await Promise.all([
+  const [messages, settings, clientFeatureFlags] = await Promise.all([
     getMessages(),
     getBarbershopSettings(),
+    getClientFeatureFlags(),
   ]);
 
   return (
@@ -223,13 +226,15 @@ export default async function LocaleLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <BookingSettingsProvider
-                bookingEnabled={settings.bookingEnabled}
-                externalBookingUrl={settings.externalBookingUrl}
-                locale={locale}
-              >
-                {children}
-              </BookingSettingsProvider>
+              <FeatureFlagsProvider flags={clientFeatureFlags}>
+                <BookingSettingsProvider
+                  bookingEnabled={settings.bookingEnabled}
+                  externalBookingUrl={settings.externalBookingUrl}
+                  locale={locale}
+                >
+                  {children}
+                </BookingSettingsProvider>
+              </FeatureFlagsProvider>
             </ThemeProvider>
           </QueryProvider>
         </NextIntlClientProvider>

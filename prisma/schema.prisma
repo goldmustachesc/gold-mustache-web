@@ -318,6 +318,20 @@ model BarbershopSettings {
 }
 
 // ============================================
+// Feature flags (global runtime)
+// ============================================
+
+model FeatureFlag {
+  key         String   @id
+  enabled     Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+// ============================================
 // LGPD Compliance - Cookie Consent Tracking
 // ============================================
 
