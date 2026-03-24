@@ -44,11 +44,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Claude
-.claude
-CLAUDE.md
-
-# Cursor (may contain MCP secrets)
-.cursor/mcp.json
+# Claude local overrides (keep .claude/ and CLAUDE.md versioned)
+.claude/settings.local.json
+CLAUDE.local.md
 
 /src/generated/prisma
