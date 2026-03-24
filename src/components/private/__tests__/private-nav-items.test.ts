@@ -77,6 +77,7 @@ describe("private-nav-items", () => {
 
       const labels = items.map((i: NavItemDef) => i.label);
       expect(labels).toContain("Dados da Barbearia");
+      expect(labels).toContain("Feature flags");
       expect(labels).toContain("Serviços");
       expect(labels).toContain("Gerenciar Barbeiros");
     });

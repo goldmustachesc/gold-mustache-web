@@ -131,6 +131,11 @@ export function getAdminNavItems(locale: string): NavItemDef[] {
       iconName: "Building2",
     },
     {
+      href: `/${locale}/admin/barbearia/feature-flags`,
+      label: "Feature flags",
+      iconName: "ToggleLeft",
+    },
+    {
       href: `/${locale}/admin/barbearia/horarios`,
       label: "Horários da Barbearia",
       iconName: "Clock",
