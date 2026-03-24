@@ -1,0 +1,17 @@
+---
+description: Princípios globais do projeto Gold Mustache
+alwaysApply: true
+---
+
+# Core
+
+- TypeScript em todo código novo (`.ts`/`.tsx`). Imports com alias `@/`.
+- **Proibido `any`**. Preferir tipos explícitos, `unknown` com narrowing, generics e utility types.
+- **TDD** para código novo e mudanças significativas: RED → GREEN → REFACTOR; rodar `pnpm test` após cada etapa.
+- Clean Code, SOLID, KISS, YAGNI; evitar overengineering.
+- Biome: seguir `biome.json` (indentação, import sorting). Não duplicar o que o linter já garante.
+- Commits: Conventional Commits; tipos permitidos `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- Decisões arquiteturais relevantes: documentar em PR ou na resposta ao revisor, não em comentários no código.
+- Preferir código autoexplicativo; evitar comentários desnecessários.
+
+Comandos frequentes: `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm build`, `pnpm test:gate`.

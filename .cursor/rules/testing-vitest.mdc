@@ -1,0 +1,35 @@
+---
+description: Convenções de testes com Vitest e Testing Library
+globs: src/**/*.{test.ts,test.tsx}
+alwaysApply: false
+---
+
+# Testes (Vitest)
+
+- Localização: `__tests__/` no módulo ou `*.test.ts` / `*.test.tsx` junto ao arquivo. Property-based: `*.property.test.ts`.
+- Stack: Vitest, Testing Library, jest-dom, user-event, happy-dom, fast-check para regras de negócio quando fizer sentido.
+- Mockar apenas externas (Prisma, Supabase, APIs). `vi.mock()` com o mínimo necessário.
+- Hooks em mocks: usar `vi.hoisted()` quando variáveis forem referenciadas dentro de `vi.mock()`.
+- `vitest.setup.ts` pode falhar em `console.error`/`console.warn` inesperados; usar spy e restore se precisar.
+- Cobrir happy path, erros e edge cases. TDD: testes antes da implementação para código novo.
+
+### Mocks frequentes (referência)
+
+```typescript
+vi.mock("@/lib/prisma", () => ({ prisma: { model: { method: vi.fn() } } }));
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn().mockResolvedValue({
+    auth: { getUser: () => mockGetUser() },
+  }),
+}));
+
+vi.mock("@/lib/auth/requireAdmin", () => ({
+  requireAdmin: () => mockRequireAdmin(),
+}));
+
+const mockFn = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/useAuth", () => ({ useSignIn: () => ({ mutate: mockFn }) }));
+```
+
+Comandos: `pnpm test`, `pnpm test:watch`, `pnpm test:gate`, variantes de coverage conforme `package.json`.

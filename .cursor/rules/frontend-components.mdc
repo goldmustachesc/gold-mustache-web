@@ -1,0 +1,15 @@
+---
+description: Padrões para componentes React e UI
+globs: src/components/**/*.tsx
+alwaysApply: false
+---
+
+# Frontend e componentes
+
+- Antes de mudanças visuais, ler `docs/Brand_Book_Gold_Mustache.md`.
+- Design tokens: `src/app/globals.css` (`--primary`, `--background`, etc.). Marca: `src/config/barbershop.ts`.
+- Suportar Light e Dark mode conforme Brand Book.
+- Estilos: Tailwind; `clsx`/`tailwind-merge` para classes condicionais.
+- Componentes em PascalCase; primitivos em `src/components/ui`, widgets em `src/components/custom`.
+- Acessibilidade: semântica HTML, `aria-*` quando necessário, navegação por teclado em interativos.
+- Tom de voz da marca: direto, caloroso, profissional.

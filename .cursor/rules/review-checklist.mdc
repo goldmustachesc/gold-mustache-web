@@ -1,0 +1,12 @@
+---
+description: Checklist para review técnico e validação final. Não aplica em toda sessão; use @mention ou quando o contexto for review de código ou PR.
+alwaysApply: false
+---
+
+# Review (high signal)
+
+- Priorizar **alto sinal**: bugs, segurança, regressões, testes ausentes para código novo, violações claras de `AGENTS.md` ou regras do projeto.
+- **Não** gastar tempo com nitpicks que o Biome já cobre ou que não mudam comportamento.
+- Severidade sugerida: Crítico, Alto, Médio, Baixo — com evidência no diff ou no arquivo.
+- Código novo sem testes quando TDD é obrigatório: tratar como problema sério.
+- Antes de “aprovar”, quando aplicável, validar que `pnpm test`, `pnpm lint` e `pnpm build` foram considerados ou explicitamente justificados.
