@@ -4,28 +4,65 @@ import { apiError } from "@/lib/api/response";
 import { PRISMA_ERROR_MESSAGES } from "@/lib/errors/prisma-errors";
 import type { ApiErrorResponse } from "@/types/api";
 
+interface PrismaLikeKnownRequestError {
+  code: string;
+  message: string;
+  meta?: unknown;
+}
+
+function isPrismaLikeKnownRequestError(
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError | PrismaLikeKnownRequestError {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return true;
+  }
+
+  if (!error || typeof error !== "object" || !("code" in error)) {
+    return false;
+  }
+
+  return (
+    typeof error.code === "string" &&
+    /^P\d{4}$/.test(error.code) &&
+    "message" in error &&
+    typeof error.message === "string"
+  );
+}
+
+function getPrismaLikeMeta(
+  error: Prisma.PrismaClientKnownRequestError | PrismaLikeKnownRequestError,
+): Record<string, unknown> | undefined {
+  const meta = error.meta;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
+    return undefined;
+  }
+
+  return meta as Record<string, unknown>;
+}
+
 export function handlePrismaError(
   error: unknown,
   fallbackMessage = "Erro interno do servidor",
 ): NextResponse<ApiErrorResponse> {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (isPrismaLikeKnownRequestError(error)) {
     console.error("Database error:", {
       code: error.code,
       message: error.message,
-      meta: error.meta,
+      meta: getPrismaLikeMeta(error),
     });
   } else {
     console.error("Database error:", error);
   }
 
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (isPrismaLikeKnownRequestError(error)) {
     const errorConfig = PRISMA_ERROR_MESSAGES[error.code];
+    const meta = getPrismaLikeMeta(error);
 
     if (errorConfig) {
-      if (error.code === "P2002" && error.meta?.target) {
-        const field = Array.isArray(error.meta.target)
-          ? error.meta.target.join(", ")
-          : String(error.meta.target);
+      if (error.code === "P2002" && meta?.target) {
+        const field = Array.isArray(meta.target)
+          ? meta.target.join(", ")
+          : String(meta.target);
         return apiError(
           `PRISMA_${error.code}`,
           `${errorConfig.message}: campo(s) ${field}`,

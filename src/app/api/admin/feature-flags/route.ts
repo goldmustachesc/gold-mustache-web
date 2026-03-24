@@ -6,7 +6,7 @@ import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import {
   FEATURE_FLAGS_CACHE_TAG,
-  getResolvedFeatureFlags,
+  getResolvedFeatureFlagsSnapshot,
 } from "@/services/feature-flags";
 import {
   FEATURE_FLAG_KEYS,
@@ -30,8 +30,10 @@ export async function GET() {
     const admin = await requireAdmin();
     if (!admin.ok) return admin.response;
 
-    const flags = await getResolvedFeatureFlags();
-    return apiSuccess({ flags });
+    const snapshot = await getResolvedFeatureFlagsSnapshot({
+      bypassCache: true,
+    });
+    return apiSuccess(snapshot);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar feature flags");
   }
@@ -90,8 +92,10 @@ export async function PUT(request: Request) {
 
     revalidateTag(FEATURE_FLAGS_CACHE_TAG, "max");
 
-    const flags = await getResolvedFeatureFlags();
-    return apiSuccess({ flags });
+    const snapshot = await getResolvedFeatureFlagsSnapshot({
+      bypassCache: true,
+    });
+    return apiSuccess(snapshot);
   } catch (error) {
     return handlePrismaError(error, "Erro ao atualizar feature flags");
   }

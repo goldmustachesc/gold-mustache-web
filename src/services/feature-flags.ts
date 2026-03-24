@@ -25,7 +25,17 @@ export interface ResolvedFeatureFlag {
   source: FeatureFlagSource;
 }
 
-async function loadDbFlags(): Promise<Map<FeatureFlagKey, boolean>> {
+export interface ResolvedFeatureFlagsSnapshot {
+  flags: ResolvedFeatureFlag[];
+  persistenceAvailable: boolean;
+}
+
+interface LoadedDbFlags {
+  flags: Map<FeatureFlagKey, boolean>;
+  persistenceAvailable: boolean;
+}
+
+async function loadDbFlags(): Promise<LoadedDbFlags> {
   try {
     const rows = await prisma.featureFlag.findMany();
     const map = new Map<FeatureFlagKey, boolean>();
@@ -34,10 +44,16 @@ async function loadDbFlags(): Promise<Map<FeatureFlagKey, boolean>> {
         map.set(row.key, row.enabled);
       }
     }
-    return map;
+    return {
+      flags: map,
+      persistenceAvailable: true,
+    };
   } catch (error) {
     console.error("Error fetching feature flags from DB:", error);
-    return new Map();
+    return {
+      flags: new Map(),
+      persistenceAvailable: false,
+    };
   }
 }
 
@@ -79,15 +95,16 @@ function resolveAll(db: Map<FeatureFlagKey, boolean>): ResolvedFeatureFlag[] {
   });
 }
 
-async function getResolvedFeatureFlagsUncached(): Promise<
-  ResolvedFeatureFlag[]
-> {
+async function getResolvedFeatureFlagsSnapshotUncached(): Promise<ResolvedFeatureFlagsSnapshot> {
   const db = await loadDbFlags();
-  return resolveAll(db);
+  return {
+    flags: resolveAll(db.flags),
+    persistenceAvailable: db.persistenceAvailable,
+  };
 }
 
 const getResolvedFeatureFlagsCached = unstable_cache(
-  getResolvedFeatureFlagsUncached,
+  getResolvedFeatureFlagsSnapshotUncached,
   ["feature-flags-resolved"],
   {
     tags: [FEATURE_FLAGS_CACHE_TAG],
@@ -95,11 +112,15 @@ const getResolvedFeatureFlagsCached = unstable_cache(
   },
 );
 
-export async function getResolvedFeatureFlags(): Promise<
-  ResolvedFeatureFlag[]
-> {
+export async function getResolvedFeatureFlagsSnapshot(options?: {
+  bypassCache?: boolean;
+}): Promise<ResolvedFeatureFlagsSnapshot> {
   if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") {
-    return getResolvedFeatureFlagsUncached();
+    return getResolvedFeatureFlagsSnapshotUncached();
+  }
+
+  if (options?.bypassCache) {
+    return getResolvedFeatureFlagsSnapshotUncached();
   }
 
   try {
@@ -109,10 +130,17 @@ export async function getResolvedFeatureFlags(): Promise<
       error instanceof Error &&
       error.message.includes("incrementalCache missing")
     ) {
-      return getResolvedFeatureFlagsUncached();
+      return getResolvedFeatureFlagsSnapshotUncached();
     }
     throw error;
   }
+}
+
+export async function getResolvedFeatureFlags(): Promise<
+  ResolvedFeatureFlag[]
+> {
+  const snapshot = await getResolvedFeatureFlagsSnapshot();
+  return snapshot.flags;
 }
 
 export async function getFeatureFlags(): Promise<

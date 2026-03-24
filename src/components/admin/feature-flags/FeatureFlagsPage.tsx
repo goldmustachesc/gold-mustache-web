@@ -18,7 +18,14 @@ import {
 } from "@/hooks/useAdminFeatureFlags";
 import { FEATURE_FLAG_KEYS, type FeatureFlagKey } from "@/config/feature-flags";
 import type { FeatureFlagSource } from "@/services/feature-flags";
-import { Loader2, Save, ToggleLeft, Info, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  Info,
+  Loader2,
+  Save,
+  Sparkles,
+  ToggleLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FLAG_TITLES: Record<FeatureFlagKey, string> = {
@@ -122,6 +129,7 @@ export function FeatureFlagsPage() {
     if (!data?.flags) return 0;
     return data.flags.filter((f) => f.enabled).length;
   }, [data?.flags]);
+  const persistenceAvailable = data?.persistenceAvailable === true;
 
   usePrivateHeader({
     title: "Feature flags",
@@ -137,6 +145,12 @@ export function FeatureFlagsPage() {
 
   const handleSave = async () => {
     if (!draft || !data?.flags) return;
+    if (!persistenceAvailable) {
+      toast.error(
+        "Não foi possível conectar ao banco de dados. Tente novamente quando a conexão for restabelecida.",
+      );
+      return;
+    }
     const flagsPayload: Partial<Record<FeatureFlagKey, boolean>> = {};
     for (const key of FEATURE_FLAG_KEYS) {
       const f = flagByKey.get(key);
@@ -229,7 +243,7 @@ export function FeatureFlagsPage() {
           type="button"
           variant="default"
           size="sm"
-          disabled={!isDirty || updateFlags.isPending}
+          disabled={!isDirty || updateFlags.isPending || !persistenceAvailable}
           onClick={() => void handleSave()}
           className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
         >
@@ -257,6 +271,32 @@ export function FeatureFlagsPage() {
               sobre o banco de dados.
             </p>
           </header>
+
+          {!persistenceAvailable && (
+            <section
+              role="alert"
+              className={cn(
+                "rounded-2xl border px-5 py-4",
+                "border-warning/30 bg-warning/10 text-foreground",
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-full bg-warning/15 p-2 text-warning-foreground">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-sm font-semibold">
+                    Banco de dados indisponível
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Não foi possível conectar ao banco de dados. As flags abaixo
+                    podem estar em fallback padrão ou ambiente, e novas
+                    alterações ficam bloqueadas até a conexão ser restabelecida.
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
 
           <section
             className={cn(
@@ -356,7 +396,11 @@ export function FeatureFlagsPage() {
                       <Switch
                         checked={draft[flag.key]}
                         onCheckedChange={() => handleToggle(flag.key)}
-                        disabled={lockedByEnv || updateFlags.isPending}
+                        disabled={
+                          lockedByEnv ||
+                          !persistenceAvailable ||
+                          updateFlags.isPending
+                        }
                         className="data-[state=checked]:bg-primary"
                         aria-label={`Alternar ${title}`}
                       />

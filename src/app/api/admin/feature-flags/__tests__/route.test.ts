@@ -81,11 +81,31 @@ describe("GET /api/admin/feature-flags", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
+    expect(json.data.persistenceAvailable).toBe(true);
     expect(json.data.flags).toHaveLength(3);
     expect(
       json.data.flags.find((f: { key: string }) => f.key === "loyaltyProgram")
         .enabled,
     ).toBe(false);
+  });
+
+  it("sinaliza indisponibilidade de persistencia quando o banco falha", async () => {
+    adminAuthenticated();
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(prisma.featureFlag.findMany).mockRejectedValue(
+      new Error("DB down"),
+    );
+
+    const response = await GET();
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data.persistenceAvailable).toBe(false);
+    expect(
+      json.data.flags.find((f: { key: string }) => f.key === "loyaltyProgram")
+        .enabled,
+    ).toBe(false);
+    errorSpy.mockRestore();
   });
 });
 
@@ -163,6 +183,7 @@ describe("PUT /api/admin/feature-flags", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
+    expect(json.data.persistenceAvailable).toBe(true);
     expect(
       json.data.flags.find((f: { key: string }) => f.key === "loyaltyProgram")
         .enabled,

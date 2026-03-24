@@ -112,7 +112,7 @@ describe("FeatureFlagsPage", () => {
       error: null,
     });
     vi.mocked(useAdminFeatureFlags).mockReturnValue({
-      data: { flags: baseFlags },
+      data: { flags: baseFlags, persistenceAvailable: true },
       isLoading: false,
       isError: false,
       error: null,
@@ -147,7 +147,7 @@ describe("FeatureFlagsPage", () => {
       ...baseFlags.slice(1),
     ];
     vi.mocked(useAdminFeatureFlags).mockReturnValue({
-      data: { flags },
+      data: { flags, persistenceAvailable: true },
       isLoading: false,
       isError: false,
       error: null,
@@ -205,6 +205,29 @@ describe("FeatureFlagsPage", () => {
 
     await user.click(screen.getByRole("button", { name: /tentar novamente/i }));
     expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("bloqueia edicao quando a persistencia no banco esta indisponivel", () => {
+    vi.mocked(useAdminFeatureFlags).mockReturnValue({
+      data: { flags: baseFlags, persistenceAvailable: false },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+      dataUpdatedAt: Date.now(),
+    } as ReturnType<typeof useAdminFeatureFlags>);
+
+    renderPage();
+
+    expect(
+      screen.getByText(/não foi possível conectar ao banco de dados/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /salvar alterações/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("switch", { name: /alternar programa de fidelidade/i }),
+    ).toBeDisabled();
   });
 
   it("redireciona não-admin e exibe toast de acesso restrito", async () => {

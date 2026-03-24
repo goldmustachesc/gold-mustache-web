@@ -85,6 +85,21 @@ describe("handlePrismaError", () => {
     expect(body.error).toBe("DATABASE_CONNECTION");
   });
 
+  it("handles Prisma-like errors when runtime strips the prototype", async () => {
+    const error = {
+      message: "Cannot connect",
+      code: "P1001",
+      meta: { database_location: "db.example.com:6543" },
+    };
+
+    const res = handlePrismaError(error);
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error).toBe("PRISMA_P1001");
+    expect(body.message).toBe("Não foi possível conectar ao banco de dados");
+  });
+
   it("handles generic Error", async () => {
     const error = new Error("Something broke");
     const res = handlePrismaError(error);

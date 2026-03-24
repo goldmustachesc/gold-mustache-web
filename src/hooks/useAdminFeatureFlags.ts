@@ -7,6 +7,7 @@ import type { ResolvedFeatureFlag } from "@/services/feature-flags";
 
 export interface AdminFeatureFlagsResponse {
   flags: ResolvedFeatureFlag[];
+  persistenceAvailable: boolean;
 }
 
 export function useAdminFeatureFlags() {
