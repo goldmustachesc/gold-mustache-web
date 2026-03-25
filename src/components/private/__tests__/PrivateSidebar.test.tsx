@@ -68,6 +68,18 @@ vi.mock("next-intl", () => ({
   useLocale: () => "pt-BR",
 }));
 
+const mockFeatureFlags = vi.hoisted(() => ({
+  value: {
+    loyaltyProgram: true,
+    referralProgram: true,
+    eventsSection: true,
+  },
+}));
+
+vi.mock("@/hooks/useFeatureFlags", () => ({
+  useFeatureFlags: () => mockFeatureFlags.value,
+}));
+
 vi.mock("@/components/ui/theme-toggle", () => ({
   ThemeToggle: () => <button type="button">theme-toggle</button>,
 }));
@@ -83,6 +95,11 @@ describe("PrivateSidebar", () => {
     mockSignOutPending.value = false;
     mockSignOut.mockClear();
     defaultProps.onOpenChange.mockClear();
+    mockFeatureFlags.value = {
+      loyaltyProgram: true,
+      referralProgram: true,
+      eventsSection: true,
+    };
   });
 
   it("renders barber nav items when role is BARBER", () => {
@@ -149,5 +166,17 @@ describe("PrivateSidebar", () => {
     render(<PrivateSidebar {...defaultProps} />);
 
     expect(screen.getByText("theme-toggle")).toBeInTheDocument();
+  });
+
+  it("hides Fidelidade nav item for CLIENT when loyaltyProgram flag is false", () => {
+    mockProfile.value = { role: "CLIENT", fullName: "Client" };
+    mockFeatureFlags.value = {
+      loyaltyProgram: false,
+      referralProgram: false,
+      eventsSection: false,
+    };
+    render(<PrivateSidebar {...defaultProps} />);
+
+    expect(screen.queryByText("Fidelidade")).not.toBeInTheDocument();
   });
 });

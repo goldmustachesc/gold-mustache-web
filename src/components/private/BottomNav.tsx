@@ -2,6 +2,7 @@
 
 import { useProfileMe } from "@/hooks/useProfileMe";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import {
   Calendar,
@@ -41,6 +42,10 @@ interface BottomNavBookingSettings {
   isExternal: boolean;
 }
 
+interface BottomNavFeatureFlags {
+  loyaltyProgram?: boolean;
+}
+
 function isSidebarItem(item: NavEntry): item is BottomNavSidebarItem {
   return "action" in item && item.action === "sidebar";
 }
@@ -49,6 +54,7 @@ function getBottomNavItems(
   role: string,
   locale: string,
   bookingSettings: BottomNavBookingSettings,
+  featureFlags?: BottomNavFeatureFlags,
 ): NavEntry[] {
   const moreItem: BottomNavSidebarItem = {
     label: "Mais",
@@ -124,15 +130,17 @@ function getBottomNavItems(
     });
   }
 
-  items.push(
-    {
+  // Shows loyalty when flag is true or undefined (backwards compatible default)
+  if (featureFlags?.loyaltyProgram !== false) {
+    items.push({
       href: `/${locale}/loyalty`,
       label: "Fidelidade",
       icon: Gift,
       matchMode: "prefix",
-    },
-    moreItem,
-  );
+    });
+  }
+
+  items.push(moreItem);
 
   return items;
 }
@@ -155,14 +163,16 @@ export function BottomNav() {
   const pathname = usePathname();
   const locale = useLocale();
   const { onOpenChange } = usePrivateSidebarState();
+  const flags = useFeatureFlags();
 
   if (!profile) return null;
 
-  const items = getBottomNavItems(profile.role, locale, {
-    bookingHref,
-    shouldShowBooking,
-    isExternal,
-  });
+  const items = getBottomNavItems(
+    profile.role,
+    locale,
+    { bookingHref, shouldShowBooking, isExternal },
+    flags,
+  );
 
   return (
     <nav

@@ -50,6 +50,14 @@ vi.mock("@/hooks/useBookingSettings", () => ({
   }),
 }));
 
+vi.mock("@/hooks/useFeatureFlags", () => ({
+  useFeatureFlags: () => ({
+    loyaltyProgram: true,
+    referralProgram: true,
+    eventsSection: true,
+  }),
+}));
+
 vi.mock("@/components/notifications/NotificationPanel", () => ({
   NotificationPanel: () => <div data-testid="notification-panel" />,
 }));

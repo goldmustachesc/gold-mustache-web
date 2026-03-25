@@ -36,6 +36,18 @@ vi.mock("@/hooks/useBookingSettings", () => ({
   useBookingSettings: () => mockBookingSettings.value,
 }));
 
+const mockFeatureFlags = vi.hoisted(() => ({
+  value: {
+    loyaltyProgram: true,
+    referralProgram: true,
+    eventsSection: true,
+  },
+}));
+
+vi.mock("@/hooks/useFeatureFlags", () => ({
+  useFeatureFlags: () => mockFeatureFlags.value,
+}));
+
 function Wrapper({ children }: { children: ReactNode }) {
   return <PrivateHeaderProvider>{children}</PrivateHeaderProvider>;
 }
@@ -48,6 +60,11 @@ describe("BottomNav", () => {
       bookingHref: "/pt-BR/agendar",
       shouldShowBooking: true,
       isExternal: false,
+    };
+    mockFeatureFlags.value = {
+      loyaltyProgram: true,
+      referralProgram: true,
+      eventsSection: true,
     };
   });
 
@@ -124,6 +141,19 @@ describe("BottomNav", () => {
     expect(bookingLink).toHaveAttribute("href", "https://agenda.externa.com");
     expect(bookingLink).toHaveAttribute("target", "_blank");
     expect(bookingLink).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("hides Fidelidade item for CLIENT when loyaltyProgram flag is false", () => {
+    mockProfile.value = { role: "CLIENT", fullName: "Cliente" };
+    mockFeatureFlags.value = {
+      loyaltyProgram: false,
+      referralProgram: false,
+      eventsSection: false,
+    };
+    render(<BottomNav />, { wrapper: Wrapper });
+
+    expect(screen.queryByText("Fidelidade")).not.toBeInTheDocument();
+    expect(screen.getByText("Início")).toBeInTheDocument();
   });
 
   it("does not render when profile is not loaded", () => {

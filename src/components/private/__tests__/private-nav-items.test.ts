@@ -68,6 +68,29 @@ describe("private-nav-items", () => {
       );
       expect(barberHome).toBeUndefined();
     });
+
+    it("includes loyalty for CLIENT when flags not provided (backwards compatible)", () => {
+      const items = getNavItems("CLIENT", LOCALE);
+      const loyaltyItem = items.find((i) => i.label === "Fidelidade");
+      expect(loyaltyItem).toBeDefined();
+    });
+
+    it("includes loyalty for CLIENT when loyaltyProgram is true", () => {
+      const items = getNavItems("CLIENT", LOCALE, { loyaltyProgram: true });
+      const loyaltyItem = items.find((i) => i.label === "Fidelidade");
+      expect(loyaltyItem).toBeDefined();
+    });
+
+    it("excludes loyalty for CLIENT when loyaltyProgram is false", () => {
+      const items = getNavItems("CLIENT", LOCALE, { loyaltyProgram: false });
+      const loyaltyItem = items.find((i) => i.label === "Fidelidade");
+      expect(loyaltyItem).toBeUndefined();
+    });
+
+    it("does not exclude loyalty for BARBER even when loyaltyProgram is false", () => {
+      const items = getNavItems("BARBER", LOCALE, { loyaltyProgram: false });
+      expect(items[0].href).toBe(`/${LOCALE}/barbeiro`);
+    });
   });
 
   describe("getAdminNavItems", () => {

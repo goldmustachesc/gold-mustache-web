@@ -1,6 +1,7 @@
 import { HeroSection } from "@/components/sections/HeroSection";
 import { ServicesSection } from "@/components/sections/ServicesSection";
 import { TeamSection } from "@/components/sections/TeamSection";
+import { isFeatureEnabled } from "@/services/feature-flags";
 import dynamic from "next/dynamic";
 
 const SectionSkeleton = () => (
@@ -73,7 +74,9 @@ const FAQSection = dynamic(
   { loading: SectionSkeleton },
 );
 
-export default function Home() {
+export default async function Home() {
+  const showEvents = await isFeatureEnabled("eventsSection");
+
   return (
     <div className="flex flex-col">
       <HeroSection />
@@ -81,7 +84,7 @@ export default function Home() {
       <TeamSection />
       <TestimonialsSection />
       <InstagramSection />
-      <EventsSection />
+      {showEvents && <EventsSection />}
       <ContactSection />
       <SponsorsSection />
       <GallerySection />

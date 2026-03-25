@@ -1,5 +1,9 @@
 import type { UserRole } from "@/types/profile";
 
+export interface NavFeatureFlags {
+  loyaltyProgram?: boolean;
+}
+
 export interface NavItemDef {
   href: string;
   label: string;
@@ -113,14 +117,25 @@ function clientNavItems(locale: string): NavItemDef[] {
   ];
 }
 
-export function getNavItems(role: UserRole, locale: string): NavItemDef[] {
+export function getNavItems(
+  role: UserRole,
+  locale: string,
+  flags?: NavFeatureFlags,
+): NavItemDef[] {
   if (role === "ADMIN") {
     return adminNavItems(locale);
   }
   if (role === "BARBER") {
     return barberNavItems(locale);
   }
-  return clientNavItems(locale);
+
+  const items = clientNavItems(locale);
+
+  if (flags?.loyaltyProgram === false) {
+    return items.filter((item) => !item.href.includes("/loyalty"));
+  }
+
+  return items;
 }
 
 export function getAdminNavItems(locale: string): NavItemDef[] {

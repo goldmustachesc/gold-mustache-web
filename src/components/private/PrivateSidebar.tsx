@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { useSignOut } from "@/hooks/useAuth";
 import { useProfileMe } from "@/hooks/useProfileMe";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -111,8 +112,9 @@ export function PrivateSidebar({ open, onOpenChange }: PrivateSidebarProps) {
 
   const role = profile?.role ?? "CLIENT";
   const isAdmin = role === "ADMIN";
+  const flags = useFeatureFlags();
 
-  const navItems = getNavItems(role, locale);
+  const navItems = getNavItems(role, locale, flags);
   const adminItems = getAdminNavItems(locale);
 
   const handleNavigate = () => onOpenChange(false);
