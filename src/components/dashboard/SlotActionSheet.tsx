@@ -53,7 +53,7 @@ function SlotActionContent({
   const isNavigating = navigatingTime !== null;
 
   return (
-    <div className="py-4 space-y-4">
+    <div className="p-4 pt-0 space-y-4">
       <div>
         <p className="text-sm text-muted-foreground mb-3">
           Início do atendimento
