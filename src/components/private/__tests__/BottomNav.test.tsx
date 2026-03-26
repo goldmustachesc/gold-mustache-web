@@ -167,7 +167,8 @@ describe("BottomNav", () => {
     render(<BottomNav />, { wrapper: Wrapper });
 
     const nav = screen.getByRole("navigation", { name: /navegação/i });
-    expect(nav.className).toContain("lg:hidden");
+    const wrapper = nav.parentElement;
+    expect(wrapper?.className).toContain("lg:hidden");
   });
 
   it("highlights the active link based on pathname", () => {

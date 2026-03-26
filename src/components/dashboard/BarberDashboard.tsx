@@ -21,7 +21,20 @@ import {
   usePrivateHeader,
   PrivateHeaderActions,
 } from "@/components/private/PrivateHeaderContext";
-import { CalendarOff, Eye, EyeOff, Plus, Calendar } from "lucide-react";
+import {
+  CalendarOff,
+  Eye,
+  EyeOff,
+  Plus,
+  Calendar,
+  MoreVertical,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import {
   formatDateToString,
@@ -225,18 +238,55 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   return (
     <div>
       <PrivateHeaderActions>
-        {/* Mobile: CTA compacto no header */}
-        <Link href={`/${locale}/barbeiro/agendar`} className="lg:hidden">
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Agendar
-          </Button>
-        </Link>
+        {/* Mobile: CTA + Dropdown para ações secundárias */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <Link href={`/${locale}/barbeiro/agendar`}>
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Agendar
+            </Button>
+          </Link>
 
-        {/* Desktop: CTA completo */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground hover:bg-accent"
+                aria-label="Mais ações"
+              >
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link
+                  href={absencesPageHref}
+                  className="flex items-center gap-2"
+                >
+                  <CalendarOff className="h-4 w-4" />
+                  Nova Ausência
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setHideValues((prev) => !prev)}
+                className="flex items-center gap-2"
+              >
+                {hideValues ? (
+                  <Eye className="h-4 w-4" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
+                {hideValues ? "Mostrar Valores" : "Ocultar Valores"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Desktop: CTAs completos */}
         <Link href={`/${locale}/barbeiro/agendar`} className="hidden lg:block">
           <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
             <Plus className="h-4 w-4 mr-2" />
@@ -244,7 +294,6 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
           </Button>
         </Link>
 
-        {/* Ausência: ícone no mobile, botão no desktop */}
         <Link href={absencesPageHref} className="hidden lg:block">
           <Button
             variant="outline"
@@ -254,23 +303,12 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
             Nova Ausência
           </Button>
         </Link>
-        <Link href={absencesPageHref} className="lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary hover:text-primary hover:bg-primary/10"
-            aria-label="Adicionar ausência"
-            title="Adicionar ausência"
-          >
-            <CalendarOff className="h-5 w-5" />
-          </Button>
-        </Link>
 
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setHideValues((prev) => !prev)}
-          className="text-muted-foreground hover:text-foreground hover:bg-accent"
+          className="hidden lg:flex text-muted-foreground hover:text-foreground hover:bg-accent"
           aria-label={hideValues ? "Mostrar valores" : "Ocultar valores"}
           title={hideValues ? "Mostrar valores" : "Ocultar valores"}
         >

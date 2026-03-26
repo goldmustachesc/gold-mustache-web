@@ -185,9 +185,11 @@
  * screens follow light/dark/system without forcing a full refactor now.
  */
 .private-theme {
-  --private-mobile-bottom-nav-height: 3.5rem;
+  --private-mobile-bottom-nav-height: 4rem;
+  --private-mobile-bottom-nav-margin: 0.5rem;
   --private-mobile-bottom-nav-offset: calc(
     var(--private-mobile-bottom-nav-height) +
+    var(--private-mobile-bottom-nav-margin) +
     env(safe-area-inset-bottom, 0px)
   );
   --color-zinc-950: var(--background);

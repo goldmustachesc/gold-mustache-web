@@ -175,55 +175,59 @@ export function BottomNav() {
   );
 
   return (
-    <nav
-      aria-label="Navegação principal"
-      className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border lg:hidden"
+    <div
+      className="fixed bottom-0 inset-x-0 z-40 lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div className="flex items-stretch justify-around max-w-lg mx-auto">
-        {items.map((item) => {
-          if (isSidebarItem(item)) {
+      <nav
+        aria-label="Navegação principal"
+        className="mx-3 mb-2 bg-background/95 backdrop-blur rounded-2xl border border-border shadow-lg"
+      >
+        <div className="flex items-stretch justify-around">
+          {items.map((item) => {
+            if (isSidebarItem(item)) {
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => onOpenChange(true)}
+                  className={cn(
+                    "flex flex-1 flex-col items-center justify-center gap-1.5 py-3 text-muted-foreground transition-colors active:bg-accent/50 first:rounded-l-2xl last:rounded-r-2xl",
+                    mobileBottomNavHeightClassName,
+                  )}
+                >
+                  <item.icon className="size-5" />
+                  <span className="text-[10px] font-medium leading-none">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            }
+
+            const active = isActive(pathname, item);
+
             return (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => onOpenChange(true)}
+              <Link
+                key={item.href}
+                href={item.href}
+                target={item.linkTarget}
+                rel={item.linkRel}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-muted-foreground transition-colors active:bg-accent/50",
+                  "flex flex-1 flex-col items-center justify-center gap-1.5 py-3 transition-colors active:bg-accent/50 first:rounded-l-2xl last:rounded-r-2xl",
                   mobileBottomNavHeightClassName,
+                  active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <item.icon className="size-5" />
                 <span className="text-[10px] font-medium leading-none">
                   {item.label}
                 </span>
-              </button>
+              </Link>
             );
-          }
-
-          const active = isActive(pathname, item);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              target={item.linkTarget}
-              rel={item.linkRel}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors active:bg-accent/50",
-                mobileBottomNavHeightClassName,
-                active ? "text-primary" : "text-muted-foreground",
-              )}
-            >
-              <item.icon className="size-5" />
-              <span className="text-[10px] font-medium leading-none">
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+          })}
+        </div>
+      </nav>
+    </div>
   );
 }
