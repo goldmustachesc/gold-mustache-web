@@ -4,13 +4,20 @@ import { authService } from "@/services/auth";
 import type { LoginInput, SignupInput } from "@/lib/validations/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
+import {
+  translateAuthError,
+  isEmailNotConfirmedError,
+  createAuthErrorTranslations,
+} from "@/utils/auth-errors";
 
 export function useUser() {
   return useQuery({
     queryKey: ["user"],
     queryFn: () => authService.getUser(),
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -19,55 +26,96 @@ export function useSession() {
     queryKey: ["session"],
     queryFn: () => authService.getSession(),
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useSignIn() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("auth");
 
   return useMutation({
     mutationFn: (data: LoginInput) =>
       authService.signIn(data.email, data.password),
     onSuccess: (response) => {
       if (response.error) {
-        toast.error(response.error.message || "Credenciais inválidas");
+        const errorMessage = response.error.message || "";
+
+        // If email not confirmed error, ignore it completely
+        // The user should still be able to proceed - if Supabase blocks,
+        // they need to disable email confirmation in Supabase Dashboard:
+        // Authentication > Providers > Email > Disable "Confirm email"
+        if (isEmailNotConfirmedError(errorMessage)) {
+          // If we have a session, proceed normally
+          if (response.session) {
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+            queryClient.invalidateQueries({ queryKey: ["session"] });
+            toast.success(t("toast.loginSuccess"));
+            router.push(`/${locale}/dashboard`);
+            router.refresh();
+            return;
+          }
+          // If no session, silently ignore - don't show error
+          // User needs to configure Supabase to disable email confirmation
+          return;
+        }
+
+        toast.error(
+          translateAuthError(errorMessage, createAuthErrorTranslations(t)),
+        );
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["user"] });
       queryClient.invalidateQueries({ queryKey: ["session"] });
-      toast.success("Login realizado com sucesso!");
-      router.push("/dashboard");
+      toast.success(t("toast.loginSuccess"));
+      router.push(`/${locale}/dashboard`);
       router.refresh();
     },
     onError: () => {
-      toast.error("Erro ao fazer login");
+      toast.error(t("toast.loginError"));
     },
   });
 }
 
 export function useSignUp() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("auth");
+
   return useMutation({
     mutationFn: (data: SignupInput) =>
-      authService.signUp(data.email, data.password),
+      authService.signUp(data.email, data.password, data.fullName, data.phone),
     onSuccess: (response) => {
       if (response.error) {
-        toast.error(response.error.message || "Erro ao criar conta");
+        const errorMessage = response.error.message || "";
+        toast.error(
+          translateAuthError(errorMessage, createAuthErrorTranslations(t)),
+        );
         return;
       }
-      toast.success("Conta criada! Verifique seu email.");
+      // Atualiza os dados do usuário no cache
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+      toast.success(t("toast.signupSuccess"));
+      router.push(`/${locale}/dashboard`);
+      router.refresh();
     },
     onError: () => {
-      toast.error("Erro ao criar conta");
+      toast.error(t("toast.signupError"));
     },
   });
 }
 
 export function useSignInWithGoogle() {
+  const t = useTranslations("auth");
+
   return useMutation({
     mutationFn: () => authService.signInWithGoogle(),
     onError: () => {
-      toast.error("Erro ao fazer login com Google");
+      toast.error(t("toast.googleError"));
     },
   });
 }
@@ -75,44 +123,52 @@ export function useSignInWithGoogle() {
 export function useSignOut() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("auth");
 
   return useMutation({
     mutationFn: () => authService.signOut(),
     onSuccess: () => {
       queryClient.clear();
-      toast.success("Logout realizado");
-      router.push("/");
+      queryClient.setQueryData(["user"], null);
+      queryClient.setQueryData(["session"], null);
+      toast.success(t("toast.logoutSuccess"));
+      router.replace(`/${locale}`);
       router.refresh();
     },
     onError: () => {
-      toast.error("Erro ao fazer logout");
+      toast.error(t("toast.logoutError"));
     },
   });
 }
 
 export function useResetPassword() {
+  const t = useTranslations("auth");
+
   return useMutation({
     mutationFn: (email: string) => authService.resetPassword(email),
     onSuccess: () => {
-      toast.success("Email de recuperação enviado!");
+      toast.success(t("toast.resetSuccess"));
     },
     onError: () => {
-      toast.error("Erro ao enviar email de recuperação");
+      toast.error(t("toast.resetError"));
     },
   });
 }
 
 export function useUpdatePassword() {
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("auth");
 
   return useMutation({
     mutationFn: (password: string) => authService.updatePassword(password),
     onSuccess: () => {
-      toast.success("Senha atualizada com sucesso!");
-      router.push("/login");
+      toast.success(t("toast.updatePasswordSuccess"));
+      router.push(`/${locale}/login`);
     },
     onError: () => {
-      toast.error("Erro ao atualizar senha");
+      toast.error(t("toast.updatePasswordError"));
     },
   });
 }

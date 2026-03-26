@@ -77,7 +77,7 @@ The following manual tests require human interaction and cannot be automated:
 npm run dev
 ```
 
-Navigate to: `http://localhost:3000`
+Navigate to: `http://localhost:3001`
 
 ### Step 2: Follow the Manual Testing Checklist
 

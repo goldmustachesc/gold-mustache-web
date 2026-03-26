@@ -1,11 +1,11 @@
+import { barbershopConfig } from "@/config/barbershop";
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Gold Mustache Barbearia - Tradição e Estilo Masculino",
-    short_name: "Gold Mustache",
-    description:
-      "Barbearia tradicional em Itapema-SC com mais de 6 anos de experiência. Cortes masculinos clássicos e modernos, barba completa e degradê navalhado.",
+    name: `${barbershopConfig.name} - ${barbershopConfig.tagline}`,
+    short_name: barbershopConfig.shortName,
+    description: barbershopConfig.description,
     start_url: "/pt-BR",
     display: "standalone",
     background_color: "#1a1a1a",

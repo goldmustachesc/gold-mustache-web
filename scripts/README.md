@@ -2,7 +2,7 @@
 
 ## Otimização de Imagens
 
-### optimize-images.js
+### optimize-images.cjs
 
 Converte automaticamente todas as imagens JPG/PNG para WebP com compressão otimizada.
 

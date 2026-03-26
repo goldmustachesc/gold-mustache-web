@@ -1,0 +1,168 @@
+{
+  "title": "Mi Perfil",
+  "subtitle": "Cuida tu cuenta, tus datos y tus próximos pasos.",
+  "loading": "Cargando...",
+  "backToDashboard": "Volver al Dashboard",
+  "hero": {
+    "eyebrow": "Ficha del cliente",
+    "greeting": "Tu espacio personal en Gold Mustache",
+    "description": "Sigue tu cuenta, mantén tus datos al día y resuelve todo desde un solo lugar.",
+    "verified": "Email verificado",
+    "pending": "Verificación pendiente",
+    "barberRole": "Cuenta de barbero",
+    "customerRole": "Cuenta de cliente",
+    "adminRole": "Cuenta administrativa",
+    "noName": "Cliente Gold Mustache",
+    "noPhone": "Agrega un teléfono para agilizar tus próximos turnos.",
+    "completionLabel": "Perfil completo",
+    "nextAppointment": "Próximo turno",
+    "loadingAppointment": "Cargando tu próximo turno...",
+    "noUpcoming": "No hay turnos futuros por ahora.",
+    "pendingTitle": "Próximos pasos",
+    "pendingNone": "Tu cuenta está lista para tus próximos turnos.",
+    "pendingVerification": "Confirmar el email",
+    "pendingPhone": "Agregar teléfono",
+    "pendingAddress": "Completar dirección"
+  },
+  "quickActions": {
+    "title": "Acciones rápidas",
+    "description": "Atajos para lo que más usas en tu rutina.",
+    "bookingLabel": "Reservar turno",
+    "bookingDescription": "Programa tu próxima visita",
+    "appointmentsLabel": "Mis turnos",
+    "appointmentsDescription": "Ver próximos horarios e historial",
+    "exportLabel": "Exportar mis datos",
+    "exportDescription": "Descarga un archivo con tus datos",
+    "securityLabel": "Seguridad de la cuenta",
+    "securityDescription": "Revisa contraseña y verificación"
+  },
+  "sections": {
+    "personal": {
+      "title": "Datos personales",
+      "description": "Información básica y dirección para referencia."
+    },
+    "security": {
+      "title": "Salud de la cuenta",
+      "description": "Contraseña, verificación y señales de seguridad."
+    },
+    "privacy": {
+      "title": "Privacidad y derechos de datos",
+      "description": "Accede a tus datos y entiende cómo se maneja tu cuenta."
+    },
+    "danger": {
+      "title": "Zona sensible",
+      "description": "Las acciones irreversibles requieren confirmación adicional."
+    }
+  },
+  "appointment": {
+    "service": "Servicio",
+    "date": "Fecha",
+    "time": "Horario",
+    "barber": "Barbero"
+  },
+  "personalInfo": {
+    "title": "Información personal",
+    "description": "Tus datos principales para atención y contacto.",
+    "email": "Email",
+    "emailHint": "El email no se puede cambiar aquí",
+    "fullName": "Nombre completo",
+    "fullNamePlaceholder": "Tu nombre completo",
+    "phone": "Teléfono",
+    "phonePlaceholder": "(11) 99999-9999"
+  },
+  "address": {
+    "title": "Dirección",
+    "description": "Tu dirección para referencia y organización de la cuenta.",
+    "zipCode": "Código postal",
+    "zipCodePlaceholder": "00000-000",
+    "state": "Estado",
+    "statePlaceholder": "SP",
+    "city": "Ciudad",
+    "cityPlaceholder": "Sao Paulo",
+    "neighborhood": "Barrio",
+    "neighborhoodPlaceholder": "Centro",
+    "street": "Calle",
+    "streetPlaceholder": "Calle de las Flores",
+    "number": "Número",
+    "numberPlaceholder": "123",
+    "complement": "Complemento",
+    "complementPlaceholder": "Apto 101, Bloque A"
+  },
+  "save": {
+    "button": "Guardar cambios",
+    "saving": "Guardando...",
+    "success": "¡Perfil actualizado con éxito!",
+    "error": "Error al actualizar el perfil. Inténtalo de nuevo."
+  },
+  "emailVerification": {
+    "title": "Verificación de email",
+    "description": "Confirma tu email para reforzar la seguridad de la cuenta.",
+    "verified": "Verificado",
+    "pending": "Pendiente",
+    "verifiedMessage": "Tu email {email} está verificado.",
+    "unverifiedWarning": "Verificar tu email aumenta la seguridad de tu cuenta y permite recuperar la contraseña.",
+    "sendButton": "Enviar verificación",
+    "sending": "Enviando...",
+    "success": "¡Email de verificación enviado! Revisa tu bandeja de entrada.",
+    "error": "Error al enviar el email de verificación. Inténtalo de nuevo.",
+    "hint": "Se enviará un email con un enlace para confirmar tu dirección. También revisa la carpeta de spam."
+  },
+  "password": {
+    "title": "Cambiar contraseña",
+    "description": "Actualiza tu contraseña de acceso.",
+    "newPassword": "Nueva contraseña",
+    "newPasswordPlaceholder": "Mínimo 6 caracteres",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "confirmPasswordPlaceholder": "Repite la nueva contraseña",
+    "button": "Cambiar contraseña",
+    "changing": "Cambiando...",
+    "success": "¡Tu contraseña se cambió con éxito!",
+    "error": "Error al cambiar la contraseña. Inténtalo de nuevo.",
+    "ariaShowNewPassword": "Mostrar nueva contraseña",
+    "ariaHideNewPassword": "Ocultar nueva contraseña",
+    "ariaShowConfirmPassword": "Mostrar confirmación de contraseña",
+    "ariaHideConfirmPassword": "Ocultar confirmación de contraseña",
+    "validation": {
+      "required": "La nueva contraseña es obligatoria",
+      "minLength": "La contraseña debe tener al menos 6 caracteres",
+      "mismatch": "Las contraseñas no coinciden"
+    }
+  },
+  "dataRights": {
+    "badge": "Privacidad",
+    "title": "Exportación LGPD",
+    "description": "Descarga un archivo JSON con los datos asociados a tu cuenta.",
+    "includes": {
+      "accountTitle": "Datos de cuenta y perfil",
+      "accountDescription": "Datos de registro, metadatos de la cuenta e información principal de tu perfil.",
+      "appointmentsTitle": "Turnos y preferencias",
+      "appointmentsDescription": "Historial de servicios, datos de turnos y consentimientos vinculados a tu acceso."
+    },
+    "hint": "El archivo se genera en el momento de la solicitud y puede incluir historial de cuenta, turnos y consentimientos registrados.",
+    "exportTitle": "Llévate tus datos",
+    "exportBody": "Cuando lo necesites, exporta una vista completa de tu cuenta para revisión, portabilidad o archivo personal.",
+    "exportButton": "Descargar mis datos"
+  },
+  "deleteAccount": {
+    "title": "Eliminar Cuenta",
+    "description": "Elimina permanentemente tu cuenta y los datos personales de tu área",
+    "button": "Eliminar Mi Cuenta",
+    "confirmWord": "ELIMINAR",
+    "success": "Tu cuenta ha sido eliminada con éxito.",
+    "error": "Error al eliminar la cuenta. Inténtalo de nuevo.",
+    "warning": {
+      "title": "¡Esta acción es irreversible!",
+      "item1": "Todos tus datos personales serán eliminados",
+      "item2": "El historial de turnos puede mantenerse sin identificación personal por fines operativos",
+      "item3": "Perderás el acceso a tu cuenta y preferencias"
+    },
+    "dialog": {
+      "title": "¿Estás seguro?",
+      "description": "Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta y removerá los datos personales asociados a tu acceso.",
+      "confirmLabel": "Escribe \"{word}\" para confirmar:",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar Cuenta",
+      "deleting": "Eliminando..."
+    }
+  }
+}

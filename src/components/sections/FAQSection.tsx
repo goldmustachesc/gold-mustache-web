@@ -1,6 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { RevealOnScroll } from "@/components/shared/RevealOnScroll";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import {
   Accordion,
   AccordionContent,
@@ -17,11 +18,6 @@ interface FAQItem {
   answer: string;
 }
 
-/**
- * Generates FAQPage JSON-LD schema markup for SEO
- * @param items - Array of FAQ items with questions and answers
- * @returns JSON-LD schema object conforming to schema.org FAQPage specification
- */
 function generateFAQSchema(items: FAQItem[]) {
   return {
     "@context": "https://schema.org",
@@ -40,27 +36,32 @@ function generateFAQSchema(items: FAQItem[]) {
 function FAQSectionComponent() {
   const t = useTranslations("faq");
 
-  // Memoize FAQ items to prevent recalculation on every render
   const faqItems = useMemo(() => {
-    return Array.from({ length: 10 }, (_, i) => {
-      try {
+    const raw = t.raw("items");
+    if (!Array.isArray(raw)) return [];
+
+    return raw
+      .map((item) => {
+        const maybe = item as Partial<FAQItem>;
+        if (!maybe.id || !maybe.question || !maybe.answer) return null;
+
         return {
-          id: t(`items.${i}.id`),
-          question: t(`items.${i}.question`),
-          answer: t(`items.${i}.answer`),
+          id: String(maybe.id),
+          question: String(maybe.question),
+          answer: String(maybe.answer),
         };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean) as FAQItem[];
+      })
+      .filter(Boolean) as FAQItem[];
   }, [t]);
 
-  // Memoize FAQ schema generation
   const faqSchema = useMemo(() => generateFAQSchema(faqItems), [faqItems]);
+
+  const midpoint = Math.ceil(faqItems.length / 2);
+  const leftColumn = faqItems.slice(0, midpoint);
+  const rightColumn = faqItems.slice(midpoint);
 
   return (
     <>
-      {/* FAQ Schema Markup for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -68,39 +69,30 @@ function FAQSectionComponent() {
         }}
       />
 
-      <section
-        className="py-20 bg-background"
+      <SectionLayout
         id="faq"
+        icon={HelpCircle}
+        badge={t("badge")}
+        title={t("title")}
+        description={t("description")}
         aria-labelledby="faq-title"
         aria-describedby="faq-description"
       >
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              <HelpCircle className="h-4 w-4 mr-2" aria-hidden="true" />
-              <span>{t("badge")}</span>
-            </Badge>
-            <h2 id="faq-title" className="text-3xl md:text-4xl font-bold mb-4">
-              {t("title")}
-            </h2>
-            <p
-              id="faq-description"
-              className="text-lg text-muted-foreground max-w-2xl mx-auto"
-            >
-              {t("description")}
-            </p>
-          </div>
-
-          {/* FAQ Grid - Single column on mobile, two columns on desktop */}
-          <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {faqItems.map((item) => (
-                <div key={item.id} className="flex">
-                  <Accordion
-                    type="multiple"
-                    className="w-full border rounded-lg px-4 bg-card hover:shadow-md transition-shadow"
-                  >
-                    <AccordionItem value={item.id} className="border-none">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[leftColumn, rightColumn].map((column, colIndex) => (
+              <RevealOnScroll
+                key={colIndex === 0 ? "faq-left" : "faq-right"}
+                delay={colIndex * 0.1}
+                direction={colIndex === 0 ? "left" : "right"}
+              >
+                <Accordion type="multiple" className="space-y-3">
+                  {column.map((item) => (
+                    <AccordionItem
+                      key={item.id}
+                      value={item.id}
+                      className="border rounded-lg px-4 bg-card hover:shadow-md transition-shadow hover:border-primary/30"
+                    >
                       <AccordionTrigger className="text-left hover:no-underline">
                         <span className="text-base font-semibold pr-4">
                           {item.question}
@@ -110,17 +102,15 @@ function FAQSectionComponent() {
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>
-                  </Accordion>
-                </div>
-              ))}
-            </div>
+                  ))}
+                </Accordion>
+              </RevealOnScroll>
+            ))}
           </div>
         </div>
-      </section>
+      </SectionLayout>
     </>
   );
 }
 
-// Memoize the entire component to prevent unnecessary re-renders
-// when parent components update but FAQ props haven't changed
 export const FAQSection = memo(FAQSectionComponent);

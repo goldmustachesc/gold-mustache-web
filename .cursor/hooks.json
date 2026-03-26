@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "node .cursor/hooks/format-edited-file.js"
+      }
+    ],
+    "afterTabFileEdit": [
+      {
+        "command": "node .cursor/hooks/format-edited-file.js"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "node .cursor/hooks/protect-secrets-read.js",
+        "failClosed": true
+      }
+    ],
+    "beforeTabFileRead": [
+      {
+        "command": "node .cursor/hooks/protect-secrets-read.js",
+        "failClosed": true
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "node .cursor/hooks/guard-destructive-shell.js",
+        "matcher": "git\\s+reset\\s+--hard|git\\s+checkout\\s+--|git\\s+restore[\\s\\S]*--source|git\\s+clean\\s+-|git\\s+push[\\s\\S]*--force|\\brm\\b"
+      }
+    ]
+  }
+}

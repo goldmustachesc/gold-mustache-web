@@ -23,16 +23,20 @@ Website profissional para a Barbearia Gold Mustache, localizada em Itapema, Sant
 
 ```bash
 # Instalar dependências
-npm install
+pnpm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env.local
+# Preencha os valores em .env.local (veja comentários no arquivo)
 
 # Executar em modo desenvolvimento
-npm run dev
+pnpm dev
 
 # Build para produção
-npm run build
+pnpm build
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) para ver o resultado.
+Acesse [http://localhost:3001](http://localhost:3001) para ver o resultado.
 
 ## Estrutura do Projeto
 
@@ -52,6 +56,13 @@ O sistema de agendamento utiliza o **Inbarber App** já estabelecido:
 - Link: https://chat.inbarberapp.com/?id=6c060e9d-672d-4f39-bbc4-fac594f4cc28
 - Integração via redirect (preserva fluxo existente)
 - Tracking de conversão implementado
+
+## Administração (horários e ausências)
+
+- **Horário global da barbearia** e **fechamentos por data** (ADMIN)
+- **Ausências por barbeiro** (cada barbeiro)
+
+Guia: veja [`docs/admin-horarios-e-ausencias.md`](./docs/admin-horarios-e-ausencias.md).
 
 ## Instagram Integration
 
@@ -75,6 +86,6 @@ O site sincroniza automaticamente os últimos 10 posts do Instagram 1x por dia (
 
 **Funcionamento:**
 - Vercel Cron Job sincroniza posts diariamente
-- Cache local em `public/data/instagram-cache.json`
+- Cache em Upstash Redis (chave `instagram:cache`, TTL 25h)
 - Fallback automático para posts mockados se houver erro
 - Zero custo (API gratuita + Vercel Cron free tier)

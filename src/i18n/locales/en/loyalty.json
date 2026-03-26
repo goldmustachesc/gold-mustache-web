@@ -1,0 +1,155 @@
+{
+  "dashboard": {
+    "title": "Loyalty Program",
+    "description": "Track your points, tier, and exclusive rewards.",
+    "pointsBalance": "Points Balance",
+    "currentTier": "Current Tier",
+    "benefits": "Your Benefits",
+    "howItWorks": "How it works?",
+    "earnPoints": "Earn Points",
+    "earnPointsDesc": "Earn points for every completed appointment.",
+    "levelUp": "Level Up",
+    "levelUpDesc": "The more services you use, the better your tier and perks.",
+    "redeemRewards": "Redeem Rewards",
+    "redeemRewardsDesc": "Use your points in the Rewards tab to redeem services and discounts."
+  },
+  "tiers": {
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "diamond": "Diamond",
+    "progress": {
+      "reached": "You are at {tier} tier",
+      "next": "{points} points away from {nextTier}",
+      "max": "You reached the maximum tier!"
+    }
+  },
+  "rewards": {
+    "title": "Rewards Catalog",
+    "description": "Exchange your points for services and discounts.",
+    "redeem": "Redeem",
+    "confirmRedeem": "Confirm Redemption",
+    "successRedeem": "Redeemed successfully!",
+    "insufficientPoints": "Not enough points",
+    "errorLoading": "Failed to load rewards. Please try again.",
+    "retry": "Try again",
+    "redeemError": "Failed to redeem reward",
+    "currentBalance": "Your current balance:",
+    "emptyState": "No rewards available at the moment.",
+    "redeemCodeLabel": "Your redemption code is:",
+    "redeemCodeInstruction": "Show this code at the barbershop to enjoy your reward!",
+    "understood": "Got it",
+    "copyCode": "Copy code",
+    "expiresAt": "Valid until"
+  },
+  "redemptions": {
+    "title": "My Redemptions",
+    "emptyState": "No redemptions yet",
+    "unknownReward": "Reward",
+    "copyCode": "Copy code",
+    "copied": "Copied!",
+    "status": {
+      "pending": "Pending",
+      "used": "Used",
+      "expired": "Expired"
+    },
+    "expiresAt": "Valid until",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "history": {
+    "title": "Points History",
+    "empty": "No points activity yet.",
+    "columns": {
+      "date": "Date",
+      "description": "Description",
+      "points": "Points",
+      "type": "Type"
+    },
+    "types": {
+      "EARNED": "Earned",
+      "REDEEMED": "Redeemed",
+      "EXPIRED": "Expired",
+      "ADJUSTED": "Adjusted"
+    }
+  },
+  "referral": {
+    "title": "Refer & Earn",
+    "description": "Share your code with friends and both get {points} points.",
+    "yourCode": "Your Referral Code",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "referredByTitle": "I was referred by",
+    "referredByPlaceholder": "Enter referral code",
+    "validate": "Validate",
+    "validating": "Validating...",
+    "alreadyReferred": "You have already been referred by a friend.",
+    "confirmReferral": "Confirm Referral",
+    "applying": "Confirming...",
+    "referralApplied": "Referral confirmed successfully!",
+    "referrerFound": "Referred by {name}",
+    "referralsCount": "You referred {count} friend(s)",
+    "shareWhatsApp": "Share on WhatsApp",
+    "shareMessage": "Use my code {code} at Gold Mustache and earn loyalty points!",
+    "howItWorksTitle": "How does it work?",
+    "howItWorksStep1": "Copy your unique referral code.",
+    "howItWorksStep2": "Send it to friends who haven't tried Gold Mustache yet.",
+    "howItWorksStep3": "Your friend enters the code on their first booking.",
+    "howItWorksStep4": "After the service is completed, you both earn loyalty points!"
+  },
+  "admin": {
+    "title": "Loyalty Management",
+    "users": "Accounts",
+    "catalog": "Catalog",
+    "adjustPoints": "Adjust Points",
+    "reason": "Adjustment Reason",
+    "accountsCount": "registered accounts",
+    "rewardsCount": "rewards",
+    "redemptions": {
+      "tab": "Redemptions",
+      "validateTitle": "Validate Code",
+      "codePlaceholder": "e.g. ABC123",
+      "validate": "Validate",
+      "code": "Code",
+      "createdAt": "Redeemed on",
+      "expiresAt": "Valid until",
+      "markAsUsed": "Mark as Used",
+      "recentTitle": "Recent Redemptions",
+      "filterAll": "All",
+      "filterPending": "Pending",
+      "filterUsed": "Used",
+      "filterExpired": "Expired",
+      "colClient": "Client",
+      "colReward": "Reward",
+      "colCode": "Code",
+      "colDate": "Date",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "use": "Use",
+      "emptyState": "No redemptions found.",
+      "confirmUseTitle": "Confirm redemption use",
+      "confirmUseDescription": "Are you sure you want to mark this redemption as used? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "validateError": "Error validating code",
+      "useError": "Error marking redemption as used"
+    },
+    "reports": {
+      "tab": "Reports",
+      "totalAccounts": "Registered Accounts",
+      "pointsInCirculation": "Points in Circulation",
+      "redemptionsMonth": "Redemptions This Month",
+      "redemptionRate": "Redemption Rate",
+      "tierDistribution": "Tier Distribution",
+      "noData": "No data available.",
+      "topRewards": "Most Popular Rewards",
+      "noRewards": "No rewards redeemed yet.",
+      "recentActivity": "Recent Activity (30 days)",
+      "pointsEarned30d": "Points earned",
+      "redemptions30d": "Redemptions made",
+      "newAccounts30d": "New accounts"
+    }
+  }
+}

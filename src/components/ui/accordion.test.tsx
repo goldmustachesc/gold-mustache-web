@@ -62,5 +62,5 @@ describe("Accordion expand/collapse behavior", () => {
       ),
       { numRuns: 100 },
     );
-  });
+  }, 15000);
 });

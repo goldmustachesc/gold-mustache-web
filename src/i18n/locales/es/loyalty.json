@@ -1,0 +1,155 @@
+{
+  "dashboard": {
+    "title": "Programa de Lealtad",
+    "description": "Haz un seguimiento de tus puntos, nivel y recompensas exclusivas.",
+    "pointsBalance": "Saldo de Puntos",
+    "currentTier": "Tu Nivel Actual",
+    "benefits": "Tus Beneficios",
+    "howItWorks": "¿Cómo funciona?",
+    "earnPoints": "Acumula Puntos",
+    "earnPointsDesc": "Gana puntos por cada cita completada.",
+    "levelUp": "Sube de Nivel",
+    "levelUpDesc": "Cuantos más servicios, mejor tu nivel y tus ventajas.",
+    "redeemRewards": "Canjea Premios",
+    "redeemRewardsDesc": "Usa tus puntos en la pestaña Recompensas para canjear servicios y descuentos."
+  },
+  "tiers": {
+    "bronze": "Bronce",
+    "silver": "Plata",
+    "gold": "Oro",
+    "diamond": "Diamante",
+    "progress": {
+      "reached": "Estás en el nivel {tier}",
+      "next": "Faltan {points} puntos para el nivel {nextTier}",
+      "max": "¡Has alcanzado el nivel máximo!"
+    }
+  },
+  "rewards": {
+    "title": "Catálogo de Recompensas",
+    "description": "Canjea tus puntos por servicios y descuentos.",
+    "redeem": "Canjear",
+    "confirmRedeem": "Confirmar Canje",
+    "successRedeem": "¡Canje exitoso!",
+    "insufficientPoints": "Puntos insuficientes",
+    "errorLoading": "Error al cargar recompensas. Inténtelo de nuevo.",
+    "retry": "Intentar de nuevo",
+    "redeemError": "Error al canjear recompensa",
+    "currentBalance": "Tu saldo actual:",
+    "emptyState": "No hay recompensas disponibles en este momento.",
+    "redeemCodeLabel": "Tu código de canje es:",
+    "redeemCodeInstruction": "Presenta este código en la barbería para disfrutar tu recompensa!",
+    "understood": "Entendido",
+    "copyCode": "Copiar código",
+    "expiresAt": "Válido hasta"
+  },
+  "redemptions": {
+    "title": "Mis Canjes",
+    "emptyState": "Ningún canje realizado",
+    "unknownReward": "Recompensa",
+    "copyCode": "Copiar código",
+    "copied": "¡Copiado!",
+    "status": {
+      "pending": "Pendiente",
+      "used": "Usado",
+      "expired": "Expirado"
+    },
+    "expiresAt": "Válido hasta",
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente"
+    }
+  },
+  "history": {
+    "title": "Historial de Puntos",
+    "empty": "Aún no hay movimientos de puntos.",
+    "columns": {
+      "date": "Fecha",
+      "description": "Descripción",
+      "points": "Puntos",
+      "type": "Tipo"
+    },
+    "types": {
+      "EARNED": "Ganado",
+      "REDEEMED": "Canjeado",
+      "EXPIRED": "Expirado",
+      "ADJUSTED": "Ajustado"
+    }
+  },
+  "referral": {
+    "title": "Refiere y Gana",
+    "description": "Comparte tu código con amigos y ambos ganarán {points} puntos.",
+    "yourCode": "Tu Código de Referencia",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "referredByTitle": "Fui referido por",
+    "referredByPlaceholder": "Ingresa el código de referencia",
+    "validate": "Validar",
+    "validating": "Validando...",
+    "alreadyReferred": "Ya fuiste referido por un amigo.",
+    "confirmReferral": "Confirmar Referencia",
+    "applying": "Confirmando...",
+    "referralApplied": "¡Referencia confirmada con éxito!",
+    "referrerFound": "Referido por {name}",
+    "referralsCount": "Referiste a {count} amigo(s)",
+    "shareWhatsApp": "Compartir en WhatsApp",
+    "shareMessage": "¡Usa mi código {code} en Gold Mustache y gana puntos de lealtad!",
+    "howItWorksTitle": "¿Cómo funciona?",
+    "howItWorksStep1": "Copia tu código de referencia único.",
+    "howItWorksStep2": "Envíalo a amigos que aún no conocen Gold Mustache.",
+    "howItWorksStep3": "Tu amigo ingresa el código en su primera reserva.",
+    "howItWorksStep4": "¡Tras completar el servicio, ambos ganan puntos de lealtad!"
+  },
+  "admin": {
+    "title": "Gestión de Lealtad",
+    "users": "Cuentas",
+    "catalog": "Catálogo",
+    "adjustPoints": "Ajustar Puntos",
+    "reason": "Razón del Ajuste",
+    "accountsCount": "cuentas registradas",
+    "rewardsCount": "recompensas",
+    "redemptions": {
+      "tab": "Canjes",
+      "validateTitle": "Validar Código",
+      "codePlaceholder": "Ej: ABC123",
+      "validate": "Validar",
+      "code": "Código",
+      "createdAt": "Canjeado el",
+      "expiresAt": "Válido hasta",
+      "markAsUsed": "Marcar como Usado",
+      "recentTitle": "Canjes Recientes",
+      "filterAll": "Todos",
+      "filterPending": "Pendiente",
+      "filterUsed": "Usado",
+      "filterExpired": "Expirado",
+      "colClient": "Cliente",
+      "colReward": "Recompensa",
+      "colCode": "Código",
+      "colDate": "Fecha",
+      "colStatus": "Estado",
+      "colAction": "Acción",
+      "use": "Usar",
+      "emptyState": "No se encontraron canjes.",
+      "confirmUseTitle": "Confirmar uso del canje",
+      "confirmUseDescription": "¿Estás seguro de que deseas marcar este canje como usado? Esta acción no se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "validateError": "Error al validar código",
+      "useError": "Error al marcar canje como usado"
+    },
+    "reports": {
+      "tab": "Informes",
+      "totalAccounts": "Cuentas Registradas",
+      "pointsInCirculation": "Puntos en Circulación",
+      "redemptionsMonth": "Canjes del Mes",
+      "redemptionRate": "Tasa de Canje",
+      "tierDistribution": "Distribución por Nivel",
+      "noData": "No hay datos disponibles.",
+      "topRewards": "Recompensas Más Populares",
+      "noRewards": "Ninguna recompensa canjeada.",
+      "recentActivity": "Actividad Reciente (30 días)",
+      "pointsEarned30d": "Puntos ganados",
+      "redemptions30d": "Canjes realizados",
+      "newAccounts30d": "Nuevas cuentas"
+    }
+  }
+}

@@ -1,7 +1,6 @@
-import type { InstagramCacheData } from "@/types/instagram";
-import { NextResponse } from "next/server";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { apiSuccess, apiError } from "@/lib/api/response";
+import { getInstagramCache } from "@/lib/instagram-cache";
 
 // Posts mockados como fallback
 const MOCK_POSTS = [
@@ -39,70 +38,61 @@ const MOCK_POSTS = [
  * GET /api/instagram/posts
  * Retorna os posts do Instagram do cache local
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cacheFilePath = path.join(
-      process.cwd(),
-      "public",
-      "data",
-      "instagram-cache.json",
-    );
-
-    // Tentar ler o cache
-    const cacheData = await readFile(cacheFilePath, "utf-8");
-    const cache: InstagramCacheData = JSON.parse(cacheData);
-
-    // Validar se o cache tem posts
-    if (cache.posts && cache.posts.length > 0) {
-      return NextResponse.json(
-        {
-          posts: cache.posts,
-          lastUpdated: cache.lastUpdated,
-          source: cache.source,
-        },
-        {
-          headers: {
-            "Cache-Control":
-              "public, s-maxage=3600, stale-while-revalidate=86400",
-          },
-        },
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = await checkRateLimit("api", clientId);
+    if (!rateLimitResult.success) {
+      const res = apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
       );
+      res.headers.set(
+        "X-RateLimit-Remaining",
+        String(rateLimitResult.remaining),
+      );
+      res.headers.set("X-RateLimit-Reset", String(rateLimitResult.reset));
+      return res;
     }
 
-    // Se cache estiver vazio, usar mock
-    console.warn("[Instagram API] Cache vazio, usando posts mockados");
-    return NextResponse.json(
-      {
-        posts: MOCK_POSTS,
-        lastUpdated: new Date().toISOString(),
-        source: "mock",
-      },
-      {
-        headers: {
-          "Cache-Control":
-            "public, s-maxage=3600, stale-while-revalidate=86400",
-        },
-      },
-    );
-  } catch (error) {
-    // Se cache não existir ou houver erro, retornar mock
-    console.warn(
-      "[Instagram API] Erro ao ler cache, usando posts mockados:",
-      error,
-    );
+    const cache = await getInstagramCache();
 
-    return NextResponse.json(
-      {
-        posts: MOCK_POSTS,
-        lastUpdated: new Date().toISOString(),
-        source: "mock",
-      },
-      {
-        headers: {
-          "Cache-Control":
-            "public, s-maxage=3600, stale-while-revalidate=86400",
-        },
-      },
+    if (cache) {
+      const res = apiSuccess({
+        posts: cache.posts,
+        lastUpdated: cache.lastUpdated,
+        source: cache.source,
+      });
+      res.headers.set(
+        "Cache-Control",
+        "public, s-maxage=3600, stale-while-revalidate=86400",
+      );
+      return res;
+    }
+
+    const mockRes = apiSuccess({
+      posts: MOCK_POSTS,
+      lastUpdated: new Date().toISOString(),
+      source: "mock" as const,
+    });
+    mockRes.headers.set(
+      "Cache-Control",
+      "public, s-maxage=3600, stale-while-revalidate=86400",
     );
+    return mockRes;
+  } catch (error) {
+    console.warn("[Instagram API] Erro ao ler cache:", error);
+
+    const fallbackRes = apiSuccess({
+      posts: MOCK_POSTS,
+      lastUpdated: new Date().toISOString(),
+      source: "mock" as const,
+    });
+    fallbackRes.headers.set(
+      "Cache-Control",
+      "public, s-maxage=3600, stale-while-revalidate=86400",
+    );
+    return fallbackRes;
   }
 }

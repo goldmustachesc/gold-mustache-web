@@ -32,6 +32,12 @@
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
@@ -70,6 +76,12 @@
   /* Accent: Subtle gold accent */
   --accent: oklch(0.92 0.02 85);
   --accent-foreground: oklch(0.25 0.02 85);
+  --success: #22c55e;
+  --success-foreground: oklch(0.98 0.01 85);
+  --warning: #eab308;
+  --warning-foreground: oklch(0.15 0.02 85);
+  --info: #3b82f6;
+  --info-foreground: oklch(0.98 0.01 85);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.88 0.01 85);
   --input: oklch(0.96 0.005 85);
@@ -96,49 +108,130 @@
 }
 
 .dark {
-  /* Gold Mustache Dark Mode - Premium barbershop feel */
-  --background: oklch(0.08 0.01 85);
-  /* Rich dark background */
-  --foreground: oklch(0.92 0.01 85);
-  /* Warm light text */
-  --card: oklch(0.12 0.02 85);
-  --card-foreground: oklch(0.92 0.01 85);
-  --popover: oklch(0.12 0.02 85);
-  --popover-foreground: oklch(0.92 0.01 85);
+  /* Gold Mustache Dark Mode - Neutral zinc tones with gold accents */
+  --background: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --card: oklch(0.1335 0.0044 256.8);
+  /* zinc-900 */
+  --card-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --popover: oklch(0.1335 0.0044 256.8);
+  /* zinc-900 */
+  --popover-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
   /* Primary: Bright gold for dark mode */
   --primary: oklch(0.75 0.18 85);
   /* Bright gold */
-  --primary-foreground: oklch(0.08 0.01 85);
-  /* Dark text */
-  --secondary: oklch(0.18 0.02 85);
-  --secondary-foreground: oklch(0.92 0.01 85);
-  --muted: oklch(0.15 0.02 85);
-  --muted-foreground: oklch(0.65 0.01 85);
-  --accent: oklch(0.22 0.03 85);
-  --accent-foreground: oklch(0.85 0.01 85);
+  --primary-foreground: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --secondary: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --secondary-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --muted: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --muted-foreground: oklch(0.6226 0.0112 256.8);
+  /* zinc-400 */
+  --accent: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --accent-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --success: #22c55e;
+  --success-foreground: oklch(0.15 0.02 85);
+  --warning: #eab308;
+  --warning-foreground: oklch(0.15 0.02 85);
+  --info: #3b82f6;
+  --info-foreground: oklch(0.9235 0.0031 256.8);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.25 0.02 85);
-  --input: oklch(0.16 0.02 85);
+  --border: oklch(0.2525 0.0066 256.8);
+  /* zinc-700 */
+  --input: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
   --ring: oklch(0.75 0.18 85);
   /* Gold focus ring */
   --chart-1: oklch(0.75 0.18 85);
   /* Gold */
-  --chart-2: oklch(0.45 0.02 85);
-  /* Mid tone */
-  --chart-3: oklch(0.65 0.08 85);
-  /* Light accent */
+  --chart-2: oklch(0.3825 0.0092 256.8);
+  /* zinc-600 */
+  --chart-3: oklch(0.5207 0.0108 256.8);
+  /* zinc-500 */
   --chart-4: oklch(0.85 0.12 85);
   /* Light gold */
-  --chart-5: oklch(0.35 0.05 85);
-  /* Dark accent */
-  --sidebar: oklch(0.08 0.01 85);
-  --sidebar-foreground: oklch(0.92 0.01 85);
+  --chart-5: oklch(0.2525 0.0066 256.8);
+  /* zinc-700 */
+  --sidebar: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --sidebar-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
   --sidebar-primary: oklch(0.75 0.18 85);
-  --sidebar-primary-foreground: oklch(0.08 0.01 85);
-  --sidebar-accent: oklch(0.22 0.03 85);
-  --sidebar-accent-foreground: oklch(0.85 0.01 85);
-  --sidebar-border: oklch(0.25 0.02 85);
+  /* Gold */
+  --sidebar-primary-foreground: oklch(0.0857 0.0049 256.8);
+  /* zinc-950 */
+  --sidebar-accent: oklch(0.1832 0.0045 256.8);
+  /* zinc-800 */
+  --sidebar-accent-foreground: oklch(0.9235 0.0031 256.8);
+  /* zinc-100 */
+  --sidebar-border: oklch(0.2525 0.0066 256.8);
+  /* zinc-700 */
   --sidebar-ring: oklch(0.75 0.18 85);
+  /* Gold */
+}
+
+/*
+ * Private/auth routes still use many `zinc-*` utilities.
+ * Mapping neutral zinc tokens to semantic brand tokens lets these
+ * screens follow light/dark/system without forcing a full refactor now.
+ */
+.private-theme {
+  --private-mobile-bottom-nav-height: 3.5rem;
+  --private-mobile-bottom-nav-offset: calc(
+    var(--private-mobile-bottom-nav-height) +
+    env(safe-area-inset-bottom, 0px)
+  );
+  --color-zinc-950: var(--background);
+  --color-zinc-900: var(--background);
+  --color-zinc-800: var(--card);
+  --color-zinc-700: var(--border);
+  --color-zinc-600: var(--muted-foreground);
+  --color-zinc-500: var(--muted-foreground);
+  --color-zinc-400: var(--muted-foreground);
+  --color-zinc-300: var(--foreground);
+  --color-zinc-200: var(--foreground);
+  --color-zinc-100: var(--foreground);
+}
+
+/* Normalize legacy hardcoded white text in private/auth screens. */
+.private-theme
+:where(div, p, span, h1, h2, h3, h4, h5, h6, label, li).text-white {
+  color: var(--foreground);
+}
+
+.private-theme
+  :where(
+    div,
+    p,
+    span,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    label,
+    li
+  )[class*="text-white/"] {
+  color: var(--foreground);
+}
+
+.private-theme :where(input, textarea, select).text-white {
+  color: var(--foreground);
+}
+
+.private-theme .hover\:text-white:hover,
+.private-theme .focus\:text-white:focus {
+  color: var(--foreground);
 }
 
 @layer base {
@@ -146,8 +239,13 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
 }
 
@@ -179,4 +277,178 @@
   .animate-accordion-up {
     animation: accordion-up 0.2s ease-out;
   }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .touch-target {
+    position: relative;
+  }
+
+  .touch-target::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-down {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+[data-reveal] {
+  opacity: 0;
+}
+
+[data-reveal].visible {
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+  animation-duration: var(--reveal-duration, 0.5s);
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+[data-reveal][data-direction="up"].visible {
+  animation-name: reveal-up;
+}
+
+[data-reveal][data-direction="down"].visible {
+  animation-name: reveal-down;
+}
+
+[data-reveal][data-direction="left"].visible {
+  animation-name: reveal-left;
+}
+
+[data-reveal][data-direction="right"].visible {
+  animation-name: reveal-right;
+}
+
+@keyframes mobile-nav-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.mobile-nav-overlay {
+  animation: mobile-nav-overlay-fade-in 0.2s ease-out forwards;
+}
+
+@keyframes mobile-nav-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-nav-item {
+  animation: mobile-nav-item-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes lang-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lang-dropdown-panel {
+  animation: lang-dropdown-in 0.15s ease-out forwards;
+}
+
+@keyframes hero-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-anim-logo {
+  animation: hero-scale-in 0.7s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.hero-anim-fade-up {
+  animation: hero-fade-up 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }

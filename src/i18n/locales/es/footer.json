@@ -10,7 +10,17 @@
     "contact": "Contáctanos",
     "book": "Reservar Cita",
     "barbershop": "Barbería",
-    "store": "Tienda"
+    "store": "Tienda",
+    "privacy": "Política de Privacidad"
+  },
+  "hours": {
+    "title": "Horario de Atención",
+    "weekdays": "Lunes a Viernes",
+    "saturday": "Sábado",
+    "sunday": "Domingo",
+    "weekdaysTime": "10h a 20h",
+    "saturdayTime": "10h a 20h",
+    "sundayStatus": "Cerrado"
   },
   "copyright": "Gold Mustache Barbería. Todos los derechos reservados."
 }

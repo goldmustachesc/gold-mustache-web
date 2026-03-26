@@ -1,0 +1,232 @@
+# Implementation Plan
+
+- [x] 1. Database schema and models setup
+  - [x] 1.1 Extend Prisma schema with booking models
+    - Add Service, Barber, BarberService, WorkingHours, Appointment, Notification models
+    - Add AppointmentStatus and NotificationType enums
+    - Update Profile model with Appointment relation
+    - Run prisma migrate and generate client
+    - _Requirements: 1.3, 1.5, 6.1, 7.1_
+  - [x] 1.2 Write property test for Appointment serialization round-trip
+    - **Property 14: Appointment serialization round-trip**
+    - **Validates: Requirements 7.1, 7.2, 7.3**
+  - [x] 1.3 Create TypeScript types for booking domain
+    - Define TimeSlot, CreateAppointmentInput, DateRange interfaces
+    - Define service response types
+    - _Requirements: 7.2_
+
+- [x] 2. Time slot calculation utilities
+  - [x] 2.1 Implement time slot generation function
+    - Create generateTimeSlots(startTime, endTime, duration, breakStart?, breakEnd?)
+    - Handle 30-minute slot intervals
+    - _Requirements: 1.2, 6.2_
+  - [x] 2.2 Write property test for slots respecting working hours
+    - **Property 12: Slots respect working hours**
+    - **Validates: Requirements 6.2**
+  - [x] 2.3 Implement slot availability filter
+    - Create filterAvailableSlots(slots, existingAppointments)
+    - Exclude occupied time slots
+    - _Requirements: 1.2, 1.4_
+  - [x] 2.4 Write property test for available slots excluding occupied times
+    - **Property 1: Available slots exclude occupied times**
+    - **Validates: Requirements 1.2, 1.4**
+
+- [x] 3. Booking service layer
+  - [x] 3.1 Implement getServices function
+    - Query active services from database
+    - Filter by barber association if barberId provided
+    - _Requirements: 6.3_
+  - [x] 3.2 Write property test for services filtered by barber
+    - **Property 13: Services filtered by barber association**
+    - **Validates: Requirements 6.3**
+  - [x] 3.3 Implement getAvailableSlots function
+    - Get working hours for barber and date
+    - Generate slots and filter by existing appointments
+    - _Requirements: 1.2, 6.2_
+  - [x] 3.4 Implement createAppointment function
+    - Validate slot availability before creation
+    - Create appointment with CONFIRMED status
+    - Handle conflict errors
+    - _Requirements: 1.3, 1.4, 1.5_
+  - [x] 3.5 Write property test for booking creates confirmed appointment
+    - **Property 2: Booking creates confirmed appointment**
+    - **Validates: Requirements 1.3**
+  - [x] 3.6 Write property test for appointment persistence round-trip
+    - **Property 3: Appointment persistence round-trip**
+    - **Validates: Requirements 1.5, 6.4**
+  - [x] 3.7 Implement getClientAppointments function
+    - Query future appointments for client
+    - Sort by date ascending
+    - _Requirements: 2.1_
+  - [x] 3.8 Write property test for future appointments sorted by date
+    - **Property 4: Future appointments sorted by date**
+    - **Validates: Requirements 2.1**
+  - [x] 3.9 Implement getBarberAppointments function
+    - Query appointments by barber and date range
+    - Sort chronologically
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 3.10 Write property test for barber appointments filtered by date
+    - **Property 7: Barber appointments filtered by date**
+    - **Validates: Requirements 3.1, 3.2, 3.3**
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 5. Cancellation logic
+  - [x] 5.1 Implement cancelAppointment function for clients
+    - Check 2-hour cancellation window
+    - Update status to CANCELLED_BY_CLIENT
+    - _Requirements: 2.2, 2.3_
+  - [x] 5.2 Write property test for cancellation time window enforcement
+    - **Property 5: Cancellation time window enforcement**
+    - **Validates: Requirements 2.2, 2.3**
+  - [x] 5.3 Implement cancelAppointment function for barbers
+    - Require cancellation reason
+    - Update status to CANCELLED_BY_BARBER
+    - _Requirements: 4.1, 4.2_
+  - [x] 5.4 Write property test for barber cancellation requires reason
+    - **Property 9: Barber cancellation requires reason**
+    - **Validates: Requirements 4.2**
+  - [x] 5.5 Write property test for cancelled slot becomes available
+    - **Property 6: Cancelled slot becomes available**
+    - **Validates: Requirements 2.4, 4.3**
+
+- [x] 6. Notification service
+  - [x] 6.1 Implement createNotification function
+    - Create notification with type, title, message
+    - Store in database
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [x] 6.2 Implement notification triggers in booking service
+    - Send APPOINTMENT_CONFIRMED on creation
+    - Send APPOINTMENT_CANCELLED on cancellation
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [x] 6.3 Write property test for appointment creation triggers notification
+    - **Property 10: Appointment creation triggers client notification**
+    - **Validates: Requirements 5.1**
+  - [x] 6.4 Write property test for cancellation triggers notification
+    - **Property 11: Cancellation triggers appropriate notification**
+    - **Validates: Requirements 5.2, 5.3**
+  - [x] 6.5 Implement getNotifications and markAsRead functions
+    - Query notifications for user
+    - Update read status
+    - _Requirements: 5.5_
+  - [x] 6.6 Implement Supabase realtime subscription for notifications
+    - Subscribe to notifications table changes
+    - Trigger callback on new notifications
+    - _Requirements: 5.5_
+
+- [x] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 8. Validation schemas
+  - [x] 8.1 Create Zod schemas for booking inputs
+    - createAppointmentSchema, cancelAppointmentSchema
+    - Working hours configuration schema
+    - _Requirements: 1.3, 4.2_
+  - [ ]* 8.2 Write unit tests for validation schemas
+    - Test valid and invalid inputs
+    - _Requirements: 1.3, 4.2_
+
+- [x] 9. API routes
+  - [x] 9.1 Create GET /api/services route
+    - Return active services, optionally filtered by barber
+    - _Requirements: 6.3_
+  - [x] 9.2 Create GET /api/slots route
+    - Accept date and barberId query params
+    - Return available time slots
+    - _Requirements: 1.2_
+  - [x] 9.3 Create POST /api/appointments route
+    - Validate input with Zod
+    - Create appointment and notification
+    - Handle conflicts with 409 response
+    - _Requirements: 1.3, 1.4, 5.1_
+  - [x] 9.4 Create GET /api/appointments route
+    - Return client or barber appointments based on role
+    - Support date range filtering
+    - _Requirements: 2.1, 3.1, 3.2_
+  - [x] 9.5 Create PATCH /api/appointments/[id]/cancel route
+    - Handle client and barber cancellations
+    - Validate cancellation window for clients
+    - Require reason for barbers
+    - _Requirements: 2.2, 2.3, 4.1, 4.2_
+  - [x] 9.6 Create GET /api/notifications route
+    - Return user notifications
+    - _Requirements: 5.5_
+  - [x] 9.7 Create PATCH /api/notifications/[id]/read route
+    - Mark notification as read
+    - _Requirements: 5.5_
+
+- [x] 10. Client booking UI components
+  - [x] 10.1 Create ServiceSelector component
+    - Display services as cards with name, description, price, duration
+    - Handle selection state
+    - _Requirements: 1.1_
+  - [x] 10.2 Create DatePicker component
+    - Show next 30 days
+    - Disable past dates
+    - _Requirements: 1.1_
+  - [x] 10.3 Create TimeSlotGrid component
+    - Display available slots in grid layout
+    - Show unavailable slots as disabled
+    - _Requirements: 1.2_
+  - [x] 10.4 Create BookingConfirmation component
+    - Show booking summary
+    - Display success message
+    - _Requirements: 1.3_
+  - [x] 10.5 Create BookingPage with complete flow
+    - Wire up ServiceSelector → DatePicker → TimeSlotGrid → Confirmation
+    - Use React Query for data fetching
+    - Show toast notifications
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 10.6 Write property test for appointment display completeness
+    - **Property 8: Appointment display completeness**
+    - **Validates: Requirements 3.4**
+
+- [x] 11. Client appointments management UI
+  - [x] 11.1 Create AppointmentCard component
+    - Display service, date, time, status
+    - Show cancel button for future appointments
+    - _Requirements: 2.1, 3.4_
+  - [x] 11.2 Create MyAppointmentsPage
+    - List future appointments
+    - Handle cancellation with confirmation dialog
+    - _Requirements: 2.1, 2.2_
+
+- [x] 12. Barber dashboard UI
+  - [x] 12.1 Create DailySchedule component
+    - Display appointments for selected date
+    - Show timeline view
+    - _Requirements: 3.1, 3.2_
+  - [x] 12.2 Create WeeklyCalendar component
+    - Show week overview with appointment counts
+    - Allow date selection
+    - _Requirements: 3.3_
+  - [x] 12.3 Create BarberDashboardPage
+    - Combine DailySchedule and WeeklyCalendar
+    - Add cancellation functionality with reason input
+    - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2_
+
+- [x] 13. Notifications UI
+  - [x] 13.1 Create NotificationBell component
+    - Show unread count badge
+    - Open notifications panel on click
+    - _Requirements: 5.5_
+  - [x] 13.2 Create NotificationList component
+    - Display notifications with type icon, message, timestamp
+    - Mark as read on click
+    - _Requirements: 5.5_
+  - [x] 13.3 Integrate realtime notifications
+    - Subscribe to Supabase realtime
+    - Update notification count in real-time
+    - Show toast for new notifications
+    - _Requirements: 5.5_
+
+- [x] 14. Internationalization
+  - [x] 14.1 Add booking translations to pt-BR locale
+    - Add booking page strings
+    - Add notification messages
+    - Add error messages
+    - _Requirements: All_
+
+- [x] 15. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

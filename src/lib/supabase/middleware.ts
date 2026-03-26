@@ -7,6 +7,10 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return { supabaseResponse, user: null };
+  }
+
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {

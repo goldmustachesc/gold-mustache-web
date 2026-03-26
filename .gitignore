@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+package-lock.json
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +13,8 @@
 
 # testing
 /coverage
+/output/theme-validation/
+.playwright-mcp/
 
 # next.js
 /.next/
@@ -32,6 +35,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,11 +44,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Claude
-.claude
-CLAUDE.md
-
-# Instagram cache (opcional - pode commitar para ter fallback inicial)
-# /public/data/instagram-cache.json
+# Claude local overrides (keep .claude/ and CLAUDE.md versioned)
+.claude/settings.local.json
+CLAUDE.local.md
 
 /src/generated/prisma

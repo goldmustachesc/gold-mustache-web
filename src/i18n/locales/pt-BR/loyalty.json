@@ -1,0 +1,155 @@
+{
+  "dashboard": {
+    "title": "Programa de Fidelidade",
+    "description": "Acompanhe seus pontos, nível e recompensas exclusivas.",
+    "pointsBalance": "Saldo de Pontos",
+    "currentTier": "Seu Nível Atual",
+    "benefits": "Seus Benefícios",
+    "howItWorks": "Como funciona?",
+    "earnPoints": "Acumule Pontos",
+    "earnPointsDesc": "Ganhe pontos a cada agendamento realizado e concluído.",
+    "levelUp": "Suba de Nível",
+    "levelUpDesc": "Quanto mais serviços, melhor seu nível e suas vantagens.",
+    "redeemRewards": "Troque por Prêmios",
+    "redeemRewardsDesc": "Use seus pontos na aba Recompensas para resgatar serviços e descontos."
+  },
+  "tiers": {
+    "bronze": "Bronze",
+    "silver": "Prata",
+    "gold": "Ouro",
+    "diamond": "Diamante",
+    "progress": {
+      "reached": "Você está no nível {tier}",
+      "next": "Faltam {points} pontos para o nível {nextTier}",
+      "max": "Você atingiu o nível máximo!"
+    }
+  },
+  "rewards": {
+    "title": "Catálogo de Recompensas",
+    "description": "Troque seus pontos por serviços e descontos.",
+    "redeem": "Resgatar",
+    "confirmRedeem": "Confirmar Resgate",
+    "successRedeem": "Resgate realizado com sucesso!",
+    "insufficientPoints": "Pontos insuficientes",
+    "errorLoading": "Erro ao carregar recompensas. Tente novamente.",
+    "retry": "Tentar novamente",
+    "redeemError": "Erro ao resgatar recompensa",
+    "currentBalance": "Seu saldo atual:",
+    "emptyState": "Nenhuma recompensa disponível no momento.",
+    "redeemCodeLabel": "Seu código de resgate é:",
+    "redeemCodeInstruction": "Apresente este código na barbearia para aproveitar sua recompensa!",
+    "understood": "Entendi",
+    "copyCode": "Copiar código",
+    "expiresAt": "Válido até"
+  },
+  "redemptions": {
+    "title": "Meus Resgates",
+    "emptyState": "Nenhum resgate realizado",
+    "unknownReward": "Recompensa",
+    "copyCode": "Copiar código",
+    "copied": "Copiado!",
+    "status": {
+      "pending": "Pendente",
+      "used": "Usado",
+      "expired": "Expirado"
+    },
+    "expiresAt": "Válido até",
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Próxima"
+    }
+  },
+  "history": {
+    "title": "Extrato de Pontos",
+    "empty": "Nenhuma movimentação de pontos ainda.",
+    "columns": {
+      "date": "Data",
+      "description": "Descrição",
+      "points": "Pontos",
+      "type": "Tipo"
+    },
+    "types": {
+      "EARNED": "Ganho",
+      "REDEEMED": "Resgatado",
+      "EXPIRED": "Expirado",
+      "ADJUSTED": "Ajuste"
+    }
+  },
+  "referral": {
+    "title": "Indique e Ganhe",
+    "description": "Compartilhe seu código com amigos e ambos ganham {points} pontos.",
+    "yourCode": "Seu Código de Indicação",
+    "copy": "Copiar",
+    "copied": "Copiado!",
+    "referredByTitle": "Fui indicado por",
+    "referredByPlaceholder": "Digite o código de indicação",
+    "validate": "Validar",
+    "validating": "Validando...",
+    "alreadyReferred": "Você já foi indicado por um amigo.",
+    "confirmReferral": "Confirmar Indicação",
+    "applying": "Confirmando...",
+    "referralApplied": "Indicação confirmada com sucesso!",
+    "referrerFound": "Indicado por {name}",
+    "referralsCount": "Você indicou {count} amigo(s)",
+    "shareWhatsApp": "Compartilhar no WhatsApp",
+    "shareMessage": "Use meu código {code} na Gold Mustache e ganhe pontos de fidelidade!",
+    "howItWorksTitle": "Como funciona?",
+    "howItWorksStep1": "Copie seu código de indicação único.",
+    "howItWorksStep2": "Envie para amigos que ainda não conhecem a Gold Mustache.",
+    "howItWorksStep3": "Seu amigo insere o código no primeiro agendamento.",
+    "howItWorksStep4": "Após a conclusão do serviço, ambos ganham pontos do programa fidelidade!"
+  },
+  "admin": {
+    "title": "Gestão de Fidelidade",
+    "users": "Contas",
+    "catalog": "Catálogo",
+    "adjustPoints": "Ajustar Pontos",
+    "reason": "Motivo do Ajuste",
+    "accountsCount": "contas cadastradas",
+    "rewardsCount": "prêmios",
+    "redemptions": {
+      "tab": "Resgates",
+      "validateTitle": "Validar Código",
+      "codePlaceholder": "Ex: ABC123",
+      "validate": "Validar",
+      "code": "Código",
+      "createdAt": "Resgatado em",
+      "expiresAt": "Válido até",
+      "markAsUsed": "Marcar como Usado",
+      "recentTitle": "Resgates Recentes",
+      "filterAll": "Todos",
+      "filterPending": "Pendente",
+      "filterUsed": "Usado",
+      "filterExpired": "Expirado",
+      "colClient": "Cliente",
+      "colReward": "Recompensa",
+      "colCode": "Código",
+      "colDate": "Data",
+      "colStatus": "Status",
+      "colAction": "Ação",
+      "use": "Usar",
+      "emptyState": "Nenhum resgate encontrado.",
+      "confirmUseTitle": "Confirmar uso do resgate",
+      "confirmUseDescription": "Tem certeza que deseja marcar este resgate como usado? Esta ação não pode ser desfeita.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "validateError": "Erro ao validar código",
+      "useError": "Erro ao marcar resgate como usado"
+    },
+    "reports": {
+      "tab": "Relatórios",
+      "totalAccounts": "Contas Cadastradas",
+      "pointsInCirculation": "Pontos em Circulação",
+      "redemptionsMonth": "Resgates no Mês",
+      "redemptionRate": "Taxa de Resgate",
+      "tierDistribution": "Distribuição por Nível",
+      "noData": "Nenhum dado disponível.",
+      "topRewards": "Recompensas Mais Populares",
+      "noRewards": "Nenhuma recompensa resgatada.",
+      "recentActivity": "Atividade Recente (30 dias)",
+      "pointsEarned30d": "Pontos ganhos",
+      "redemptions30d": "Resgates realizados",
+      "newAccounts30d": "Novas contas"
+    }
+  }
+}

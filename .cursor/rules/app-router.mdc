@@ -1,0 +1,13 @@
+---
+description: Padrões para App Router, API routes e server actions
+globs: src/app/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# App Router e APIs
+
+- Respeitar limites server/client: `"use client"` só quando necessário; dados sensíveis e secrets só no servidor.
+- Route handlers: validar entrada com Zod; respostas HTTP adequadas; não expor stack traces nem detalhes internos ao cliente.
+- Autenticação/autorização: verificar sessão Supabase e regras de negócio antes de operações sensíveis.
+- Preferir helpers de `@/lib/api/response` (`apiSuccess`, `apiError`, `apiCollection`, etc.) nas route handlers.
+- Server actions: mesma disciplina de validação e permissões que em rotas HTTP.

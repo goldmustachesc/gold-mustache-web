@@ -1,32 +1,67 @@
-# Repository Guidelines
+# Gold Mustache - AI Development Guidelines
 
-## Project Structure & Module Organization
-- `src/app` hosts the Next.js App Router entry points, layouts, and route handlers.
-- UI primitives live in `src/components/ui`; bespoke widgets stay in `src/components/custom` and reuse shared styles.
-- Shared logic is split between `src/hooks`, `src/utils`, `src/lib`, and service clients in `src/services` for external APIs like Instagram.
-- Configuration, constants, and TypeScript contracts live in `src/config`, `src/constants`, and `src/types`; assets and fonts stay under `public/`.
-- Import from the project root using the `@/` alias (see `tsconfig.json`).
+## Overview
 
-## Build, Test, and Development Commands
-- `npm install` sets up dependencies; keep lockfile changes committed.
-- `npm run dev` runs the local server with Turbopack at `http://localhost:3000`.
-- `npm run build` validates the production bundle; run before shipping major changes.
-- `npm run start` serves the compiled build for smoke testing production behavior.
-- `npm run lint` runs Biome checks; `pnpm format` applies Biome formatting fixes.
+Diretrizes globais para agentes e IA neste repositório. Detalhes por contexto ficam em `.cursor/rules/*.mdc`; workflows longos em `.cursor/skills/`.
 
-## Coding Style & Naming Conventions
-- Biome enforces 2-space indentation, import sorting, and the shared lint rules in `biome.json`.
-- Prefer TypeScript everywhere (`.ts`/`.tsx`); keep components PascalCase (`HeroBanner.tsx`), hooks prefixed with `use`, and utilities camelCase.
-- Compose UI with Tailwind utility classes; use `clsx`/`tailwind-merge` to manage conditional styles instead of manual string concatenation.
-- Keep data-fetching code inside `src/services` or server components, and expose configuration via strongly typed objects in `src/config`.
+## Repository structure
 
-## Testing Guidelines
-- No automated suite exists yet; at minimum run `pnpm lint` and exercise critical paths (landing page, Instagram feed, booking redirect) before opening a PR.
-- When introducing tests, colocate specs next to the feature with the `.test.ts(x)` suffix and favor React Testing Library or Playwright for UI flows.
-- Document any new fixtures or mocked services in `src/services` to keep API integrations deterministic.
+- `src/app` — Next.js App Router, layouts, route handlers
+- `src/components/ui` — primitivos; `src/components/custom` — widgets específicos
+- `src/hooks`, `src/utils`, `src/lib`, `src/services` — lógica compartilhada e integrações
+- `src/config`, `src/constants`, `src/types` — config e contratos; `public/` — assets
+- Imports com alias `@/` (ver `tsconfig.json`)
 
-## Commit & Pull Request Guidelines
-- Follow Conventional Commits enforced by Commitlint; use `pnpm commit` (Commitizen) for prompts. Allowed types include `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`, and `revert`.
-- Keep subjects under 72 characters, present tense, and skip trailing punctuation.
-- Open PRs with a concise summary, linked issue or ticket, screenshots for UI changes, and notes on manual verification or known gaps.
-- Ensure the branch is rebased on `main` and that lint/build steps pass in CI before requesting review.
+## Brand and visual identity
+
+Antes de mudanças visuais, consulte `docs/Brand_Book_Gold_Mustache.md`, tokens em `src/app/globals.css` e `src/config/barbershop.ts`. Light/Dark obrigatório. Regras de UI em `.cursor/rules/frontend-components.mdc`.
+
+## Commands
+
+| Comando | Uso |
+|---------|-----|
+| `pnpm install` | Dependências; manter lockfile commitado |
+| `pnpm dev` | Dev local (Turbopack), `http://localhost:3001` |
+| `pnpm build` | Build de produção |
+| `pnpm start` | Servir build compilado |
+| `pnpm lint` / `pnpm format` | Biome |
+| `pnpm test` / `pnpm test:watch` | Vitest |
+| `pnpm test:gate` | Lint + test + coverage — antes de PR |
+
+## Coding conventions
+
+- TypeScript em `.ts`/`.tsx`; componentes PascalCase, hooks `use*`, utils camelCase
+- Biome: 2 espaços, import sorting (`biome.json`)
+- UI: Tailwind; `clsx`/`tailwind-merge` para condicionais
+- Data-fetching em `src/services` ou server components; config tipada em `src/config`
+
+## Quality principles
+
+- Clean Code, SOLID, KISS, YAGNI
+- **Sem `any`** — tipos explícitos, `unknown` com narrowing, generics
+- **TDD obrigatório** para código novo e mudanças significativas: RED → GREEN → REFACTOR (`pnpm test` em cada fase)
+- Código testável: dependências injetáveis, separação negócio/infra
+- Decisões arquiteturais: explicar em PR ou resposta ao revisor, não em comentários no código
+- Evitar comentários desnecessários no código; preferir nomes e estrutura claros
+
+## Commits and PRs
+
+- Conventional Commits (Commitlint); `pnpm commit` (Commitizen). Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+- Assunto com até 72 caracteres, imperativo, sem ponto final
+- PR: resumo, issue linkada, screenshots se UI, verificação manual ou gaps
+
+## Specs and complex features
+
+Para features complexas, use `.kiro/specs/[feature]/` com `requirements.md`, `design.md`, `tasks.md` e templates em `.kiro/SPECIFICATION_TEMPLATE.md`, `.kiro/DESIGN_TEMPLATE.md`, `.kiro/TASKS_TEMPLATE.md` (conteúdo preferencialmente em português).
+
+## MCP (ferramentas externas)
+
+Servidores MCP versionados: `.cursor/mcp.json`. Segredos e integrações pessoais: `~/.cursor/mcp.json`. Ver `.cursor/README.md`.
+
+## Claude Code
+
+Para usar com Claude Code, consulte `CLAUDE.md` e `.claude/`.
+
+Cursor continua como ambiente principal; Claude é uma camada de compatibilidade.
+
+Novas diretrizes entram primeiro em `AGENTS.md` e `.cursor/rules/`; depois são espelhadas para Claude, se necessário.

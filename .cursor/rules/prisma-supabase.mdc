@@ -1,0 +1,14 @@
+---
+description: Segurança e padrões para Prisma, lib e services
+globs: prisma/**/*|src/lib/**/*|src/services/**/*
+alwaysApply: false
+---
+
+# Prisma e Supabase
+
+- Queries: `select`/`include` mínimos necessários; evitar N+1 em mudanças novas.
+- Transações para operações que devem ser atômicas.
+- Migrações: revisar impacto em dados; não commitar secrets; alinhar com `prisma/schema.prisma`.
+- Supabase: não expor service role ao cliente; validar auth e autorização no servidor.
+- Ao assumir RLS ou políticas, documentar no PR se o comportamento depender delas.
+- Nunca commitar credenciais em código ou em `.cursor/mcp.json` versionado.

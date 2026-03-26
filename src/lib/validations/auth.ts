@@ -7,6 +7,21 @@ export const loginSchema = z.object({
 
 export const signupSchema = z
   .object({
+    fullName: z
+      .string()
+      .min(1, "Nome é obrigatório")
+      .min(2, "Nome deve ter pelo menos 2 caracteres")
+      .max(100, "Nome deve ter no máximo 100 caracteres"),
+    phone: z
+      .string()
+      .min(1, "Telefone é obrigatório")
+      .refine(
+        (val) => {
+          const digits = val.replace(/\D/g, "");
+          return digits.length >= 10 && digits.length <= 11;
+        },
+        { message: "Telefone deve ter 10 ou 11 dígitos" },
+      ),
     email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
     password: z.string().min(6, "Mínimo 6 caracteres"),
     confirmPassword: z.string().min(1, "Confirmação é obrigatória"),

@@ -6,5 +6,17 @@
   "instagram": "Instagram",
   "events": "Eventos",
   "contact": "Contato",
-  "sponsors": "Patrocinadores"
+  "sponsors": "Patrocinadores",
+  "myAppointments": "Meus agendamentos",
+  "account": "Conta",
+  "login": "Entrar",
+  "preferences": {
+    "title": "Preferências",
+    "subtitle": "Personalize sua experiência",
+    "language": "Idioma",
+    "languageDescription": "Escolha seu idioma preferido",
+    "appearance": "Aparência",
+    "appearanceDescription": "Claro ou escuro",
+    "followInstagram": "Siga no Instagram"
+  }
 }

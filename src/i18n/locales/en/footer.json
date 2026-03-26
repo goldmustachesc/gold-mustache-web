@@ -10,7 +10,17 @@
     "contact": "Contact Us",
     "book": "Book Appointment",
     "barbershop": "Barbershop",
-    "store": "Store"
+    "store": "Store",
+    "privacy": "Privacy Policy"
+  },
+  "hours": {
+    "title": "Business Hours",
+    "weekdays": "Monday to Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "weekdaysTime": "10am to 8pm",
+    "saturdayTime": "10am to 8pm",
+    "sundayStatus": "Closed"
   },
   "copyright": "Gold Mustache Barbershop. All rights reserved."
 }

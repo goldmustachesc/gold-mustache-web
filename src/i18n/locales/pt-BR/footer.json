@@ -10,7 +10,17 @@
     "contact": "Fale Conosco",
     "book": "Agendar Horário",
     "barbershop": "Barbearia",
-    "store": "Loja"
+    "store": "Loja",
+    "privacy": "Política de Privacidade"
+  },
+  "hours": {
+    "title": "Horário de Funcionamento",
+    "weekdays": "Segunda a Sexta",
+    "saturday": "Sábado",
+    "sunday": "Domingo",
+    "weekdaysTime": "10h às 20h",
+    "saturdayTime": "10h às 20h",
+    "sundayStatus": "Fechado"
   },
   "copyright": "Gold Mustache Barbearia. Todos os direitos reservados."
 }

@@ -2,221 +2,126 @@
 
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { BRAND } from "@/constants/brand";
+import { useUser } from "@/hooks/useAuth";
+import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
-
-import { Calendar, Instagram, LogIn, Menu, User } from "lucide-react";
+import { Calendar, LogIn, Menu, User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
-
-import { useUser } from "@/hooks/useAuth";
 import { useState } from "react";
-
-type NavLink = {
-  href: string;
-  label: string;
-};
+import { MobileNavOverlay, type NavLink } from "./MobileNavOverlay";
 
 export function Header() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isScrolledPastThreshold } = useScrollPosition(300);
   const t = useTranslations("navigation");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const { data: user } = useUser();
+  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
 
-  const handleBookingClick = () => {
-    window.open(BRAND.booking.inbarberUrl, "_blank", "noopener,noreferrer");
-  };
+  const bookingLinkProps = isExternal
+    ? { target: "_blank" as const, rel: "noopener noreferrer" }
+    : {};
 
-  // Helper to create proper links that work from any page
   const homeLink = `/${locale}`;
-  const sectionLink = (section: string) => `/${locale}#${section}`;
 
   const navLinks: NavLink[] = [
     { href: homeLink, label: t("home") },
-    { href: sectionLink("servicos"), label: t("services") },
-    { href: sectionLink("equipe"), label: t("team") },
+    { href: `/${locale}#servicos`, label: t("services") },
+    { href: `/${locale}#equipe`, label: t("team") },
     { href: `/${locale}/blog`, label: t("blog") },
-    { href: sectionLink("eventos"), label: t("events") },
-    { href: sectionLink("contato"), label: t("contact") },
+    { href: `/${locale}#eventos`, label: t("events") },
+    { href: `/${locale}#contato`, label: t("contact") },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 m-auto">
-        <Link
-          href={homeLink}
-          className="flex items-center space-x-3 text-xl font-bold text-primary hover:text-primary/90 transition-colors"
-        >
-          <div className="h-8 w-8 flex items-center justify-center">
+    <header className="sticky top-0 z-40 w-full">
+      <div className="h-0.5 bg-primary" data-accent-line aria-hidden="true" />
+
+      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto flex h-14 items-center justify-between px-4 lg:h-16">
+          <Link
+            href={homeLink}
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+          >
             <Image
               src="/logo.png"
               alt="Gold Mustache Logo"
-              width={32}
-              height={32}
-              className="rounded-full object-cover"
+              width={28}
+              height={28}
+              className="rounded-md object-cover"
             />
-          </div>
-          <span className="font-playfair">Gold Mustache</span>
-        </Link>
+            <span className="font-playfair text-lg font-bold text-primary hidden min-[400px]:inline">
+              Gold Mustache
+            </span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden lg:flex">
-          <NavigationMenuList className="gap-0.5">
-            {navLinks.map((link) => (
-              <NavigationMenuItem key={link.href}>
-                <Link
-                  href={link.href}
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-                >
-                  {link.label}
-                </Link>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
+          <nav className="hidden lg:flex" aria-label="Main navigation">
+            <ul className="flex items-center gap-1">
+              {navLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="group relative px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                  >
+                    {link.label}
+                    <span className="absolute inset-x-3 -bottom-px h-0.5 origin-left scale-x-0 bg-primary transition-transform duration-200 ease-out group-hover:scale-x-100" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-        {/* Desktop Actions */}
-        <div className="hidden lg:flex items-center gap-1">
-          <LanguageSwitcher variant="desktop" />
-          <div className="w-px h-4 bg-border mx-1" />
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            asChild
-          >
-            <Link
-              href={BRAND.instagram.mainUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-            >
-              <Instagram className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            asChild
-          >
+          <div className="hidden lg:flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageSwitcher />
+
             <Link
               href={user ? `/${locale}/dashboard` : `/${locale}/login`}
-              aria-label={user ? "Dashboard" : "Login"}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               {user ? (
-                <User className="h-4 w-4" />
+                <>
+                  <User className="h-4 w-4" />
+                  {t("account")}
+                </>
               ) : (
-                <LogIn className="h-4 w-4" />
+                <>
+                  <LogIn className="h-4 w-4" />
+                  {t("login")}
+                </>
               )}
             </Link>
-          </Button>
-          {!isScrolledPastThreshold && (
-            <Button
-              onClick={handleBookingClick}
-              size="sm"
-              className="ml-2 flex items-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
-            >
-              <Calendar className="h-4 w-4" />
-              <span>{tCommon("buttons.book")}</span>
-            </Button>
-          )}
-        </div>
 
-        {/* Mobile Menu */}
-        <div className="lg:hidden flex items-center gap-2">
-          <ThemeToggle />
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">{tCommon("aria.openMenu")}</span>
+            {!isScrolledPastThreshold && shouldShowBooking && bookingHref && (
+              <Button size="sm" className="ml-1 gap-2 shadow-md" asChild>
+                <Link href={bookingHref} {...bookingLinkProps}>
+                  <Calendar className="h-4 w-4" />
+                  {tCommon("buttons.book")}
+                </Link>
               </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <div className="flex flex-col space-y-6 mt-6 pl-4 pr-4">
-                {/* Mobile Logo */}
-                <div className="flex items-center space-x-3 text-lg font-bold text-primary">
-                  <div className="h-8 w-8 flex items-center justify-center">
-                    <Image
-                      src="/logo.png"
-                      alt="Gold Mustache Logo"
-                      width={32}
-                      height={32}
-                      className="rounded-full object-cover"
-                    />
-                  </div>
-                  <span className="font-playfair">Gold Mustache</span>
-                </div>
+            )}
+          </div>
 
-                {/* Language Switcher - Mobile */}
-                <LanguageSwitcher variant="mobile" />
-
-                {/* Mobile Navigation */}
-                <nav className="flex flex-col space-y-4">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </nav>
-
-                {/* Mobile Actions */}
-                <div className="flex flex-col space-y-3 pt-4 border-t">
-                  <Button variant="outline" asChild className="w-full">
-                    <Link
-                      href={user ? `/${locale}/dashboard` : `/${locale}/login`}
-                      className="flex items-center justify-center space-x-2"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {user ? (
-                        <User className="h-4 w-4" />
-                      ) : (
-                        <LogIn className="h-4 w-4" />
-                      )}
-                      <span>{user ? "Minha Conta" : "Entrar"}</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild className="w-full">
-                    <Link
-                      href={BRAND.instagram.mainUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center space-x-2"
-                    >
-                      <Instagram className="h-4 w-4" />
-                      <span>{tCommon("buttons.follow")}</span>
-                    </Link>
-                  </Button>
-                  <Button
-                    onClick={handleBookingClick}
-                    className="w-full flex items-center justify-center space-x-2"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span>{tCommon("buttons.bookAppointment")}</span>
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+            aria-label={tCommon("aria.openMenu")}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
         </div>
       </div>
+
+      <MobileNavOverlay
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        navLinks={navLinks}
+      />
     </header>
   );
 }

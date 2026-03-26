@@ -1,15 +1,29 @@
-import { SERVICES } from "@/constants/brand";
+import { siteConfig } from "@/config/site";
+import { getServices } from "@/services/booking";
 import { locales } from "@/i18n/config";
 import type { MetadataRoute } from "next";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://www.goldmustachebarbearia.com.br";
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Em ambientes não-produção, retornar sitemap vazio
+  if (!siteConfig.isProduction) {
+    return [];
+  }
+
+  const baseUrl = siteConfig.productionUrl;
   const currentDate = new Date().toISOString();
+
+  // Fetch services from database (only active)
+  let services: Awaited<ReturnType<typeof getServices>> = [];
+  try {
+    services = await getServices();
+  } catch (error) {
+    console.error("Error fetching services for sitemap:", error);
+  }
 
   const routes: MetadataRoute.Sitemap = [];
 
   // Generate routes for each locale
-  locales.forEach((locale) => {
+  for (const locale of locales) {
     const localePrefix = `/${locale}`;
 
     // Homepage - highest priority
@@ -40,7 +54,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       { id: "parceiros", priority: 0.5, frequency: "monthly" as const },
     ];
 
-    sections.forEach((section) => {
+    for (const section of sections) {
       routes.push({
         url: `${baseUrl}${localePrefix}#${section.id}`,
         lastModified: currentDate,
@@ -54,25 +68,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
           },
         },
       });
-    });
+    }
 
-    // Service-specific pages (virtual pages for SEO)
-    SERVICES.forEach((service) => {
+    // Service-specific pages (virtual pages for SEO) - from database
+    for (const service of services) {
       routes.push({
-        url: `${baseUrl}${localePrefix}#servico-${service.id}`,
+        url: `${baseUrl}${localePrefix}#servico-${service.slug}`,
         lastModified: currentDate,
         changeFrequency: "monthly",
         priority: 0.6,
         alternates: {
           languages: {
-            "pt-BR": `${baseUrl}/pt-BR#servico-${service.id}`,
-            es: `${baseUrl}/es#servico-${service.id}`,
-            en: `${baseUrl}/en#servico-${service.id}`,
+            "pt-BR": `${baseUrl}/pt-BR#servico-${service.slug}`,
+            es: `${baseUrl}/es#servico-${service.slug}`,
+            en: `${baseUrl}/en#servico-${service.slug}`,
           },
         },
       });
-    });
-  });
+    }
+  }
 
   return routes;
 }

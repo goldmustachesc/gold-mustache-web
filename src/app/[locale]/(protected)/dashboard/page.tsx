@@ -1,39 +1,30 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useSignOut, useUser } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useAuth";
+import { useBarberProfile } from "@/hooks/useBarberProfile";
+import { BarberDashboard } from "@/components/dashboard/BarberDashboard";
+import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
+import { Loader2 } from "lucide-react";
+import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
-  const { data: user, isLoading } = useUser();
-  const { mutate: signOut, isPending } = useSignOut();
+  const { isLoading: userLoading } = useUser();
+  const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
+  const params = useParams();
+  const locale = params.locale as string;
 
-  if (isLoading) {
+  if (userLoading || barberLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>Carregando...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="sr-only">Carregando...</span>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto max-w-4xl p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button
-          variant="outline"
-          onClick={() => signOut()}
-          disabled={isPending}
-        >
-          {isPending ? "Saindo..." : "Sair"}
-        </Button>
-      </div>
+  if (barberProfile) {
+    return <BarberDashboard locale={locale} />;
+  }
 
-      <div className="rounded-lg border bg-card p-6">
-        <h2 className="mb-4 text-xl font-semibold">Bem-vindo!</h2>
-        <p className="text-muted-foreground">
-          Você está logado como: <strong>{user?.email}</strong>
-        </p>
-      </div>
-    </div>
-  );
+  return <ClientDashboard locale={locale} />;
 }

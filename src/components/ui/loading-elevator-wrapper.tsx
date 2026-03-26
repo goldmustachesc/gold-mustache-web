@@ -5,19 +5,33 @@ import { LoadingElevator } from "./loading-elevator";
 
 export function LoadingElevatorWrapper() {
   const [isLoading, setIsLoading] = useState(true);
-  const [shouldRender, setShouldRender] = useState(true);
+  const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    // Wait for initial content to be ready, then trigger opening animation
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    const mq = window.matchMedia("(min-width: 769px)");
+    if (!mq.matches) {
+      return;
+    }
 
-    return () => clearTimeout(timer);
+    setShouldRender(true);
+
+    if (document.readyState === "complete") {
+      setIsLoading(false);
+      return;
+    }
+
+    const onReady = () => setIsLoading(false);
+    window.addEventListener("load", onReady);
+
+    const fallback = setTimeout(onReady, 500);
+
+    return () => {
+      window.removeEventListener("load", onReady);
+      clearTimeout(fallback);
+    };
   }, []);
 
   const handleAnimationComplete = () => {
-    // Remove component from DOM after opening animation completes
     setShouldRender(false);
   };
 

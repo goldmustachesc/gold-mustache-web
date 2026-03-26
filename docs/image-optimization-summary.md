@@ -17,7 +17,7 @@
 ## Implementações
 
 ### 1. Script de Otimização Automática
-- Arquivo: `scripts/optimize-images.js`
+- Arquivo: `scripts/optimize-images.cjs`
 - Comando: `npm run optimize:images`
 - Converte JPG/PNG → WebP com qualidade 85%
 

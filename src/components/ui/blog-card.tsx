@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "./badge";
+import { formatLocalizedDateFromIsoDateLike } from "@/utils/datetime";
 
 interface BlogCardProps {
   post: BlogPost;
@@ -23,11 +24,15 @@ export function BlogCard({
 }: BlogCardProps) {
   const t = useTranslations("blog");
 
-  const formattedDate = new Date(post.publishedAt).toLocaleDateString(locale, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const formattedDate = formatLocalizedDateFromIsoDateLike(
+    post.publishedAt,
+    locale,
+    {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    },
+  );
 
   if (featured) {
     return (

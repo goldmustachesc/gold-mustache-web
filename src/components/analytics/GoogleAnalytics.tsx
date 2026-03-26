@@ -1,13 +1,21 @@
 "use client";
 
 import Script from "next/script";
+import { useConsent } from "@/hooks/useConsent";
+import "@/types/analytics";
 
 interface GoogleAnalyticsProps {
   trackingId: string;
 }
 
+/**
+ * Google Analytics component with LGPD-compliant consent check.
+ * Only loads GA scripts if the user has consented to analytics cookies.
+ */
 export function GoogleAnalytics({ trackingId }: GoogleAnalyticsProps) {
-  if (!trackingId) return null;
+  const { hasConsent, isLoading } = useConsent();
+
+  if (isLoading || !trackingId || !hasConsent("analytics")) return null;
 
   return (
     <>
@@ -26,7 +34,8 @@ export function GoogleAnalytics({ trackingId }: GoogleAnalyticsProps) {
             gtag('config', '${trackingId}', {
               page_title: document.title,
               page_location: window.location.href,
-              send_page_view: true
+              send_page_view: true,
+              anonymize_ip: true
             });
           `,
         }}
@@ -71,14 +80,3 @@ export const trackWhatsappClick = () => {
 export const trackServiceView = (serviceName: string) => {
   trackEvent("view", "service", serviceName);
 };
-
-// Type declarations for gtag
-declare global {
-  interface Window {
-    gtag: (
-      command: "config" | "event",
-      targetId: string,
-      config?: Record<string, unknown>,
-    ) => void;
-  }
-}

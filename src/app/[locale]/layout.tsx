@@ -1,11 +1,18 @@
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
-import { Layout } from "@/components/layout/Layout";
+import {
+  GoogleTagManager,
+  GoogleTagManagerNoScript,
+} from "@/components/analytics/GoogleTagManager";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
-import { BRAND } from "@/constants/brand";
+import { barbershopConfig } from "@/config/barbershop";
 import { locales } from "@/i18n/config";
 import { QueryProvider } from "@/providers/query-provider";
+import { FeatureFlagsProvider } from "@/providers/feature-flags-provider";
+import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
+import { getBarbershopSettings } from "@/services/barbershop-settings";
+import { getClientFeatureFlags } from "@/services/feature-flags";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -181,17 +188,35 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const messages = await getMessages();
+  const [messages, settings, clientFeatureFlags] = await Promise.all([
+    getMessages(),
+    getBarbershopSettings(),
+    getClientFeatureFlags(),
+  ]);
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/images/interno/interno-01.webp"
+          fetchPriority="high"
+        />
         <SchemaMarkup />
+        <GoogleTagManager
+          gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
       >
-        <GoogleAnalytics trackingId={BRAND.analytics.googleAnalyticsId} />
+        <GoogleTagManagerNoScript
+          gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
+        />
+        <GoogleAnalytics
+          trackingId={barbershopConfig.analytics.googleAnalyticsId}
+        />
         <LoadingElevatorWrapper />
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
@@ -201,7 +226,15 @@ export default async function LocaleLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <Layout>{children}</Layout>
+              <FeatureFlagsProvider flags={clientFeatureFlags}>
+                <BookingSettingsProvider
+                  bookingEnabled={settings.bookingEnabled}
+                  externalBookingUrl={settings.externalBookingUrl}
+                  locale={locale}
+                >
+                  {children}
+                </BookingSettingsProvider>
+              </FeatureFlagsProvider>
             </ThemeProvider>
           </QueryProvider>
         </NextIntlClientProvider>

@@ -108,7 +108,7 @@ CRON_SECRET=seu_secret_aleatorio_aqui
 
 2. Teste o endpoint de sincronização:
    \`\`\`bash
-   curl -X POST http://localhost:3000/api/cron/sync-instagram \
+   curl -X POST http://localhost:3001/api/cron/sync-instagram \
      -H "Authorization: Bearer {seu_cron_secret}"
    \`\`\`
 
@@ -122,7 +122,7 @@ CRON_SECRET=seu_secret_aleatorio_aqui
    }
    \`\`\`
 
-4. Verifique o arquivo gerado em `public/data/instagram-cache.json`
+4. Verifique que a resposta retorna `postsCount > 0` (dados são salvos no Upstash Redis)
 
 #### Testar em Produção
 
@@ -141,17 +141,18 @@ CRON_SECRET=seu_secret_aleatorio_aqui
 1. **Cron Job** (diário às 7h BRT):
    - Vercel executa `/api/cron/sync-instagram`
    - API busca últimos 10 posts do Instagram
-   - Dados são salvos em `public/data/instagram-cache.json`
+   - Dados são salvos no Upstash Redis (chave `instagram:cache`, TTL 25h)
 
 2. **Exibição no Site**:
-   - Componente `InstagramSection` carrega posts do cache
+   - Componente `InstagramSection` carrega posts do cache via `/api/instagram/posts`
    - Se cache não existir, usa posts mockados como fallback
    - Imagens são otimizadas via Next.js Image
 
 ### Cache
 
-O cache é um arquivo JSON estático servido pelo CDN da Vercel:
-- Atualizado 1x por dia
+O cache é armazenado no Upstash Redis, compartilhado entre todas as instâncias serverless:
+- Atualizado 1x por dia pelo cron job
+- TTL de 25 horas (cobre o intervalo diário com margem)
 - Fallback automático para posts mockados se houver erro
 - Sem requisições diretas à API do Instagram no client-side
 
@@ -177,8 +178,8 @@ O cache é um arquivo JSON estático servido pelo CDN da Vercel:
 **Sintoma:** Site mostra posts mockados mesmo após sincronização
 
 **Verificar:**
-1. Arquivo `public/data/instagram-cache.json` existe e tem dados?
-2. Variáveis de ambiente configuradas corretamente?
+1. Redis está configurado (`UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`)?
+2. Variáveis de ambiente do Instagram configuradas corretamente?
 3. Logs do cron job mostram sucesso?
 
 **Solução:**

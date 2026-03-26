@@ -4,41 +4,63 @@ import { FAQSection } from "./FAQSection";
 
 // Mock next-intl
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => {
+  useTranslations: () => {
+    type Translator = ((key: string) => string) & {
+      raw: (key: string) => unknown;
+    };
+
     const translations: Record<string, string> = {
       badge: "FAQ",
       title: "Questions? We Have Answers",
       description: "Find quick answers to common questions",
-      "items.0.id": "test-1",
-      "items.0.question": "How do I schedule an appointment?",
-      "items.0.answer": "You can schedule through our app or WhatsApp.",
-      "items.1.id": "test-2",
-      "items.1.question": "What payment methods do you accept?",
-      "items.1.answer": "We accept cash, credit cards, and PIX.",
-      "items.2.id": "test-3",
-      "items.2.question": "What is your cancellation policy?",
-      "items.2.answer": "Please cancel at least 2 hours in advance.",
     };
-    return translations[key] || key;
+
+    const items = [
+      {
+        id: "test-1",
+        question: "How do I schedule an appointment?",
+        answer: "You can schedule through our app or WhatsApp.",
+      },
+      {
+        id: "test-2",
+        question: "What payment methods do you accept?",
+        answer: "We accept cash, credit cards, and PIX.",
+      },
+      {
+        id: "test-3",
+        question: "What is your cancellation policy?",
+        answer:
+          "You can cancel any time before the appointment. If it’s less than 2 hours away, we’ll only show a warning.",
+      },
+    ];
+
+    const t = (key: string) => translations[key] || key;
+    const translator = t as Translator;
+    translator.raw = (key: string) => {
+      if (key === "items") return items;
+      return undefined;
+    };
+
+    return translator;
   },
 }));
 
 describe("FAQ Schema Markup", () => {
-  it("generates valid FAQPage JSON-LD schema", () => {
-    const { container } = render(<FAQSection />);
-
-    // Find the schema script tag
+  function getSchema(container: HTMLElement) {
     const schemaScript = container.querySelector(
       'script[type="application/ld+json"]',
     );
     expect(schemaScript).toBeInTheDocument();
 
-    // Parse the schema
     const schemaContent = schemaScript?.textContent;
     expect(schemaContent).toBeTruthy();
 
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    return JSON.parse(schemaContent as string);
+  }
+
+  it("generates valid FAQPage JSON-LD schema", () => {
+    const { container } = render(<FAQSection />);
+    const schema = getSchema(container);
 
     // Verify schema structure
     expect(schema["@context"]).toBe("https://schema.org");
@@ -49,13 +71,7 @@ describe("FAQ Schema Markup", () => {
 
   it("includes all FAQ items in the schema", () => {
     const { container } = render(<FAQSection />);
-
-    const schemaScript = container.querySelector(
-      'script[type="application/ld+json"]',
-    );
-    const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    const schema = getSchema(container);
 
     // Should have at least the FAQ items we defined in the mock
     expect(schema.mainEntity.length).toBeGreaterThanOrEqual(3);
@@ -71,13 +87,7 @@ describe("FAQ Schema Markup", () => {
 
   it("includes complete question and answer data in schema", () => {
     const { container } = render(<FAQSection />);
-
-    const schemaScript = container.querySelector(
-      'script[type="application/ld+json"]',
-    );
-    const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    const schema = getSchema(container);
 
     // Verify first FAQ item structure
     const firstItem = schema.mainEntity[0];
@@ -92,13 +102,7 @@ describe("FAQ Schema Markup", () => {
 
   it("validates all FAQ items have required schema properties", () => {
     const { container } = render(<FAQSection />);
-
-    const schemaScript = container.querySelector(
-      'script[type="application/ld+json"]',
-    );
-    const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
-    const schema = JSON.parse(schemaContent);
+    const schema = getSchema(container);
 
     // Verify each item has the required structure
     schema.mainEntity.forEach(
@@ -120,18 +124,18 @@ describe("FAQ Schema Markup", () => {
 
   it("schema is valid JSON that can be parsed by search engines", () => {
     const { container } = render(<FAQSection />);
-
     const schemaScript = container.querySelector(
       'script[type="application/ld+json"]',
     );
+    expect(schemaScript).toBeInTheDocument();
     const schemaContent = schemaScript?.textContent;
-    if (!schemaContent) return;
+    expect(schemaContent).toBeTruthy();
 
     // Should not throw when parsing
-    expect(() => JSON.parse(schemaContent)).not.toThrow();
+    expect(() => JSON.parse(schemaContent as string)).not.toThrow();
 
     // Should be properly formatted JSON
-    const schema = JSON.parse(schemaContent);
+    const schema = JSON.parse(schemaContent as string);
     const reStringified = JSON.stringify(schema);
     expect(reStringified).toBeTruthy();
   });

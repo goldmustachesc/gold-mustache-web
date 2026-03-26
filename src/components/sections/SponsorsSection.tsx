@@ -1,68 +1,41 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { RevealOnScroll } from "@/components/shared/RevealOnScroll";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import type { CarouselApi } from "@/components/ui/carousel";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
 } from "@/components/ui/carousel";
 import { HandshakeIcon } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 const sponsors = [
   {
-    id: 1,
+    id: "surf-trend",
     name: "Surf Trend: Loja de Surf Itapema",
-    logo: "/images/sponsors/surf-trend-logo-instagram.jpeg",
+    logo: "/images/sponsors/surf-trend-logo-instagram.webp",
     website: "https://www.surftrend.com.br/",
   },
   {
-    id: 2,
+    id: "visao-solidaria",
     name: "Visão Solidária Ótica Itapema",
-    logo: "/images/sponsors/visao-solidaria-logo.jpg",
-    website: "https://www.instagram.com/ivs.itapema/",
-  },
-  {
-    id: 3,
-    name: "Surf Trend: Loja de Surf Itapema",
-    logo: "/images/sponsors/surf-trend-logo-instagram.jpeg",
-    website: "https://www.surftrend.com.br/",
-  },
-  {
-    id: 4,
-    name: "Visão Solidária Ótica Itapema",
-    logo: "/images/sponsors/visao-solidaria-logo.jpg",
-    website: "https://www.instagram.com/ivs.itapema/",
-  },
-  {
-    id: 5,
-    name: "Surf Trend: Loja de Surf Itapema",
-    logo: "/images/sponsors/surf-trend-logo-instagram.jpeg",
-    website: "https://www.surftrend.com.br/",
-  },
-  {
-    id: 6,
-    name: "Visão Solidária Ótica Itapema",
-    logo: "/images/sponsors/visao-solidaria-logo.jpg",
-    website: "https://www.instagram.com/ivs.itapema/",
-  },
-  {
-    id: 7,
-    name: "Surf Trend: Loja de Surf Itapema",
-    logo: "/images/sponsors/surf-trend-logo-instagram.jpeg",
-    website: "https://www.surftrend.com.br/",
-  },
-  {
-    id: 8,
-    name: "Visão Solidária Ótica Itapema",
-    logo: "/images/sponsors/visao-solidaria-logo.jpg",
+    logo: "/images/sponsors/visao-solidaria-logo.webp",
     website: "https://www.instagram.com/ivs.itapema/",
   },
 ];
 
+const repeatedSponsors = Array.from({ length: 4 }, (_, i) =>
+  sponsors.map((s) => ({ ...s, id: `${s.id}-${i}` })),
+).flat();
+
 export function SponsorsSection() {
+  const t = useTranslations("sponsors");
   const [api, setApi] = useState<CarouselApi>();
 
   useEffect(() => {
@@ -76,22 +49,16 @@ export function SponsorsSection() {
   }, [api]);
 
   return (
-    <section id="parceiros" className="py-16 bg-muted/30">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <Badge variant="outline" className="mb-4">
-            <HandshakeIcon className="h-4 w-4 mr-2" />
-            Patrocinadores
-          </Badge>
-          <h2 className="text-3xl font-bold text-foreground mb-4">
-            Nossos <span className="text-primary">Parceiros</span>
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Conheça as marcas que confiam no nosso trabalho e apoiam a Gold
-            Mustache
-          </p>
-        </div>
-
+    <SectionLayout
+      id="parceiros"
+      icon={HandshakeIcon}
+      badge={t("badge")}
+      title={t("title")}
+      titleAccent={t("titleAccent")}
+      description={t("description")}
+      className="py-16 bg-muted/30"
+    >
+      <RevealOnScroll>
         <Carousel
           setApi={setApi}
           opts={{
@@ -101,8 +68,8 @@ export function SponsorsSection() {
           }}
           className="w-full"
         >
-          <CarouselContent className="-ml-2 md:-ml-4 cursor-pointer hover:border-primary">
-            {sponsors.map((sponsor) => (
+          <CarouselContent className="-ml-2 md:-ml-4">
+            {repeatedSponsors.map((sponsor) => (
               <CarouselItem
                 key={sponsor.id}
                 className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
@@ -120,7 +87,7 @@ export function SponsorsSection() {
                         alt={sponsor.name}
                         width={160}
                         height={160}
-                        className="max-h-36 w-auto object-contain group-hover:grayscale-0 transition-all duration-300"
+                        className="max-h-36 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
                       />
                     </div>
                   </a>
@@ -128,8 +95,10 @@ export function SponsorsSection() {
               </CarouselItem>
             ))}
           </CarouselContent>
+          <CarouselPrevious className="left-2" />
+          <CarouselNext className="right-2" />
         </Carousel>
-      </div>
-    </section>
+      </RevealOnScroll>
+    </SectionLayout>
   );
 }

@@ -24,6 +24,5 @@
   "biome.enabled": true,
   "biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
   "eslint.enable": false,
-  "prettier.enable": false,
-  "kiroAgent.configureMCP": "Disabled"
+  "prettier.enable": false
 }
