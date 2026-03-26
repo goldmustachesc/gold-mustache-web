@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DailySchedule } from "../DailySchedule";
@@ -6,6 +6,10 @@ import type { BarberAbsenceData, BarberWorkingHoursDay } from "@/types/booking";
 
 vi.mock("@/components/barber/AppointmentDetailSheet", () => ({
   AppointmentDetailSheet: () => null,
+}));
+
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useIsDesktop: () => false,
 }));
 
 const workingHours: BarberWorkingHoursDay = {
@@ -82,7 +86,10 @@ describe("DailySchedule - ações em horário disponível", () => {
 
     // Clicar no chip chama onCreateAppointmentFromSlot
     await user.click(screen.getByRole("button", { name: "09:00" }));
-    expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:00");
+
+    await waitFor(() => {
+      expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:00");
+    });
     expect(onCreateAbsenceFromSlot).not.toHaveBeenCalled();
   });
 
@@ -113,7 +120,9 @@ describe("DailySchedule - ações em horário disponível", () => {
       screen.getByRole("button", { name: /bloquear este intervalo/i }),
     );
 
-    expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:30");
+    await waitFor(() => {
+      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:30");
+    });
     expect(onCreateAppointmentFromSlot).not.toHaveBeenCalled();
   });
 
