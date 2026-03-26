@@ -22,6 +22,7 @@ import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailShe
 import { BarberChairIcon } from "./BarberChairIcon";
 import { AppointmentCard } from "./AppointmentCard";
 import { EmptySlot } from "./EmptySlot";
+import { SlotActionSheet } from "./SlotActionSheet";
 
 interface DailyScheduleProps {
   date: Date;
@@ -93,6 +94,10 @@ export function DailySchedule({
   const [selectedAppointment, setSelectedAppointment] =
     useState<AppointmentWithDetails | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [slotSheetSlot, setSlotSheetSlot] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
   const fullDayAbsence = useMemo(
     () => absences.find(isFullDayAbsence) ?? null,
     [absences],
@@ -218,6 +223,20 @@ export function DailySchedule({
   const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
     setSelectedAppointment(appointment);
     setSheetOpen(true);
+  };
+
+  const handleOpenSlotSheet = (start: string, end: string) => {
+    setSlotSheetSlot({ start, end });
+  };
+
+  const handleSelectTimeFromSlotSheet = (time: string) => {
+    setSlotSheetSlot(null);
+    onCreateAppointmentFromSlot?.(time);
+  };
+
+  const handleAbsenceFromSlotSheet = (startTime: string, endTime: string) => {
+    setSlotSheetSlot(null);
+    onCreateAbsenceFromSlot?.(startTime, endTime);
   };
 
   const handleCloseSheet = (open: boolean) => {
@@ -468,8 +487,11 @@ export function DailySchedule({
                       endTime={slot.endTime}
                       isBlockedByAbsence={slot.isBlockedByAbsence}
                       absenceReason={slot.absenceReason}
-                      onCreateAppointmentFromSlot={onCreateAppointmentFromSlot}
-                      onCreateAbsenceFromSlot={onCreateAbsenceFromSlot}
+                      onOpenSheet={
+                        onCreateAppointmentFromSlot || onCreateAbsenceFromSlot
+                          ? handleOpenSlotSheet
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -495,6 +517,18 @@ export function DailySchedule({
           isMarkingComplete={
             isMarkingComplete && markingCompleteId === selectedAppointment?.id
           }
+        />
+
+        {/* Slot Action Sheet */}
+        <SlotActionSheet
+          open={slotSheetSlot !== null}
+          onOpenChange={(open) => {
+            if (!open) setSlotSheetSlot(null);
+          }}
+          slotStart={slotSheetSlot?.start ?? ""}
+          slotEnd={slotSheetSlot?.end ?? ""}
+          onSelectTime={handleSelectTimeFromSlotSheet}
+          onCreateAbsence={handleAbsenceFromSlotSheet}
         />
       </div>
     );

@@ -19,6 +19,7 @@ import {
   getCurrentTimeInMinutes,
   filterPastSlots,
   isDateTimeInPast,
+  generateSubSlots,
 } from "../time-slots";
 
 describe("utils/time-slots (deterministic unit tests)", () => {
@@ -231,5 +232,34 @@ describe("utils/time-slots (deterministic unit tests)", () => {
     expect(isDateTimeInPast(parseDateString("2025-06-16"), "12:00")).toBe(
       false,
     );
+  });
+});
+
+describe("generateSubSlots", () => {
+  it("gera sub-slots de 15 min para bloco de 30 min", () => {
+    expect(generateSubSlots("09:00", "09:30", 15)).toEqual(["09:00", "09:15"]);
+  });
+
+  it("gera sub-slots de 15 min para bloco de 60 min", () => {
+    expect(generateSubSlots("09:00", "10:00", 15)).toEqual([
+      "09:00",
+      "09:15",
+      "09:30",
+      "09:45",
+    ]);
+  });
+
+  it("retorna apenas o início quando intervalo igual ao bloco", () => {
+    expect(generateSubSlots("09:00", "09:30", 30)).toEqual(["09:00"]);
+  });
+
+  it("retorna lista vazia quando startTime >= endTime", () => {
+    expect(generateSubSlots("09:30", "09:00", 15)).toEqual([]);
+    expect(generateSubSlots("09:00", "09:00", 15)).toEqual([]);
+  });
+
+  it("funciona em blocos de meia-noite", () => {
+    expect(generateSubSlots("23:45", "00:00", 15)).toEqual([]);
+    expect(generateSubSlots("00:00", "00:30", 15)).toEqual(["00:00", "00:15"]);
   });
 });

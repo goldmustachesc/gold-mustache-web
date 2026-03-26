@@ -32,7 +32,25 @@ function buildAbsence(input: Partial<BarberAbsenceData>): BarberAbsenceData {
 }
 
 describe("DailySchedule - ações em horário disponível", () => {
-  it("permite cadastrar atendimento a partir do slot disponível", async () => {
+  it("exibe botão Adicionar nos slots disponíveis", () => {
+    render(
+      <DailySchedule
+        date={new Date("2026-02-23T12:00:00.000Z")}
+        appointments={[]}
+        absences={[]}
+        onCancelAppointment={vi.fn()}
+        variant="compact"
+        workingHours={workingHours}
+        onCreateAppointmentFromSlot={vi.fn()}
+        onCreateAbsenceFromSlot={vi.fn()}
+      />,
+    );
+
+    const addButtons = screen.getAllByRole("button", { name: "Adicionar" });
+    expect(addButtons.length).toBeGreaterThan(0);
+  });
+
+  it("abre o bottom sheet ao clicar em Adicionar e chama onCreateAppointmentFromSlot ao selecionar horário", async () => {
     const user = userEvent.setup();
     const onCreateAppointmentFromSlot = vi.fn();
     const onCreateAbsenceFromSlot = vi.fn();
@@ -50,14 +68,56 @@ describe("DailySchedule - ações em horário disponível", () => {
       />,
     );
 
-    await user.click(screen.getByLabelText("Ações para horário 09:00"));
-    await user.click(screen.getByText("Cadastrar atendimento às 09:00"));
+    const [firstAddButton] = screen.getAllByRole("button", {
+      name: "Adicionar",
+    });
+    await user.click(firstAddButton);
 
+    // Sheet abre mostrando o título com o intervalo
+    expect(screen.getByText(/Adicionar em 09:00/)).toBeInTheDocument();
+
+    // Chips de 15 min estão presentes
+    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:15" })).toBeInTheDocument();
+
+    // Clicar no chip chama onCreateAppointmentFromSlot
+    await user.click(screen.getByRole("button", { name: "09:00" }));
     expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:00");
     expect(onCreateAbsenceFromSlot).not.toHaveBeenCalled();
   });
 
-  it("não permite ação de slot quando horário está bloqueado por ausência", () => {
+  it("chama onCreateAbsenceFromSlot ao clicar em Bloquear no sheet", async () => {
+    const user = userEvent.setup();
+    const onCreateAppointmentFromSlot = vi.fn();
+    const onCreateAbsenceFromSlot = vi.fn();
+
+    render(
+      <DailySchedule
+        date={new Date("2026-02-23T12:00:00.000Z")}
+        appointments={[]}
+        absences={[]}
+        onCancelAppointment={vi.fn()}
+        variant="compact"
+        workingHours={workingHours}
+        onCreateAppointmentFromSlot={onCreateAppointmentFromSlot}
+        onCreateAbsenceFromSlot={onCreateAbsenceFromSlot}
+      />,
+    );
+
+    const [firstAddButton] = screen.getAllByRole("button", {
+      name: "Adicionar",
+    });
+    await user.click(firstAddButton);
+
+    await user.click(
+      screen.getByRole("button", { name: /bloquear este intervalo/i }),
+    );
+
+    expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:30");
+    expect(onCreateAppointmentFromSlot).not.toHaveBeenCalled();
+  });
+
+  it("não exibe botão Adicionar quando horário está bloqueado por ausência", () => {
     render(
       <DailySchedule
         date={new Date("2026-02-23T12:00:00.000Z")}
@@ -77,9 +137,10 @@ describe("DailySchedule - ações em horário disponível", () => {
       />,
     );
 
-    expect(
-      screen.queryByLabelText("Ações para horário 09:00"),
-    ).not.toBeInTheDocument();
     expect(screen.getByText("Bloqueado por ausência")).toBeInTheDocument();
+    // O slot bloqueado não deve ter botão Adicionar
+    // (pode haver outros slots disponíveis com botão Adicionar)
+    const blockedSlotTexts = screen.getAllByText("Bloqueado por ausência");
+    expect(blockedSlotTexts.length).toBeGreaterThan(0);
   });
 });

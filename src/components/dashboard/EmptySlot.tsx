@@ -1,12 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { BarberChairIcon } from "./BarberChairIcon";
 
 export interface EmptySlotProps {
@@ -14,8 +9,7 @@ export interface EmptySlotProps {
   endTime: string;
   isBlockedByAbsence: boolean;
   absenceReason: string | null;
-  onCreateAppointmentFromSlot?: (startTime: string) => void;
-  onCreateAbsenceFromSlot?: (startTime: string, endTime: string) => void;
+  onOpenSheet?: (startTime: string, endTime: string) => void;
 }
 
 export function EmptySlot({
@@ -23,15 +17,11 @@ export function EmptySlot({
   endTime,
   isBlockedByAbsence,
   absenceReason,
-  onCreateAppointmentFromSlot,
-  onCreateAbsenceFromSlot,
+  onOpenSheet,
 }: EmptySlotProps) {
-  const hasActions =
-    !isBlockedByAbsence &&
-    Boolean(onCreateAppointmentFromSlot) &&
-    Boolean(onCreateAbsenceFromSlot);
+  const hasAction = !isBlockedByAbsence && Boolean(onOpenSheet);
 
-  const slotContent = (
+  return (
     <div
       className={cn(
         "relative overflow-hidden rounded-xl px-4 py-3 border",
@@ -40,34 +30,43 @@ export function EmptySlot({
           : "bg-card/30 border-dashed border-border",
       )}
     >
-      <div className="flex items-center justify-between">
-        <span
-          className={cn(
-            "text-sm",
-            isBlockedByAbsence ? "text-foreground" : "text-muted-foreground",
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span
+            className={cn(
+              "text-sm font-medium",
+              isBlockedByAbsence ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {time} - {endTime}
+          </span>
+          <p
+            className={cn(
+              "text-xs mt-0.5",
+              isBlockedByAbsence
+                ? "text-muted-foreground"
+                : "text-muted-foreground/70",
+            )}
+          >
+            {isBlockedByAbsence ? "Bloqueado por ausência" : "Disponível"}
+          </p>
+          {isBlockedByAbsence && absenceReason && (
+            <p className="text-xs mt-1 text-foreground/80">{absenceReason}</p>
           )}
-        >
-          {time} - {endTime}
-        </span>
-        <span
-          className={cn(
-            "text-xs uppercase tracking-wide",
-            isBlockedByAbsence
-              ? "text-muted-foreground"
-              : "text-muted-foreground",
-          )}
-        >
-          {isBlockedByAbsence ? "Bloqueado por ausência" : "Disponível"}
-        </span>
+        </div>
+
+        {hasAction && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onOpenSheet?.(time, endTime)}
+            className="shrink-0 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            Adicionar
+          </Button>
+        )}
       </div>
-      {isBlockedByAbsence && absenceReason && (
-        <p className="text-xs mt-1 text-foreground/80">{absenceReason}</p>
-      )}
-      {!isBlockedByAbsence && hasActions && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Toque para cadastrar atendimento ou ausência
-        </p>
-      )}
+
       <BarberChairIcon
         className={cn(
           "absolute -right-2 -bottom-2 h-12 w-12",
@@ -75,37 +74,5 @@ export function EmptySlot({
         )}
       />
     </div>
-  );
-
-  if (!hasActions) {
-    return <div>{slotContent}</div>;
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-xl"
-          aria-label={`Ações para horário ${time}`}
-        >
-          {slotContent}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="bg-popover border-border text-popover-foreground shadow-lg"
-      >
-        <DropdownMenuItem onClick={() => onCreateAppointmentFromSlot?.(time)}>
-          Cadastrar atendimento às {time}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => onCreateAbsenceFromSlot?.(time, endTime)}
-          className="text-warning dark:text-warning focus:text-warning dark:focus:text-warning focus:bg-warning/10"
-        >
-          Adicionar ausência neste horário
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

@@ -21,15 +21,7 @@ import {
   usePrivateHeader,
   PrivateHeaderActions,
 } from "@/components/private/PrivateHeaderContext";
-import { mobileFabOffsetClassName } from "@/components/private/mobile-nav-layout";
-import {
-  ArrowRight,
-  CalendarOff,
-  Eye,
-  EyeOff,
-  Plus,
-  Calendar,
-} from "lucide-react";
+import { CalendarOff, Eye, EyeOff, Plus, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   formatDateToString,
@@ -233,12 +225,26 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   return (
     <div>
       <PrivateHeaderActions>
+        {/* Mobile: CTA compacto no header */}
+        <Link href={`/${locale}/barbeiro/agendar`} className="lg:hidden">
+          <Button
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Agendar
+          </Button>
+        </Link>
+
+        {/* Desktop: CTA completo */}
         <Link href={`/${locale}/barbeiro/agendar`} className="hidden lg:block">
           <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
             <Plus className="h-4 w-4 mr-2" />
             Novo Agendamento
           </Button>
         </Link>
+
+        {/* Ausência: ícone no mobile, botão no desktop */}
         <Link href={absencesPageHref} className="hidden lg:block">
           <Button
             variant="outline"
@@ -253,16 +259,19 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
             variant="ghost"
             size="icon"
             className="text-primary hover:text-primary hover:bg-primary/10"
+            aria-label="Adicionar ausência"
             title="Adicionar ausência"
           >
             <CalendarOff className="h-5 w-5" />
           </Button>
         </Link>
+
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setHideValues((prev) => !prev)}
           className="text-muted-foreground hover:text-foreground hover:bg-accent"
+          aria-label={hideValues ? "Mostrar valores" : "Ocultar valores"}
           title={hideValues ? "Mostrar valores" : "Ocultar valores"}
         >
           {hideValues ? (
@@ -272,7 +281,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
           )}
         </Button>
       </PrivateHeaderActions>
-      <main className="pb-24 lg:pb-8">
+      <main className="pb-6 lg:pb-8">
         {/* Mobile Layout */}
         <div className="lg:hidden">
           {/* Weekly Calendar */}
@@ -387,21 +396,6 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
           </div>
         </div>
       </main>
-
-      {/* Floating Action Button - Mobile Only */}
-      <div
-        className={`fixed left-4 right-4 z-20 lg:hidden ${mobileFabOffsetClassName}`}
-      >
-        <Link href={`/${locale}/barbeiro/agendar`}>
-          <Button
-            size="lg"
-            className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold text-lg rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-between px-6"
-          >
-            <span>Novo Agendamento</span>
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 }

@@ -420,3 +420,31 @@ export function isDateTimeInPast(date: Date, time: string): boolean {
 
   return appointmentMinutesSinceMidnight <= currentMinutesSinceMidnight;
 }
+
+/**
+ * Generates sub-slots of N minutes within a time interval.
+ * Used to offer 15-min start times inside a 30-min agenda block.
+ *
+ * @example
+ * generateSubSlots("09:00", "09:30", 15) => ["09:00", "09:15"]
+ * generateSubSlots("09:00", "10:00", 15) => ["09:00", "09:15", "09:30", "09:45"]
+ */
+export function generateSubSlots(
+  startTime: string,
+  endTime: string,
+  intervalMinutes: number,
+): string[] {
+  const slots: string[] = [];
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+
+  for (
+    let current = startMinutes;
+    current < endMinutes;
+    current += intervalMinutes
+  ) {
+    slots.push(minutesToTime(current));
+  }
+
+  return slots;
+}
