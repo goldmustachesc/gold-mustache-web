@@ -4,8 +4,14 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
+import { isFeatureEnabled } from "@/services/feature-flags";
 
 export async function GET() {
+  const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+  if (!loyaltyEnabled) {
+    return apiError("NOT_FOUND", "Recurso não disponível", 404);
+  }
+
   try {
     const supabase = await createClient();
     const {

@@ -9,8 +9,14 @@ import { mapServiceErrorToResponse } from "@/lib/api/service-error-mapper";
 import { deriveRedemptionStatus } from "@/lib/loyalty/status";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
 import { RewardsService } from "@/services/loyalty/rewards.service";
+import { isFeatureEnabled } from "@/services/feature-flags";
 
 export async function POST(request: Request) {
+  const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+  if (!loyaltyEnabled) {
+    return apiError("NOT_FOUND", "Recurso não disponível", 404);
+  }
+
   const originError = requireValidOrigin(request);
   if (originError) return originError;
 
@@ -80,6 +86,11 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+  if (!loyaltyEnabled) {
+    return apiError("NOT_FOUND", "Recurso não disponível", 404);
+  }
+
   try {
     const supabase = await createClient();
     const {

@@ -5,8 +5,17 @@ import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { referralCodeSchema } from "@/lib/validations/loyalty";
 import { ReferralService } from "@/services/loyalty/referral.service";
 import { LoyaltyService } from "@/services/loyalty/loyalty.service";
+import { isFeatureEnabled } from "@/services/feature-flags";
 
 export async function POST(request: Request) {
+  const [loyaltyEnabled, referralEnabled] = await Promise.all([
+    isFeatureEnabled("loyaltyProgram"),
+    isFeatureEnabled("referralProgram"),
+  ]);
+  if (!loyaltyEnabled || !referralEnabled) {
+    return apiError("NOT_FOUND", "Recurso não disponível", 404);
+  }
+
   const originError = requireValidOrigin(request);
   if (originError) return originError;
 

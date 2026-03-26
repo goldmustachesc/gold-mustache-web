@@ -1,15 +1,44 @@
+import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
-import { apiSuccess } from "@/lib/api/response";
+import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
+import { isFeatureEnabled } from "@/services/feature-flags";
 
 export async function GET() {
+  const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+  if (!loyaltyEnabled) {
+    return apiError("NOT_FOUND", "Recurso não disponível", 404);
+  }
+
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return apiError("UNAUTHORIZED", "Não autorizado", 401);
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      "api",
+      getUserRateLimitIdentifier(user.id),
+    );
+    if (!rateLimitResult.success) {
+      return apiError(
+        "RATE_LIMITED",
+        "Muitas requisições. Tente novamente em 1 minuto.",
+        429,
+      );
+    }
+
     const rewards = await prisma.reward.findMany({
       where: {
-        active: true, // Apenas rewards ativos para o público geral
+        active: true,
       },
       orderBy: {
-        pointsCost: "asc", // Ordenar do mais barato ao mais caro
+        pointsCost: "asc",
       },
       select: {
         id: true,
@@ -18,23 +47,17 @@ export async function GET() {
         pointsCost: true,
         type: true,
         value: true,
-        serviceId: true,
         imageUrl: true,
-        active: true,
         stock: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
-    // Transformar para o formato esperado pelo frontend
     const formattedRewards = rewards.map((reward) => ({
       id: reward.id,
       name: reward.name,
       description: reward.description,
       costInPoints: reward.pointsCost,
       imageUrl: reward.imageUrl,
-      active: reward.active,
       type: reward.type,
       value: reward.value,
       stock: reward.stock,
@@ -43,7 +66,7 @@ export async function GET() {
     const response = apiSuccess(formattedRewards);
     response.headers.set(
       "Cache-Control",
-      "public, s-maxage=60, stale-while-revalidate=300",
+      "private, max-age=60, stale-while-revalidate=300",
     );
     return response;
   } catch (error) {

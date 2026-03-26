@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   usePrivateHeader,
   PrivateHeaderActions,
@@ -37,6 +38,7 @@ export function ClientDashboard({ locale }: ClientDashboardProps) {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { bookingHref, shouldShowBooking, isExternal, isInternal } =
     useBookingSettings();
+  const { loyaltyProgram } = useFeatureFlags();
 
   const isAdmin = profileMe?.role === "ADMIN";
   const firstName = profileMe?.fullName?.split(" ")[0] || "";
@@ -121,12 +123,14 @@ export function ClientDashboard({ locale }: ClientDashboardProps) {
                 description="Ver e gerenciar"
               />
             )}
-            <QuickAction
-              href={`/${locale}/loyalty`}
-              icon={<Gift className="h-5 w-5 text-yellow-400" />}
-              label="Fidelidade"
-              description="Pontos e recompensas"
-            />
+            {loyaltyProgram && (
+              <QuickAction
+                href={`/${locale}/loyalty`}
+                icon={<Gift className="h-5 w-5 text-yellow-400" />}
+                label="Fidelidade"
+                description="Pontos e recompensas"
+              />
+            )}
             <QuickAction
               href={`/${locale}/profile`}
               icon={<User className="h-5 w-5 text-blue-400" />}

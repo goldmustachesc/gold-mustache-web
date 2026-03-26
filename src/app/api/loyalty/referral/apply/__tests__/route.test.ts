@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const mockGetUser = vi.fn();
+const mockIsFeatureEnabled = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+
+vi.mock("@/services/feature-flags", () => ({
+  isFeatureEnabled: mockIsFeatureEnabled,
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -92,6 +97,7 @@ describe("/api/loyalty/referral/apply", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
     vi.clearAllMocks();
+    mockIsFeatureEnabled.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -100,6 +106,30 @@ describe("/api/loyalty/referral/apply", () => {
   });
 
   describe("POST", () => {
+    it("should return 404 when loyaltyProgram flag is disabled (authenticated user)", async () => {
+      mockIsFeatureEnabled.mockImplementation((key: string) =>
+        Promise.resolve(key !== "loyaltyProgram"),
+      );
+
+      const response = await POST(createRequest({ code: "REF123" }));
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.error).toBe("NOT_FOUND");
+    });
+
+    it("should return 404 when referralProgram flag is disabled (authenticated user)", async () => {
+      mockIsFeatureEnabled.mockImplementation((key: string) =>
+        Promise.resolve(key !== "referralProgram"),
+      );
+
+      const response = await POST(createRequest({ code: "REF123" }));
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.error).toBe("NOT_FOUND");
+    });
+
     it("should return 401 when not authenticated", async () => {
       unauthenticatedUser();
 

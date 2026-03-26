@@ -43,6 +43,18 @@ vi.mock("@/hooks/useBookingSettings", () => ({
   }),
 }));
 
+const mockFeatureFlags = vi.hoisted(() => ({
+  value: {
+    loyaltyProgram: true,
+    referralProgram: true,
+    eventsSection: true,
+  },
+}));
+
+vi.mock("@/hooks/useFeatureFlags", () => ({
+  useFeatureFlags: () => mockFeatureFlags.value,
+}));
+
 vi.mock("@/components/notifications/NotificationPanel", () => ({
   NotificationPanel: () => <div data-testid="notification-panel" />,
 }));
@@ -108,6 +120,11 @@ function renderWithProvider(ui: React.ReactElement) {
 describe("ClientDashboard", () => {
   beforeEach(() => {
     setupMocks();
+    mockFeatureFlags.value = {
+      loyaltyProgram: true,
+      referralProgram: true,
+      eventsSection: true,
+    };
   });
 
   it("renders greeting with first name", () => {
@@ -139,6 +156,19 @@ describe("ClientDashboard", () => {
   it("renders booking quick action", () => {
     renderWithProvider(<ClientDashboard locale="pt-BR" />);
     expect(screen.getByText("Marque um novo horário")).toBeInTheDocument();
+  });
+
+  it("hides loyalty quick action when loyaltyProgram flag is false", () => {
+    mockFeatureFlags.value = {
+      loyaltyProgram: false,
+      referralProgram: true,
+      eventsSection: true,
+    };
+
+    renderWithProvider(<ClientDashboard locale="pt-BR" />);
+
+    expect(screen.queryByText("Fidelidade")).not.toBeInTheDocument();
+    expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
   });
 
   it("provides an accessible name for the header booking action", () => {
