@@ -176,6 +176,13 @@ describe("useCancelAppointment", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ["cancelled-appointments"] }),
     );
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/appointments/apt-1/cancel",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ actor: "client" }),
+      }),
+    );
   });
 
   it("translates APPOINTMENT_IN_PAST error", async () => {
@@ -209,7 +216,10 @@ describe("useCancelAppointmentByBarber", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetch).toHaveBeenCalledWith(
       "/api/appointments/apt-1/cancel",
-      expect.objectContaining({ method: "PATCH" }),
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ actor: "barber", reason: "Indisponível" }),
+      }),
     );
   });
 });

@@ -14,6 +14,16 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 
+function resolveCancellationActor(
+  body: Record<string, unknown>,
+): "barber" | "client" {
+  if (body.actor === "barber" || body.actor === "client") {
+    return body.actor;
+  }
+
+  return Object.hasOwn(body, "reason") ? "barber" : "client";
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -39,6 +49,16 @@ export async function PATCH(
       return apiError("INVALID_JSON", "Corpo da requisição inválido", 400);
     }
 
+    if (
+      body.actor !== undefined &&
+      body.actor !== "barber" &&
+      body.actor !== "client"
+    ) {
+      return apiError("VALIDATION_ERROR", "Dados inválidos", 422, {
+        actor: ["Tipo de cancelamento inválido"],
+      });
+    }
+
     const [appointmentToCancel, barber] = await Promise.all([
       prisma.appointment.findUnique({
         where: { id: appointmentId },
@@ -55,8 +75,13 @@ export async function PATCH(
 
     const isBarberOfThisAppointment =
       barber && appointmentToCancel.barberId === barber.id;
+    const cancellationActor = resolveCancellationActor(body);
 
-    if (isBarberOfThisAppointment) {
+    if (cancellationActor === "barber") {
+      if (!isBarberOfThisAppointment || !barber) {
+        return apiError("UNAUTHORIZED", "Não autorizado", 401);
+      }
+
       // Barber cancellation - requires reason
       const validation = cancelAppointmentByBarberSchema.safeParse({
         appointmentId,
@@ -133,6 +158,12 @@ export async function PATCH(
           status: 400,
           error: "CANCELLATION_REASON_REQUIRED",
           message: "Motivo do cancelamento é obrigatório",
+        },
+        CANCELLATION_BLOCKED: {
+          status: 400,
+          error: "CANCELLATION_BLOCKED",
+          message:
+            "Cancelamento não permitido com menos de 2 horas de antecedência",
         },
         APPOINTMENT_NOT_CANCELLABLE: {
           status: 400,
