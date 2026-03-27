@@ -1187,7 +1187,7 @@ export default function AdminSettingsPage() {
                             onChange={(e) =>
                               updateField(
                                 "featuredOriginalPrice",
-                                e.target.value,
+                                e.target.valueAsNumber || 0,
                               )
                             }
                             placeholder="115.00"
@@ -1218,7 +1218,7 @@ export default function AdminSettingsPage() {
                             onChange={(e) =>
                               updateField(
                                 "featuredDiscountedPrice",
-                                e.target.value,
+                                e.target.valueAsNumber || 0,
                               )
                             }
                             placeholder="100.00"
