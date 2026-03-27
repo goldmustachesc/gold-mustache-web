@@ -7,30 +7,53 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { BARBERSHOP_SETTINGS_CACHE_TAG } from "@/services/barbershop-settings";
 import { z } from "zod";
 
-const updateSettingsSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  shortName: z.string().min(1).max(50).optional(),
-  tagline: z.string().min(1).max(200).optional(),
-  description: z.string().max(500).nullable().optional(),
-  street: z.string().min(1).max(100).optional(),
-  number: z.string().min(1).max(20).optional(),
-  neighborhood: z.string().min(1).max(100).optional(),
-  city: z.string().min(1).max(100).optional(),
-  state: z.string().min(2).max(2).optional(),
-  zipCode: z.string().min(8).max(10).optional(),
-  country: z.string().min(2).max(2).optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-  phone: z.string().min(10).max(20).optional(),
-  whatsapp: z.string().min(10).max(20).optional(),
-  email: z.string().email().optional(),
-  instagramMain: z.string().max(50).optional(),
-  instagramStore: z.string().max(50).nullable().optional(),
-  googleMapsUrl: z.string().url().nullable().optional(),
-  bookingEnabled: z.boolean().optional(),
-  externalBookingUrl: z.string().url().nullable().optional(),
-  foundingYear: z.number().min(1900).max(2100).optional(),
-});
+const updateSettingsSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    shortName: z.string().min(1).max(50).optional(),
+    tagline: z.string().min(1).max(200).optional(),
+    description: z.string().max(500).nullable().optional(),
+    street: z.string().min(1).max(100).optional(),
+    number: z.string().min(1).max(20).optional(),
+    neighborhood: z.string().min(1).max(100).optional(),
+    city: z.string().min(1).max(100).optional(),
+    state: z.string().min(2).max(2).optional(),
+    zipCode: z.string().min(8).max(10).optional(),
+    country: z.string().min(2).max(2).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    phone: z.string().min(10).max(20).optional(),
+    whatsapp: z.string().min(10).max(20).optional(),
+    email: z.string().email().optional(),
+    instagramMain: z.string().max(50).optional(),
+    instagramStore: z.string().max(50).nullable().optional(),
+    googleMapsUrl: z.string().url().nullable().optional(),
+    bookingEnabled: z.boolean().optional(),
+    externalBookingUrl: z.string().url().nullable().optional(),
+    featuredEnabled: z.boolean().optional(),
+    featuredBadge: z.string().min(1).max(50).optional(),
+    featuredTitle: z.string().min(1).max(100).optional(),
+    featuredDescription: z.string().min(1).max(300).optional(),
+    featuredDuration: z.string().min(1).max(100).optional(),
+    featuredOriginalPrice: z.number().positive().optional(),
+    featuredDiscountedPrice: z.number().positive().optional(),
+    foundingYear: z.number().min(1900).max(2100).optional(),
+  })
+  .refine(
+    (data) => {
+      if (
+        data.featuredOriginalPrice !== undefined &&
+        data.featuredDiscountedPrice !== undefined
+      ) {
+        return data.featuredDiscountedPrice <= data.featuredOriginalPrice;
+      }
+      return true;
+    },
+    {
+      message: "Preço promocional deve ser menor ou igual ao preço original",
+      path: ["featuredDiscountedPrice"],
+    },
+  );
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 

@@ -35,6 +35,7 @@ import {
   MapPinned,
   ExternalLink,
   Info,
+  Star,
 } from "lucide-react";
 import { maskPhone } from "@/utils/masks";
 import { cn } from "@/lib/utils";
@@ -42,10 +43,18 @@ import { mobileStickyOffsetClassName } from "@/components/private/mobile-nav-lay
 
 type FormData = Omit<
   BarbershopSettingsResponse,
-  "id" | "createdAt" | "updatedAt" | "latitude" | "longitude"
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "latitude"
+  | "longitude"
+  | "featuredOriginalPrice"
+  | "featuredDiscountedPrice"
 > & {
   latitude: number;
   longitude: number;
+  featuredOriginalPrice: number;
+  featuredDiscountedPrice: number;
 };
 
 const BRAZILIAN_STATES = [
@@ -134,6 +143,13 @@ export default function AdminSettingsPage() {
         googleMapsUrl: settings.googleMapsUrl,
         bookingEnabled: settings.bookingEnabled,
         externalBookingUrl: settings.externalBookingUrl,
+        featuredEnabled: settings.featuredEnabled,
+        featuredBadge: settings.featuredBadge,
+        featuredTitle: settings.featuredTitle,
+        featuredDescription: settings.featuredDescription,
+        featuredDuration: settings.featuredDuration,
+        featuredOriginalPrice: Number(settings.featuredOriginalPrice),
+        featuredDiscountedPrice: Number(settings.featuredDiscountedPrice),
         foundingYear: settings.foundingYear,
       });
       setInitialized(true);
@@ -166,6 +182,13 @@ export default function AdminSettingsPage() {
         googleMapsUrl: formData.googleMapsUrl,
         bookingEnabled: formData.bookingEnabled,
         externalBookingUrl: formData.externalBookingUrl,
+        featuredEnabled: formData.featuredEnabled,
+        featuredBadge: formData.featuredBadge,
+        featuredTitle: formData.featuredTitle,
+        featuredDescription: formData.featuredDescription,
+        featuredDuration: formData.featuredDuration,
+        featuredOriginalPrice: Number(formData.featuredOriginalPrice),
+        featuredDiscountedPrice: Number(formData.featuredDiscountedPrice),
         foundingYear: formData.foundingYear,
       });
       toast.success("Configurações salvas com sucesso!");
@@ -250,6 +273,14 @@ export default function AdminSettingsPage() {
       !!formData.instagramMain,
     ].filter(Boolean).length,
     agendamento: [formData.bookingEnabled !== undefined].filter(Boolean).length,
+    destaque: [
+      !!formData.featuredBadge,
+      !!formData.featuredTitle,
+      !!formData.featuredDescription,
+      !!formData.featuredDuration,
+      Number(formData.featuredOriginalPrice) > 0,
+      Number(formData.featuredDiscountedPrice) > 0,
+    ].filter(Boolean).length,
   };
 
   const tabInfo = [
@@ -280,6 +311,13 @@ export default function AdminSettingsPage() {
       icon: Calendar,
       total: 1,
       completed: completedFields.agendamento,
+    },
+    {
+      id: "destaque",
+      label: "Destaque",
+      icon: Star,
+      total: 6,
+      completed: completedFields.destaque,
     },
   ];
 
@@ -400,34 +438,51 @@ export default function AdminSettingsPage() {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="lg:hidden grid w-full grid-cols-4 bg-muted/50 p-1 rounded-xl">
+              <TabsList className="lg:hidden grid w-full grid-cols-5 bg-muted/50 p-1 rounded-xl">
                 <TabsTrigger
                   value="empresa"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Building2 className="h-4 w-4" />
-                  <span className="text-xs sm:text-sm">Empresa</span>
+                  <span className="text-xs sm:text-sm hidden sm:inline">
+                    Empresa
+                  </span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="endereco"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <MapPin className="h-4 w-4" />
-                  <span className="text-xs sm:text-sm">Endereço</span>
+                  <span className="text-xs sm:text-sm hidden sm:inline">
+                    Endereço
+                  </span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="contato"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Phone className="h-4 w-4" />
-                  <span className="text-xs sm:text-sm">Contato</span>
+                  <span className="text-xs sm:text-sm hidden sm:inline">
+                    Contato
+                  </span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="agendamento"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span className="text-xs sm:text-sm">Agendar</span>
+                  <span className="text-xs sm:text-sm hidden sm:inline">
+                    Agendar
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="destaque"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-foreground rounded-lg gap-1"
+                >
+                  <Star className="h-4 w-4" />
+                  <span className="text-xs sm:text-sm hidden sm:inline">
+                    Destaque
+                  </span>
                 </TabsTrigger>
               </TabsList>
 
@@ -993,6 +1048,281 @@ export default function AdminSettingsPage() {
                             ? "Redirecionando para sistema externo"
                             : "Clientes podem agendar pelo site"
                           : "O botão de agendamento está oculto no site"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="destaque" className="space-y-6">
+                <div className="bg-muted/50 rounded-2xl p-6 border border-border">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Star className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">
+                        Serviço em Destaque
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Card promocional exibido na página inicial
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border">
+                      <div className="space-y-1">
+                        <div className="font-medium text-foreground">
+                          Exibir Destaque
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Mostra o card promocional na seção de serviços
+                        </div>
+                      </div>
+                      <Switch
+                        checked={formData.featuredEnabled}
+                        onCheckedChange={(checked) =>
+                          updateField("featuredEnabled", checked)
+                        }
+                        className="data-[state=checked]:bg-primary"
+                      />
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="featuredBadge"
+                          className={labelClassName}
+                        >
+                          Badge *
+                        </Label>
+                        <Input
+                          id="featuredBadge"
+                          value={formData.featuredBadge}
+                          onChange={(e) =>
+                            updateField("featuredBadge", e.target.value)
+                          }
+                          placeholder="Ex: Mais Popular"
+                          className={inputClassName}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Texto exibido no selo do card
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="featuredTitle"
+                          className={labelClassName}
+                        >
+                          Título *
+                        </Label>
+                        <Input
+                          id="featuredTitle"
+                          value={formData.featuredTitle}
+                          onChange={(e) =>
+                            updateField("featuredTitle", e.target.value)
+                          }
+                          placeholder="Ex: Combo Completo"
+                          className={inputClassName}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="featuredDescription"
+                        className={labelClassName}
+                      >
+                        Descrição *
+                      </Label>
+                      <Textarea
+                        id="featuredDescription"
+                        value={formData.featuredDescription}
+                        onChange={(e) =>
+                          updateField("featuredDescription", e.target.value)
+                        }
+                        placeholder="Ex: Corte + Barba + Sobrancelha - O pacote completo para um visual impecável"
+                        rows={2}
+                        className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary resize-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="featuredDuration"
+                        className={labelClassName}
+                      >
+                        Duração *
+                      </Label>
+                      <Input
+                        id="featuredDuration"
+                        value={formData.featuredDuration}
+                        onChange={(e) =>
+                          updateField("featuredDuration", e.target.value)
+                        }
+                        placeholder="Ex: Aproximadamente 60 minutos"
+                        className={inputClassName}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="featuredOriginalPrice"
+                          className={labelClassName}
+                        >
+                          Preço Original (De) *
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            id="featuredOriginalPrice"
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={formData.featuredOriginalPrice}
+                            onChange={(e) =>
+                              updateField(
+                                "featuredOriginalPrice",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="115.00"
+                            className={cn(inputClassName, "pl-10")}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Preço riscado (valor &quot;de&quot;)
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="featuredDiscountedPrice"
+                          className={labelClassName}
+                        >
+                          Preço Promocional (Por) *
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            id="featuredDiscountedPrice"
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={formData.featuredDiscountedPrice}
+                            onChange={(e) =>
+                              updateField(
+                                "featuredDiscountedPrice",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="100.00"
+                            className={cn(inputClassName, "pl-10")}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Preço em destaque (valor &quot;por&quot;)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-card/30 rounded-2xl p-6 border border-border">
+                  <h3 className="font-medium text-sm text-muted-foreground mb-4">
+                    Prévia do Card
+                  </h3>
+                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-6 border border-primary/20">
+                    <div className="text-center">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium mb-3">
+                        <Star className="h-3 w-3" />
+                        {formData.featuredBadge || "Badge"}
+                      </span>
+                      <h4 className="text-xl font-bold mb-2">
+                        {formData.featuredTitle || "Título do Serviço"}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {formData.featuredDescription || "Descrição do serviço"}
+                      </p>
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <span className="text-muted-foreground line-through">
+                          R${" "}
+                          {Number(formData.featuredOriginalPrice || 0).toFixed(
+                            2,
+                          )}
+                        </span>
+                        <span className="text-2xl font-bold text-primary">
+                          R${" "}
+                          {Number(
+                            formData.featuredDiscountedPrice || 0,
+                          ).toFixed(2)}
+                        </span>
+                        {Number(formData.featuredOriginalPrice) >
+                          Number(formData.featuredDiscountedPrice) && (
+                          <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-xs font-medium">
+                            Economize R${" "}
+                            {(
+                              Number(formData.featuredOriginalPrice) -
+                              Number(formData.featuredDiscountedPrice)
+                            ).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.featuredDuration || "Duração"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={cn(
+                    "rounded-2xl p-6 border",
+                    formData.featuredEnabled
+                      ? "bg-emerald-500/10 border-emerald-500/30"
+                      : "bg-amber-500/10 border-amber-500/30",
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center",
+                        formData.featuredEnabled
+                          ? "bg-emerald-500/20"
+                          : "bg-amber-500/20",
+                      )}
+                    >
+                      <Star
+                        className={cn(
+                          "h-5 w-5",
+                          formData.featuredEnabled
+                            ? "text-emerald-400"
+                            : "text-amber-400",
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <h3
+                        className={cn(
+                          "font-semibold",
+                          formData.featuredEnabled
+                            ? "text-emerald-400"
+                            : "text-amber-400",
+                        )}
+                      >
+                        {formData.featuredEnabled
+                          ? "Destaque Ativo"
+                          : "Destaque Desativado"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {formData.featuredEnabled
+                          ? "O card promocional está visível na página inicial"
+                          : "O card promocional está oculto na página inicial"}
                       </p>
                     </div>
                   </div>

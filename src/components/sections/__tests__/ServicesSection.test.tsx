@@ -36,6 +36,13 @@ vi.mock("next-intl/server", () => ({
 const mockSettings = vi.hoisted(() => ({
   bookingEnabled: true,
   externalBookingUrl: null,
+  featuredEnabled: true,
+  featuredBadge: "Mais Popular",
+  featuredTitle: "Combo Completo",
+  featuredDescription: "Corte + Barba + Sobrancelha",
+  featuredDuration: "60 minutos",
+  featuredOriginalPrice: 115,
+  featuredDiscountedPrice: 100,
 }));
 
 vi.mock("@/services/barbershop-settings", () => ({
@@ -93,18 +100,18 @@ vi.mock("@/components/shared/ResponsiveCardGrid", () => ({
   ),
 }));
 
-vi.mock("@/constants/brand", () => ({
-  BRAND: {
-    featuredCombo: { originalPrice: 80, discountedPrice: 65 },
-    instagram: { mainUrl: "https://instagram.com/test" },
-  },
-}));
-
 describe("ServicesSection (Server Component)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSettings.bookingEnabled = true;
     mockSettings.externalBookingUrl = null;
+    mockSettings.featuredEnabled = true;
+    mockSettings.featuredBadge = "Mais Popular";
+    mockSettings.featuredTitle = "Combo Completo";
+    mockSettings.featuredDescription = "Corte + Barba + Sobrancelha";
+    mockSettings.featuredDuration = "60 minutos";
+    mockSettings.featuredOriginalPrice = 115;
+    mockSettings.featuredDiscountedPrice = 100;
   });
 
   it("mostra vazio quando não há serviços", async () => {
@@ -160,6 +167,45 @@ describe("ServicesSection (Server Component)", () => {
     expect(
       screen.queryByRole("link", { name: /services.labels.book/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("renderiza card em destaque com valores do settings", async () => {
+    mockServices.mockResolvedValue([]);
+
+    await act(async () => {
+      render(await ServicesSection());
+    });
+
+    expect(screen.getByText("Mais Popular")).toBeInTheDocument();
+    expect(screen.getByText("Combo Completo")).toBeInTheDocument();
+    expect(screen.getByText("Corte + Barba + Sobrancelha")).toBeInTheDocument();
+    expect(screen.getByText("60 minutos")).toBeInTheDocument();
+    expect(screen.getByText(/115[,.]00/)).toBeInTheDocument();
+    expect(screen.getByText(/100[,.]00/)).toBeInTheDocument();
+  });
+
+  it("não renderiza card em destaque quando featuredEnabled é false", async () => {
+    mockSettings.featuredEnabled = false;
+    mockServices.mockResolvedValue([]);
+
+    await act(async () => {
+      render(await ServicesSection());
+    });
+
+    expect(screen.queryByText("Mais Popular")).not.toBeInTheDocument();
+    expect(screen.queryByText("Combo Completo")).not.toBeInTheDocument();
+  });
+
+  it("renderiza economia calculada corretamente", async () => {
+    mockSettings.featuredOriginalPrice = 150;
+    mockSettings.featuredDiscountedPrice = 120;
+    mockServices.mockResolvedValue([]);
+
+    await act(async () => {
+      render(await ServicesSection());
+    });
+
+    expect(screen.getByText(/30[,.]00/)).toBeInTheDocument();
   });
 });
 

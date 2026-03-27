@@ -52,6 +52,13 @@ describe("services/barbershop-settings", () => {
       googleMapsUrl: "",
       bookingEnabled: false,
       externalBookingUrl: "https://example.com",
+      featuredEnabled: true,
+      featuredBadge: "Promoção",
+      featuredTitle: "Combo Especial",
+      featuredDescription: "Descrição do combo",
+      featuredDuration: "45 minutos",
+      featuredOriginalPrice: "120.00",
+      featuredDiscountedPrice: "99.00",
       foundingYear: 2000,
       updatedAt: new Date("2025-01-01T00:00:00.000Z"),
     };
@@ -77,6 +84,13 @@ describe("services/barbershop-settings", () => {
     expect(result.social.googleMaps).toBe(barbershopConfig.social.googleMaps);
     expect(result.bookingEnabled).toBe(false);
     expect(result.externalBookingUrl).toBe("https://example.com");
+    expect(result.featuredEnabled).toBe(true);
+    expect(result.featuredBadge).toBe("Promoção");
+    expect(result.featuredTitle).toBe("Combo Especial");
+    expect(result.featuredDescription).toBe("Descrição do combo");
+    expect(result.featuredDuration).toBe("45 minutos");
+    expect(result.featuredOriginalPrice).toBe(120);
+    expect(result.featuredDiscountedPrice).toBe(99);
     expect(result.updatedAt?.toISOString()).toBe("2025-01-01T00:00:00.000Z");
   });
 
@@ -104,6 +118,13 @@ describe("services/barbershop-settings", () => {
       googleMapsUrl: "https://maps.example.com",
       bookingEnabled: true,
       externalBookingUrl: "https://example.com",
+      featuredEnabled: false,
+      featuredBadge: "Badge",
+      featuredTitle: "Title",
+      featuredDescription: "Description",
+      featuredDuration: "30 min",
+      featuredOriginalPrice: "100.00",
+      featuredDiscountedPrice: "80.00",
       foundingYear: 2000,
       updatedAt: new Date("2025-01-01T00:00:00.000Z"),
     };
@@ -125,6 +146,15 @@ describe("services/barbershop-settings", () => {
     expect(result.address.full).toBe(barbershopConfig.address.full);
     expect(result.social.instagram.main).toBe(
       barbershopConfig.social.instagram.main,
+    );
+    expect(result.featuredEnabled).toBe(true);
+    expect(result.featuredBadge).toBe("Mais Popular");
+    expect(result.featuredTitle).toBe("Combo Completo");
+    expect(result.featuredOriginalPrice).toBe(
+      barbershopConfig.featuredCombo.originalPrice,
+    );
+    expect(result.featuredDiscountedPrice).toBe(
+      barbershopConfig.featuredCombo.discountedPrice,
     );
   });
 

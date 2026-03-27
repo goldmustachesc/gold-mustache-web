@@ -307,6 +307,15 @@ model BarbershopSettings {
   bookingEnabled     Boolean @default(true) @map("booking_enabled")
   externalBookingUrl String? @map("external_booking_url")
 
+  // Featured Service (promotional card on homepage)
+  featuredEnabled         Boolean @default(true) @map("featured_enabled")
+  featuredBadge           String  @default("Mais Popular") @map("featured_badge")
+  featuredTitle           String  @default("Combo Completo") @map("featured_title")
+  featuredDescription     String  @default("Corte + Barba + Sobrancelha - O pacote completo para um visual impecável") @map("featured_description")
+  featuredDuration        String  @default("Aproximadamente 60 minutos") @map("featured_duration")
+  featuredOriginalPrice   Decimal @default(115) @map("featured_original_price") @db.Decimal(10, 2)
+  featuredDiscountedPrice Decimal @default(100) @map("featured_discounted_price") @db.Decimal(10, 2)
+
   // Branding
   foundingYear Int @default(2018) @map("founding_year")
 

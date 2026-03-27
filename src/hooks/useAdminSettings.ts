@@ -27,6 +27,13 @@ interface BarbershopSettingsResponse {
   googleMapsUrl: string | null;
   bookingEnabled: boolean;
   externalBookingUrl: string | null;
+  featuredEnabled: boolean;
+  featuredBadge: string;
+  featuredTitle: string;
+  featuredDescription: string;
+  featuredDuration: string;
+  featuredOriginalPrice: string;
+  featuredDiscountedPrice: string;
   foundingYear: number;
   createdAt: string;
   updatedAt: string;

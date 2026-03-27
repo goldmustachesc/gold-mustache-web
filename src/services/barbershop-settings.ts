@@ -54,6 +54,15 @@ export interface BarbershopSettingsData {
   bookingEnabled: boolean;
   externalBookingUrl: string | null;
 
+  // Featured Service (promotional card on homepage)
+  featuredEnabled: boolean;
+  featuredBadge: string;
+  featuredTitle: string;
+  featuredDescription: string;
+  featuredDuration: string;
+  featuredOriginalPrice: number;
+  featuredDiscountedPrice: number;
+
   // Branding
   foundingYear: number;
 
@@ -116,6 +125,13 @@ async function getBarbershopSettingsUncached(): Promise<BarbershopSettingsData> 
         },
         bookingEnabled: dbSettings.bookingEnabled,
         externalBookingUrl: dbSettings.externalBookingUrl,
+        featuredEnabled: dbSettings.featuredEnabled,
+        featuredBadge: dbSettings.featuredBadge,
+        featuredTitle: dbSettings.featuredTitle,
+        featuredDescription: dbSettings.featuredDescription,
+        featuredDuration: dbSettings.featuredDuration,
+        featuredOriginalPrice: Number(dbSettings.featuredOriginalPrice),
+        featuredDiscountedPrice: Number(dbSettings.featuredDiscountedPrice),
         foundingYear: dbSettings.foundingYear,
         updatedAt: dbSettings.updatedAt,
       };
@@ -161,6 +177,14 @@ async function getBarbershopSettingsUncached(): Promise<BarbershopSettingsData> 
     },
     bookingEnabled: true,
     externalBookingUrl: barbershopConfig.externalBooking.inbarberUrl,
+    featuredEnabled: true,
+    featuredBadge: "Mais Popular",
+    featuredTitle: "Combo Completo",
+    featuredDescription:
+      "Corte + Barba + Sobrancelha - O pacote completo para um visual impecável",
+    featuredDuration: "Aproximadamente 60 minutos",
+    featuredOriginalPrice: barbershopConfig.featuredCombo.originalPrice,
+    featuredDiscountedPrice: barbershopConfig.featuredCombo.discountedPrice,
     foundingYear: barbershopConfig.foundingYear,
     updatedAt: null,
   };

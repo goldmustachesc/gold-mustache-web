@@ -53,6 +53,13 @@ const SETTINGS_FIXTURE = {
   googleMapsUrl: null,
   bookingEnabled: true,
   externalBookingUrl: null,
+  featuredEnabled: true,
+  featuredBadge: "Mais Popular",
+  featuredTitle: "Combo Completo",
+  featuredDescription: "Corte + Barba + Sobrancelha",
+  featuredDuration: "60 minutos",
+  featuredOriginalPrice: 115,
+  featuredDiscountedPrice: 100,
   foundingYear: 2020,
   createdAt: new Date("2025-01-01T00:00:00.000Z"),
   updatedAt: new Date("2025-06-01T00:00:00.000Z"),
@@ -236,5 +243,60 @@ describe("PUT /api/admin/settings", () => {
 
     expect(response.status).toBe(500);
     consoleSpy.mockRestore();
+  });
+
+  it("should update featured service settings", async () => {
+    adminAuthenticated();
+    const updatePayload = {
+      featuredEnabled: false,
+      featuredBadge: "Oferta Especial",
+      featuredTitle: "Super Combo",
+      featuredDescription: "O melhor combo da cidade",
+      featuredDuration: "90 minutos",
+      featuredOriginalPrice: 200,
+      featuredDiscountedPrice: 150,
+    };
+    const updatedSettings = { ...SETTINGS_FIXTURE, ...updatePayload };
+
+    vi.mocked(prisma.barbershopSettings.upsert).mockResolvedValue(
+      updatedSettings as never,
+    );
+
+    const response = await PUT(createPutRequest(updatePayload));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data.featuredEnabled).toBe(false);
+    expect(json.data.featuredBadge).toBe("Oferta Especial");
+    expect(json.data.featuredTitle).toBe("Super Combo");
+    expect(json.data.featuredOriginalPrice).toBe(200);
+    expect(json.data.featuredDiscountedPrice).toBe(150);
+  });
+
+  it("should reject invalid featured price (negative)", async () => {
+    adminAuthenticated();
+
+    const response = await PUT(
+      createPutRequest({ featuredOriginalPrice: -10 }),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json.error).toBe("VALIDATION_ERROR");
+  });
+
+  it("should reject discounted price greater than original price", async () => {
+    adminAuthenticated();
+
+    const response = await PUT(
+      createPutRequest({
+        featuredOriginalPrice: 100,
+        featuredDiscountedPrice: 150,
+      }),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json.error).toBe("VALIDATION_ERROR");
   });
 });

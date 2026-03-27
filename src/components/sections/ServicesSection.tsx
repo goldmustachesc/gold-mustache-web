@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { BRAND } from "@/constants/brand";
 import { buildBookingHref, resolveBookingMode } from "@/lib/booking-mode";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { getPublicServicesWithCache } from "@/services/booking";
@@ -130,8 +129,16 @@ export async function ServicesSection() {
   const shouldShowBooking = mode !== "disabled" && !!bookingHref;
   const isExternal = mode === "external";
 
-  const { originalPrice, discountedPrice } = BRAND.featuredCombo;
-  const featuredSavings = originalPrice - discountedPrice;
+  const {
+    featuredEnabled,
+    featuredBadge,
+    featuredTitle,
+    featuredDescription,
+    featuredDuration,
+    featuredOriginalPrice,
+    featuredDiscountedPrice,
+  } = settings;
+  const featuredSavings = featuredOriginalPrice - featuredDiscountedPrice;
 
   return (
     <SectionLayout
@@ -142,54 +149,56 @@ export async function ServicesSection() {
       description={t("description")}
       className="py-20 bg-muted/30"
     >
-      <RevealOnScroll delay={0.1}>
-        <div className="max-w-4xl mx-auto mb-12">
-          <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20 overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-            <CardHeader className="text-center pb-4">
-              <Badge variant="default" className="mb-2 w-fit mx-auto">
-                <Star className="h-4 w-4 mr-2" />
-                {t("featured.badge")}
-              </Badge>
-              <CardTitle className="text-2xl md:text-3xl">
-                {t("featured.title")}
-              </CardTitle>
-              <CardDescription className="text-lg">
-                {t("featured.description")}
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="text-center">
-              <div className="flex items-center justify-center space-x-4 mb-6">
-                <div className="text-lg text-muted-foreground line-through">
-                  {formatPrice(originalPrice)}
-                </div>
-                <div className="text-3xl font-bold text-primary">
-                  {formatPrice(discountedPrice)}
-                </div>
-                <Badge variant="destructive">
-                  {t("featured.save")} {formatPrice(featuredSavings)}
+      {featuredEnabled && (
+        <RevealOnScroll delay={0.1}>
+          <div className="max-w-4xl mx-auto mb-12">
+            <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20 overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+              <CardHeader className="text-center pb-4">
+                <Badge variant="default" className="mb-2 w-fit mx-auto">
+                  <Star className="h-4 w-4 mr-2" />
+                  {featuredBadge}
                 </Badge>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
-                <Clock className="h-4 w-4" />
-                <span>{t("featured.duration")}</span>
-              </div>
-            </CardContent>
+                <CardTitle className="text-2xl md:text-3xl">
+                  {featuredTitle}
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  {featuredDescription}
+                </CardDescription>
+              </CardHeader>
 
-            {shouldShowBooking && bookingHref && (
-              <CardFooter className="flex flex-col sm:flex-row gap-4">
-                <ServiceBookingButton
-                  bookingHref={bookingHref}
-                  isExternal={isExternal}
-                  label={t("featured.cta")}
-                  className="max-w-xs mx-auto"
-                />
-              </CardFooter>
-            )}
-          </Card>
-        </div>
-      </RevealOnScroll>
+              <CardContent className="text-center">
+                <div className="flex items-center justify-center space-x-4 mb-6">
+                  <div className="text-lg text-muted-foreground line-through">
+                    {formatPrice(featuredOriginalPrice)}
+                  </div>
+                  <div className="text-3xl font-bold text-primary">
+                    {formatPrice(featuredDiscountedPrice)}
+                  </div>
+                  <Badge variant="destructive">
+                    {t("featured.save")} {formatPrice(featuredSavings)}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
+                  <Clock className="h-4 w-4" />
+                  <span>{featuredDuration}</span>
+                </div>
+              </CardContent>
+
+              {shouldShowBooking && bookingHref && (
+                <CardFooter className="flex flex-col sm:flex-row gap-4">
+                  <ServiceBookingButton
+                    bookingHref={bookingHref}
+                    isExternal={isExternal}
+                    label={t("featured.cta")}
+                    className="max-w-xs mx-auto"
+                  />
+                </CardFooter>
+              )}
+            </Card>
+          </div>
+        </RevealOnScroll>
+      )}
 
       {services.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
