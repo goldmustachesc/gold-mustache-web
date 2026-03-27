@@ -4,8 +4,208 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { barbershopConfig } from "@/config/barbershop";
 import { BARBERSHOP_SETTINGS_CACHE_TAG } from "@/services/barbershop-settings";
 import { z } from "zod";
+
+const FEATURED_SETTINGS_DEFAULTS = {
+  enabled: true,
+  badge: "Mais Popular",
+  title: "Combo Completo",
+  description:
+    "Corte + Barba + Sobrancelha - O pacote completo para um visual impecável",
+  duration: "Aproximadamente 60 minutos",
+  originalPrice: "115",
+  discountedPrice: "100",
+} as const;
+
+const LEGACY_BARBERSHOP_SETTINGS_QUERY = `
+  SELECT
+    id,
+    name,
+    short_name AS "shortName",
+    tagline,
+    description,
+    street,
+    number,
+    neighborhood,
+    city,
+    state,
+    zip_code AS "zipCode",
+    country,
+    latitude::text AS "latitude",
+    longitude::text AS "longitude",
+    phone,
+    whatsapp,
+    email,
+    instagram_main AS "instagramMain",
+    instagram_store AS "instagramStore",
+    google_maps_url AS "googleMapsUrl",
+    booking_enabled AS "bookingEnabled",
+    external_booking_url AS "externalBookingUrl",
+    founding_year AS "foundingYear",
+    created_at AS "createdAt",
+    updated_at AS "updatedAt"
+  FROM "barbershop_settings"
+  WHERE id = 'default'
+  LIMIT 1
+`;
+
+interface PrismaLikeMissingColumnError {
+  code: string;
+  meta?: {
+    column?: string;
+  };
+}
+
+interface LegacyBarbershopSettingsRow {
+  id: string;
+  name: string;
+  shortName: string;
+  tagline: string;
+  description: string | null;
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  latitude: string;
+  longitude: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  instagramMain: string;
+  instagramStore: string | null;
+  googleMapsUrl: string | null;
+  bookingEnabled: boolean;
+  externalBookingUrl: string | null;
+  foundingYear: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CompatibleBarbershopSettingsResponse {
+  id: string;
+  name: string;
+  shortName: string;
+  tagline: string;
+  description: string | null;
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  latitude: string;
+  longitude: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  instagramMain: string;
+  instagramStore: string | null;
+  googleMapsUrl: string | null;
+  bookingEnabled: boolean;
+  externalBookingUrl: string | null;
+  featuredEnabled: boolean;
+  featuredBadge: string;
+  featuredTitle: string;
+  featuredDescription: string;
+  featuredDuration: string;
+  featuredOriginalPrice: string;
+  featuredDiscountedPrice: string;
+  foundingYear: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+function isMissingFeaturedColumnError(
+  error: unknown,
+): error is PrismaLikeMissingColumnError {
+  if (!error || typeof error !== "object" || !("code" in error)) {
+    return false;
+  }
+
+  if (error.code !== "P2022") {
+    return false;
+  }
+
+  const meta = "meta" in error ? error.meta : undefined;
+  if (!meta || typeof meta !== "object" || !("column" in meta)) {
+    return false;
+  }
+
+  return (
+    typeof meta.column === "string" &&
+    meta.column.startsWith("barbershop_settings.featured_")
+  );
+}
+
+function buildCompatibleSettingsResponse(
+  legacyRow: LegacyBarbershopSettingsRow | null,
+): CompatibleBarbershopSettingsResponse {
+  const now = new Date();
+
+  return {
+    id: legacyRow?.id ?? "default",
+    name: legacyRow?.name ?? barbershopConfig.name,
+    shortName: legacyRow?.shortName ?? barbershopConfig.shortName,
+    tagline: legacyRow?.tagline ?? barbershopConfig.tagline,
+    description: legacyRow?.description ?? barbershopConfig.description,
+    street: legacyRow?.street ?? barbershopConfig.address.street,
+    number: legacyRow?.number ?? barbershopConfig.address.number,
+    neighborhood:
+      legacyRow?.neighborhood ?? barbershopConfig.address.neighborhood,
+    city: legacyRow?.city ?? barbershopConfig.address.city,
+    state: legacyRow?.state ?? barbershopConfig.address.state,
+    zipCode: legacyRow?.zipCode ?? barbershopConfig.address.zipCode,
+    country: legacyRow?.country ?? barbershopConfig.address.country,
+    latitude: legacyRow?.latitude ?? String(barbershopConfig.coordinates.lat),
+    longitude: legacyRow?.longitude ?? String(barbershopConfig.coordinates.lng),
+    phone: legacyRow?.phone ?? barbershopConfig.contact.phone,
+    whatsapp: legacyRow?.whatsapp ?? barbershopConfig.contact.whatsapp,
+    email: legacyRow?.email ?? barbershopConfig.contact.email,
+    instagramMain:
+      legacyRow?.instagramMain ?? barbershopConfig.social.instagram.main,
+    instagramStore:
+      legacyRow?.instagramStore ?? barbershopConfig.social.instagram.store,
+    googleMapsUrl:
+      legacyRow?.googleMapsUrl ?? barbershopConfig.social.googleMaps,
+    bookingEnabled: legacyRow?.bookingEnabled ?? true,
+    externalBookingUrl:
+      legacyRow?.externalBookingUrl ??
+      barbershopConfig.externalBooking.inbarberUrl,
+    featuredEnabled: FEATURED_SETTINGS_DEFAULTS.enabled,
+    featuredBadge: FEATURED_SETTINGS_DEFAULTS.badge,
+    featuredTitle: FEATURED_SETTINGS_DEFAULTS.title,
+    featuredDescription: FEATURED_SETTINGS_DEFAULTS.description,
+    featuredDuration: FEATURED_SETTINGS_DEFAULTS.duration,
+    featuredOriginalPrice: FEATURED_SETTINGS_DEFAULTS.originalPrice,
+    featuredDiscountedPrice: FEATURED_SETTINGS_DEFAULTS.discountedPrice,
+    foundingYear: legacyRow?.foundingYear ?? barbershopConfig.foundingYear,
+    createdAt: legacyRow?.createdAt ?? now,
+    updatedAt: legacyRow?.updatedAt ?? now,
+  };
+}
+
+async function getLegacyCompatibleSettings(): Promise<CompatibleBarbershopSettingsResponse> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<LegacyBarbershopSettingsRow[]>(
+      LEGACY_BARBERSHOP_SETTINGS_QUERY,
+    );
+
+    return buildCompatibleSettingsResponse(rows[0] ?? null);
+  } catch (error) {
+    console.error(
+      "Failed to load legacy-compatible barbershop settings fallback:",
+      error,
+    );
+
+    return buildCompatibleSettingsResponse(null);
+  }
+}
 
 const updateSettingsSchema = z
   .object({
@@ -78,6 +278,14 @@ export async function GET() {
 
     return apiSuccess(settings);
   } catch (error) {
+    if (isMissingFeaturedColumnError(error)) {
+      console.warn(
+        "Featured settings columns are missing in the database. Returning compatibility fallback for admin settings.",
+      );
+
+      return apiSuccess(await getLegacyCompatibleSettings());
+    }
+
     return handlePrismaError(error, "Erro ao buscar configurações");
   }
 }
@@ -130,6 +338,14 @@ export async function PUT(request: Request) {
 
     return apiSuccess(settings);
   } catch (error) {
+    if (isMissingFeaturedColumnError(error)) {
+      return apiError(
+        "SETTINGS_SCHEMA_OUTDATED",
+        "Banco de dados desatualizado para as configurações de destaque. Aplique a migration pendente.",
+        503,
+      );
+    }
+
     return handlePrismaError(error, "Erro ao atualizar configurações");
   }
 }

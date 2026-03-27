@@ -18,6 +18,7 @@ vi.mock("@/lib/api/verify-origin", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $queryRawUnsafe: vi.fn(),
     barbershopSettings: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -63,6 +64,34 @@ const SETTINGS_FIXTURE = {
   foundingYear: 2020,
   createdAt: new Date("2025-01-01T00:00:00.000Z"),
   updatedAt: new Date("2025-06-01T00:00:00.000Z"),
+};
+
+const LEGACY_SETTINGS_FIXTURE = {
+  id: SETTINGS_FIXTURE.id,
+  name: SETTINGS_FIXTURE.name,
+  shortName: SETTINGS_FIXTURE.shortName,
+  tagline: SETTINGS_FIXTURE.tagline,
+  description: SETTINGS_FIXTURE.description,
+  street: SETTINGS_FIXTURE.street,
+  number: SETTINGS_FIXTURE.number,
+  neighborhood: SETTINGS_FIXTURE.neighborhood,
+  city: SETTINGS_FIXTURE.city,
+  state: SETTINGS_FIXTURE.state,
+  zipCode: SETTINGS_FIXTURE.zipCode,
+  country: SETTINGS_FIXTURE.country,
+  latitude: String(SETTINGS_FIXTURE.latitude),
+  longitude: String(SETTINGS_FIXTURE.longitude),
+  phone: SETTINGS_FIXTURE.phone,
+  whatsapp: SETTINGS_FIXTURE.whatsapp,
+  email: SETTINGS_FIXTURE.email,
+  instagramMain: SETTINGS_FIXTURE.instagramMain,
+  instagramStore: SETTINGS_FIXTURE.instagramStore,
+  googleMapsUrl: SETTINGS_FIXTURE.googleMapsUrl,
+  bookingEnabled: SETTINGS_FIXTURE.bookingEnabled,
+  externalBookingUrl: SETTINGS_FIXTURE.externalBookingUrl,
+  foundingYear: SETTINGS_FIXTURE.foundingYear,
+  createdAt: SETTINGS_FIXTURE.createdAt,
+  updatedAt: SETTINGS_FIXTURE.updatedAt,
 };
 
 function adminAuthenticated() {
@@ -162,6 +191,34 @@ describe("GET /api/admin/settings", () => {
 
     expect(response.status).toBe(500);
     consoleSpy.mockRestore();
+  });
+
+  it("should return compatibility fallback when featured columns are missing", async () => {
+    adminAuthenticated();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.mocked(prisma.barbershopSettings.findUnique).mockRejectedValue({
+      code: "P2022",
+      message:
+        "The column `barbershop_settings.featured_enabled` does not exist in the current database.",
+      meta: {
+        column: "barbershop_settings.featured_enabled",
+      },
+    } as never);
+    vi.mocked(prisma.$queryRawUnsafe).mockResolvedValue([
+      LEGACY_SETTINGS_FIXTURE,
+    ] as never);
+
+    const response = await GET();
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(prisma.$queryRawUnsafe).toHaveBeenCalledOnce();
+    expect(json.data.name).toBe("Gold Mustache");
+    expect(json.data.featuredEnabled).toBe(true);
+    expect(json.data.featuredBadge).toBe("Mais Popular");
+
+    warnSpy.mockRestore();
   });
 });
 
@@ -298,5 +355,24 @@ describe("PUT /api/admin/settings", () => {
 
     expect(response.status).toBe(400);
     expect(json.error).toBe("VALIDATION_ERROR");
+  });
+
+  it("should return schema outdated when featured columns are missing", async () => {
+    adminAuthenticated();
+
+    vi.mocked(prisma.barbershopSettings.upsert).mockRejectedValue({
+      code: "P2022",
+      message:
+        "The column `barbershop_settings.featured_enabled` does not exist in the current database.",
+      meta: {
+        column: "barbershop_settings.featured_enabled",
+      },
+    } as never);
+
+    const response = await PUT(createPutRequest({ name: "Test" }));
+    const json = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(json.error).toBe("SETTINGS_SCHEMA_OUTDATED");
   });
 });
