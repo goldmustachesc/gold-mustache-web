@@ -168,18 +168,12 @@ export function useCancelAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      appointmentId,
-      reason,
-    }: {
-      appointmentId: string;
-      reason?: string;
-    }) => {
+    mutationFn: async ({ appointmentId }: { appointmentId: string }) => {
       try {
         return await apiMutate<AppointmentWithDetails>(
           `/api/appointments/${appointmentId}/cancel`,
           "PATCH",
-          { reason },
+          { actor: "client" },
         );
       } catch (error) {
         if (error instanceof ApiError && error.code === "APPOINTMENT_IN_PAST") {
@@ -240,7 +234,7 @@ export function useCancelAppointmentByBarber() {
       apiMutate<AppointmentWithDetails>(
         `/api/appointments/${appointmentId}/cancel`,
         "PATCH",
-        { reason },
+        { actor: "barber", reason },
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({

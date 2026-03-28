@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import { MobileCarousel } from "./MobileCarousel";
 import { RevealOnScroll } from "./RevealOnScroll";
 
 interface ResponsiveCardGridProps<T> {
@@ -25,25 +26,15 @@ export function ResponsiveCardGrid<T>({
   staggerDelay = 0.08,
   className,
 }: ResponsiveCardGridProps<T>) {
+  const slides = items.map((item, index) => (
+    <div key={keyExtractor(item)}>{renderCard(item, index)}</div>
+  ));
+
   return (
     <>
-      {/* Mobile: horizontal scroll with snap */}
-      <div
-        className={cn(
-          "md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 scrollbar-none",
-          className,
-        )}
-      >
-        {items.map((item, index) => (
-          <div
-            key={keyExtractor(item)}
-            className="snap-start shrink-0 w-[85%] sm:w-[70%]"
-          >
-            <RevealOnScroll delay={index * staggerDelay} direction="left">
-              {renderCard(item, index)}
-            </RevealOnScroll>
-          </div>
-        ))}
+      {/* Mobile: carousel with loop and lateral padding */}
+      <div className={cn("md:hidden", className)}>
+        <MobileCarousel>{slides}</MobileCarousel>
       </div>
 
       {/* Desktop: grid layout */}

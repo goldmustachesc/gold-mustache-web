@@ -128,7 +128,10 @@ describe("PATCH /api/appointments/[id]/cancel", () => {
     });
     mockBarberFindUnique.mockResolvedValue({ id: "barber-1" });
 
-    const response = await PATCH(createRequest({}), routeParams);
+    const response = await PATCH(
+      createRequest({ actor: "barber" }),
+      routeParams,
+    );
     const body = await response.json();
 
     expect(response.status).toBe(422);
@@ -176,6 +179,67 @@ describe("PATCH /api/appointments/[id]/cancel", () => {
 
     expect(response.status).toBe(200);
     expect(mockNotifyBarberOfCancelledByClient).toHaveBeenCalled();
+  });
+
+  it("cancels as client when actor is client even if user is also the appointment barber", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockAppointmentFindUnique.mockResolvedValue({
+      barberId: "barber-1",
+      clientId: "profile-1",
+    });
+    mockBarberFindUnique.mockResolvedValue({ id: "barber-1" });
+    mockProfileFindUnique.mockResolvedValue({ id: "profile-1" });
+    mockCancelAppointmentByClient.mockResolvedValue({ id: "apt-1" });
+
+    const response = await PATCH(
+      createRequest({ actor: "client" }),
+      routeParams,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockCancelAppointmentByClient).toHaveBeenCalledWith(
+      APT_ID,
+      "profile-1",
+    );
+    expect(mockCancelAppointmentByBarber).not.toHaveBeenCalled();
+    expect(mockNotifyBarberOfCancelledByClient).toHaveBeenCalled();
+  });
+
+  it("defaults to client cancellation when legacy payload omits actor and reason", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockAppointmentFindUnique.mockResolvedValue({
+      barberId: "barber-1",
+      clientId: "profile-1",
+    });
+    mockBarberFindUnique.mockResolvedValue({ id: "barber-1" });
+    mockProfileFindUnique.mockResolvedValue({ id: "profile-1" });
+    mockCancelAppointmentByClient.mockResolvedValue({ id: "apt-1" });
+
+    const response = await PATCH(createRequest({}), routeParams);
+
+    expect(response.status).toBe(200);
+    expect(mockCancelAppointmentByClient).toHaveBeenCalledWith(
+      APT_ID,
+      "profile-1",
+    );
+    expect(mockCancelAppointmentByBarber).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 when actor is invalid", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockAppointmentFindUnique.mockResolvedValue({
+      barberId: "barber-1",
+      clientId: "client-1",
+    });
+
+    const response = await PATCH(
+      createRequest({ actor: "barber ", reason: "Indisponível" }),
+      routeParams,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.error).toBe("VALIDATION_ERROR");
   });
 
   it("returns 404 when client profile not found", async () => {
@@ -268,5 +332,28 @@ describe("PATCH /api/appointments/[id]/cancel", () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe("NOT_FOUND");
+  });
+
+  it("maps CANCELLATION_BLOCKED domain error to 400", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockAppointmentFindUnique.mockResolvedValue({
+      barberId: "barber-1",
+      clientId: "client-1",
+    });
+    mockBarberFindUnique.mockResolvedValue(null);
+    mockProfileFindUnique.mockResolvedValue({ id: "profile-1" });
+
+    mockCancelAppointmentByClient.mockRejectedValue(
+      new Error("CANCELLATION_BLOCKED"),
+    );
+
+    const response = await PATCH(
+      createRequest({ actor: "client" }),
+      routeParams,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("CANCELLATION_BLOCKED");
   });
 });

@@ -13,13 +13,19 @@ vi.mock("../RevealOnScroll", () => ({
   }) => <div data-testid="reveal">{children}</div>,
 }));
 
+vi.mock("../MobileCarousel", () => ({
+  MobileCarousel: ({ children }: { children: ReactNode }) => (
+    <div data-testid="mobile-carousel">{children}</div>
+  ),
+}));
+
 describe("ResponsiveCardGrid", () => {
   const items = [
     { id: "a", label: "Alpha" },
     { id: "b", label: "Beta" },
   ];
 
-  it("renderiza cards no mobile scroll e no grid desktop por colIndex", () => {
+  it("renderiza cards no mobile carousel e no grid desktop", () => {
     const { container } = render(
       <ResponsiveCardGrid
         items={items}
@@ -33,8 +39,12 @@ describe("ResponsiveCardGrid", () => {
 
     expect(screen.getAllByText("Alpha-0")).toHaveLength(2);
     expect(screen.getAllByText("Beta-1")).toHaveLength(2);
+
+    const mobileCarousel = screen.getByTestId("mobile-carousel");
+    expect(mobileCarousel).toBeInTheDocument();
+
     const reveals = screen.getAllByTestId("reveal");
-    expect(reveals.length).toBe(4);
+    expect(reveals.length).toBe(2);
 
     const mobile = container.querySelector('[class*="md:hidden"]');
     const desktop = container.querySelector('[class*="lg:grid-cols-4"]');
