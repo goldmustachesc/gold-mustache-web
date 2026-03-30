@@ -9,8 +9,9 @@
 5. Selecione **Web application**
 6. Configure:
    - **Name**: Gold Mustache Auth
-   - **Authorized JavaScript origins**: 
+   - **Authorized JavaScript origins**:
      - `http://localhost:3001` (desenvolvimento)
+     - `https://staging.goldmustachebarbearia.com.br` (staging)
      - `https://www.goldmustachebarbearia.com.br` (produção)
    - **Authorized redirect URIs**:
      - `https://wkickkimvghrcnamvefx.supabase.co/auth/v1/callback`
@@ -41,20 +42,25 @@
    - `openid`
 5. Salve e publique o app
 
-## 4. URLs de Callback
+## 4. URLs de Callback da Aplicação
+
+O frontend envia `redirectTo: ${window.location.origin}/auth/callback` em `src/services/auth.ts`.
+Por isso, as URLs públicas que precisam funcionar por ambiente são sem prefixo de locale.
+O App Router e o `proxy.ts` cuidam do roteamento interno para o handler localizado.
 
 ### Desenvolvimento
 ```
-http://localhost:3001/pt-BR/auth/callback
-http://localhost:3001/en/auth/callback
-http://localhost:3001/es/auth/callback
+http://localhost:3001/auth/callback
+```
+
+### Staging
+```
+https://staging.goldmustachebarbearia.com.br/auth/callback
 ```
 
 ### Produção
 ```
-https://www.goldmustachebarbearia.com.br/pt-BR/auth/callback
-https://www.goldmustachebarbearia.com.br/en/auth/callback
-https://www.goldmustachebarbearia.com.br/es/auth/callback
+https://www.goldmustachebarbearia.com.br/auth/callback
 ```
 
 ## 5. Variáveis de Ambiente
@@ -68,7 +74,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_anon_key
 
 ## 6. Testar
 
-1. Rode o projeto: `npm run dev`
+1. Rode o projeto: `pnpm dev`
 2. Acesse: `http://localhost:3001/pt-BR/login`
 3. Clique em "Continuar com Google"
 4. Faça login com sua conta Google
