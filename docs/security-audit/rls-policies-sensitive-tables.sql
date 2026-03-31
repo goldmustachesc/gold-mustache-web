@@ -2,6 +2,14 @@
 -- Gold Mustache - RLS Policies para Tabelas Sensíveis (Defesa em Profundidade)
 -- =============================================================================
 -- CORRIGIDO: Usando nomes corretos das colunas conforme schema Prisma
+-- IMPORTANTE:
+-- - Este arquivo documenta defesa em profundidade para acesso direto via Supabase.
+-- - O fluxo principal do app usa Prisma nas rotas/server actions; portanto ownership
+--   de guest token, claim explícito e migração de banimento continuam sendo
+--   garantidos na camada de aplicação, não apenas por RLS.
+-- - `guest_clients` e `banned_clients` participam do fluxo de claim explícito.
+--   Como não há acesso cliente direto legítimo a essas tabelas, qualquer exposição
+--   via Supabase client deve ser tratada como deny-by-default.
 -- =============================================================================
 
 -- =============================================================================
@@ -108,6 +116,14 @@ CREATE POLICY "appointments_update_none" ON appointments
 CREATE POLICY "appointments_delete_none" ON appointments
     FOR DELETE
     USING (false);
+
+-- =============================================================================
+-- 3.1 GUEST_CLIENTS / BANNED_CLIENTS
+-- Ownership guest agora é baseado em `access_token` + claim explícito autenticado.
+-- Isso acontece no backend do app. Se estas tabelas forem expostas por Supabase
+-- client no futuro, a recomendação é manter acesso direto negado por padrão e
+-- publicar apenas views/rotas seguras, nunca acesso aberto por telefone.
+-- =============================================================================
 
 -- =============================================================================
 -- 4. POINT_TRANSACTIONS - Transações de pontos

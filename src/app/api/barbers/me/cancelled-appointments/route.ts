@@ -20,10 +20,6 @@ const cancelledStatuses = [
   "CANCELLED_BY_CLIENT",
   "CANCELLED_BY_BARBER",
 ] as const;
-const cancelledWhere = {
-  status: { in: [...cancelledStatuses] },
-};
-
 /**
  * GET /api/barbers/me/cancelled-appointments
  * Lists cancelled appointments with pagination.
@@ -36,6 +32,10 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams);
+    const cancelledWhere = {
+      status: { in: [...cancelledStatuses] },
+      barberId: auth.barberId,
+    };
 
     const [total, cancelledAppointments] = await Promise.all([
       prisma.appointment.count({ where: cancelledWhere }),

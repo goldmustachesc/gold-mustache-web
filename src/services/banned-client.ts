@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getTodayUTCMidnight } from "@/utils/time-slots";
+import type { Prisma } from "@prisma/client";
 import { AppointmentStatus } from "@prisma/client";
 
 interface BanClientParams {
@@ -17,6 +18,11 @@ interface IsClientBannedParams {
 interface PaginationParams {
   page: number;
   limit: number;
+}
+
+interface MigrateGuestBanToProfileParams {
+  guestClientId: string;
+  profileId: string;
 }
 
 export async function banClient(params: BanClientParams) {
@@ -103,6 +109,45 @@ export async function isClientBanned(
   });
 
   return !!ban;
+}
+
+export async function migrateGuestBanToProfile(
+  tx: Prisma.TransactionClient,
+  params: MigrateGuestBanToProfileParams,
+): Promise<boolean> {
+  const { guestClientId, profileId } = params;
+
+  const guestBan = await tx.bannedClient.findFirst({
+    where: { guestClientId },
+    select: {
+      id: true,
+      reason: true,
+      bannedBy: true,
+    },
+  });
+
+  if (!guestBan) {
+    return false;
+  }
+
+  const existingProfileBan = await tx.bannedClient.findFirst({
+    where: { profileId },
+    select: { id: true },
+  });
+
+  if (existingProfileBan) {
+    return false;
+  }
+
+  await tx.bannedClient.create({
+    data: {
+      profileId,
+      reason: guestBan.reason,
+      bannedBy: guestBan.bannedBy,
+    },
+  });
+
+  return true;
 }
 
 export async function getBannedClients(pagination: PaginationParams) {

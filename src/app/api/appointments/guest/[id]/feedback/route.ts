@@ -59,10 +59,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Find guest by token
     const guestClient = await prisma.guestClient.findUnique({
       where: { accessToken },
+      select: {
+        id: true,
+        accessTokenConsumedAt: true,
+      },
     });
 
     if (!guestClient) {
       return apiError("GUEST_NOT_FOUND", "Cliente não encontrado", 404);
+    }
+
+    if (guestClient.accessTokenConsumedAt) {
+      return apiError(
+        "GUEST_TOKEN_CONSUMED",
+        "Este token guest já foi consumido.",
+        401,
+      );
     }
 
     // Verify appointment ownership
@@ -169,6 +181,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           status: 404,
           error: "GUEST_NOT_FOUND",
           message: "Cliente não encontrado",
+        },
+        GUEST_TOKEN_CONSUMED: {
+          status: 401,
+          error: "GUEST_TOKEN_CONSUMED",
+          message: "Este token guest já foi consumido.",
         },
         APPOINTMENT_NOT_FOUND: {
           status: 404,

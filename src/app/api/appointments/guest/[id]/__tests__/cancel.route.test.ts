@@ -89,6 +89,18 @@ describe("PATCH /api/appointments/guest/[id]/cancel", () => {
     expect(body.error).toBe("GUEST_NOT_FOUND");
   });
 
+  it("maps GUEST_TOKEN_CONSUMED domain error to 401", async () => {
+    mockCancelAppointmentByGuestToken.mockRejectedValue(
+      new Error("GUEST_TOKEN_CONSUMED"),
+    );
+
+    const response = await PATCH(createRequest("token-1"), routeParams);
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("GUEST_TOKEN_CONSUMED");
+  });
+
   it("maps APPOINTMENT_IN_PAST domain error to 400", async () => {
     mockCancelAppointmentByGuestToken.mockRejectedValue(
       new Error("APPOINTMENT_IN_PAST"),
@@ -109,5 +121,17 @@ describe("PATCH /api/appointments/guest/[id]/cancel", () => {
     const response = await PATCH(createRequest("token-1"), routeParams);
 
     expect(response.status).toBe(400);
+  });
+
+  it("maps CANCELLATION_BLOCKED domain error to 400", async () => {
+    mockCancelAppointmentByGuestToken.mockRejectedValue(
+      new Error("CANCELLATION_BLOCKED"),
+    );
+
+    const response = await PATCH(createRequest("token-1"), routeParams);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("CANCELLATION_BLOCKED");
   });
 });

@@ -53,6 +53,11 @@ export async function PATCH(
           error: "GUEST_NOT_FOUND",
           message: "Cliente não encontrado",
         },
+        GUEST_TOKEN_CONSUMED: {
+          status: 401,
+          error: "GUEST_TOKEN_CONSUMED",
+          message: "Este token guest já foi consumido.",
+        },
         APPOINTMENT_NOT_FOUND: {
           status: 404,
           error: "APPOINTMENT_NOT_FOUND",
@@ -67,6 +72,12 @@ export async function PATCH(
           status: 400,
           error: "APPOINTMENT_NOT_CANCELLABLE",
           message: "Este agendamento não pode ser cancelado",
+        },
+        CANCELLATION_BLOCKED: {
+          status: 400,
+          error: "CANCELLATION_BLOCKED",
+          message:
+            "Cancelamento não permitido com menos de 2 horas de antecedência",
         },
         APPOINTMENT_IN_PAST: {
           status: 400,

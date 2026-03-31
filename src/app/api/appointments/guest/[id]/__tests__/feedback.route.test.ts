@@ -102,6 +102,21 @@ describe("GET /api/appointments/guest/[id]/feedback", () => {
     expect(response.status).toBe(404);
   });
 
+  it("returns 401 when guest token was already consumed", async () => {
+    mockGuestClientFindUnique.mockResolvedValue({
+      id: "guest-1",
+      accessTokenConsumedAt: new Date("2026-03-30T10:00:00.000Z"),
+    });
+
+    const response = await GET(createGetRequest(VALID_UUID, "token"), {
+      params: Promise.resolve({ id: VALID_UUID }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("GUEST_TOKEN_CONSUMED");
+  });
+
   it("returns 404 when appointment not found", async () => {
     mockGuestClientFindUnique.mockResolvedValue({ id: "guest-1" });
     mockAppointmentFindUnique.mockResolvedValue(null);
@@ -186,6 +201,21 @@ describe("POST /api/appointments/guest/[id]/feedback", () => {
       { appointmentId: VALID_UUID, rating: 5, comment: "Top" },
       "token",
     );
+  });
+
+  it("maps GUEST_TOKEN_CONSUMED domain error", async () => {
+    mockCreateGuestFeedback.mockRejectedValue(
+      new Error("GUEST_TOKEN_CONSUMED"),
+    );
+
+    const response = await POST(
+      createPostRequest(VALID_UUID, { rating: 5 }, "token"),
+      { params: Promise.resolve({ id: VALID_UUID }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("GUEST_TOKEN_CONSUMED");
   });
 
   it("maps FEEDBACK_ALREADY_EXISTS domain error", async () => {

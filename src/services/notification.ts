@@ -248,7 +248,7 @@ export async function notifyAppointmentReminder(
     userId: clientId,
     type: NotificationType.APPOINTMENT_REMINDER,
     title: "Lembrete de Agendamento",
-    message: `Lembrete: Você tem um agendamento de ${appointmentDetails.serviceName} com ${appointmentDetails.barberName} amanhã às ${appointmentDetails.time}.`,
+    message: `Lembrete: Você tem um agendamento de ${appointmentDetails.serviceName} com ${appointmentDetails.barberName} em ${appointmentDetails.date} às ${appointmentDetails.time}.`,
     data: appointmentDetails,
   });
 }

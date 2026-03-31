@@ -176,6 +176,86 @@ describe("GET /api/dashboard/stats", () => {
     expect(json.data.barber.todayAppointments).toBe(0);
   });
 
+  it("uses Sao Paulo business day for barber today stats near UTC midnight", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T02:30:00.000Z"));
+
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+      ...PROFILE_FIXTURE,
+      role: "BARBER",
+    } as never);
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue(
+      BARBER_PROFILE_FIXTURE as never,
+    );
+    vi.mocked(prisma.appointment.findMany)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([
+        {
+          ...PAST_APPOINTMENT,
+          id: "apt-late-today",
+          date: new Date("2025-01-14T00:00:00.000Z"),
+          startTime: "23:45",
+          endTime: "00:15",
+          status: "CONFIRMED",
+        },
+      ] as never);
+
+    const request = new Request("http://localhost:3001/api/dashboard/stats");
+    const response = await GET(request);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data.barber.todayAppointments).toBe(1);
+    expect(json.data.barber.nextClient.time).toBe("23:45");
+
+    vi.useRealTimers();
+  });
+
+  it("ignores confirmed appointments that already started today in client upcoming stats", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:00:00.000Z"));
+
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+      PROFILE_FIXTURE as never,
+    );
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([
+      {
+        ...PAST_APPOINTMENT,
+        id: "apt-past-today",
+        date: new Date("2025-01-15T00:00:00.000Z"),
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+      },
+      {
+        ...PAST_APPOINTMENT,
+        id: "apt-upcoming",
+        date: new Date("2025-01-15T00:00:00.000Z"),
+        startTime: "18:00",
+        endTime: "18:30",
+        status: "CONFIRMED",
+      },
+    ] as never);
+
+    const request = new Request("http://localhost:3001/api/dashboard/stats");
+    const response = await GET(request);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data.client.nextAppointment.id).toBe("apt-upcoming");
+    expect(json.data.client.upcomingCount).toBe(1);
+    expect(json.data.client.totalVisits).toBe(1);
+
+    vi.useRealTimers();
+  });
+
   it("includes admin stats for ADMIN role", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
@@ -197,6 +277,40 @@ describe("GET /api/dashboard/stats", () => {
     expect(json.data.admin).not.toBeNull();
     expect(json.data.admin.activeBarbers).toBe(3);
     expect(json.data.admin.totalClients).toBe(50);
+  });
+
+  it("queries admin today stats using Sao Paulo business date near UTC midnight", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T02:30:00.000Z"));
+
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+      ...PROFILE_FIXTURE,
+      role: "ADMIN",
+    } as never);
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.appointment.findMany)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.barber.count).mockResolvedValue(3 as never);
+    vi.mocked(prisma.profile.count).mockResolvedValue(50 as never);
+
+    const request = new Request("http://localhost:3001/api/dashboard/stats");
+    await GET(request);
+
+    expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          date: new Date("2025-01-14T00:00:00.000Z"),
+        }),
+      }),
+    );
+
+    vi.useRealTimers();
   });
 
   it("includes Cache-Control header on success", async () => {

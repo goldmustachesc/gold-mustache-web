@@ -8,7 +8,8 @@ import type {
   FeedbackFilters,
   BarberRanking,
 } from "@/types/feedback";
-import { apiGet, apiMutate } from "@/lib/api/client";
+import { clearGuestToken } from "@/lib/guest-session";
+import { ApiError, apiGet, apiMutate } from "@/lib/api/client";
 
 // ============================================
 // Types
@@ -38,7 +39,7 @@ export function useCreateFeedback() {
       queryClient.invalidateQueries({
         queryKey: ["appointment-feedback", variables.appointmentId],
       });
-      queryClient.invalidateQueries({ queryKey: ["client-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", "client"] });
     },
   });
 }
@@ -70,12 +71,25 @@ export function useCreateGuestFeedback() {
         "POST",
         { rating: input.rating, comment: input.comment },
         { "X-Guest-Token": accessToken },
-      ),
+      ).catch((error) => {
+        if (
+          error instanceof ApiError &&
+          (error.code === "GUEST_TOKEN_CONSUMED" ||
+            error.code === "MISSING_TOKEN" ||
+            error.code === "GUEST_NOT_FOUND")
+        ) {
+          clearGuestToken();
+        }
+        throw error;
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["appointment-feedback", variables.input.appointmentId],
       });
-      queryClient.invalidateQueries({ queryKey: ["guest-appointments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["appointments", "guest"],
+        exact: false,
+      });
     },
   });
 }

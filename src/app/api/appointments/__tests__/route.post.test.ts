@@ -33,9 +33,6 @@ vi.mock("@/services/booking", () => ({
 vi.mock("@/services/notification", () => ({
   notifyAppointmentConfirmed: vi.fn(),
 }));
-vi.mock("@/services/guest-linking", () => ({
-  linkGuestAppointmentsToProfile: vi.fn(),
-}));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     barber: { findUnique: vi.fn() },

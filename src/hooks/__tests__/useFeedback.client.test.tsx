@@ -2,11 +2,18 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { ApiError } from "@/lib/api/client";
 import {
   useCreateFeedback,
   useAppointmentFeedback,
   useCreateGuestFeedback,
 } from "../useFeedback";
+
+const mockClearGuestToken = vi.fn();
+
+vi.mock("@/lib/guest-session", () => ({
+  clearGuestToken: (...args: unknown[]) => mockClearGuestToken(...args),
+}));
 
 function stubFetch(data: unknown) {
   vi.stubGlobal(
@@ -70,7 +77,7 @@ describe("useCreateFeedback", () => {
     );
   });
 
-  it("invalidates appointment-feedback and client-appointments queries", async () => {
+  it("invalidates appointment-feedback and client appointments queries", async () => {
     stubFetch(MOCK_FEEDBACK);
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
@@ -87,7 +94,7 @@ describe("useCreateFeedback", () => {
       queryKey: ["appointment-feedback", "apt-1"],
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["client-appointments"],
+      queryKey: ["appointments", "client"],
     });
   });
 });
@@ -147,7 +154,7 @@ describe("useCreateGuestFeedback", () => {
     );
   });
 
-  it("invalidates guest-appointments query on success", async () => {
+  it("invalidates guest appointments query on success", async () => {
     stubFetch(MOCK_FEEDBACK);
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
@@ -163,8 +170,40 @@ describe("useCreateGuestFeedback", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["guest-appointments"],
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["appointments", "guest"],
+      }),
+    );
+  });
+
+  it("clears local guest token when api returns consumed token", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () =>
+          Promise.resolve({
+            error: "GUEST_TOKEN_CONSUMED",
+            message: "Este token guest já foi consumido.",
+          }),
+      }),
+    );
+
+    const { result } = renderHook(() => useCreateGuestFeedback(), {
+      wrapper: createWrapper(),
     });
+
+    await act(async () => {
+      result.current.mutate({
+        input: { appointmentId: "apt-1", rating: 4 },
+        accessToken: "guest-tkn-123",
+      });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(ApiError);
+    expect(mockClearGuestToken).toHaveBeenCalled();
   });
 });

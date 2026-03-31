@@ -1,7 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
-import { formatPrismaDateToString } from "@/utils/time-slots";
+import {
+  formatPrismaDateToString,
+  getBrazilDateString,
+  getMinutesUntilAppointment,
+  parseDateStringToUTC,
+} from "@/utils/time-slots";
+import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 import type { DashboardStats } from "@/types/dashboard";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
@@ -43,15 +49,16 @@ export async function GET() {
       return apiError("NOT_FOUND", "Perfil não encontrado", 404);
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = formatPrismaDateToString(today);
+    const todayStr = getBrazilDateString();
+    const today = parseDateStringToUTC(todayStr);
+    const todayBusinessDate = parseIsoDateYyyyMmDdAsSaoPauloDate(todayStr);
+    const dayOfWeek = todayBusinessDate.getUTCDay();
 
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setUTCDate(today.getUTCDate() - dayOfWeek);
 
     const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 6);
 
     // Base stats for all users
     const stats: DashboardStats = {
@@ -86,7 +93,10 @@ export async function GET() {
     const upcomingAppointments = clientAppointments
       .filter((apt) => {
         const aptDate = formatPrismaDateToString(apt.date);
-        return aptDate >= todayStr && apt.status === "CONFIRMED";
+        return (
+          apt.status === "CONFIRMED" &&
+          getMinutesUntilAppointment(aptDate, apt.startTime) > 0
+        );
       })
       .sort((a, b) => {
         const dateCompare = formatPrismaDateToString(a.date).localeCompare(
@@ -103,7 +113,10 @@ export async function GET() {
       (apt) =>
         apt.status === "COMPLETED" ||
         (apt.status === "CONFIRMED" &&
-          formatPrismaDateToString(apt.date) < todayStr),
+          getMinutesUntilAppointment(
+            formatPrismaDateToString(apt.date),
+            apt.startTime,
+          ) <= 0),
     );
 
     const totalVisits = completedAppointments.length;
@@ -198,24 +211,23 @@ export async function GET() {
     };
 
     if (barberAppointments) {
+      const isAppointmentInFuture = (date: Date, startTime: string) =>
+        getMinutesUntilAppointment(formatPrismaDateToString(date), startTime) >
+        0;
+
       const todayAppointments = barberAppointments.filter(
-        (apt) =>
-          formatPrismaDateToString(apt.date) === todayStr &&
-          apt.status === "CONFIRMED",
+        (apt) => formatPrismaDateToString(apt.date) === todayStr,
+      );
+      const todayConfirmedAppointments = todayAppointments.filter(
+        (apt) => apt.status === "CONFIRMED",
       );
 
-      // Next client (first upcoming today or next day)
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-      const nextClient = todayAppointments.find(
-        (apt) =>
-          formatPrismaDateToString(apt.date) === todayStr &&
-          apt.startTime > currentTime,
+      const nextClient = todayConfirmedAppointments.find((apt) =>
+        isAppointmentInFuture(apt.date, apt.startTime),
       );
 
       // Today's earnings (confirmed appointments)
-      const todayEarnings = todayAppointments.reduce(
+      const todayEarnings = todayConfirmedAppointments.reduce(
         (sum, apt) => sum + Number(apt.service.price),
         0,
       );
@@ -230,17 +242,20 @@ export async function GET() {
       );
 
       // Completed today
-      const completedToday = barberAppointments.filter(
+      const completedToday = todayAppointments.filter(
         (apt) =>
-          formatPrismaDateToString(apt.date) === todayStr &&
-          (apt.status === "COMPLETED" ||
-            (apt.status === "CONFIRMED" && apt.startTime < currentTime)),
+          apt.status === "COMPLETED" ||
+          (apt.status === "CONFIRMED" &&
+            !isAppointmentInFuture(apt.date, apt.startTime)),
+      ).length;
+      const pendingToday = todayConfirmedAppointments.filter((apt) =>
+        isAppointmentInFuture(apt.date, apt.startTime),
       ).length;
 
       stats.barber = {
-        todayAppointments: todayAppointments.length,
+        todayAppointments: todayConfirmedAppointments.length,
         completedToday,
-        pendingToday: todayAppointments.length - completedToday,
+        pendingToday,
         todayEarnings,
         weekAppointments: weekConfirmed.length,
         weekEarnings,

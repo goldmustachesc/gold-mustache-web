@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/validations/profile";
-import { linkGuestAppointmentsToProfile } from "@/services/guest-linking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { apiSuccess, apiError } from "@/lib/api/response";
@@ -45,11 +44,6 @@ export async function GET() {
           phone: user.user_metadata?.phone || null,
         },
       });
-
-      // Link any guest appointments to this new profile
-      if (profile.phone) {
-        await linkGuestAppointmentsToProfile(profile.id, profile.phone);
-      }
     }
 
     // Use only profile.emailVerified - the application's own flag
@@ -151,11 +145,6 @@ export async function PUT(request: Request) {
       where: { userId: user.id },
       data: updateData,
     });
-
-    // If phone was updated, try to link any guest appointments
-    if (updateData.phone && profile.phone) {
-      await linkGuestAppointmentsToProfile(profile.id, profile.phone);
-    }
 
     return apiSuccess({
       profile: {
