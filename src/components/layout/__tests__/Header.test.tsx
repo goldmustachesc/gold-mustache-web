@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Header } from "../Header";
@@ -45,6 +45,7 @@ vi.mock("next-intl", () => ({
         blog: "Blog",
         events: "Eventos",
         contact: "Contato",
+        myAppointments: "Meus agendamentos",
         login: "Entrar",
         account: "Conta",
       },
@@ -89,12 +90,21 @@ vi.mock("../MobileNavOverlay", () => ({
   MobileNavOverlay: ({
     isOpen,
     onClose,
+    navLinks,
   }: {
     isOpen: boolean;
     onClose: () => void;
+    navLinks: { href: string; label: string }[];
   }) =>
     isOpen ? (
       <div data-testid="mobile-nav-overlay">
+        <ul>
+          {navLinks.map((link) => (
+            <li key={link.href}>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))}
+        </ul>
         <button type="button" onClick={onClose}>
           Close
         </button>
@@ -140,6 +150,7 @@ describe("Header", () => {
       { label: "Blog", href: "/pt-BR/blog" },
       { label: "Eventos", href: "/pt-BR#eventos" },
       { label: "Contato", href: "/pt-BR#contato" },
+      { label: "Meus agendamentos", href: "/pt-BR/meus-agendamentos" },
     ];
 
     for (const { label, href } of expectedLinks) {
@@ -216,7 +227,27 @@ describe("Header", () => {
 
     await user.click(screen.getByRole("button", { name: "Abrir menu" }));
 
-    expect(screen.getByTestId("mobile-nav-overlay")).toBeInTheDocument();
+    const overlay = screen.getByTestId("mobile-nav-overlay");
+    expect(overlay).toBeInTheDocument();
+    expect(
+      within(overlay).getByRole("link", { name: "Meus agendamentos" }),
+    ).toHaveAttribute("href", "/pt-BR/meus-agendamentos");
+  });
+
+  it("hides the my appointments link when internal booking is unavailable", () => {
+    mockBookingSettings.mockReturnValue({
+      bookingHref: "https://external-booking.com",
+      shouldShowBooking: true,
+      isExternal: true,
+      isInternal: false,
+      isDisabled: false,
+    });
+
+    render(<Header />);
+
+    expect(
+      screen.queryByRole("link", { name: "Meus agendamentos" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders logo linking to home page", () => {
