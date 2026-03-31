@@ -12,15 +12,18 @@ import {
   useMarkNoShow,
   useMarkCompleted,
   useCreateAppointmentByBarber,
+  useClaimGuestAppointments,
   useCancelGuestAppointment,
 } from "../useBooking";
 
 const mockSetGuestToken = vi.fn();
 const mockGetGuestToken = vi.fn();
+const mockClearGuestToken = vi.fn();
 
 vi.mock("@/lib/guest-session", () => ({
   getGuestToken: (...args: unknown[]) => mockGetGuestToken(...args),
   setGuestToken: (...args: unknown[]) => mockSetGuestToken(...args),
+  clearGuestToken: (...args: unknown[]) => mockClearGuestToken(...args),
 }));
 
 function stubFetchSuccess(data: unknown, status = 200) {
@@ -176,6 +179,9 @@ describe("useCancelAppointment", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ["cancelled-appointments"] }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["dashboard"] }),
+    );
     expect(fetch).toHaveBeenCalledWith(
       "/api/appointments/apt-1/cancel",
       expect.objectContaining({
@@ -199,11 +205,39 @@ describe("useCancelAppointment", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toContain("já passou");
   });
+
+  it("translates CANCELLATION_BLOCKED using API error code instead of raw message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () =>
+          Promise.resolve({
+            error: "CANCELLATION_BLOCKED",
+            message:
+              "Cancelamento não permitido com menos de 2 horas de antecedência",
+          }),
+      }),
+    );
+
+    const { result } = renderHook(() => useCancelAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("CANCELLATION_BLOCKED");
+  });
 });
 
 describe("useCancelAppointmentByBarber", () => {
   it("calls PATCH cancel with reason", async () => {
     stubFetchSuccess({ id: "apt-1" });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     const { result } = renderHook(() => useCancelAppointmentByBarber(), {
       wrapper: createWrapper(),
@@ -221,12 +255,16 @@ describe("useCancelAppointmentByBarber", () => {
         body: JSON.stringify({ actor: "barber", reason: "Indisponível" }),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["dashboard"] }),
+    );
   });
 });
 
 describe("useMarkNoShow", () => {
   it("calls PATCH no-show endpoint", async () => {
     stubFetchSuccess({ id: "apt-1", status: "NO_SHOW" });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     const { result } = renderHook(() => useMarkNoShow(), {
       wrapper: createWrapper(),
@@ -240,6 +278,12 @@ describe("useMarkNoShow", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/api/appointments/apt-1/no-show",
       expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["dashboard"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["loyalty"], exact: false }),
     );
   });
 
@@ -279,6 +323,7 @@ describe("useMarkNoShow", () => {
 describe("useMarkCompleted", () => {
   it("calls PATCH complete endpoint", async () => {
     stubFetchSuccess({ id: "apt-1", status: "COMPLETED" });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     const { result } = renderHook(() => useMarkCompleted(), {
       wrapper: createWrapper(),
@@ -292,6 +337,12 @@ describe("useMarkCompleted", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/api/appointments/apt-1/complete",
       expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["dashboard"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["loyalty"], exact: false }),
     );
   });
 
@@ -396,6 +447,7 @@ describe("useCancelGuestAppointment", () => {
   it("cancels guest appointment with token header", async () => {
     mockGetGuestToken.mockReturnValue("guest-token-123");
     stubFetchSuccess({ id: "apt-g1", status: "CANCELLED_BY_CLIENT" });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     const { result } = renderHook(() => useCancelGuestAppointment(), {
       wrapper: createWrapper(),
@@ -414,6 +466,12 @@ describe("useCancelGuestAppointment", () => {
           "X-Guest-Token": "guest-token-123",
         }),
       }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["cancelled-appointments"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["dashboard"], exact: false }),
     );
   });
 
@@ -449,6 +507,34 @@ describe("useCancelGuestAppointment", () => {
     expect(result.current.error?.message).toContain("já passou");
   });
 
+  it("translates blocked guest cancellation using API error code", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () =>
+          Promise.resolve({
+            error: "CANCELLATION_BLOCKED",
+            message:
+              "Cancelamento não permitido com menos de 2 horas de antecedência",
+          }),
+      }),
+    );
+
+    const { result } = renderHook(() => useCancelGuestAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-g1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("CANCELLATION_BLOCKED");
+  });
+
   it("translates missing token errors returned by the API", async () => {
     mockGetGuestToken.mockReturnValue("guest-token-123");
     stubFetchError("MISSING_TOKEN", 401);
@@ -464,6 +550,124 @@ describe("useCancelGuestAppointment", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toContain("Sessão expirada");
   });
+
+  it("clears token and translates consumed guest token errors", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () =>
+          Promise.resolve({
+            error: "GUEST_TOKEN_CONSUMED",
+            message: "Este token guest já foi consumido.",
+          }),
+      }),
+    );
+
+    const { result } = renderHook(() => useCancelGuestAppointment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ appointmentId: "apt-g1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(mockClearGuestToken).toHaveBeenCalled();
+    expect(result.current.error?.message).toContain("Sessão expirada");
+  });
+});
+
+describe("useClaimGuestAppointments", () => {
+  it("throws when no guest token is available", async () => {
+    mockGetGuestToken.mockReturnValue(null);
+
+    const { result } = renderHook(() => useClaimGuestAppointments(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain("Nenhum histórico guest");
+  });
+
+  it("claims guest appointments, clears the token and invalidates caches", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    stubFetchSuccess({
+      linked: true,
+      appointmentsTransferred: 2,
+      guestClientClaimed: true,
+      banMigrated: false,
+      alreadyClaimed: false,
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = renderHook(() => useClaimGuestAppointments(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/appointments/guest/claim",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "X-Guest-Token": "guest-token-123",
+        }),
+      }),
+    );
+    expect(mockClearGuestToken).toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["appointments"], exact: false }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["dashboard"], exact: false }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["cancelled-appointments"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["loyalty"], exact: false }),
+    );
+  });
+
+  it("clears the token and translates missing guest history", async () => {
+    mockGetGuestToken.mockReturnValue("guest-token-123");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () =>
+          Promise.resolve({
+            error: "GUEST_NOT_FOUND",
+            message:
+              "Nenhum histórico guest válido foi encontrado neste dispositivo.",
+          }),
+      }),
+    );
+
+    const { result } = renderHook(() => useClaimGuestAppointments(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(mockClearGuestToken).toHaveBeenCalled();
+    expect(result.current.error?.message).toContain("Nenhum histórico guest");
+  });
 });
 
 describe("useGuestAppointments", () => {
@@ -477,6 +681,7 @@ describe("useGuestAppointments", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([]);
+    expect(mockClearGuestToken).toHaveBeenCalled();
   });
 
   it("falha quando o token é válido mas a API retorna outro erro", async () => {

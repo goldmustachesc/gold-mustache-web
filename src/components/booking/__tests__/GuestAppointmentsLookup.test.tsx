@@ -11,6 +11,7 @@ vi.mock("@/lib/guest-session", () => ({
   hasGuestToken: () => mockHasGuestToken(),
   getGuestToken: () => mockGetGuestToken(),
   setGuestToken: vi.fn(),
+  clearGuestToken: vi.fn(),
 }));
 
 vi.mock("@/utils/time-slots", () => ({

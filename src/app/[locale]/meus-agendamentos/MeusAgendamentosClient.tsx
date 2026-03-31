@@ -5,22 +5,32 @@ import { FeedbackModal } from "@/components/feedback";
 import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { PrivateShell } from "@/components/private/PrivateShell";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useUser } from "@/hooks/useAuth";
 import { useAppointmentActions } from "@/hooks/useAppointmentActions";
 import {
   useCancelAppointment,
+  useClaimGuestAppointments,
   useClientAppointments,
 } from "@/hooks/useBooking";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useCreateFeedback } from "@/hooks/useFeedback";
+import { hasGuestToken } from "@/lib/guest-session";
 import { filterAppointments } from "@/lib/booking/appointment-filters";
 import { getAppointmentCancellationStatus } from "@/lib/booking/cancellation";
 import type { AppointmentWithDetails } from "@/types/booking";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Import, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
+import { toast } from "sonner";
 
 import { AppointmentsLoadingSkeleton } from "./components/AppointmentsLoadingSkeleton";
 import { AppointmentHistory } from "./components/AppointmentHistory";
@@ -33,15 +43,19 @@ function MeusAgendamentosContent() {
   const locale = params.locale as string;
 
   const [hasMounted, setHasMounted] = useState(false);
+  const [hasGuestClaimToken, setHasGuestClaimToken] = useState(false);
   useEffect(() => {
     setHasMounted(true);
+    setHasGuestClaimToken(hasGuestToken());
   }, []);
 
   const { data: user, isLoading: userLoading } = useUser();
+  const shouldLoadAuthenticatedData = hasMounted && !!user;
   const { data: appointments, isLoading: appointmentsLoading } =
-    useClientAppointments();
-  const { data: stats } = useDashboardStats();
+    useClientAppointments(shouldLoadAuthenticatedData);
+  const { data: stats } = useDashboardStats(shouldLoadAuthenticatedData);
   const cancelMutation = useCancelAppointment();
+  const claimGuestAppointmentsMutation = useClaimGuestAppointments();
   const createFeedbackMutation = useCreateFeedback();
 
   const {
@@ -65,6 +79,28 @@ function MeusAgendamentosContent() {
   const getCancellationStatus = (apt: AppointmentWithDetails) => {
     const minutesUntil = getMinutesUntilAppointment(apt.date, apt.startTime);
     return getAppointmentCancellationStatus(minutesUntil);
+  };
+
+  const handleClaimGuestAppointments = async () => {
+    try {
+      const result = await claimGuestAppointmentsMutation.mutateAsync();
+      setHasGuestClaimToken(false);
+
+      if (result.appointmentsTransferred > 0) {
+        toast.success(
+          `${result.appointmentsTransferred} agendamento(s) guest importado(s) para sua conta.`,
+        );
+        return;
+      }
+
+      toast.success("Histórico guest deste dispositivo importado com sucesso.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erro ao importar agendamentos guest.",
+      );
+    }
   };
 
   const { upcoming, history } = filterAppointments(appointments);
@@ -93,6 +129,33 @@ function MeusAgendamentosContent() {
             </aside>
 
             <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+              {hasGuestClaimToken && (
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Import className="h-4 w-4" />
+                      Importar agendamentos guest
+                    </CardTitle>
+                    <CardDescription>
+                      Encontramos um histórico guest salvo neste dispositivo.
+                      Importe-o para centralizar seus agendamentos nesta conta.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      type="button"
+                      onClick={handleClaimGuestAppointments}
+                      disabled={claimGuestAppointmentsMutation.isPending}
+                      className="w-full sm:w-auto"
+                    >
+                      {claimGuestAppointmentsMutation.isPending
+                        ? "Importando..."
+                        : "Importar meus agendamentos guest"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               {!isLoading && (
                 <Button
                   asChild

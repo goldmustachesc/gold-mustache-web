@@ -21,11 +21,9 @@ vi.mock("@/lib/prisma", () => {
 // Mock time-slots utilities
 vi.mock("@/utils/time-slots", () => ({
   formatPrismaDateToString: (date: Date) => date.toISOString().split("T")[0],
-  getMinutesUntilAppointment: vi.fn(),
 }));
 
 import { prisma } from "@/lib/prisma";
-import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import {
   createFeedback,
   createGuestFeedback,
@@ -129,8 +127,6 @@ describe("services/feedback", () => {
     });
 
     it("throws APPOINTMENT_NOT_COMPLETED for future CONFIRMED appointment", async () => {
-      asMock(getMinutesUntilAppointment).mockReturnValue(60); // 60 min in future
-
       asMock(prisma.appointment.findUnique).mockResolvedValue({
         id: "appt-1",
         clientId: "client-1",
@@ -142,6 +138,22 @@ describe("services/feedback", () => {
 
       await expect(
         createFeedback({ appointmentId: "appt-1", rating: 5 }, "client-1"),
+      ).rejects.toThrow("APPOINTMENT_NOT_COMPLETED");
+    });
+
+    it("throws APPOINTMENT_NOT_COMPLETED for past CONFIRMED appointment", async () => {
+      asMock(prisma.appointment.findUnique).mockResolvedValue({
+        id: "appt-1",
+        clientId: "client-1",
+        barberId: "barber-1",
+        status: AppointmentStatus.CONFIRMED,
+        date: new Date("2025-01-20"),
+        startTime: "14:00",
+        feedback: null,
+      });
+
+      await expect(
+        createFeedback({ appointmentId: "appt-1", rating: 4 }, "client-1"),
       ).rejects.toThrow("APPOINTMENT_NOT_COMPLETED");
     });
 
@@ -193,29 +205,6 @@ describe("services/feedback", () => {
       expect(result.rating).toBe(5);
     });
 
-    it("creates feedback for past CONFIRMED appointment", async () => {
-      asMock(getMinutesUntilAppointment).mockReturnValue(-60); // 60 min in past
-
-      asMock(prisma.appointment.findUnique).mockResolvedValue({
-        id: "appt-1",
-        clientId: "client-1",
-        barberId: "barber-1",
-        status: AppointmentStatus.CONFIRMED,
-        date: new Date("2025-01-20"),
-        startTime: "14:00",
-        feedback: null,
-      });
-
-      asMock(prisma.feedback.create).mockResolvedValue(mockFeedbackData);
-
-      const result = await createFeedback(
-        { appointmentId: "appt-1", rating: 4 },
-        "client-1",
-      );
-
-      expect(result.id).toBe("feedback-1");
-    });
-
     it("handles null comment", async () => {
       asMock(prisma.appointment.findUnique).mockResolvedValue({
         id: "appt-1",
@@ -257,6 +246,18 @@ describe("services/feedback", () => {
       ).rejects.toThrow("GUEST_NOT_FOUND");
     });
 
+    it("throws GUEST_TOKEN_CONSUMED when token was already consumed", async () => {
+      asMock(prisma.guestClient.findUnique).mockResolvedValue({
+        id: "guest-1",
+        accessToken: "token-1",
+        accessTokenConsumedAt: new Date("2026-03-30T10:00:00.000Z"),
+      });
+
+      await expect(
+        createGuestFeedback({ appointmentId: "appt-1", rating: 5 }, "token-1"),
+      ).rejects.toThrow("GUEST_TOKEN_CONSUMED");
+    });
+
     it("throws APPOINTMENT_NOT_FOUND when appointment does not exist", async () => {
       asMock(prisma.guestClient.findUnique).mockResolvedValue({
         id: "guest-1",
@@ -296,6 +297,25 @@ describe("services/feedback", () => {
         guestClientId: "guest-1",
         status: AppointmentStatus.CANCELLED_BY_CLIENT,
         date: new Date("2025-01-25"),
+        startTime: "10:00",
+        feedback: null,
+      });
+
+      await expect(
+        createGuestFeedback({ appointmentId: "appt-1", rating: 5 }, "token-1"),
+      ).rejects.toThrow("APPOINTMENT_NOT_COMPLETED");
+    });
+
+    it("throws APPOINTMENT_NOT_COMPLETED for past CONFIRMED guest appointment", async () => {
+      asMock(prisma.guestClient.findUnique).mockResolvedValue({
+        id: "guest-1",
+        accessToken: "token-1",
+      });
+      asMock(prisma.appointment.findUnique).mockResolvedValue({
+        id: "appt-1",
+        guestClientId: "guest-1",
+        status: AppointmentStatus.CONFIRMED,
+        date: new Date("2025-01-20"),
         startTime: "10:00",
         feedback: null,
       });

@@ -49,6 +49,10 @@ export async function GET(request: Request) {
       );
     }
 
+    if (validation.data.barberId !== auth.barberId) {
+      return apiError("UNAUTHORIZED", "Não autorizado", 403);
+    }
+
     const slots = await getAvailableSlots(
       parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.date),
       validation.data.barberId,

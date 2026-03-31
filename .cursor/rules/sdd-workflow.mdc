@@ -1,0 +1,12 @@
+---
+description: Método SDD obrigatório para todo trabalho de IA no projeto
+alwaysApply: true
+---
+
+# SDD Obrigatório
+
+- `Subagent-Driven Development (SDD)` é obrigatório em toda tarefa deste projeto.
+- Antes de executar, sempre avaliar como aplicar `SDD`, incluindo decomposição, delegação, paralelização, validação e checkpoints.
+- Mesmo em tarefas simples, manter a mentalidade de `SDD`; quando não houver delegação útil, seguir com execução direta sem abandonar o método.
+- `SDD` complementa `TDD`, testes, validação final e as demais regras do projeto.
+- Nunca usar `SDD` como justificativa para pular testes, revisão de impacto, confirmação de causa raiz ou validações necessárias.

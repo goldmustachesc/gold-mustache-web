@@ -6,10 +6,14 @@ vi.mock("@/lib/prisma", () => {
   const prisma = {
     guestClient: {
       findUnique: vi.fn(),
-      delete: vi.fn(),
+      update: vi.fn(),
     },
     appointment: {
       updateMany: vi.fn(),
+    },
+    bannedClient: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
     },
     $transaction: vi.fn(),
   };
@@ -18,7 +22,7 @@ vi.mock("@/lib/prisma", () => {
 });
 
 import { prisma } from "@/lib/prisma";
-import { linkGuestAppointmentsToProfile } from "../guest-linking";
+import { claimGuestAppointmentsToProfile } from "../guest-linking";
 
 function asMock(fn: unknown): MockInstance {
   return fn as MockInstance;
@@ -33,227 +37,311 @@ describe("services/guest-linking", () => {
     vi.resetAllMocks();
   });
 
-  describe("linkGuestAppointmentsToProfile", () => {
-    it("should return early when phone is null", async () => {
-      const result = await linkGuestAppointmentsToProfile("profile-1", null);
+  describe("claimGuestAppointmentsToProfile", () => {
+    it("throws when guest token is blank", async () => {
+      await expect(
+        claimGuestAppointmentsToProfile({
+          profileId: "profile-1",
+          guestToken: "   ",
+        }),
+      ).rejects.toThrow("MISSING_GUEST_TOKEN");
 
-      expect(result).toEqual({
-        linked: false,
-        appointmentsTransferred: 0,
-        guestClientDeleted: false,
-      });
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
-    it("should return early when phone is undefined", async () => {
-      const result = await linkGuestAppointmentsToProfile(
-        "profile-1",
-        undefined,
-      );
-
-      expect(result).toEqual({
-        linked: false,
-        appointmentsTransferred: 0,
-        guestClientDeleted: false,
-      });
-      expect(prisma.$transaction).not.toHaveBeenCalled();
-    });
-
-    it("should return early when phone normalizes to empty string", async () => {
-      const result = await linkGuestAppointmentsToProfile("profile-1", "abc");
-
-      expect(result).toEqual({
-        linked: false,
-        appointmentsTransferred: 0,
-        guestClientDeleted: false,
-      });
-      expect(prisma.$transaction).not.toHaveBeenCalled();
-    });
-
-    it("should return not linked when no guest client found", async () => {
+    it("throws when no guest client is found for the token", async () => {
       asMock(prisma.$transaction).mockImplementation(async (callback) => {
         const tx = {
           guestClient: {
             findUnique: vi.fn().mockResolvedValue(null),
-            delete: vi.fn(),
+            update: vi.fn(),
           },
           appointment: {
             updateMany: vi.fn(),
           },
-        };
-        return callback(tx);
-      });
-
-      const result = await linkGuestAppointmentsToProfile(
-        "profile-1",
-        "(11) 99999-8888",
-      );
-
-      expect(result).toEqual({
-        linked: false,
-        appointmentsTransferred: 0,
-        guestClientDeleted: false,
-      });
-    });
-
-    it("should transfer appointments and delete guest when phone matches", async () => {
-      const mockGuestClient = {
-        id: "guest-1",
-        fullName: "João Silva",
-        phone: "11999998888",
-        accessToken: "token-123",
-        createdAt: new Date(),
-      };
-
-      asMock(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          guestClient: {
-            findUnique: vi.fn().mockResolvedValue(mockGuestClient),
-            delete: vi.fn().mockResolvedValue(mockGuestClient),
-          },
-          appointment: {
-            updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+          bannedClient: {
+            findFirst: vi.fn(),
+            create: vi.fn(),
           },
         };
         return callback(tx);
       });
 
-      const result = await linkGuestAppointmentsToProfile(
-        "profile-1",
-        "(11) 99999-8888",
-      );
-
-      expect(result).toEqual({
-        linked: true,
-        appointmentsTransferred: 2,
-        guestClientDeleted: true,
-      });
+      await expect(
+        claimGuestAppointmentsToProfile({
+          profileId: "profile-1",
+          guestToken: "guest-token-1",
+        }),
+      ).rejects.toThrow("GUEST_NOT_FOUND");
     });
 
-    it("should normalize phone before lookup (strips non-digits)", async () => {
-      let capturedPhone: string | undefined;
-
+    it("throws when token already belongs to another claimed profile", async () => {
       asMock(prisma.$transaction).mockImplementation(async (callback) => {
         const tx = {
           guestClient: {
-            findUnique: vi.fn().mockImplementation(({ where }) => {
-              capturedPhone = where.phone;
-              return null;
+            findUnique: vi.fn().mockResolvedValue({
+              id: "guest-1",
+              claimedAt: new Date("2026-03-30T10:00:00.000Z"),
+              claimedByProfileId: "profile-2",
             }),
-            delete: vi.fn(),
+            update: vi.fn(),
           },
           appointment: {
             updateMany: vi.fn(),
           },
-        };
-        return callback(tx);
-      });
-
-      await linkGuestAppointmentsToProfile("profile-1", "+55 (11) 99999-8888");
-
-      expect(capturedPhone).toBe("5511999998888");
-    });
-
-    it("should handle guest with zero appointments", async () => {
-      const mockGuestClient = {
-        id: "guest-1",
-        fullName: "Maria Santos",
-        phone: "11988887777",
-        accessToken: null,
-        createdAt: new Date(),
-      };
-
-      asMock(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          guestClient: {
-            findUnique: vi.fn().mockResolvedValue(mockGuestClient),
-            delete: vi.fn().mockResolvedValue(mockGuestClient),
-          },
-          appointment: {
-            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+          bannedClient: {
+            findFirst: vi.fn(),
+            create: vi.fn(),
           },
         };
         return callback(tx);
       });
 
-      const result = await linkGuestAppointmentsToProfile(
-        "profile-1",
-        "11988887777",
-      );
-
-      expect(result).toEqual({
-        linked: true,
-        appointmentsTransferred: 0,
-        guestClientDeleted: true,
-      });
+      await expect(
+        claimGuestAppointmentsToProfile({
+          profileId: "profile-1",
+          guestToken: "guest-token-1",
+        }),
+      ).rejects.toThrow("GUEST_ALREADY_CLAIMED");
     });
 
-    it("should update appointments with correct data", async () => {
-      const mockGuestClient = {
-        id: "guest-abc",
-        fullName: "Pedro Lima",
-        phone: "11977776666",
-        accessToken: "token-xyz",
-        createdAt: new Date(),
-      };
-
+    it("transfers appointments, marks the guest as claimed and migrates the ban", async () => {
       let updateManyArgs: { where: unknown; data: unknown } | undefined;
+      let guestUpdateArgs: { where: unknown; data: unknown } | undefined;
+      let createdBanArgs: { data: unknown } | undefined;
 
       asMock(prisma.$transaction).mockImplementation(async (callback) => {
         const tx = {
           guestClient: {
-            findUnique: vi.fn().mockResolvedValue(mockGuestClient),
-            delete: vi.fn().mockResolvedValue(mockGuestClient),
+            findUnique: vi.fn().mockResolvedValue({
+              id: "guest-1",
+              claimedAt: null,
+              claimedByProfileId: null,
+              accessTokenConsumedAt: null,
+            }),
+            update: vi.fn().mockImplementation((args) => {
+              guestUpdateArgs = args;
+              return args;
+            }),
           },
           appointment: {
             updateMany: vi.fn().mockImplementation((args) => {
               updateManyArgs = args;
-              return { count: 3 };
+              return { count: 2 };
+            }),
+          },
+          bannedClient: {
+            findFirst: vi
+              .fn()
+              .mockResolvedValueOnce({
+                id: "guest-ban-1",
+                reason: "Bloqueado",
+                bannedBy: "barber-1",
+              })
+              .mockResolvedValueOnce(null),
+            create: vi.fn().mockImplementation((args) => {
+              createdBanArgs = args;
+              return { id: "profile-ban-1", ...args.data };
             }),
           },
         };
         return callback(tx);
       });
 
-      await linkGuestAppointmentsToProfile("profile-xyz", "11977776666");
+      const result = await claimGuestAppointmentsToProfile({
+        profileId: "profile-1",
+        guestToken: "guest-token-1",
+      });
 
+      expect(result).toEqual({
+        linked: true,
+        appointmentsTransferred: 2,
+        guestClientClaimed: true,
+        banMigrated: true,
+        alreadyClaimed: false,
+      });
       expect(updateManyArgs).toEqual({
-        where: { guestClientId: "guest-abc" },
-        data: { clientId: "profile-xyz", guestClientId: null },
+        where: { guestClientId: "guest-1" },
+        data: { clientId: "profile-1", guestClientId: null },
+      });
+      expect(guestUpdateArgs).toEqual({
+        where: { id: "guest-1" },
+        data: {
+          accessTokenConsumedAt: expect.any(Date),
+          claimedAt: expect.any(Date),
+          claimedByProfileId: "profile-1",
+        },
+      });
+      expect(createdBanArgs).toEqual({
+        data: {
+          profileId: "profile-1",
+          reason: "Bloqueado",
+          bannedBy: "barber-1",
+        },
       });
     });
 
-    it("should delete guest client after transferring appointments", async () => {
-      const mockGuestClient = {
-        id: "guest-to-delete",
-        fullName: "Ana Costa",
-        phone: "11966665555",
-        accessToken: null,
-        createdAt: new Date(),
-      };
-
-      let deleteCalledWith: { where: unknown } | undefined;
-
+    it("is idempotent when the same profile retries an already claimed guest", async () => {
+      const guestUpdate = vi.fn();
       asMock(prisma.$transaction).mockImplementation(async (callback) => {
         const tx = {
           guestClient: {
-            findUnique: vi.fn().mockResolvedValue(mockGuestClient),
-            delete: vi.fn().mockImplementation((args) => {
-              deleteCalledWith = args;
-              return mockGuestClient;
+            findUnique: vi.fn().mockResolvedValue({
+              id: "guest-1",
+              claimedAt: new Date("2026-03-30T10:00:00.000Z"),
+              claimedByProfileId: "profile-1",
+              accessTokenConsumedAt: new Date("2026-03-30T10:00:00.000Z"),
             }),
+            update: guestUpdate,
+          },
+          appointment: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+          },
+          bannedClient: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn(),
+          },
+        };
+        return callback(tx);
+      });
+
+      const result = await claimGuestAppointmentsToProfile({
+        profileId: "profile-1",
+        guestToken: "guest-token-1",
+      });
+
+      expect(result).toEqual({
+        linked: false,
+        appointmentsTransferred: 0,
+        guestClientClaimed: false,
+        banMigrated: false,
+        alreadyClaimed: true,
+      });
+      expect(guestUpdate).not.toHaveBeenCalled();
+    });
+
+    it("does not duplicate the ban when the profile is already banned", async () => {
+      const createBan = vi.fn();
+      asMock(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          guestClient: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: "guest-1",
+              claimedAt: null,
+              claimedByProfileId: null,
+              accessTokenConsumedAt: null,
+            }),
+            update: vi.fn(),
           },
           appointment: {
             updateMany: vi.fn().mockResolvedValue({ count: 1 }),
           },
+          bannedClient: {
+            findFirst: vi
+              .fn()
+              .mockResolvedValueOnce({
+                id: "guest-ban-1",
+                reason: "Bloqueado",
+                bannedBy: "barber-1",
+              })
+              .mockResolvedValueOnce({ id: "profile-ban-1" }),
+            create: createBan,
+          },
         };
         return callback(tx);
       });
 
-      await linkGuestAppointmentsToProfile("profile-abc", "11966665555");
+      const result = await claimGuestAppointmentsToProfile({
+        profileId: "profile-1",
+        guestToken: "guest-token-1",
+      });
 
-      expect(deleteCalledWith).toEqual({
-        where: { id: "guest-to-delete" },
+      expect(result.banMigrated).toBe(false);
+      expect(createBan).not.toHaveBeenCalled();
+    });
+
+    it("transfers outstanding guest appointments even when already claimed by the same profile", async () => {
+      asMock(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          guestClient: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: "guest-1",
+              claimedAt: new Date("2026-03-30T10:00:00.000Z"),
+              claimedByProfileId: "profile-1",
+              accessTokenConsumedAt: new Date("2026-03-30T10:00:00.000Z"),
+            }),
+            update: vi.fn(),
+          },
+          appointment: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          bannedClient: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn(),
+          },
+        };
+        return callback(tx);
+      });
+
+      const result = await claimGuestAppointmentsToProfile({
+        profileId: "profile-1",
+        guestToken: "guest-token-1",
+      });
+
+      expect(result).toEqual({
+        linked: true,
+        appointmentsTransferred: 1,
+        guestClientClaimed: false,
+        banMigrated: false,
+        alreadyClaimed: true,
+      });
+    });
+
+    it("consumes a previously active token even when claim metadata already existed", async () => {
+      let guestUpdateArgs: { where: unknown; data: unknown } | undefined;
+
+      asMock(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          guestClient: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: "guest-1",
+              claimedAt: new Date("2026-03-30T10:00:00.000Z"),
+              claimedByProfileId: "profile-1",
+              accessTokenConsumedAt: null,
+            }),
+            update: vi.fn().mockImplementation((args) => {
+              guestUpdateArgs = args;
+              return args;
+            }),
+          },
+          appointment: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+          },
+          bannedClient: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn(),
+          },
+        };
+        return callback(tx);
+      });
+
+      const result = await claimGuestAppointmentsToProfile({
+        profileId: "profile-1",
+        guestToken: "guest-token-1",
+      });
+
+      expect(result).toEqual({
+        linked: true,
+        appointmentsTransferred: 0,
+        guestClientClaimed: false,
+        banMigrated: false,
+        alreadyClaimed: true,
+      });
+      expect(guestUpdateArgs).toEqual({
+        where: { id: "guest-1" },
+        data: {
+          accessTokenConsumedAt: expect.any(Date),
+        },
       });
     });
   });

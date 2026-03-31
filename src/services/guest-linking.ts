@@ -1,87 +1,99 @@
 import { prisma } from "@/lib/prisma";
-import { normalizePhoneDigits } from "@/lib/booking/phone";
+import { migrateGuestBanToProfile } from "@/services/banned-client";
 
-/**
- * Result of attempting to link guest appointments to a profile.
- */
-export interface LinkGuestResult {
-  /** Whether any linking occurred */
+export interface ClaimGuestAppointmentsResult {
   linked: boolean;
-  /** Number of appointments transferred to the profile */
   appointmentsTransferred: number;
-  /** Whether the guest client record was deleted */
-  guestClientDeleted: boolean;
+  guestClientClaimed: boolean;
+  banMigrated: boolean;
+  alreadyClaimed: boolean;
 }
 
-/**
- * Links appointments from a guest client to a registered profile based on phone number.
- *
- * When a user signs up with a phone number that matches an existing guest client,
- * this function transfers all appointments from the guest to the profile and
- * removes the guest client record.
- *
- * @param profileId - The profile ID to link appointments to
- * @param phone - The phone number to match (will be normalized)
- * @returns Result indicating what was linked/transferred
- */
-export async function linkGuestAppointmentsToProfile(
-  profileId: string,
-  phone: string | null | undefined,
-): Promise<LinkGuestResult> {
-  // Early return if no phone provided
-  if (!phone) {
-    return {
-      linked: false,
-      appointmentsTransferred: 0,
-      guestClientDeleted: false,
-    };
+interface ClaimGuestAppointmentsParams {
+  profileId: string;
+  guestToken: string;
+}
+
+export async function claimGuestAppointmentsToProfile(
+  params: ClaimGuestAppointmentsParams,
+): Promise<ClaimGuestAppointmentsResult> {
+  const { profileId, guestToken } = params;
+
+  const normalizedToken = guestToken.trim();
+  if (!normalizedToken) {
+    throw new Error("MISSING_GUEST_TOKEN");
   }
 
-  const normalizedPhone = normalizePhoneDigits(phone);
-
-  // Early return if phone normalizes to empty string
-  if (!normalizedPhone) {
-    return {
-      linked: false,
-      appointmentsTransferred: 0,
-      guestClientDeleted: false,
-    };
-  }
-
-  // Use transaction to ensure atomicity
   return prisma.$transaction(async (tx) => {
-    // Find guest client by normalized phone
     const guestClient = await tx.guestClient.findUnique({
-      where: { phone: normalizedPhone },
+      where: { accessToken: normalizedToken },
+      select: {
+        id: true,
+        claimedAt: true,
+        claimedByProfileId: true,
+        accessTokenConsumedAt: true,
+      },
     });
 
-    // No guest client found with this phone
     if (!guestClient) {
-      return {
-        linked: false,
-        appointmentsTransferred: 0,
-        guestClientDeleted: false,
-      };
+      throw new Error("GUEST_NOT_FOUND");
     }
 
-    // Transfer all appointments from guest to profile
+    if (
+      guestClient.claimedByProfileId &&
+      guestClient.claimedByProfileId !== profileId
+    ) {
+      throw new Error("GUEST_ALREADY_CLAIMED");
+    }
+
     const updateResult = await tx.appointment.updateMany({
-      where: { guestClientId: guestClient.id },
+      where: {
+        guestClientId: guestClient.id,
+      },
       data: {
         clientId: profileId,
         guestClientId: null,
       },
     });
 
-    // Delete the guest client record
-    await tx.guestClient.delete({
-      where: { id: guestClient.id },
+    const shouldMarkClaimed =
+      guestClient.claimedByProfileId !== profileId ||
+      guestClient.claimedAt === null;
+    const shouldConsumeToken = guestClient.accessTokenConsumedAt === null;
+
+    if (shouldMarkClaimed || shouldConsumeToken) {
+      const now = new Date();
+      await tx.guestClient.update({
+        where: { id: guestClient.id },
+        data: {
+          ...(shouldMarkClaimed
+            ? {
+                claimedAt: now,
+                claimedByProfileId: profileId,
+              }
+            : {}),
+          ...(shouldConsumeToken
+            ? {
+                accessTokenConsumedAt: now,
+              }
+            : {}),
+        },
+      });
+    }
+
+    const banMigrated = await migrateGuestBanToProfile(tx, {
+      guestClientId: guestClient.id,
+      profileId,
     });
 
     return {
-      linked: true,
+      linked: updateResult.count > 0 || shouldMarkClaimed || shouldConsumeToken,
       appointmentsTransferred: updateResult.count,
-      guestClientDeleted: true,
+      guestClientClaimed: shouldMarkClaimed,
+      banMigrated,
+      alreadyClaimed:
+        guestClient.claimedByProfileId === profileId &&
+        guestClient.claimedAt !== null,
     };
   });
 }

@@ -37,6 +37,14 @@ export async function GET(request: Request) {
     const appointments = await getGuestAppointmentsByToken(accessToken);
     return apiSuccess(appointments);
   } catch (error) {
+    if (error instanceof Error && error.message === "GUEST_TOKEN_CONSUMED") {
+      return apiError(
+        "GUEST_TOKEN_CONSUMED",
+        "Este token guest já foi consumido.",
+        401,
+      );
+    }
+
     return handlePrismaError(error, "Erro ao buscar agendamentos");
   }
 }

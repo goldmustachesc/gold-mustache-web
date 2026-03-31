@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
+  canCancelBeforeStart,
   canClientCancelOutsideWindow,
   CANCELLATION_BLOCK_WINDOW_MINUTES,
   shouldWarnLateCancellation as shouldWarnLateCancellationCore,
@@ -125,6 +126,49 @@ async function getBookingPolicyError(params: {
   if (absenceError) return absenceError;
 
   return null;
+}
+
+function isServiceAvailableForBarber(
+  service: {
+    active?: boolean;
+    barbers?: Array<{ barberId: string }>;
+  } | null,
+  barberId: string,
+): service is {
+  active?: boolean;
+  barbers?: Array<{ barberId: string }>;
+  duration: number;
+} {
+  if (!service) return false;
+  if (service.active === false) return false;
+
+  if (Array.isArray(service.barbers)) {
+    return service.barbers.some(
+      (barberService) => barberService.barberId === barberId,
+    );
+  }
+
+  return true;
+}
+
+async function isPhoneLinkedToBannedProfile(phone: string): Promise<boolean> {
+  const normalizedPhone = normalizePhoneDigits(phone);
+
+  if (!normalizedPhone) {
+    return false;
+  }
+
+  const bannedProfiles = await prisma.profile.findMany({
+    where: {
+      phone: { not: null },
+      bannedClient: { isNot: null },
+    },
+    select: { phone: true },
+  });
+
+  return bannedProfiles.some(
+    (profile) => normalizePhoneDigits(profile.phone ?? "") === normalizedPhone,
+  );
 }
 
 async function lockBarberDateForBooking(
@@ -256,7 +300,11 @@ export async function getAvailableSlots(
   ] = await Promise.all([
     prisma.service.findUnique({
       where: { id: serviceId },
-      select: { duration: true },
+      select: {
+        duration: true,
+        active: true,
+        barbers: { select: { barberId: true } },
+      },
     }),
     prisma.shopHours.findUnique({ where: { dayOfWeek } }),
     prisma.shopClosure.findMany({
@@ -280,7 +328,7 @@ export async function getAvailableSlots(
     }),
   ]);
 
-  if (!service) return [];
+  if (!isServiceAvailableForBarber(service, barberId)) return [];
 
   if (
     !shopHours ||
@@ -383,10 +431,15 @@ export async function createAppointment(
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
+    select: {
+      duration: true,
+      active: true,
+      barbers: { select: { barberId: true } },
+    },
   });
 
-  if (!service) {
-    throw new Error("Service not found");
+  if (!isServiceAvailableForBarber(service, barberId)) {
+    throw new Error("SLOT_UNAVAILABLE");
   }
 
   if (await isClientBanned({ profileId: clientId })) {
@@ -522,10 +575,15 @@ export async function createGuestAppointment(
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
+    select: {
+      duration: true,
+      active: true,
+      barbers: { select: { barberId: true } },
+    },
   });
 
-  if (!service) {
-    throw new Error("Service not found");
+  if (!isServiceAvailableForBarber(service, barberId)) {
+    throw new Error("SLOT_UNAVAILABLE");
   }
 
   const normalizedPhone = normalizePhoneDigits(clientPhone);
@@ -537,6 +595,10 @@ export async function createGuestAppointment(
     existingGuest &&
     (await isClientBanned({ guestClientId: existingGuest.id }))
   ) {
+    throw new Error("CLIENT_BANNED");
+  }
+
+  if (await isPhoneLinkedToBannedProfile(normalizedPhone)) {
     throw new Error("CLIENT_BANNED");
   }
 
@@ -589,11 +651,13 @@ export async function createGuestAppointment(
         fullName: clientName,
         // Update access token on each booking to link this device
         accessToken,
+        accessTokenConsumedAt: null,
       },
       create: {
         fullName: clientName,
         phone: normalizedPhone,
         accessToken,
+        accessTokenConsumedAt: null,
       },
     });
 
@@ -682,10 +746,15 @@ export async function createAppointmentByBarber(
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
+    select: {
+      duration: true,
+      active: true,
+      barbers: { select: { barberId: true } },
+    },
   });
 
-  if (!service) {
-    throw new Error("Service not found");
+  if (!isServiceAvailableForBarber(service, barberId)) {
+    throw new Error("SLOT_UNAVAILABLE");
   }
 
   const normalizedPhone = normalizePhoneDigits(clientPhone);
@@ -697,6 +766,10 @@ export async function createAppointmentByBarber(
     existingGuest &&
     (await isClientBanned({ guestClientId: existingGuest.id }))
   ) {
+    throw new Error("CLIENT_BANNED");
+  }
+
+  if (await isPhoneLinkedToBannedProfile(normalizedPhone)) {
     throw new Error("CLIENT_BANNED");
   }
 
@@ -1183,9 +1256,12 @@ export async function cancelAppointmentByBarber(
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Align with client/guest rule: cancellation is allowed only before the start time.
-  // This prevents cancelling already-started (or past) appointments that are still marked as CONFIRMED.
-  if (!canClientCancel(appointment.date, appointment.startTime)) {
+  // Barber can cancel until the appointment starts.
+  const minutesUntilAppointment = getMinutesUntilAppointmentFromPrisma(
+    appointment.date,
+    appointment.startTime,
+  );
+  if (!canCancelBeforeStart(minutesUntilAppointment)) {
     throw new Error("APPOINTMENT_IN_PAST");
   }
 
@@ -1528,30 +1604,49 @@ export async function markAppointmentAsCompleted(
 // Guest Appointment Functions
 // ============================================
 
+async function getGuestClientByActiveToken(accessToken: string): Promise<{
+  id: string;
+}> {
+  const guestClient = await prisma.guestClient.findUnique({
+    where: { accessToken },
+    select: {
+      id: true,
+      accessTokenConsumedAt: true,
+    },
+  });
+
+  if (!guestClient) {
+    throw new Error("GUEST_NOT_FOUND");
+  }
+
+  if (guestClient.accessTokenConsumedAt) {
+    throw new Error("GUEST_TOKEN_CONSUMED");
+  }
+
+  return { id: guestClient.id };
+}
+
 /**
  * Get all future appointments for a guest client by access token (secure)
  */
 export async function getGuestAppointmentsByToken(
   accessToken: string,
 ): Promise<AppointmentWithDetails[]> {
-  // Find guest client by access token
-  const guestClient = await prisma.guestClient.findUnique({
-    where: { accessToken },
-  });
-
-  if (!guestClient) {
-    return []; // No guest client found with this token
+  let guestClient: { id: string };
+  try {
+    guestClient = await getGuestClientByActiveToken(accessToken);
+  } catch (error) {
+    if (error instanceof Error && error.message === "GUEST_NOT_FOUND") {
+      return [];
+    }
+    throw error;
   }
-
-  // Use UTC midnight for today in Brazil timezone to correctly compare
-  // against Prisma @db.Date fields which store dates at UTC 00:00:00
-  const today = getTodayUTCMidnight();
 
   const appointments = await prisma.appointment.findMany({
     where: {
       guestClientId: guestClient.id,
       date: {
-        gte: today,
+        gte: getTodayUTCMidnight(),
       },
     },
     include: {
@@ -1626,18 +1721,14 @@ export async function getGuestAppointments(
   });
 
   if (!guestClient) {
-    return []; // No guest client found with this phone
+    return []; // No guest client found with this token
   }
-
-  // Use UTC midnight for today in Brazil timezone to correctly compare
-  // against Prisma @db.Date fields which store dates at UTC 00:00:00
-  const today = getTodayUTCMidnight();
 
   const appointments = await prisma.appointment.findMany({
     where: {
       guestClientId: guestClient.id,
       date: {
-        gte: today,
+        gte: getTodayUTCMidnight(),
       },
     },
     include: {
@@ -1706,14 +1797,7 @@ export async function cancelAppointmentByGuestToken(
   appointmentId: string,
   accessToken: string,
 ): Promise<AppointmentWithDetails> {
-  // Find guest client by access token
-  const guestClient = await prisma.guestClient.findUnique({
-    where: { accessToken },
-  });
-
-  if (!guestClient) {
-    throw new Error("GUEST_NOT_FOUND");
-  }
+  const guestClient = await getGuestClientByActiveToken(accessToken);
 
   // Get the appointment
   const appointment = await prisma.appointment.findUnique({

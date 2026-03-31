@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  formatPrismaDateToString,
-  getMinutesUntilAppointment,
-} from "@/utils/time-slots";
+import { formatPrismaDateToString } from "@/utils/time-slots";
 import type {
   FeedbackWithDetails,
   FeedbackStats,
@@ -15,25 +12,14 @@ import { AppointmentStatus } from "@prisma/client";
 
 /**
  * Check if an appointment is eligible for feedback.
- * Eligible if: COMPLETED, or CONFIRMED but already past (presume it happened)
+ * Eligible only if the appointment was explicitly completed.
  */
 function isAppointmentEligibleForFeedback(
   status: AppointmentStatus,
-  date: Date,
-  startTime: string,
+  _date: Date,
+  _startTime: string,
 ): boolean {
-  if (status === AppointmentStatus.COMPLETED) {
-    return true;
-  }
-
-  // For CONFIRMED appointments, check if the time has already passed
-  if (status === AppointmentStatus.CONFIRMED) {
-    const dateStr = formatPrismaDateToString(date);
-    const minutesUntil = getMinutesUntilAppointment(dateStr, startTime);
-    return minutesUntil <= 0; // Already past
-  }
-
-  return false;
+  return status === AppointmentStatus.COMPLETED;
 }
 
 // ============================================
@@ -234,10 +220,18 @@ export async function createGuestFeedback(
   // Find guest by token
   const guestClient = await prisma.guestClient.findUnique({
     where: { accessToken },
+    select: {
+      id: true,
+      accessTokenConsumedAt: true,
+    },
   });
 
   if (!guestClient) {
     throw new Error("GUEST_NOT_FOUND");
+  }
+
+  if (guestClient.accessTokenConsumedAt) {
+    throw new Error("GUEST_TOKEN_CONSUMED");
   }
 
   // Get appointment and validate

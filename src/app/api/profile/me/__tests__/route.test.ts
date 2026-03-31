@@ -4,7 +4,6 @@ const mockGetUser = vi.fn();
 const mockProfileFindUnique = vi.fn();
 const mockProfileCreate = vi.fn();
 const mockProfileUpdate = vi.fn();
-const mockLinkGuestAppointments = vi.fn();
 const mockCheckRateLimit = vi.fn();
 const mockGetUserRateLimitIdentifier = vi.fn();
 
@@ -24,11 +23,6 @@ vi.mock("@/lib/prisma", () => ({
       update: (...args: unknown[]) => mockProfileUpdate(...args),
     },
   },
-}));
-
-vi.mock("@/services/guest-linking", () => ({
-  linkGuestAppointmentsToProfile: (...args: unknown[]) =>
-    mockLinkGuestAppointments(...args),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -113,7 +107,7 @@ describe("GET /api/profile/me", () => {
     expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 
-  it("creates profile when missing and links guest appointments", async () => {
+  it("creates profile when missing without auto-linking guest appointments", async () => {
     mockGetUser.mockResolvedValue({
       data: {
         user: {
@@ -150,10 +144,6 @@ describe("GET /api/profile/me", () => {
 
     expect(response.status).toBe(200);
     expect(body.data.profile.id).toBe("profile-1");
-    expect(mockLinkGuestAppointments).toHaveBeenCalledWith(
-      "profile-1",
-      "11999998888",
-    );
   });
 });
 
@@ -220,7 +210,7 @@ describe("PUT /api/profile/me", () => {
     expect(body.error).toBe("VALIDATION_ERROR");
   });
 
-  it("updates profile and links guest appointments on phone change", async () => {
+  it("updates profile without auto-linking guest appointments on phone change", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
 
     mockProfileUpdate.mockResolvedValue({
@@ -256,10 +246,6 @@ describe("PUT /api/profile/me", () => {
       where: { userId: "user-1" },
       data: { phone: "11999998888" },
     });
-    expect(mockLinkGuestAppointments).toHaveBeenCalledWith(
-      "profile-1",
-      "11999998888",
-    );
     expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 });

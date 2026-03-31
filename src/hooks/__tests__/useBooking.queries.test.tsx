@@ -14,6 +14,7 @@ import {
 vi.mock("@/lib/guest-session", () => ({
   getGuestToken: vi.fn().mockReturnValue("guest-token-123"),
   setGuestToken: vi.fn(),
+  clearGuestToken: vi.fn(),
 }));
 
 function stubFetch(data: unknown) {

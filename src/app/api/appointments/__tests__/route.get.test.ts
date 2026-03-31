@@ -6,7 +6,6 @@ const mockGetBarberAppointments = vi.fn();
 const mockBarberFindUnique = vi.fn();
 const mockProfileFindUnique = vi.fn();
 const mockProfileCreate = vi.fn();
-const mockLinkGuestAppointmentsToProfile = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: (...args: unknown[]) => mockCreateClient(...args),
@@ -22,11 +21,6 @@ vi.mock("@/services/booking", () => ({
 
 vi.mock("@/services/notification", () => ({
   notifyAppointmentConfirmed: vi.fn(),
-}));
-
-vi.mock("@/services/guest-linking", () => ({
-  linkGuestAppointmentsToProfile: (...args: unknown[]) =>
-    mockLinkGuestAppointmentsToProfile(...args),
 }));
 
 vi.mock("@/services/barbershop-settings", () => ({
@@ -133,7 +127,7 @@ describe("GET /api/appointments", () => {
     expect(body.data).toEqual([{ id: "apt-2" }]);
   });
 
-  it("creates profile and links guest appointments when profile does not exist", async () => {
+  it("creates profile when profile does not exist", async () => {
     mockCreateClient.mockResolvedValue({
       auth: {
         getUser: () => ({
@@ -160,34 +154,6 @@ describe("GET /api/appointments", () => {
 
     expect(response.status).toBe(200);
     expect(mockProfileCreate).toHaveBeenCalled();
-    expect(mockLinkGuestAppointmentsToProfile).toHaveBeenCalledWith(
-      "profile-new",
-      "11999999999",
-    );
     expect(body.data).toEqual([]);
-  });
-
-  it("does not link guest appointments when new profile has no phone", async () => {
-    mockCreateClient.mockResolvedValue({
-      auth: {
-        getUser: () => ({
-          data: {
-            user: {
-              id: "user-1",
-              email: "test@example.com",
-              user_metadata: {},
-            },
-          },
-        }),
-      },
-    });
-    mockBarberFindUnique.mockResolvedValue(null);
-    mockProfileFindUnique.mockResolvedValue(null);
-    mockProfileCreate.mockResolvedValue({ id: "profile-new", phone: null });
-    mockGetClientAppointments.mockResolvedValue([]);
-
-    await GET(createGetRequest());
-
-    expect(mockLinkGuestAppointmentsToProfile).not.toHaveBeenCalled();
   });
 });

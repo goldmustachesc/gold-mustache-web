@@ -35,6 +35,7 @@ model Profile {
   birthDate      DateTime?       @map("birth_date") @db.Date // Para bônus de aniversário
   loyaltyAccount LoyaltyAccount?
   bannedClient   BannedClient?
+  claimedGuestClients GuestClient[] @relation("GuestClientClaimedByProfile")
 
   @@index([role])
   @@map("profiles")
@@ -48,16 +49,21 @@ enum UserRole {
 
 // Guest clients who book without creating an account
 model GuestClient {
-  id          String   @id @default(uuid())
-  fullName    String   @map("full_name")
-  phone       String   @unique
-  accessToken String?  @unique @map("access_token")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id                 String    @id @default(uuid())
+  fullName           String    @map("full_name")
+  phone              String    @unique
+  accessToken        String?   @unique @map("access_token")
+  accessTokenConsumedAt DateTime? @map("access_token_consumed_at")
+  claimedAt          DateTime? @map("claimed_at")
+  claimedByProfileId String?   @map("claimed_by_profile_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
 
   appointments Appointment[]
   feedbacks    Feedback[]
   bannedClient BannedClient?
+  claimedByProfile Profile? @relation("GuestClientClaimedByProfile", fields: [claimedByProfileId], references: [id], onDelete: SetNull)
 
+  @@index([claimedByProfileId])
   @@map("guest_clients")
 }
 

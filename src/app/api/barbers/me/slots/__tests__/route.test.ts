@@ -63,7 +63,7 @@ describe("GET /api/barbers/me/slots", () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
       userId: "user-1",
-      barberId: "barber-1",
+      barberId,
       barberName: "Carlos",
     });
     mockCheckRateLimit.mockResolvedValue({
@@ -84,7 +84,7 @@ describe("GET /api/barbers/me/slots", () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
       userId: "user-1",
-      barberId: "barber-1",
+      barberId,
       barberName: "Carlos",
     });
 
@@ -95,6 +95,22 @@ describe("GET /api/barbers/me/slots", () => {
     expect(body.error).toBe("VALIDATION_ERROR");
   });
 
+  it("returns 403 when barberId does not match the authenticated barber", async () => {
+    mockRequireBarber.mockResolvedValue({
+      ok: true,
+      userId: "user-1",
+      barberId: "another-barber-id",
+      barberName: "Carlos",
+    });
+
+    const response = await GET(createRequest(validQuery()));
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("UNAUTHORIZED");
+    expect(mockGetAvailableSlots).not.toHaveBeenCalled();
+  });
+
   it("returns slots without applyLeadTime on success", async () => {
     const slots = [
       { time: "09:00", available: true },
@@ -103,7 +119,7 @@ describe("GET /api/barbers/me/slots", () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
       userId: "user-1",
-      barberId: "barber-1",
+      barberId,
       barberName: "Carlos",
     });
     mockGetAvailableSlots.mockResolvedValue(slots);
@@ -125,7 +141,7 @@ describe("GET /api/barbers/me/slots", () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
       userId: "user-1",
-      barberId: "barber-1",
+      barberId,
       barberName: "Carlos",
     });
     mockGetAvailableSlots.mockRejectedValue(new Error("boom"));

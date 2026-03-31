@@ -10,7 +10,11 @@ import type {
 } from "@/types/booking";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateToString } from "@/utils/time-slots";
-import { getGuestToken, setGuestToken } from "@/lib/guest-session";
+import {
+  clearGuestToken,
+  getGuestToken,
+  setGuestToken,
+} from "@/lib/guest-session";
 import { apiGet, apiMutate, ApiError } from "@/lib/api/client";
 
 const SLOT_ERROR_MESSAGES: Record<string, string> = {
@@ -97,11 +101,12 @@ export function useBarberSlots(
 // Client Appointment Hooks
 // ============================================
 
-export function useClientAppointments() {
+export function useClientAppointments(enabled = true) {
   return useQuery({
     queryKey: ["appointments", "client"],
     queryFn: () => apiGet<AppointmentWithDetails[]>("/api/appointments"),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
@@ -176,10 +181,15 @@ export function useCancelAppointment() {
           { actor: "client" },
         );
       } catch (error) {
-        if (error instanceof ApiError && error.code === "APPOINTMENT_IN_PAST") {
-          throw new Error(
-            "Este agendamento já passou e não pode ser cancelado.",
-          );
+        if (error instanceof ApiError) {
+          if (error.code === "APPOINTMENT_IN_PAST") {
+            throw new Error(
+              "Este agendamento já passou e não pode ser cancelado.",
+            );
+          }
+          if (error.code === "CANCELLATION_BLOCKED") {
+            throw new Error("CANCELLATION_BLOCKED");
+          }
         }
         throw error;
       }
@@ -191,6 +201,7 @@ export function useCancelAppointment() {
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
     },
   });
 }
@@ -243,6 +254,7 @@ export function useCancelAppointmentByBarber() {
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
     },
   });
 }
@@ -278,6 +290,8 @@ export function useMarkNoShow() {
         queryKey: ["appointments"],
         exact: false,
       });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["loyalty"], exact: false });
     },
   });
 }
@@ -311,6 +325,8 @@ export function useMarkCompleted() {
         queryKey: ["appointments"],
         exact: false,
       });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["loyalty"], exact: false });
     },
   });
 }
@@ -364,7 +380,10 @@ async function fetchGuestAppointmentsByToken(
       { "X-Guest-Token": accessToken },
     );
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) return [];
+    if (error instanceof ApiError && error.status === 401) {
+      clearGuestToken();
+      return [];
+    }
     throw error;
   }
 }
@@ -376,6 +395,69 @@ export function useGuestAppointments() {
     queryKey: ["appointments", "guest", token],
     queryFn: () => fetchGuestAppointmentsByToken(token as string),
     enabled: !!token,
+  });
+}
+
+interface ClaimGuestAppointmentsResponse {
+  linked: boolean;
+  appointmentsTransferred: number;
+  guestClientClaimed: boolean;
+  banMigrated: boolean;
+  alreadyClaimed: boolean;
+}
+
+export function useClaimGuestAppointments() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = getGuestToken();
+      if (!token) {
+        throw new Error(
+          "Nenhum histórico guest foi encontrado neste dispositivo.",
+        );
+      }
+
+      try {
+        return await apiMutate<ClaimGuestAppointmentsResponse>(
+          "/api/appointments/guest/claim",
+          "POST",
+          undefined,
+          { "X-Guest-Token": token },
+        );
+      } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.code === "GUEST_NOT_FOUND") {
+            clearGuestToken();
+            throw new Error(
+              "Nenhum histórico guest válido foi encontrado neste dispositivo.",
+            );
+          }
+          if (error.code === "GUEST_ALREADY_CLAIMED") {
+            clearGuestToken();
+            throw new Error(
+              "Este histórico guest já foi vinculado a outra conta.",
+            );
+          }
+          if (error.code === "MISSING_TOKEN") {
+            clearGuestToken();
+            throw new Error("Sessão guest indisponível neste dispositivo.");
+          }
+        }
+
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      clearGuestToken();
+      queryClient.invalidateQueries({
+        queryKey: ["appointments"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty"], exact: false });
+    },
   });
 }
 
@@ -411,9 +493,19 @@ export function useCancelGuestAppointment() {
             );
           }
           if (error.code === "MISSING_TOKEN") {
+            clearGuestToken();
             throw new Error(
               "Sessão expirada. Por favor, faça um novo agendamento.",
             );
+          }
+          if (error.code === "GUEST_TOKEN_CONSUMED") {
+            clearGuestToken();
+            throw new Error(
+              "Sessão expirada. Por favor, faça um novo agendamento.",
+            );
+          }
+          if (error.code === "CANCELLATION_BLOCKED") {
+            throw new Error("CANCELLATION_BLOCKED");
           }
         }
         throw error;
@@ -425,6 +517,8 @@ export function useCancelGuestAppointment() {
         exact: false,
       });
       queryClient.invalidateQueries({ queryKey: ["slots"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["cancelled-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
     },
   });
 }

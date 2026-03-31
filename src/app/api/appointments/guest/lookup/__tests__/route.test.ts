@@ -54,6 +54,24 @@ describe("GET /api/appointments/guest/lookup", () => {
     expect(mockGetGuestAppointments).toHaveBeenCalledWith("token-123");
   });
 
+  it("returns 401 when guest token was already consumed", async () => {
+    mockGetGuestAppointments.mockRejectedValue(
+      new Error("GUEST_TOKEN_CONSUMED"),
+    );
+
+    const request = new Request(
+      "http://localhost:3001/api/appointments/guest/lookup",
+      {
+        headers: { "X-Guest-Token": "token-123" },
+      },
+    );
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("GUEST_TOKEN_CONSUMED");
+  });
+
   it("returns 500 when service throws", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetGuestAppointments.mockRejectedValue(new Error("boom"));

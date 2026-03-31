@@ -233,6 +233,30 @@ describe("services/notification (Prisma-mocked unit tests)", () => {
     expect(prisma.notification.create).not.toHaveBeenCalled();
   });
 
+  it("notifyAppointmentReminder includes the explicit appointment date in the message", async () => {
+    asMock(prisma.notification.create).mockResolvedValue({
+      id: "n-1",
+      userId: "u-1",
+      type: NotificationType.APPOINTMENT_REMINDER,
+      title: "Lembrete de Agendamento",
+      message: "x",
+      data: null,
+      read: false,
+      createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    await notifyAppointmentReminder("u-1", {
+      serviceName: "Corte",
+      barberName: "João",
+      date: "10/03/2026",
+      time: "09:00",
+    });
+
+    const createArgs = asMock(prisma.notification.create).mock.calls[0]?.[0];
+    expect(createArgs.data.message).toContain("10/03/2026");
+    expect(createArgs.data.message).not.toContain("amanhã");
+  });
+
   it("notifyBarberOfAppointmentCancelledByClient resolves barber userId and formats date dd-MM-yyyy", async () => {
     asMock(prisma.barber.findUnique).mockResolvedValue({
       userId: "u-barber-1",

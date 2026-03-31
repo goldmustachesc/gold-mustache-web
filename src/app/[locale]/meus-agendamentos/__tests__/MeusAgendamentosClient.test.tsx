@@ -9,6 +9,8 @@ const mockUseClientAppointments = vi.fn();
 const mockUseDashboardStats = vi.fn();
 const mockUseCancelAppointment = vi.fn();
 const mockUseCreateFeedback = vi.fn();
+const mockUseClaimGuestAppointments = vi.fn();
+const mockHasGuestToken = vi.fn();
 
 vi.mock("@/hooks/useAuth", () => ({
   useUser: () => mockUseUser(),
@@ -16,12 +18,14 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/hooks/useBooking", () => ({
-  useClientAppointments: () => mockUseClientAppointments(),
+  useClientAppointments: (...args: unknown[]) =>
+    mockUseClientAppointments(...args),
   useCancelAppointment: () => mockUseCancelAppointment(),
+  useClaimGuestAppointments: () => mockUseClaimGuestAppointments(),
 }));
 
 vi.mock("@/hooks/useDashboardStats", () => ({
-  useDashboardStats: () => mockUseDashboardStats(),
+  useDashboardStats: (...args: unknown[]) => mockUseDashboardStats(...args),
 }));
 
 vi.mock("@/hooks/useFeedback", () => ({
@@ -99,7 +103,7 @@ vi.mock("@/lib/booking/cancellation", () => ({
 }));
 
 vi.mock("@/lib/guest-session", () => ({
-  hasGuestToken: vi.fn().mockReturnValue(false),
+  hasGuestToken: (...args: unknown[]) => mockHasGuestToken(...args),
 }));
 
 vi.mock("@/components/booking/GuestAppointmentsLookup", () => ({
@@ -131,7 +135,12 @@ describe("MeusAgendamentosClient", () => {
       mutateAsync: vi.fn(),
       isPending: false,
     });
+    mockUseClaimGuestAppointments.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    });
     mockUseDashboardStats.mockReturnValue({ data: null });
+    mockHasGuestToken.mockReturnValue(false);
   });
 
   it("shows loading skeleton while checking user", async () => {
@@ -162,6 +171,8 @@ describe("MeusAgendamentosClient", () => {
         screen.getByTestId("guest-appointments-lookup"),
       ).toBeInTheDocument();
     });
+    expect(mockUseClientAppointments).toHaveBeenCalledWith(false);
+    expect(mockUseDashboardStats).toHaveBeenCalledWith(false);
   });
 
   it("shows empty state when user has no appointments", async () => {
@@ -220,6 +231,23 @@ describe("MeusAgendamentosClient", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Meus Agendamentos")).toBeInTheDocument();
+    });
+  });
+
+  it("shows explicit guest import card when authenticated and guest token exists", async () => {
+    mockHasGuestToken.mockReturnValue(true);
+    mockUseUser.mockReturnValue({
+      data: { id: "u1", email: "test@example.com" },
+      isLoading: false,
+    });
+    mockUseClientAppointments.mockReturnValue({ data: [], isLoading: false });
+
+    render(<MeusAgendamentosClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Importar meus agendamentos guest"),
+      ).toBeInTheDocument();
     });
   });
 });

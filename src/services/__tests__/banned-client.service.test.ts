@@ -30,6 +30,7 @@ import {
   unbanClient,
   isClientBanned,
   getBannedClients,
+  migrateGuestBanToProfile,
 } from "../banned-client";
 
 function asMock(fn: unknown): MockInstance {
@@ -301,6 +302,79 @@ describe("services/banned-client", () => {
           take: 20,
         }),
       );
+    });
+  });
+
+  describe("migrateGuestBanToProfile", () => {
+    it("creates a profile ban from an existing guest ban", async () => {
+      const tx = {
+        bannedClient: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce({
+              id: "guest-ban-1",
+              reason: "Bloqueado",
+              bannedBy: "barber-1",
+            })
+            .mockResolvedValueOnce(null),
+          create: vi.fn().mockResolvedValue({ id: "profile-ban-1" }),
+        },
+      };
+
+      const result = await migrateGuestBanToProfile(tx as never, {
+        guestClientId: "guest-1",
+        profileId: "profile-1",
+      });
+
+      expect(result).toBe(true);
+      expect(tx.bannedClient.create).toHaveBeenCalledWith({
+        data: {
+          profileId: "profile-1",
+          reason: "Bloqueado",
+          bannedBy: "barber-1",
+        },
+      });
+    });
+
+    it("returns false when no guest ban exists", async () => {
+      const tx = {
+        bannedClient: {
+          findFirst: vi.fn().mockResolvedValue(null),
+          create: vi.fn(),
+        },
+      };
+
+      const result = await migrateGuestBanToProfile(tx as never, {
+        guestClientId: "guest-1",
+        profileId: "profile-1",
+      });
+
+      expect(result).toBe(false);
+      expect(tx.bannedClient.create).not.toHaveBeenCalled();
+    });
+
+    it("returns false when the profile is already banned", async () => {
+      const tx = {
+        bannedClient: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce({
+              id: "guest-ban-1",
+              reason: "Bloqueado",
+              bannedBy: "barber-1",
+            })
+            .mockResolvedValueOnce({ id: "profile-ban-1" }),
+          create: vi.fn(),
+        },
+      };
+
+      const result = await migrateGuestBanToProfile(tx as never, {
+        guestClientId: "guest-1",
+        profileId: "profile-1",
+      });
+
+      expect(result).toBe(false);
+      expect(tx.bannedClient.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -35,6 +35,7 @@ vi.mock("sonner", () => ({
 vi.mock("@/lib/guest-session", () => ({
   getGuestToken: vi.fn().mockReturnValue(null),
   setGuestToken: vi.fn(),
+  clearGuestToken: vi.fn(),
 }));
 
 function stubFetch(data: unknown) {

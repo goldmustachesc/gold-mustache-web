@@ -23,7 +23,9 @@ Next.js 15 App Router + Prisma + Supabase + Tailwind. Barbearia com agendamento,
 ## Principles
 
 - TypeScript obrigatório; proibido `any`
+- `SDD` obrigatório: usar `Subagent-Driven Development` em toda tarefa, ajustando a profundidade à complexidade do trabalho
 - TDD: RED → GREEN → REFACTOR
+- `SDD` complementa `TDD`, testes, validação final e as demais regras do projeto
 - Clean Code, SOLID, KISS, YAGNI
 - Conventional Commits (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`, etc.)
 

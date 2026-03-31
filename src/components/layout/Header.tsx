@@ -20,7 +20,8 @@ export function Header() {
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const { data: user } = useUser();
-  const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
+  const { bookingHref, shouldShowBooking, isExternal, isInternal } =
+    useBookingSettings();
 
   const bookingLinkProps = isExternal
     ? { target: "_blank" as const, rel: "noopener noreferrer" }
@@ -33,6 +34,14 @@ export function Header() {
     { href: `/${locale}#servicos`, label: t("services") },
     { href: `/${locale}#equipe`, label: t("team") },
     { href: `/${locale}/blog`, label: t("blog") },
+    ...(isInternal
+      ? [
+          {
+            href: `/${locale}/meus-agendamentos`,
+            label: t("myAppointments"),
+          },
+        ]
+      : []),
     { href: `/${locale}#eventos`, label: t("events") },
     { href: `/${locale}#contato`, label: t("contact") },
   ];

@@ -70,6 +70,20 @@ describe("GET /api/barbers/me/cancelled-appointments", () => {
     expect(body.data[0].cancelledBy).toBe("CLIENT");
     expect(body.data[0].clientName).toBe("João");
     expect(body.data[0].servicePrice).toBe(50);
+    expect(mockAppointmentCount).toHaveBeenCalledWith({
+      where: {
+        status: { in: ["CANCELLED_BY_CLIENT", "CANCELLED_BY_BARBER"] },
+        barberId: "barber-1",
+      },
+    });
+    expect(mockAppointmentFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: { in: ["CANCELLED_BY_CLIENT", "CANCELLED_BY_BARBER"] },
+          barberId: "barber-1",
+        },
+      }),
+    );
   });
 
   it("uses guest client name when client is null", async () => {

@@ -117,7 +117,8 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // For guest clients, return WhatsApp link
     if (appointment.guestClient?.phone) {
-      const clientName = appointment.guestClient.fullName.split(" ")[0];
+      const clientName =
+        appointment.guestClient.fullName.split(" ")[0] || "Cliente";
       return apiSuccess({
         message: "Link do WhatsApp gerado",
         type: "whatsapp",
