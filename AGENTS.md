@@ -4,6 +4,13 @@
 
 Diretrizes globais para agentes e IA neste repositório. Detalhes por contexto ficam em `.cursor/rules/*.mdc`; workflows longos em `.cursor/skills/`.
 
+## AI workflow
+
+- **SDD obrigatório**: usar `Subagent-Driven Development (SDD)` em toda tarefa deste projeto.
+- Sempre avaliar primeiro como aplicar `SDD`, incluindo decomposição do trabalho, uso de agentes especializados, paralelização, validação e checkpoints.
+- Mesmo em tarefas simples, aplicar a mentalidade de `SDD`; quando não houver delegação útil, seguir execução direta sem abandonar esse método.
+- `SDD` complementa `TDD`, testes, validação final e as demais regras do projeto. Nunca usar `SDD` para pular verificação, revisão de impacto ou controles de qualidade.
+
 ## Repository structure
 
 - `src/app` — Next.js App Router, layouts, route handlers
