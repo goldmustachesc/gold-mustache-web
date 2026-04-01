@@ -34,7 +34,7 @@ export function EmptySlot({
         <div className="min-w-0">
           <span
             className={cn(
-              "text-sm font-medium",
+              "font-mono tabular-nums text-sm font-medium",
               isBlockedByAbsence ? "text-foreground" : "text-muted-foreground",
             )}
           >

@@ -405,7 +405,7 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
               <div className="col-span-8">
                 <div className="bg-card/30 rounded-2xl p-6 border border-border/70 min-h-[500px]">
                   <h2 className="text-lg font-semibold text-foreground mb-4">
-                    Agendamentos do dia
+                    Agenda do dia
                   </h2>
                   <DailySchedule
                     date={selectedDate}

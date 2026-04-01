@@ -73,8 +73,8 @@ describe("DailySchedule - vínculo com ausências", () => {
     expect(
       screen.getByText("Existem horários bloqueados por ausência neste dia."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Bloqueado por ausência")).toBeInTheDocument();
-    expect(screen.getByText("Disponível")).toBeInTheDocument();
-    expect(screen.getByText("Treinamento")).toBeInTheDocument();
+    expect(screen.getAllByText("Bloqueado por ausência")).toHaveLength(2);
+    expect(screen.getAllByText("Disponível")).toHaveLength(2);
+    expect(screen.getAllByText("Treinamento")).toHaveLength(2);
   });
 });

@@ -142,7 +142,7 @@ export const AppointmentCard = memo(function AppointmentCard({
       >
         <span
           className={cn(
-            "text-sm",
+            "font-mono tabular-nums text-sm",
             isCancelled
               ? "text-muted-foreground line-through"
               : "text-foreground",

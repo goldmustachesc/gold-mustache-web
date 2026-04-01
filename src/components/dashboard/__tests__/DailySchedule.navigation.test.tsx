@@ -50,7 +50,7 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
     await user.click(firstAddButton);
 
-    expect(screen.getByText(/Adicionar em 09:00/)).toBeInTheDocument();
+    expect(screen.getByText("Adicionar em 09:00 - 09:15")).toBeInTheDocument();
 
     const timeChip = screen.getByRole("button", { name: "09:00" });
     await user.click(timeChip);
@@ -85,14 +85,17 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
     await user.click(firstAddButton);
 
-    const timeChip09 = screen.getByRole("button", { name: "09:00" });
-    await user.click(timeChip09);
+    await user.click(screen.getByRole("button", { name: "09:00" }));
 
-    const timeChip0915 = screen.getByRole("button", { name: "09:15" });
-    expect(timeChip0915).toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: /bloquear este intervalo/i }),
+    ).toBeDisabled();
   });
 
-  it("chama onCreateAppointmentFromSlot com horário correto do segundo chip", async () => {
+  it("chama onCreateAppointmentFromSlot com horário correto do segundo slot visível", async () => {
     const user = userEvent.setup();
 
     render(
@@ -108,10 +111,10 @@ describe("DailySchedule - fluxo de navegação", () => {
       />,
     );
 
-    const [firstAddButton] = screen.getAllByRole("button", {
+    const addButtons = screen.getAllByRole("button", {
       name: "Adicionar",
     });
-    await user.click(firstAddButton);
+    await user.click(addButtons[1]);
 
     await user.click(screen.getByRole("button", { name: "09:15" }));
 
@@ -146,7 +149,7 @@ describe("DailySchedule - fluxo de navegação", () => {
     );
 
     await waitFor(() => {
-      expect(mockOnCreateAbsence).toHaveBeenCalledWith("09:00", "09:30");
+      expect(mockOnCreateAbsence).toHaveBeenCalledWith("09:00", "09:15");
     });
     expect(mockOnCreateAppointment).not.toHaveBeenCalled();
   });
@@ -172,7 +175,7 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
     await user.click(firstAddButton);
 
-    expect(screen.getByText(/Adicionar em 09:00/)).toBeInTheDocument();
+    expect(screen.getByText("Adicionar em 09:00 - 09:15")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "09:00" }));
 
@@ -181,7 +184,9 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText(/Adicionar em 09:00/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Adicionar em 09:00 - 09:15"),
+      ).not.toBeInTheDocument();
     });
   });
 });

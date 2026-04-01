@@ -77,12 +77,14 @@ describe("DailySchedule - ações em horário disponível", () => {
     });
     await user.click(firstAddButton);
 
-    // Sheet abre mostrando o título com o intervalo
-    expect(screen.getByText(/Adicionar em 09:00/)).toBeInTheDocument();
+    // Sheet abre mostrando o título do slot granular
+    expect(screen.getByText("Adicionar em 09:00 - 09:15")).toBeInTheDocument();
 
-    // Chips de 15 min estão presentes
+    // Um slot de 15 min oferece apenas o próprio início
     expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:15" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "09:15" }),
+    ).not.toBeInTheDocument();
 
     // Clicar no chip chama onCreateAppointmentFromSlot
     await user.click(screen.getByRole("button", { name: "09:00" }));
@@ -121,7 +123,7 @@ describe("DailySchedule - ações em horário disponível", () => {
     );
 
     await waitFor(() => {
-      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:30");
+      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:15");
     });
     expect(onCreateAppointmentFromSlot).not.toHaveBeenCalled();
   });
@@ -146,10 +148,7 @@ describe("DailySchedule - ações em horário disponível", () => {
       />,
     );
 
-    expect(screen.getByText("Bloqueado por ausência")).toBeInTheDocument();
-    // O slot bloqueado não deve ter botão Adicionar
-    // (pode haver outros slots disponíveis com botão Adicionar)
     const blockedSlotTexts = screen.getAllByText("Bloqueado por ausência");
-    expect(blockedSlotTexts.length).toBeGreaterThan(0);
+    expect(blockedSlotTexts).toHaveLength(2);
   });
 });

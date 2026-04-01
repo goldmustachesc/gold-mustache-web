@@ -11,10 +11,10 @@ import type {
 import { Calendar, CalendarOff, Clock, Phone } from "lucide-react";
 import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 import {
+  generateSubSlots,
   getMinutesUntilAppointment,
-  generateTimeSlots,
+  minutesToTime,
   parseTimeToMinutes,
-  addMinutesToTime,
 } from "@/utils/time-slots";
 import { ApiError, apiMutate } from "@/lib/api/client";
 import { toast } from "sonner";
@@ -44,9 +44,6 @@ interface DailyScheduleProps {
   workingHours?: BarberWorkingHoursDay | null;
 }
 
-// Slot duration in minutes for generating timeline
-const SLOT_DURATION = 30;
-
 // Represents a time slot in the schedule (either empty or with an appointment)
 interface ScheduleSlot {
   time: string;
@@ -56,6 +53,16 @@ interface ScheduleSlot {
   isBlockedByAbsence: boolean;
   absenceReason: string | null;
 }
+
+interface CompactTimelineItem {
+  type: "appointment" | "slot";
+  sortMinutes: number;
+  startTime: string;
+  appointment?: AppointmentWithDetails;
+  slot?: ScheduleSlot;
+}
+
+const COMPACT_SLOT_DURATION_MINUTES = 15;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -116,8 +123,7 @@ export function DailySchedule({
   );
   const hasFullDayAbsence = fullDayAbsence !== null;
 
-  // Generate complete schedule with empty slots
-  const scheduleSlots = useMemo((): ScheduleSlot[] => {
+  const availabilitySlots = useMemo((): ScheduleSlot[] => {
     if (hasFullDayAbsence) {
       return [];
     }
@@ -132,93 +138,128 @@ export function DailySchedule({
       return [];
     }
 
-    // Generate base time slots
-    const baseSlots = generateTimeSlots({
-      startTime: workingHours.startTime,
-      endTime: workingHours.endTime,
-      duration: SLOT_DURATION,
-      breakStart: workingHours.breakStart,
-      breakEnd: workingHours.breakEnd,
-    });
-
-    // Sort appointments by start time
-    const sortedAppointments = [...appointments].sort((a, b) =>
+    const dayAppointments = [...appointments].sort((a, b) =>
       a.startTime.localeCompare(b.startTime),
     );
+    const workStart = parseTimeToMinutes(workingHours.startTime);
+    const workEnd = parseTimeToMinutes(workingHours.endTime);
+    const breakStartMinutes = workingHours.breakStart
+      ? parseTimeToMinutes(workingHours.breakStart)
+      : null;
+    const breakEndMinutes = workingHours.breakEnd
+      ? parseTimeToMinutes(workingHours.breakEnd)
+      : null;
+    const boundaries = new Set<number>([workStart, workEnd]);
 
-    // Create a map of appointment start times for quick lookup
-    const appointmentMap = new Map<string, AppointmentWithDetails>();
-    for (const apt of sortedAppointments) {
-      appointmentMap.set(apt.startTime, apt);
+    if (breakStartMinutes !== null && breakEndMinutes !== null) {
+      boundaries.add(breakStartMinutes);
+      boundaries.add(breakEndMinutes);
     }
 
-    // Build the schedule: merge slots with appointments
-    const schedule: ScheduleSlot[] = [];
-    let slotIndex = 0;
+    for (const appointment of dayAppointments) {
+      const appointmentStart = parseTimeToMinutes(appointment.startTime);
+      const appointmentEnd = parseTimeToMinutes(appointment.endTime);
 
-    while (slotIndex < baseSlots.length) {
-      const slot = baseSlots[slotIndex];
-      const slotMinutes = parseTimeToMinutes(slot.time);
-
-      // Check if there's an appointment starting at this slot
-      const appointment = appointmentMap.get(slot.time);
-
-      if (appointment) {
-        // This slot has an appointment
-        schedule.push({
-          time: appointment.startTime,
-          endTime: appointment.endTime,
-          appointment,
-          isAvailable: false,
-          isBlockedByAbsence: false,
-          absenceReason: null,
-        });
-
-        // Skip slots that are covered by this appointment's duration
-        const appointmentEndMinutes = parseTimeToMinutes(appointment.endTime);
-        while (
-          slotIndex < baseSlots.length &&
-          parseTimeToMinutes(baseSlots[slotIndex].time) < appointmentEndMinutes
-        ) {
-          slotIndex++;
-        }
-      } else {
-        // Check if this slot is within any appointment's duration
-        const overlappingAppointment = sortedAppointments.find((apt) => {
-          const aptStart = parseTimeToMinutes(apt.startTime);
-          const aptEnd = parseTimeToMinutes(apt.endTime);
-          return slotMinutes >= aptStart && slotMinutes < aptEnd;
-        });
-
-        if (!overlappingAppointment) {
-          const slotEndTime = addMinutesToTime(slot.time, SLOT_DURATION);
-          const slotStartMinutes = parseTimeToMinutes(slot.time);
-          const slotEndMinutes = parseTimeToMinutes(slotEndTime);
-          const blockingAbsence =
-            partialDayAbsences.find((absence) => {
-              const absenceStart = parseTimeToMinutes(absence.startTime);
-              const absenceEnd = parseTimeToMinutes(absence.endTime);
-              return (
-                slotStartMinutes < absenceEnd && absenceStart < slotEndMinutes
-              );
-            }) ?? null;
-
-          // Empty slot
-          schedule.push({
-            time: slot.time,
-            endTime: slotEndTime,
-            appointment: null,
-            isAvailable: !blockingAbsence,
-            isBlockedByAbsence: Boolean(blockingAbsence),
-            absenceReason: blockingAbsence?.reason ?? null,
-          });
-        }
-        slotIndex++;
+      if (appointmentEnd <= workStart || appointmentStart >= workEnd) {
+        continue;
       }
+
+      boundaries.add(Math.max(appointmentStart, workStart));
+      boundaries.add(Math.min(appointmentEnd, workEnd));
     }
 
-    return schedule;
+    for (const absence of partialDayAbsences) {
+      const absenceStart = parseTimeToMinutes(absence.startTime);
+      const absenceEnd = parseTimeToMinutes(absence.endTime);
+
+      if (absenceEnd <= workStart || absenceStart >= workEnd) {
+        continue;
+      }
+
+      boundaries.add(Math.max(absenceStart, workStart));
+      boundaries.add(Math.min(absenceEnd, workEnd));
+    }
+
+    const sortedBoundaries = [...boundaries]
+      .filter((minutes) => minutes >= workStart && minutes <= workEnd)
+      .sort((a, b) => a - b);
+    const slots: ScheduleSlot[] = [];
+
+    for (let index = 0; index < sortedBoundaries.length - 1; index++) {
+      const slotStart = sortedBoundaries[index];
+      const slotEnd = sortedBoundaries[index + 1];
+
+      if (slotEnd <= slotStart) {
+        continue;
+      }
+
+      if (
+        breakStartMinutes !== null &&
+        breakEndMinutes !== null &&
+        slotStart >= breakStartMinutes &&
+        slotEnd <= breakEndMinutes
+      ) {
+        continue;
+      }
+
+      const overlapsAppointment = dayAppointments.some((appointment) => {
+        const appointmentStart = parseTimeToMinutes(appointment.startTime);
+        const appointmentEnd = parseTimeToMinutes(appointment.endTime);
+
+        return slotStart < appointmentEnd && appointmentStart < slotEnd;
+      });
+
+      if (overlapsAppointment) {
+        continue;
+      }
+
+      const blockingAbsence =
+        partialDayAbsences.find((absence) => {
+          const absenceStart = parseTimeToMinutes(absence.startTime);
+          const absenceEnd = parseTimeToMinutes(absence.endTime);
+
+          return slotStart < absenceEnd && absenceStart < slotEnd;
+        }) ?? null;
+
+      slots.push({
+        time: minutesToTime(slotStart),
+        endTime: minutesToTime(slotEnd),
+        appointment: null,
+        isAvailable: !blockingAbsence,
+        isBlockedByAbsence: Boolean(blockingAbsence),
+        absenceReason: blockingAbsence?.reason ?? null,
+      });
+    }
+
+    return slots;
   }, [workingHours, appointments, hasFullDayAbsence, partialDayAbsences]);
+
+  const compactAvailabilitySlots = useMemo((): ScheduleSlot[] => {
+    return availabilitySlots.flatMap((slot) => {
+      const slotEndMinutes = parseTimeToMinutes(slot.endTime);
+
+      return generateSubSlots(
+        slot.time,
+        slot.endTime,
+        COMPACT_SLOT_DURATION_MINUTES,
+      ).flatMap((startTime) => {
+        const startMinutes = parseTimeToMinutes(startTime);
+        const endMinutes = startMinutes + COMPACT_SLOT_DURATION_MINUTES;
+
+        if (endMinutes > slotEndMinutes) {
+          return [];
+        }
+
+        return [
+          {
+            ...slot,
+            time: startTime,
+            endTime: minutesToTime(endMinutes),
+          },
+        ];
+      });
+    });
+  }, [availabilitySlots]);
 
   const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
     setSelectedAppointment(appointment);
@@ -298,207 +339,210 @@ export function DailySchedule({
     (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
   );
 
+  const compactAppointmentCardProps = {
+    onOpenDetail: handleOpenAppointmentDetail,
+    onSendReminder: handleSendReminder,
+    sendingReminderId,
+    onCancelAppointment,
+    isCancelling,
+    cancellingId,
+    onMarkNoShow,
+    isMarkingNoShow,
+    markingNoShowId,
+    onMarkComplete,
+    isMarkingComplete,
+    markingCompleteId,
+    hideValues,
+    maskedValue,
+  };
+
   if (variant === "compact") {
     // Check if it's a day off (not working)
     const isDayOff = workingHours && !workingHours.isWorking;
     const hasPartialAbsences = partialDayAbsences.length > 0;
     const fullDayAbsenceReason = fullDayAbsence?.reason?.trim() ?? null;
+    const hasAppointments = appointments.length > 0;
+    const hasConfiguredWorkingHours = Boolean(
+      workingHours?.isWorking && workingHours.startTime && workingHours.endTime,
+    );
+    const timelineItems = [
+      ...sortedAppointments.map(
+        (appointment): CompactTimelineItem => ({
+          type: "appointment",
+          sortMinutes: parseTimeToMinutes(appointment.startTime),
+          startTime: appointment.startTime,
+          appointment,
+        }),
+      ),
+      ...(!hasFullDayAbsence && !isDayOff && hasConfiguredWorkingHours
+        ? compactAvailabilitySlots.map(
+            (slot): CompactTimelineItem => ({
+              type: "slot",
+              sortMinutes: parseTimeToMinutes(slot.time),
+              startTime: slot.time,
+              slot,
+            }),
+          )
+        : []),
+    ].sort((left, right) => {
+      if (left.sortMinutes !== right.sortMinutes) {
+        return left.sortMinutes - right.sortMinutes;
+      }
 
-    // Group schedule slots by hour
-    const slotsByHour = scheduleSlots.reduce(
+      return left.type === "appointment" ? -1 : 1;
+    });
+    const availableSlotCount = compactAvailabilitySlots.filter(
+      (slot) => slot.isAvailable,
+    ).length;
+    const timelineByHour = timelineItems.reduce(
       (acc, slot) => {
-        const hour = slot.time.split(":")[0];
+        const hour = slot.startTime.split(":")[0];
         if (!acc[hour]) acc[hour] = [];
         acc[hour].push(slot);
         return acc;
       },
-      {} as Record<string, ScheduleSlot[]>,
+      {} as Record<string, CompactTimelineItem[]>,
     );
-
-    const scheduleHours = Object.keys(slotsByHour).sort(
+    const timelineHours = Object.keys(timelineByHour).sort(
       (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
     );
 
-    // Check if we should show the full schedule (has working hours)
-    const hasWorkingHours = workingHours?.isWorking && scheduleSlots.length > 0;
-
     return (
-      <div className="space-y-3">
-        {hasFullDayAbsence ? (
-          <>
-            <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-4">
-              <div className="flex items-start gap-3">
-                <CalendarOff className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-medium text-foreground">
-                    Agenda bloqueada por ausência
+      <div className="space-y-4">
+        {hasFullDayAbsence && (
+          <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <CalendarOff className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">
+                  Agenda bloqueada por ausência
+                </p>
+                <p className="mt-1 text-sm text-foreground/80">
+                  Nenhum horário ficará disponível para este dia.
+                </p>
+                {fullDayAbsenceReason && (
+                  <p className="mt-2 text-sm text-foreground/80">
+                    Motivo: {fullDayAbsenceReason}
                   </p>
-                  <p className="text-sm mt-1 text-foreground/80">
-                    Nenhum horário ficará disponível para este dia.
-                  </p>
-                  {fullDayAbsenceReason && (
-                    <p className="text-sm mt-2 text-foreground/80">
-                      Motivo: {fullDayAbsenceReason}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
             </div>
-            {appointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg font-medium">
-                  Dia bloqueado
-                </p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Ausência de dia inteiro registrada.
+          </div>
+        )}
+
+        {isDayOff && (
+          <div className="rounded-xl border border-border/70 bg-card/40 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <Calendar className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">Dia de folga</p>
+                <p className="mt-1 text-sm text-foreground/80">
+                  Você não trabalha neste dia, mas os atendimentos agendados
+                  continuam listados abaixo.
                 </p>
               </div>
-            ) : (
-              hours.map((hour) => (
-                <div key={hour} className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <span>{hour}:00</span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                  {appointmentsByHour[hour].map((appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      onOpenDetail={handleOpenAppointmentDetail}
-                      onSendReminder={handleSendReminder}
-                      sendingReminderId={sendingReminderId}
-                      onCancelAppointment={onCancelAppointment}
-                      isCancelling={isCancelling}
-                      cancellingId={cancellingId}
-                      onMarkNoShow={onMarkNoShow}
-                      isMarkingNoShow={isMarkingNoShow}
-                      markingNoShowId={markingNoShowId}
-                      onMarkComplete={onMarkComplete}
-                      isMarkingComplete={isMarkingComplete}
-                      markingCompleteId={markingCompleteId}
-                      hideValues={hideValues}
-                      maskedValue={maskedValue}
-                    />
-                  ))}
-                </div>
-              ))
-            )}
-          </>
-        ) : isDayOff ? (
-          // Day off state
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg font-medium">
-              Dia de folga
-            </p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Você não trabalha neste dia
-            </p>
-          </div>
-        ) : !hasWorkingHours && appointments.length === 0 ? (
-          // No working hours configured and no appointments
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg font-medium">
-              Dia livre!
-            </p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Nenhum agendamento para este dia
-            </p>
-          </div>
-        ) : !hasWorkingHours ? (
-          // Fallback: show only appointments (old behavior)
-          hours.map((hour) => (
-            <div key={hour} className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <span>{hour}:00</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-              {appointmentsByHour[hour].map((appointment) => (
-                <AppointmentCard
-                  key={appointment.id}
-                  appointment={appointment}
-                  onOpenDetail={handleOpenAppointmentDetail}
-                  onSendReminder={handleSendReminder}
-                  sendingReminderId={sendingReminderId}
-                  onCancelAppointment={onCancelAppointment}
-                  isCancelling={isCancelling}
-                  cancellingId={cancellingId}
-                  onMarkNoShow={onMarkNoShow}
-                  isMarkingNoShow={isMarkingNoShow}
-                  markingNoShowId={markingNoShowId}
-                  onMarkComplete={onMarkComplete}
-                  isMarkingComplete={isMarkingComplete}
-                  markingCompleteId={markingCompleteId}
-                  hideValues={hideValues}
-                  maskedValue={maskedValue}
-                />
-              ))}
             </div>
-          ))
-        ) : (
-          // Full schedule with empty slots
-          <>
-            {hasPartialAbsences && (
+          </div>
+        )}
+
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              Horários do dia
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {hasAppointments
+                ? `${appointments.length} atendimento${appointments.length > 1 ? "s" : ""} no dia`
+                : "Nenhum atendimento agendado para este dia."}
+              {!hasFullDayAbsence &&
+                !isDayOff &&
+                hasConfiguredWorkingHours &&
+                ` • ${availableSlotCount} intervalo${availableSlotCount === 1 ? "" : "s"} livre${availableSlotCount === 1 ? "" : "s"}`}
+            </p>
+          </div>
+
+          {!hasConfiguredWorkingHours && !hasFullDayAbsence && !isDayOff && (
+            <div className="rounded-xl border border-border/70 bg-card/30 px-4 py-3">
+              <p className="text-sm text-foreground">
+                Expediente não configurado para exibir os horários livres deste
+                dia.
+              </p>
+            </div>
+          )}
+
+          {hasPartialAbsences &&
+            hasConfiguredWorkingHours &&
+            !isDayOff &&
+            !hasFullDayAbsence && (
               <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
                 <p className="text-sm text-foreground">
                   Existem horários bloqueados por ausência neste dia.
                 </p>
               </div>
             )}
-            {scheduleHours.map((hour) => (
+
+          {timelineItems.length > 0 ? (
+            timelineHours.map((hour) => (
               <div key={hour} className="space-y-2">
-                {/* Hour marker */}
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <span>{hour}:00</span>
-                  <div className="flex-1 h-px bg-border" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-mono tabular-nums">{hour}:00</span>
+                  <div className="h-px flex-1 bg-border" />
                 </div>
-
-                {/* Slots for this hour */}
-                {slotsByHour[hour].map((slot) => {
-                  if (slot.appointment) {
-                    return (
-                      <AppointmentCard
-                        key={slot.appointment.id}
-                        appointment={slot.appointment}
-                        onOpenDetail={handleOpenAppointmentDetail}
-                        onSendReminder={handleSendReminder}
-                        sendingReminderId={sendingReminderId}
-                        onCancelAppointment={onCancelAppointment}
-                        isCancelling={isCancelling}
-                        cancellingId={cancellingId}
-                        onMarkNoShow={onMarkNoShow}
-                        isMarkingNoShow={isMarkingNoShow}
-                        markingNoShowId={markingNoShowId}
-                        onMarkComplete={onMarkComplete}
-                        isMarkingComplete={isMarkingComplete}
-                        markingCompleteId={markingCompleteId}
-                        hideValues={hideValues}
-                        maskedValue={maskedValue}
-                      />
-                    );
-                  }
-
-                  return (
+                {timelineByHour[hour].map((item) =>
+                  item.type === "appointment" && item.appointment ? (
+                    <AppointmentCard
+                      key={item.appointment.id}
+                      appointment={item.appointment}
+                      {...compactAppointmentCardProps}
+                    />
+                  ) : item.slot ? (
                     <EmptySlot
-                      key={`empty-${slot.time}`}
-                      time={slot.time}
-                      endTime={slot.endTime}
-                      isBlockedByAbsence={slot.isBlockedByAbsence}
-                      absenceReason={slot.absenceReason}
+                      key={`empty-${item.slot.time}`}
+                      time={item.slot.time}
+                      endTime={item.slot.endTime}
+                      isBlockedByAbsence={item.slot.isBlockedByAbsence}
+                      absenceReason={item.slot.absenceReason}
                       onOpenSheet={
                         onCreateAppointmentFromSlot || onCreateAbsenceFromSlot
                           ? handleOpenSlotSheet
                           : undefined
                       }
                     />
-                  );
-                })}
+                  ) : null,
+                )}
               </div>
-            ))}
-          </>
-        )}
+            ))
+          ) : !hasConfiguredWorkingHours && !hasFullDayAbsence && !isDayOff ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BarberChairIcon className="mb-4 h-16 w-16 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">
+                Expediente não configurado
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Configure o expediente para visualizar os horários livres deste
+                dia.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BarberChairIcon className="mb-4 h-16 w-16 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">
+                {hasFullDayAbsence
+                  ? "Dia bloqueado"
+                  : isDayOff
+                    ? "Dia de folga"
+                    : "Dia livre!"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {hasFullDayAbsence
+                  ? "Ausência de dia inteiro registrada."
+                  : isDayOff
+                    ? "Você não trabalha neste dia."
+                    : "Nenhum agendamento para este dia"}
+              </p>
+            </div>
+          )}
+        </section>
 
         {/* Appointment Detail Sheet */}
         <AppointmentDetailSheet
