@@ -277,6 +277,32 @@ describe("BarberDashboard", () => {
 
   it("renderiza dashboard e alterna o estado de ocultar valores", async () => {
     const user = userEvent.setup();
+    mocks.appointmentsState.data = [
+      {
+        id: "apt-cancelled",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CANCELLED_BY_BARBER",
+        updatedAt: "2026-03-19T12:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { name: "Corte", price: 50 },
+        client: { fullName: "João" },
+        guestClient: null,
+      },
+      {
+        id: "apt-1",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T12:05:00.000Z",
+        createdAt: "2026-03-19T12:05:00.000Z",
+        service: { name: "Corte", price: 50 },
+        client: { fullName: "João Atualizado" },
+        guestClient: null,
+      },
+    ];
 
     render(<BarberDashboard locale="pt-BR" />);
 

@@ -42,6 +42,7 @@ import {
   parseDateString,
 } from "@/utils/time-slots";
 import Link from "next/link";
+import { consolidateOperationalAppointments } from "@/lib/booking/operational-appointments";
 
 interface BarberDashboardProps {
   locale: string;
@@ -181,8 +182,12 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
 
   // Filter appointments for selected date
   const selectedDateStr = formatDateToString(selectedDate);
-  const dailyAppointments = appointments.filter(
-    (apt) => apt.date === selectedDateStr,
+  const dailyAppointments = useMemo(
+    () =>
+      consolidateOperationalAppointments(
+        appointments.filter((apt) => apt.date === selectedDateStr),
+      ),
+    [appointments, selectedDateStr],
   );
   const absencesPageHref = `/${locale}/barbeiro/ausencias?date=${selectedDateStr}`;
   const selectedDateAbsences = useMemo(

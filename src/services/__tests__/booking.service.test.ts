@@ -1007,6 +1007,122 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     );
   });
 
+  it("getBarberAppointments keeps only the latest update for the same slot", async () => {
+    asMock(prisma.appointment.findMany).mockResolvedValue([
+      {
+        id: "apt-cancelled",
+        clientId: "client-1",
+        guestClientId: null,
+        barberId: "barber-1",
+        serviceId: "service-1",
+        date: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+        startTime: "09:00",
+        endTime: "09:30",
+        status: AppointmentStatus.CANCELLED_BY_BARBER,
+        cancelReason: "Imprevisto",
+        createdAt: new Date(Date.UTC(2025, 0, 2, 0, 0, 0, 0)),
+        updatedAt: new Date(Date.UTC(2025, 0, 2, 9, 0, 0, 0)),
+        client: {
+          id: "client-1",
+          fullName: "Cliente Antigo",
+          phone: "11999990000",
+        },
+        guestClient: null,
+        barber: { id: "barber-1", name: "B", avatarUrl: null },
+        service: { id: "service-1", name: "S", duration: 30, price: 10 },
+      },
+      {
+        id: "apt-latest",
+        clientId: "client-2",
+        guestClientId: null,
+        barberId: "barber-1",
+        serviceId: "service-1",
+        date: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+        startTime: "09:00",
+        endTime: "09:30",
+        status: AppointmentStatus.CONFIRMED,
+        cancelReason: null,
+        createdAt: new Date(Date.UTC(2025, 0, 2, 10, 0, 0, 0)),
+        updatedAt: new Date(Date.UTC(2025, 0, 2, 10, 0, 0, 0)),
+        client: {
+          id: "client-2",
+          fullName: "Cliente Novo",
+          phone: "11999991111",
+        },
+        guestClient: null,
+        barber: { id: "barber-1", name: "B", avatarUrl: null },
+        service: { id: "service-1", name: "S", duration: 30, price: 10 },
+      },
+    ]);
+
+    const result = await getBarberAppointments("barber-1", {
+      start: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+      end: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("apt-latest");
+    expect(result[0]?.status).toBe(AppointmentStatus.CONFIRMED);
+  });
+
+  it("getBarberAppointments keeps the cancelled slot when it is the latest update", async () => {
+    asMock(prisma.appointment.findMany).mockResolvedValue([
+      {
+        id: "apt-confirmed",
+        clientId: "client-1",
+        guestClientId: null,
+        barberId: "barber-1",
+        serviceId: "service-1",
+        date: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+        startTime: "09:00",
+        endTime: "09:30",
+        status: AppointmentStatus.CONFIRMED,
+        cancelReason: null,
+        createdAt: new Date(Date.UTC(2025, 0, 2, 8, 0, 0, 0)),
+        updatedAt: new Date(Date.UTC(2025, 0, 2, 8, 0, 0, 0)),
+        client: {
+          id: "client-1",
+          fullName: "Cliente Original",
+          phone: "11999990000",
+        },
+        guestClient: null,
+        barber: { id: "barber-1", name: "B", avatarUrl: null },
+        service: { id: "service-1", name: "S", duration: 30, price: 10 },
+      },
+      {
+        id: "apt-cancelled",
+        clientId: "client-1",
+        guestClientId: null,
+        barberId: "barber-1",
+        serviceId: "service-1",
+        date: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+        startTime: "09:00",
+        endTime: "09:30",
+        status: AppointmentStatus.CANCELLED_BY_CLIENT,
+        cancelReason: "Cancelado",
+        createdAt: new Date(Date.UTC(2025, 0, 2, 8, 0, 0, 0)),
+        updatedAt: new Date(Date.UTC(2025, 0, 2, 11, 0, 0, 0)),
+        client: {
+          id: "client-1",
+          fullName: "Cliente Original",
+          phone: "11999990000",
+        },
+        guestClient: null,
+        barber: { id: "barber-1", name: "B", avatarUrl: null },
+        service: { id: "service-1", name: "S", duration: 30, price: 10 },
+      },
+    ]);
+
+    const result = await getBarberAppointments("barber-1", {
+      start: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+      end: new Date(Date.UTC(2025, 0, 3, 0, 0, 0, 0)),
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("apt-cancelled");
+    expect(result[0]?.status).toBe(AppointmentStatus.CANCELLED_BY_CLIENT);
+  });
+
   it("getGuestAppointments returns [] when guest client not found", async () => {
     asMock(prisma.guestClient.findUnique).mockResolvedValue(null);
     await expect(getGuestAppointments("(11) 99999-8888")).resolves.toEqual([]);

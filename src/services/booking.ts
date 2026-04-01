@@ -40,6 +40,7 @@ import type {
 } from "@/types/booking";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
 import { isClientBanned } from "@/services/banned-client";
+import { consolidateOperationalAppointments } from "@/lib/booking/operational-appointments";
 
 // ============================================
 // Helper Functions
@@ -1017,7 +1018,7 @@ export async function getBarberAppointments(
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  return appointments.map((apt) => ({
+  const mappedAppointments = appointments.map((apt) => ({
     id: apt.id,
     clientId: apt.clientId,
     guestClientId: apt.guestClientId,
@@ -1038,6 +1039,8 @@ export async function getBarberAppointments(
       price: Number(apt.service.price),
     },
   }));
+
+  return consolidateOperationalAppointments(mappedAppointments);
 }
 
 // ============================================
