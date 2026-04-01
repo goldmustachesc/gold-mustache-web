@@ -162,6 +162,12 @@ describe("DailySchedule default", () => {
     );
 
     expect(screen.getByText("R$ ***,**")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Concluir" }).className,
+    ).toContain("border-success/30");
+    expect(
+      screen.getByRole("button", { name: "Não compareceu" }).className,
+    ).toContain("border-warning/30");
 
     await user.click(screen.getByRole("button", { name: "Concluir" }));
     await user.click(screen.getByRole("button", { name: "Não compareceu" }));
@@ -191,9 +197,65 @@ describe("DailySchedule default", () => {
       />,
     );
 
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
     expect(screen.getByRole("link", { name: /ligar/i })).toHaveAttribute(
       "href",
       "tel:11888888888",
     );
+  });
+
+  it("mostra labels de status para completed e no-show no layout default", () => {
+    mockGetMinutesUntilAppointment.mockReturnValue(-5);
+
+    render(
+      <DailySchedule
+        date={new Date("2026-03-19T12:00:00.000Z")}
+        appointments={[
+          buildAppointment({
+            id: "apt-completed",
+            status: "COMPLETED",
+            client: {
+              id: "client-completed",
+              fullName: "Leo test 0104",
+              phone: "11999999999",
+            },
+          }),
+          buildAppointment({
+            id: "apt-no-show",
+            startTime: "10:00",
+            endTime: "10:30",
+            status: "NO_SHOW",
+            client: {
+              id: "client-no-show",
+              fullName: "Cliente Faltou",
+              phone: "11888888888",
+            },
+          }),
+        ]}
+        onCancelAppointment={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Concluído").className).toContain("bg-success/15");
+    expect(screen.getByText("Concluído").className).toContain(
+      "text-foreground",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Concluir" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Não compareceu" }),
+    ).not.toBeInTheDocument();
   });
 });

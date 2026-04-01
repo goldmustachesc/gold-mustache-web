@@ -202,6 +202,9 @@ describe("dashboard AppointmentCard", () => {
     mockGetMinutesUntilAppointment.mockReturnValue(-10);
     const { onMarkNoShow } = renderAppointmentCard();
 
+    expect(screen.getByText("Marcar não compareceu").className).toContain(
+      "border-warning/30",
+    );
     await user.click(screen.getByText("Marcar não compareceu"));
 
     expect(onMarkNoShow).toHaveBeenCalledWith("apt-1");
@@ -212,6 +215,9 @@ describe("dashboard AppointmentCard", () => {
     mockGetMinutesUntilAppointment.mockReturnValue(-10);
     const { onMarkComplete } = renderAppointmentCard();
 
+    expect(screen.getByText("Concluir").className).toContain(
+      "border-success/30",
+    );
     await user.click(screen.getByText("Concluir"));
 
     expect(onMarkComplete).toHaveBeenCalledWith("apt-1");
@@ -232,6 +238,12 @@ describe("dashboard AppointmentCard", () => {
       }),
     );
 
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
     expect(
       screen.getByRole("link", { name: "Ligar para cliente" }),
     ).toHaveAttribute("href", "tel:11888888888");
@@ -252,6 +264,23 @@ describe("dashboard AppointmentCard", () => {
     );
 
     expect(screen.getByText("Cancelado")).toBeInTheDocument();
+    expect(
+      screen.queryByTitle("Enviar lembrete ao cliente"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders completed appointments with success badge and without reminder action", () => {
+    renderAppointmentCard(
+      buildAppointment({
+        status: "COMPLETED",
+      }),
+    );
+
+    expect(screen.getByText("Concluído")).toBeInTheDocument();
+    expect(screen.getByText("Concluído").className).toContain("bg-success/15");
+    expect(screen.getByText("Concluído").className).toContain(
+      "text-foreground",
+    );
     expect(
       screen.queryByTitle("Enviar lembrete ao cliente"),
     ).not.toBeInTheDocument();

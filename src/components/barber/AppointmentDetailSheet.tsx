@@ -24,6 +24,7 @@ import { ApiError, apiMutate } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
+import { getDashboardAppointmentStatusUi } from "./appointment-status-ui";
 
 interface AppointmentDetailSheetProps {
   appointment: AppointmentWithDetails | null;
@@ -177,12 +178,14 @@ export function AppointmentDetailSheet({
     appointment.client?.phone || appointment.guestClient?.phone || "";
   const clientId = appointment.client?.id || appointment.guestClient?.id || "";
   const clientType = appointment.client ? "registered" : "guest";
+  const completedUi = getDashboardAppointmentStatusUi("COMPLETED");
+  const noShowUi = getDashboardAppointmentStatusUi("NO_SHOW");
 
   const isConfirmed = appointment.status === "CONFIRMED";
-  const isNoShow = appointment.status === "NO_SHOW";
   const isCancelled =
     appointment.status === "CANCELLED_BY_CLIENT" ||
     appointment.status === "CANCELLED_BY_BARBER";
+  const statusUi = getDashboardAppointmentStatusUi(appointment.status);
 
   const minutesUntil = getMinutesUntilAppointment(
     appointment.date,
@@ -292,18 +295,16 @@ export function AppointmentDetailSheet({
         </SheetHeader>
 
         <div className="px-4 pb-6 space-y-6 overflow-y-auto">
-          {/* Status Badge for cancelled/no-show */}
-          {(isNoShow || isCancelled) && (
+          {/* Status Badge */}
+          {statusUi && (
             <div className="flex justify-center">
               <Badge
                 className={cn(
-                  "text-sm px-4 py-1.5",
-                  isNoShow &&
-                    "bg-amber-500/20 text-amber-500 border-amber-500/30",
-                  isCancelled && "bg-red-500/20 text-red-500 border-red-500/30",
+                  "text-sm px-4 py-1.5 border",
+                  statusUi.badgeClassName,
                 )}
               >
-                {isNoShow ? "Não compareceu" : "Cancelado"}
+                {statusUi.label}
               </Badge>
             </div>
           )}
@@ -436,7 +437,10 @@ export function AppointmentDetailSheet({
               {canMarkComplete && (
                 <Button
                   variant="outline"
-                  className="w-full h-12 rounded-xl text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                  className={cn(
+                    "w-full h-12 rounded-xl",
+                    completedUi?.actionClassName,
+                  )}
                   onClick={handleMarkComplete}
                   disabled={isMarkingComplete}
                 >
@@ -447,7 +451,10 @@ export function AppointmentDetailSheet({
               {canMarkNoShow && (
                 <Button
                   variant="outline"
-                  className="w-full h-12 rounded-xl text-amber-500 border-amber-500/30 hover:bg-amber-500/10"
+                  className={cn(
+                    "w-full h-12 rounded-xl",
+                    noShowUi?.actionClassName,
+                  )}
                   onClick={handleMarkNoShow}
                   disabled={isMarkingNoShow}
                 >

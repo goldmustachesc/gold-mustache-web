@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type {
   AppointmentWithDetails,
   BarberAbsenceData,
@@ -17,8 +18,10 @@ import {
   parseTimeToMinutes,
 } from "@/utils/time-slots";
 import { ApiError, apiMutate } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailSheet";
+import { getDashboardAppointmentStatusUi } from "@/components/barber/appointment-status-ui";
 import { BarberChairIcon } from "./BarberChairIcon";
 import { AppointmentCard } from "./AppointmentCard";
 import { EmptySlot } from "./EmptySlot";
@@ -94,6 +97,8 @@ export function DailySchedule({
   hideValues = false,
   workingHours,
 }: DailyScheduleProps) {
+  const completedUi = getDashboardAppointmentStatusUi("COMPLETED");
+  const noShowUi = getDashboardAppointmentStatusUi("NO_SHOW");
   const maskedValue = "R$ ***,**";
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(
     null,
@@ -630,20 +635,35 @@ export function DailySchedule({
                     );
                     const isConfirmed = appointment.status === "CONFIRMED";
                     const isNoShow = appointment.status === "NO_SHOW";
+                    const statusUi = getDashboardAppointmentStatusUi(
+                      appointment.status,
+                    );
                     const isPast = minutesUntil <= 0;
 
                     return (
                       <div
                         key={appointment.id}
-                        className="p-3 rounded-lg border bg-card"
+                        className={cn(
+                          "p-3 rounded-lg border bg-card",
+                          statusUi?.surfaceClassName,
+                        )}
                       >
                         <div className="flex items-start justify-between">
-                          <div>
+                          <div className="space-y-2">
                             <p className="font-medium">
                               {appointment.client?.fullName ||
                                 appointment.guestClient?.fullName ||
                                 "Cliente"}
                             </p>
+                            {statusUi && (
+                              <Badge
+                                className={["border", statusUi.badgeClassName]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                              >
+                                {statusUi.label}
+                              </Badge>
+                            )}
                             <p className="text-sm text-muted-foreground">
                               {appointment.startTime} - {appointment.endTime} •{" "}
                               {appointment.service.name}
@@ -681,7 +701,7 @@ export function DailySchedule({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                                className={completedUi?.actionClassName}
                                 onClick={() => onMarkComplete(appointment.id)}
                                 disabled={
                                   isMarkingComplete &&
@@ -695,6 +715,7 @@ export function DailySchedule({
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className={noShowUi?.actionClassName}
                                 onClick={() => onMarkNoShow(appointment.id)}
                                 disabled={
                                   isMarkingNoShow &&

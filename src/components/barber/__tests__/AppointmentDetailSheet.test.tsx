@@ -125,6 +125,29 @@ describe("AppointmentDetailSheet", () => {
       />,
     );
     expect(screen.getByText("Não compareceu")).toBeInTheDocument();
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
+  });
+
+  it("shows Concluído badge for completed appointments", () => {
+    render(
+      <AppointmentDetailSheet
+        appointment={buildAppointment({ status: "COMPLETED" })}
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Concluído")).toBeInTheDocument();
+    expect(screen.getByText("Concluído").className).toContain("bg-success/15");
+    expect(screen.getByText("Concluído").className).toContain(
+      "text-foreground",
+    );
+    expect(screen.queryByText(/Lembrete/)).not.toBeInTheDocument();
   });
 
   it("shows reminder button for confirmed appointments", () => {
