@@ -23,29 +23,28 @@ describe("SlotActionSheet", () => {
     expect(screen.getByText("Adicionar em 09:00 - 09:30")).toBeInTheDocument();
   });
 
-  it("exibe chips de 15 min para bloco de 30 min", () => {
+  it("exibe input de horário exato com o início do intervalo como valor padrão", () => {
     render(<SlotActionSheet {...defaultProps} />);
-    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:15" })).toBeInTheDocument();
+    const input = screen.getByLabelText(
+      "Horário de início",
+    ) as HTMLInputElement;
+    expect(input.value).toBe("09:00");
+    expect(input.min).toBe("09:00");
+    expect(input.max).toBe("09:29");
   });
 
-  it("exibe apenas os inícios dentro do bloco, não o fim", () => {
-    render(<SlotActionSheet {...defaultProps} />);
-    expect(
-      screen.queryByRole("button", { name: "09:30" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("chama onSelectTime com o horário correto ao clicar em chip", async () => {
+  it("chama onSelectTime com o horário exato escolhido", async () => {
     const onSelectTime = vi.fn();
     const user = userEvent.setup();
 
     render(<SlotActionSheet {...defaultProps} onSelectTime={onSelectTime} />);
 
-    await user.click(screen.getByRole("button", { name: "09:15" }));
+    await user.clear(screen.getByLabelText("Horário de início"));
+    await user.type(screen.getByLabelText("Horário de início"), "09:14");
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
-      expect(onSelectTime).toHaveBeenCalledWith("09:15");
+      expect(onSelectTime).toHaveBeenCalledWith("09:14");
     });
     expect(onSelectTime).toHaveBeenCalledTimes(1);
   });
@@ -68,17 +67,13 @@ describe("SlotActionSheet", () => {
     expect(onCreateAbsence).toHaveBeenCalledTimes(1);
   });
 
-  it("exibe 4 chips para bloco de 60 min", () => {
+  it("ajusta o max do input para um minuto antes do fim do intervalo", () => {
     render(
       <SlotActionSheet {...defaultProps} slotStart="09:00" slotEnd="10:00" />,
     );
-    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:15" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:30" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:45" })).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "10:00" }),
-    ).not.toBeInTheDocument();
+      (screen.getByLabelText("Horário de início") as HTMLInputElement).max,
+    ).toBe("09:59");
   });
 
   it("não renderiza quando open é false", () => {
@@ -88,30 +83,31 @@ describe("SlotActionSheet", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("mostra loading spinner no chip enquanto navega", async () => {
+  it("mostra loading spinner no botão principal enquanto navega", async () => {
     const onSelectTime = vi.fn();
     const user = userEvent.setup();
 
     render(<SlotActionSheet {...defaultProps} onSelectTime={onSelectTime} />);
 
-    const chip = screen.getByRole("button", { name: "09:15" });
-    await user.click(chip);
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
     });
   });
 
-  it("desabilita outros chips enquanto um está navegando", async () => {
+  it("desabilita o input e o botão de bloquear enquanto navega", async () => {
     const onSelectTime = vi.fn();
     const user = userEvent.setup();
 
     render(<SlotActionSheet {...defaultProps} onSelectTime={onSelectTime} />);
 
-    await user.click(screen.getByRole("button", { name: "09:15" }));
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
-    const otherChip = screen.getByRole("button", { name: "09:00" });
-    expect(otherChip).toBeDisabled();
+    expect(screen.getByLabelText("Horário de início")).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /bloquear este intervalo/i }),
+    ).toBeDisabled();
   });
 });
 
@@ -135,10 +131,9 @@ describe("SlotActionSheet - Desktop Mode", () => {
     expect(screen.getByText("Adicionar em 09:00 - 09:30")).toBeInTheDocument();
   });
 
-  it("exibe chips de horário no Dialog", () => {
+  it("exibe o input de horário no Dialog", () => {
     render(<SlotActionSheet {...defaultProps} />);
-    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:15" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Horário de início")).toBeInTheDocument();
   });
 
   it("chama onSelectTime corretamente no modo desktop", async () => {
@@ -147,10 +142,12 @@ describe("SlotActionSheet - Desktop Mode", () => {
 
     render(<SlotActionSheet {...defaultProps} onSelectTime={onSelectTime} />);
 
-    await user.click(screen.getByRole("button", { name: "09:00" }));
+    await user.clear(screen.getByLabelText("Horário de início"));
+    await user.type(screen.getByLabelText("Horário de início"), "09:12");
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
-      expect(onSelectTime).toHaveBeenCalledWith("09:00");
+      expect(onSelectTime).toHaveBeenCalledWith("09:12");
     });
   });
 });

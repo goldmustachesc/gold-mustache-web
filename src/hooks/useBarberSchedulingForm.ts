@@ -18,16 +18,14 @@ import {
   useCreateAppointmentByBarber,
 } from "@/hooks/useBooking";
 import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
-import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
-import { UserPlus } from "lucide-react";
 import { getBrazilDateString } from "@/utils/time-slots";
+import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
 import {
   isValidDateParam,
   isValidTimeParam,
   isValidPhone,
   isValidClientName,
   sanitizePhoneInput,
-  computeCompletedSteps,
   canSubmitForm,
   buildDateOptions,
 } from "@/utils/scheduling";
@@ -69,7 +67,11 @@ export function useBarberSchedulingForm() {
   const { data: services, isLoading: servicesLoading } = useServices(
     barberProfile?.id,
   );
-  const { data: slots, isLoading: slotsLoading } = useBarberSlots(
+  const {
+    data: bookingAvailability,
+    isLoading: slotsLoading,
+    isError: slotsError,
+  } = useBarberSlots(
     selectedDate,
     barberProfile?.id || null,
     selectedServiceId || null,
@@ -83,12 +85,6 @@ export function useBarberSchedulingForm() {
   const clientSuggestions = clientsResponse?.data ?? [];
 
   const createAppointment = useCreateAppointmentByBarber();
-
-  usePrivateHeader({
-    title: "Agendar para Cliente",
-    icon: UserPlus,
-    backHref: `/${locale}/barbeiro`,
-  });
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -174,8 +170,63 @@ export function useBarberSchedulingForm() {
 
   const selectedService =
     services?.find((s) => s.id === selectedServiceId) ?? null;
-  const availableSlots = slots?.filter((s) => s.available) ?? [];
   const dateOptions = useMemo(() => buildDateOptions(DATE_OPTIONS_COUNT), []);
+  const selectedTimeError = useMemo(() => {
+    if (!selectedTime || !selectedService) {
+      return null;
+    }
+
+    if (slotsLoading) {
+      return "Aguarde o carregamento das janelas disponíveis.";
+    }
+
+    if (slotsError || !bookingAvailability) {
+      return "Não foi possível carregar as janelas disponíveis para este serviço.";
+    }
+
+    if (bookingAvailability.windows.length === 0) {
+      return "Nenhuma janela disponível para este serviço nesta data.";
+    }
+
+    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
+      windows: bookingAvailability.windows,
+      startTime: selectedTime,
+      durationMinutes: selectedService.duration,
+    });
+
+    if (fitsAvailability) {
+      return null;
+    }
+
+    return "Escolha um horário dentro das janelas disponíveis.";
+  }, [
+    selectedTime,
+    selectedService,
+    bookingAvailability,
+    slotsLoading,
+    slotsError,
+  ]);
+  const completedSteps = useMemo(
+    () =>
+      [
+        isValidClientName(clientName),
+        isValidPhone(clientPhone),
+        !!selectedServiceId,
+        !!selectedDate,
+        !!selectedTime && selectedTimeError === null,
+      ].filter(Boolean).length,
+    [
+      clientName,
+      clientPhone,
+      selectedServiceId,
+      selectedDate,
+      selectedTime,
+      selectedTimeError,
+    ],
+  );
+  const canSubmit =
+    canSubmitForm(formState, createAppointment.isPending) &&
+    selectedTimeError === null;
 
   const onSubmit = useCallback(async () => {
     if (!selectedServiceId || !selectedDate || !selectedTime) {
@@ -190,6 +241,11 @@ export function useBarberSchedulingForm() {
 
     if (!isValidPhone(clientPhone)) {
       toast.error("Telefone deve ter 10 ou 11 dígitos");
+      return;
+    }
+
+    if (selectedTimeError) {
+      toast.error(selectedTimeError);
       return;
     }
 
@@ -227,6 +283,7 @@ export function useBarberSchedulingForm() {
     createAppointment,
     router,
     locale,
+    selectedTimeError,
   ]);
 
   return {
@@ -251,10 +308,11 @@ export function useBarberSchedulingForm() {
     computed: {
       services: services ?? [],
       selectedService,
-      availableSlots,
+      bookingAvailability: bookingAvailability ?? null,
+      selectedTimeError,
       dateOptions,
-      canSubmit: canSubmitForm(formState, createAppointment.isPending),
-      completedSteps: computeCompletedSteps(formState),
+      canSubmit,
+      completedSteps,
       isPending: createAppointment.isPending,
     },
     handlers: {

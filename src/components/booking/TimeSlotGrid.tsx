@@ -1,23 +1,55 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { TimeSlot } from "@/types/booking";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
 import { cn } from "@/lib/utils";
 import { Clock } from "lucide-react";
+import type { BookingAvailability, TimeSlot } from "@/types/booking";
 
 interface TimeSlotGridProps {
-  slots: TimeSlot[];
+  availability: BookingAvailability | null;
   selectedSlot: TimeSlot | null;
   onSelect: (slot: TimeSlot) => void;
   isLoading?: boolean;
 }
 
 export function TimeSlotGrid({
-  slots,
+  availability,
   selectedSlot,
   onSelect,
   isLoading,
 }: TimeSlotGridProps) {
+  const [selectedTime, setSelectedTime] = useState(
+    selectedSlot?.time ?? availability?.windows[0]?.startTime ?? "",
+  );
+
+  const selectedTimeError = useMemo(() => {
+    if (!availability || !selectedTime) {
+      return null;
+    }
+
+    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
+      windows: availability.windows,
+      startTime: selectedTime,
+      durationMinutes: availability.serviceDuration,
+    });
+
+    if (fitsAvailability) {
+      return null;
+    }
+
+    return "Escolha um horário dentro das janelas disponíveis.";
+  }, [availability, selectedTime]);
+
+  useEffect(() => {
+    setSelectedTime(
+      selectedSlot?.time ?? availability?.windows[0]?.startTime ?? "",
+    );
+  }, [availability, selectedSlot]);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
@@ -28,12 +60,12 @@ export function TimeSlotGrid({
     );
   }
 
-  if (slots.length === 0) {
+  if ((availability?.windows.length ?? 0) === 0) {
     return (
       <div className="text-center py-8">
         <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
         <p className="text-muted-foreground">
-          Nenhum horário disponível para esta data.
+          Nenhuma janela disponível para esta data.
         </p>
         <p className="text-sm text-muted-foreground/70 mt-1">
           Tente selecionar outro dia.
@@ -42,57 +74,66 @@ export function TimeSlotGrid({
     );
   }
 
-  const availableSlots = slots.filter((s) => s.available);
-  const unavailableSlots = slots.filter((s) => !s.available);
+  const windows = availability?.windows ?? [];
 
   return (
     <div className="space-y-4">
-      {availableSlots.length > 0 && (
-        <div>
-          <p className="text-sm font-medium text-muted-foreground mb-3">
-            Horários disponíveis ({availableSlots.length})
-          </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-            {availableSlots.map((slot) => (
-              <Button
-                key={slot.time}
-                variant={
-                  selectedSlot?.time === slot.time ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => onSelect(slot)}
-                className={cn(
-                  "font-mono",
-                  selectedSlot?.time === slot.time && "ring-2 ring-primary/20",
-                )}
-              >
-                {slot.time}
-              </Button>
-            ))}
-          </div>
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-3">
+          Janelas disponíveis ({windows.length})
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {windows.map((window) => (
+            <span
+              key={`${window.startTime}-${window.endTime}`}
+              className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium"
+            >
+              {window.startTime} - {window.endTime}
+            </span>
+          ))}
         </div>
-      )}
+      </div>
 
-      {unavailableSlots.length > 0 && (
-        <div>
-          <p className="text-sm font-medium text-muted-foreground/70 mb-3">
-            Horários ocupados ({unavailableSlots.length})
+      <div className="space-y-3 rounded-lg border bg-card p-4">
+        <div className="space-y-2">
+          <Label htmlFor="booking-exact-time">Escolha o início exato</Label>
+          <Input
+            id="booking-exact-time"
+            aria-label="Escolha o início exato"
+            type="time"
+            step={60}
+            value={selectedTime}
+            onChange={(event) => setSelectedTime(event.target.value)}
+            className={cn(
+              "font-mono",
+              selectedTimeError &&
+                "border-destructive focus-visible:ring-destructive/30",
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Escolha qualquer minuto que caiba integralmente em uma das janelas
+            acima.
           </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-            {unavailableSlots.map((slot) => (
-              <Button
-                key={slot.time}
-                variant="ghost"
-                size="sm"
-                disabled
-                className="font-mono opacity-40 line-through"
-              >
-                {slot.time}
-              </Button>
-            ))}
-          </div>
+          {selectedTimeError && (
+            <p className="text-sm text-destructive">{selectedTimeError}</p>
+          )}
         </div>
-      )}
+
+        <Button
+          type="button"
+          className="w-full"
+          disabled={!selectedTime || selectedTimeError !== null}
+          onClick={() =>
+            onSelect({
+              time: selectedTime,
+              available: true,
+              barberId: availability?.barberId,
+            })
+          }
+        >
+          Confirmar horário
+        </Button>
+      </div>
     </div>
   );
 }

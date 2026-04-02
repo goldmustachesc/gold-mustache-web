@@ -1,20 +1,24 @@
 import { render, screen } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { TimeSlotGrid } from "../TimeSlotGrid";
-import type { TimeSlot } from "@/types/booking";
+import type { BookingAvailability } from "@/types/booking";
 
-const slots: TimeSlot[] = [
-  { time: "09:00", available: true },
-  { time: "09:30", available: true },
-  { time: "10:00", available: false },
-];
+const availability: BookingAvailability = {
+  barberId: "barber-1",
+  serviceDuration: 30,
+  windows: [
+    { startTime: "09:00", endTime: "10:00" },
+    { startTime: "10:30", endTime: "12:00" },
+  ],
+};
 
 describe("TimeSlotGrid", () => {
   it("renders loading skeleton when isLoading", () => {
     const { container } = render(
       <TimeSlotGrid
-        slots={[]}
+        availability={null}
         selectedSlot={null}
         onSelect={vi.fn()}
         isLoading
@@ -23,60 +27,89 @@ describe("TimeSlotGrid", () => {
     expect(container.querySelectorAll(".animate-pulse")).toHaveLength(8);
   });
 
-  it("renders empty state when no slots", () => {
-    render(<TimeSlotGrid slots={[]} selectedSlot={null} onSelect={vi.fn()} />);
-    expect(screen.getByText(/Nenhum horário disponível/)).toBeInTheDocument();
-  });
-
-  it("separates available and unavailable slots", () => {
-    render(
-      <TimeSlotGrid slots={slots} selectedSlot={null} onSelect={vi.fn()} />,
-    );
-    expect(screen.getByText("Horários disponíveis (2)")).toBeInTheDocument();
-    expect(screen.getByText("Horários ocupados (1)")).toBeInTheDocument();
-  });
-
-  it("renders slot times", () => {
-    render(
-      <TimeSlotGrid slots={slots} selectedSlot={null} onSelect={vi.fn()} />,
-    );
-    expect(screen.getByText("09:00")).toBeInTheDocument();
-    expect(screen.getByText("09:30")).toBeInTheDocument();
-    expect(screen.getByText("10:00")).toBeInTheDocument();
-  });
-
-  it("calls onSelect when available slot is clicked", async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-
-    render(
-      <TimeSlotGrid slots={slots} selectedSlot={null} onSelect={onSelect} />,
-    );
-
-    await user.click(screen.getByText("09:00"));
-    expect(onSelect).toHaveBeenCalledWith(slots[0]);
-  });
-
-  it("disables unavailable slot buttons", () => {
-    render(
-      <TimeSlotGrid slots={slots} selectedSlot={null} onSelect={vi.fn()} />,
-    );
-    const unavailableBtn = screen.getByText("10:00");
-    expect(unavailableBtn.closest("button")).toBeDisabled();
-  });
-
-  it("does not show unavailable section when all slots are available", () => {
-    const allAvailable = [
-      { time: "09:00", available: true },
-      { time: "09:30", available: true },
-    ];
+  it("renders empty state when no windows", () => {
     render(
       <TimeSlotGrid
-        slots={allAvailable}
+        availability={{
+          barberId: "barber-1",
+          serviceDuration: 30,
+          windows: [],
+        }}
         selectedSlot={null}
         onSelect={vi.fn()}
       />,
     );
-    expect(screen.queryByText(/Horários ocupados/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Nenhuma janela disponível/)).toBeInTheDocument();
+  });
+
+  it("renders availability windows", () => {
+    render(
+      <TimeSlotGrid
+        availability={availability}
+        selectedSlot={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Janelas disponíveis (2)")).toBeInTheDocument();
+    expect(screen.getByText("09:00 - 10:00")).toBeInTheDocument();
+    expect(screen.getByText("10:30 - 12:00")).toBeInTheDocument();
+  });
+
+  it("prefills the exact time input with the first available minute", () => {
+    render(
+      <TimeSlotGrid
+        availability={availability}
+        selectedSlot={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("Escolha o início exato")).toHaveValue(
+      "09:00",
+    );
+  });
+
+  it("calls onSelect when a valid exact time is confirmed", async () => {
+    const onSelect = vi.fn();
+
+    render(
+      <TimeSlotGrid
+        availability={availability}
+        selectedSlot={null}
+        onSelect={onSelect}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
+      target: { value: "09:17" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirmar horário" }),
+    );
+    expect(onSelect).toHaveBeenCalledWith({
+      time: "09:17",
+      available: true,
+      barberId: "barber-1",
+    });
+  });
+
+  it("shows validation when the selected time exceeds the window", () => {
+    render(
+      <TimeSlotGrid
+        availability={availability}
+        selectedSlot={null}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
+      target: { value: "09:45" },
+    });
+
+    expect(
+      screen.getByText("Escolha um horário dentro das janelas disponíveis."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Confirmar horário" }),
+    ).toBeDisabled();
   });
 });

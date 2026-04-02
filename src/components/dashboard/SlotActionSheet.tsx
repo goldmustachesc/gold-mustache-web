@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,11 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { generateSubSlots } from "@/utils/time-slots";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
-
-const SUB_SLOT_INTERVAL_MINUTES = 15;
+import { minutesToTime, parseTimeToMinutes } from "@/utils/time-slots";
 
 export interface SlotActionSheetProps {
   open: boolean;
@@ -36,8 +36,10 @@ export interface SlotActionSheetProps {
 interface SlotActionContentProps {
   slotStart: string;
   slotEnd: string;
-  timeOptions: string[];
+  selectedTime: string;
   navigatingTime: string | null;
+  maxSelectableTime: string;
+  onTimeChange: (time: string) => void;
   onSelectTime: (time: string) => void;
   onCreateAbsence: (startTime: string, endTime: string) => void;
 }
@@ -45,44 +47,59 @@ interface SlotActionContentProps {
 function SlotActionContent({
   slotStart,
   slotEnd,
-  timeOptions,
+  selectedTime,
   navigatingTime,
+  maxSelectableTime,
+  onTimeChange,
   onSelectTime,
   onCreateAbsence,
 }: SlotActionContentProps) {
   const isNavigating = navigatingTime !== null;
+  const canUseTime =
+    selectedTime.length > 0 &&
+    selectedTime >= slotStart &&
+    selectedTime <= maxSelectableTime;
 
   return (
     <div className="p-4 pt-0 space-y-4">
       <div>
-        <p className="text-sm text-muted-foreground mb-3">
-          Início do atendimento
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {timeOptions.map((time) => (
-            <Button
-              key={time}
-              variant="outline"
-              size="sm"
-              disabled={isNavigating}
-              onClick={() => onSelectTime(time)}
-              className={cn(
-                "rounded-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary min-w-[60px] transition-opacity",
-                navigatingTime === time && "opacity-70",
-              )}
-            >
-              {navigatingTime === time ? (
-                <Loader2
-                  className="h-3 w-3 animate-spin"
-                  data-testid="loading-spinner"
-                />
-              ) : (
-                time
-              )}
-            </Button>
-          ))}
+        <Label htmlFor="slot-action-start-time">Horário de início</Label>
+        <div className="mt-2 space-y-2">
+          <Input
+            id="slot-action-start-time"
+            aria-label="Horário de início"
+            type="time"
+            step={60}
+            min={slotStart}
+            max={maxSelectableTime}
+            disabled={isNavigating}
+            value={selectedTime}
+            onChange={(event) => onTimeChange(event.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Você pode escolher qualquer minuto entre {slotStart} e{" "}
+            {maxSelectableTime}.
+          </p>
         </div>
       </div>
+
+      <Button
+        disabled={isNavigating || !canUseTime}
+        onClick={() => onSelectTime(selectedTime)}
+        className={cn(
+          "w-full",
+          navigatingTime === "appointment" && "opacity-70",
+        )}
+      >
+        {navigatingTime === "appointment" ? (
+          <Loader2
+            className="h-4 w-4 animate-spin"
+            data-testid="loading-spinner"
+          />
+        ) : (
+          "Usar horário"
+        )}
+      </Button>
 
       <Separator />
 
@@ -109,15 +126,25 @@ export function SlotActionSheet({
 }: SlotActionSheetProps) {
   const isDesktop = useIsDesktop();
   const [navigatingTime, setNavigatingTime] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState(slotStart);
+  const maxSelectableTime = useMemo(() => {
+    const endMinutes = parseTimeToMinutes(slotEnd);
+    if (endMinutes <= parseTimeToMinutes(slotStart)) {
+      return slotStart;
+    }
 
-  const timeOptions = generateSubSlots(
-    slotStart,
-    slotEnd,
-    SUB_SLOT_INTERVAL_MINUTES,
-  );
+    return minutesToTime(endMinutes - 1);
+  }, [slotEnd, slotStart]);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedTime(slotStart);
+      setNavigatingTime(null);
+    }
+  }, [open, slotStart]);
 
   const handleSelectTime = (time: string) => {
-    setNavigatingTime(time);
+    setNavigatingTime("appointment");
     setTimeout(() => {
       onSelectTime(time);
       setNavigatingTime(null);
@@ -135,6 +162,7 @@ export function SlotActionSheet({
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setNavigatingTime(null);
+      setSelectedTime(slotStart);
     }
     onOpenChange(newOpen);
   };
@@ -142,6 +170,19 @@ export function SlotActionSheet({
   const title = `Adicionar em ${slotStart} - ${slotEnd}`;
   const description =
     "Escolha o início do atendimento ou bloqueie este intervalo.";
+
+  const content = (
+    <SlotActionContent
+      slotStart={slotStart}
+      slotEnd={slotEnd}
+      selectedTime={selectedTime}
+      navigatingTime={navigatingTime}
+      maxSelectableTime={maxSelectableTime}
+      onTimeChange={setSelectedTime}
+      onSelectTime={handleSelectTime}
+      onCreateAbsence={handleCreateAbsence}
+    />
+  );
 
   if (isDesktop) {
     return (
@@ -151,14 +192,7 @@ export function SlotActionSheet({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
-          <SlotActionContent
-            slotStart={slotStart}
-            slotEnd={slotEnd}
-            timeOptions={timeOptions}
-            navigatingTime={navigatingTime}
-            onSelectTime={handleSelectTime}
-            onCreateAbsence={handleCreateAbsence}
-          />
+          {content}
         </DialogContent>
       </Dialog>
     );
@@ -171,14 +205,7 @@ export function SlotActionSheet({
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <SlotActionContent
-          slotStart={slotStart}
-          slotEnd={slotEnd}
-          timeOptions={timeOptions}
-          navigatingTime={navigatingTime}
-          onSelectTime={handleSelectTime}
-          onCreateAbsence={handleCreateAbsence}
-        />
+        {content}
       </SheetContent>
     </Sheet>
   );

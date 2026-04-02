@@ -130,11 +130,8 @@ export function ChatBookingPage({
     selectedBarber?.id,
   );
   const dateStr = selectedDate ? formatDateToString(selectedDate) : null;
-  const { data: slots = [], isLoading: slotsLoading } = useSlots(
-    dateStr,
-    selectedBarber?.id ?? null,
-    selectedService?.id ?? null,
-  );
+  const { data: bookingAvailability = null, isLoading: slotsLoading } =
+    useSlots(dateStr, selectedBarber?.id ?? null, selectedService?.id ?? null);
 
   const createAppointment = useCreateAppointment();
   const createGuestAppointment = useCreateGuestAppointment();
@@ -759,7 +756,7 @@ export function ChatBookingPage({
               Voltar
             </Button>
             <ChatTimeSlotSelector
-              slots={slots}
+              availability={bookingAvailability}
               onSelect={handleSlotSelect}
               onChooseAnotherDate={handleChooseAnotherDate}
               isLoading={slotsLoading}

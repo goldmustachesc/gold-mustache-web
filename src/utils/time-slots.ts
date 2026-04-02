@@ -225,6 +225,11 @@ function getBrazilTime(): { hours: number; minutes: number } {
   return { hours, minutes };
 }
 
+export function getCurrentBrazilMinutes(): number {
+  const { hours, minutes } = getBrazilTime();
+  return hours * 60 + minutes;
+}
+
 /**
  * Gets current date components in Brazil timezone
  */

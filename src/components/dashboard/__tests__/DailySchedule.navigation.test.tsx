@@ -50,21 +50,18 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
     await user.click(firstAddButton);
 
-    expect(screen.getByText("Adicionar em 09:00 - 09:15")).toBeInTheDocument();
+    expect(screen.getByText("Adicionar em 09:00 - 10:00")).toBeInTheDocument();
 
-    const timeChip = screen.getByRole("button", { name: "09:00" });
-    await user.click(timeChip);
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
-    });
+    expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(mockOnCreateAppointment).toHaveBeenCalledWith("09:00");
     });
   });
 
-  it("desabilita todos os chips enquanto navega", async () => {
+  it("desabilita o input e a ação de bloqueio enquanto navega", async () => {
     const user = userEvent.setup();
 
     render(
@@ -85,7 +82,7 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
     await user.click(firstAddButton);
 
-    await user.click(screen.getByRole("button", { name: "09:00" }));
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
@@ -95,7 +92,7 @@ describe("DailySchedule - fluxo de navegação", () => {
     ).toBeDisabled();
   });
 
-  it("chama onCreateAppointmentFromSlot com horário correto do segundo slot visível", async () => {
+  it("permite ajustar o horário exato antes de navegar", async () => {
     const user = userEvent.setup();
 
     render(
@@ -111,15 +108,13 @@ describe("DailySchedule - fluxo de navegação", () => {
       />,
     );
 
-    const addButtons = screen.getAllByRole("button", {
-      name: "Adicionar",
-    });
-    await user.click(addButtons[1]);
-
-    await user.click(screen.getByRole("button", { name: "09:15" }));
+    await user.click(screen.getAllByRole("button", { name: "Adicionar" })[0]);
+    await user.clear(screen.getByLabelText("Horário de início"));
+    await user.type(screen.getByLabelText("Horário de início"), "09:37");
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
-      expect(mockOnCreateAppointment).toHaveBeenCalledWith("09:15");
+      expect(mockOnCreateAppointment).toHaveBeenCalledWith("09:37");
     });
   });
 
@@ -149,7 +144,7 @@ describe("DailySchedule - fluxo de navegação", () => {
     );
 
     await waitFor(() => {
-      expect(mockOnCreateAbsence).toHaveBeenCalledWith("09:00", "09:15");
+      expect(mockOnCreateAbsence).toHaveBeenCalledWith("09:00", "10:00");
     });
     expect(mockOnCreateAppointment).not.toHaveBeenCalled();
   });
@@ -175,9 +170,9 @@ describe("DailySchedule - fluxo de navegação", () => {
     });
     await user.click(firstAddButton);
 
-    expect(screen.getByText("Adicionar em 09:00 - 09:15")).toBeInTheDocument();
+    expect(screen.getByText("Adicionar em 09:00 - 10:00")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "09:00" }));
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
       expect(mockOnCreateAppointment).toHaveBeenCalled();
@@ -185,7 +180,7 @@ describe("DailySchedule - fluxo de navegação", () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText("Adicionar em 09:00 - 09:15"),
+        screen.queryByText("Adicionar em 09:00 - 10:00"),
       ).not.toBeInTheDocument();
     });
   });

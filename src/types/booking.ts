@@ -10,6 +10,17 @@ export interface TimeSlot {
   barberId?: string;
 }
 
+export interface AvailabilityWindow {
+  startTime: string;
+  endTime: string;
+}
+
+export interface BookingAvailability {
+  barberId: string;
+  serviceDuration: number;
+  windows: AvailabilityWindow[];
+}
+
 // ============================================
 // Appointment Types
 // ============================================

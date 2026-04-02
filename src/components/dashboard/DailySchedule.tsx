@@ -12,7 +12,6 @@ import type {
 import { Calendar, CalendarOff, Clock, Phone } from "lucide-react";
 import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 import {
-  generateSubSlots,
   getMinutesUntilAppointment,
   minutesToTime,
   parseTimeToMinutes,
@@ -64,8 +63,6 @@ interface CompactTimelineItem {
   appointment?: AppointmentWithDetails;
   slot?: ScheduleSlot;
 }
-
-const COMPACT_SLOT_DURATION_MINUTES = 15;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -239,33 +236,6 @@ export function DailySchedule({
     return slots;
   }, [workingHours, appointments, hasFullDayAbsence, partialDayAbsences]);
 
-  const compactAvailabilitySlots = useMemo((): ScheduleSlot[] => {
-    return availabilitySlots.flatMap((slot) => {
-      const slotEndMinutes = parseTimeToMinutes(slot.endTime);
-
-      return generateSubSlots(
-        slot.time,
-        slot.endTime,
-        COMPACT_SLOT_DURATION_MINUTES,
-      ).flatMap((startTime) => {
-        const startMinutes = parseTimeToMinutes(startTime);
-        const endMinutes = startMinutes + COMPACT_SLOT_DURATION_MINUTES;
-
-        if (endMinutes > slotEndMinutes) {
-          return [];
-        }
-
-        return [
-          {
-            ...slot,
-            time: startTime,
-            endTime: minutesToTime(endMinutes),
-          },
-        ];
-      });
-    });
-  }, [availabilitySlots]);
-
   const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
     setSelectedAppointment(appointment);
     setSheetOpen(true);
@@ -380,7 +350,7 @@ export function DailySchedule({
         }),
       ),
       ...(!hasFullDayAbsence && !isDayOff && hasConfiguredWorkingHours
-        ? compactAvailabilitySlots.map(
+        ? availabilitySlots.map(
             (slot): CompactTimelineItem => ({
               type: "slot",
               sortMinutes: parseTimeToMinutes(slot.time),
@@ -396,7 +366,7 @@ export function DailySchedule({
 
       return left.type === "appointment" ? -1 : 1;
     });
-    const availableSlotCount = compactAvailabilitySlots.filter(
+    const availableSlotCount = availabilitySlots.filter(
       (slot) => slot.isAvailable,
     ).length;
     const timelineByHour = timelineItems.reduce(

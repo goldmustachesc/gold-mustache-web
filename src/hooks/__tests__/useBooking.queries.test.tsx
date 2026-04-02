@@ -85,11 +85,20 @@ describe("useSlots", () => {
   });
 
   it("fetches slots when all parameters are provided", async () => {
-    stubFetch([{ time: "09:00", available: true }]);
+    stubFetch({
+      barberId: "b-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "09:00", endTime: "12:00" }],
+    });
     const { result } = renderHook(() => useSlots("2026-03-10", "b-1", "s-1"), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({
+      barberId: "b-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "09:00", endTime: "12:00" }],
+    });
     expect(fetch).toHaveBeenCalledWith(
       "/api/slots?date=2026-03-10&barberId=b-1&serviceId=s-1",
       undefined,

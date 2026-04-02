@@ -77,20 +77,19 @@ describe("DailySchedule - ações em horário disponível", () => {
     });
     await user.click(firstAddButton);
 
-    // Sheet abre mostrando o título do slot granular
-    expect(screen.getByText("Adicionar em 09:00 - 09:15")).toBeInTheDocument();
+    expect(screen.getByText("Adicionar em 09:00 - 10:00")).toBeInTheDocument();
 
-    // Um slot de 15 min oferece apenas o próprio início
-    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "09:15" }),
-    ).not.toBeInTheDocument();
+    const exactTimeInput = screen.getByLabelText(
+      "Horário de início",
+    ) as HTMLInputElement;
+    expect(exactTimeInput.value).toBe("09:00");
 
-    // Clicar no chip chama onCreateAppointmentFromSlot
-    await user.click(screen.getByRole("button", { name: "09:00" }));
+    await user.clear(exactTimeInput);
+    await user.type(exactTimeInput, "09:22");
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
-      expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:00");
+      expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:22");
     });
     expect(onCreateAbsenceFromSlot).not.toHaveBeenCalled();
   });
@@ -123,7 +122,7 @@ describe("DailySchedule - ações em horário disponível", () => {
     );
 
     await waitFor(() => {
-      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:15");
+      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "10:00");
     });
     expect(onCreateAppointmentFromSlot).not.toHaveBeenCalled();
   });
@@ -149,6 +148,6 @@ describe("DailySchedule - ações em horário disponível", () => {
     );
 
     const blockedSlotTexts = screen.getAllByText("Bloqueado por ausência");
-    expect(blockedSlotTexts).toHaveLength(2);
+    expect(blockedSlotTexts).toHaveLength(1);
   });
 });

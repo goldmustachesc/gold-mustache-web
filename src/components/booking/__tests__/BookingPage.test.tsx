@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -22,6 +22,10 @@ vi.mock("@/utils/datetime", () => ({
 
 vi.mock("@/utils/time-slots", () => ({
   formatDateToString: vi.fn().mockReturnValue("2026-03-10"),
+  parseTimeToMinutes: (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  },
 }));
 
 vi.mock("@/hooks/useBrazilToday", () => ({
@@ -229,8 +233,12 @@ describe("BookingPage", () => {
         active: true,
       },
     ];
-    const slots = [{ time: "10:00", available: true }];
-    stubFetchByUrl(barbers, services, slots);
+    const availability = {
+      barberId: "b-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "10:00", endTime: "12:00" }],
+    };
+    stubFetchByUrl(barbers, services, availability);
 
     render(<BookingPage />, { wrapper: createWrapper() });
 
@@ -252,7 +260,10 @@ describe("BookingPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Escolha o Horário")).toBeInTheDocument();
     });
-    await user.click(screen.getByText("10:00"));
+    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
+      target: { value: "10:00" },
+    });
+    await user.click(screen.getByRole("button", { name: "Confirmar horário" }));
 
     await waitFor(() => {
       expect(
@@ -298,8 +309,12 @@ describe("BookingPage", () => {
         active: true,
       },
     ];
-    const slots = [{ time: "10:00", available: true }];
-    stubFetchByUrl(barbers, services, slots, { createGuestFails: true });
+    const availability = {
+      barberId: "b-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "10:00", endTime: "12:00" }],
+    };
+    stubFetchByUrl(barbers, services, availability, { createGuestFails: true });
 
     render(<BookingPage />, { wrapper: createWrapper() });
 
@@ -321,7 +336,10 @@ describe("BookingPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Escolha o Horário")).toBeInTheDocument();
     });
-    await user.click(screen.getByText("10:00"));
+    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
+      target: { value: "10:00" },
+    });
+    await user.click(screen.getByRole("button", { name: "Confirmar horário" }));
 
     await waitFor(() => {
       expect(

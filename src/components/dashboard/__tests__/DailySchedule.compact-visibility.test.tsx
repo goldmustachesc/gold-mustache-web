@@ -115,12 +115,12 @@ describe("DailySchedule compact - visibilidade operacional", () => {
 
     expect(screen.getByText("Leo test 0104")).toBeInTheDocument();
     expect(screen.getByText("Guest Smoke Test")).toBeInTheDocument();
-    expect(screen.getByText("09:15 - 09:30")).toBeInTheDocument();
-    expect(screen.getByText("09:30 - 09:45")).toBeInTheDocument();
-    expect(screen.getByText(/4 intervalos livres/)).toBeInTheDocument();
+    expect(screen.getByText("09:15 - 09:45")).toBeInTheDocument();
+    expect(screen.getByText("10:00 - 10:30")).toBeInTheDocument();
+    expect(screen.getByText(/2 intervalos livres/)).toBeInTheDocument();
   });
 
-  it("quebra um periodo livre longo em slots operacionais de 15 minutos", () => {
+  it("mantém um período livre longo como um único intervalo real", () => {
     const workingHours: BarberWorkingHoursDay = {
       dayOfWeek: 3,
       isWorking: true,
@@ -143,11 +143,8 @@ describe("DailySchedule compact - visibilidade operacional", () => {
       />,
     );
 
-    expect(screen.getByText(/4 intervalos livres/)).toBeInTheDocument();
-    expect(screen.getByText("09:00 - 09:15")).toBeInTheDocument();
-    expect(screen.getByText("09:15 - 09:30")).toBeInTheDocument();
-    expect(screen.getByText("09:30 - 09:45")).toBeInTheDocument();
-    expect(screen.getByText("09:45 - 10:00")).toBeInTheDocument();
+    expect(screen.getByText(/1 intervalo livre/)).toBeInTheDocument();
+    expect(screen.getByText("09:00 - 10:00")).toBeInTheDocument();
   });
 
   it("não exibe linhas durante a pausa do expediente", () => {
@@ -173,10 +170,10 @@ describe("DailySchedule compact - visibilidade operacional", () => {
       />,
     );
 
-    expect(screen.getByText(/8 intervalos livres/)).toBeInTheDocument();
-    expect(screen.queryByText("10:00 - 10:15")).not.toBeInTheDocument();
-    expect(screen.queryByText("10:45 - 11:00")).not.toBeInTheDocument();
-    expect(screen.getByText("11:00 - 11:15")).toBeInTheDocument();
+    expect(screen.getByText(/2 intervalos livres/)).toBeInTheDocument();
+    expect(screen.queryByText("10:00 - 11:00")).not.toBeInTheDocument();
+    expect(screen.getByText("09:00 - 10:00")).toBeInTheDocument();
+    expect(screen.getByText("11:00 - 12:00")).toBeInTheDocument();
   });
 
   it("não mistura expediente não configurado com estado de dia livre", () => {
@@ -238,10 +235,9 @@ describe("DailySchedule compact - visibilidade operacional", () => {
     );
 
     expect(screen.getByText("09:00 - 09:15")).toBeInTheDocument();
-    expect(screen.getByText("09:15 - 09:30")).toBeInTheDocument();
-    expect(screen.getByText("09:30 - 09:45")).toBeInTheDocument();
+    expect(screen.getByText("09:15 - 09:45")).toBeInTheDocument();
     expect(screen.getByText("09:45 - 10:00")).toBeInTheDocument();
-    expect(screen.getAllByText("Bloqueado por ausência")).toHaveLength(2);
+    expect(screen.getAllByText("Bloqueado por ausência")).toHaveLength(1);
   });
 
   it("mantém visível um atendimento curto fora do alinhamento de 30 minutos", () => {

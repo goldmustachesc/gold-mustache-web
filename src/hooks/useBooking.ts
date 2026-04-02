@@ -2,7 +2,7 @@
 
 import type {
   ServiceData,
-  TimeSlot,
+  BookingAvailability,
   CreateAppointmentInput,
   CreateGuestAppointmentInput,
   AppointmentWithDetails,
@@ -75,7 +75,7 @@ export function useSlots(
   return useQuery({
     queryKey: ["slots", date, barberId, serviceId],
     queryFn: () =>
-      apiGet<TimeSlot[]>(
+      apiGet<BookingAvailability>(
         `/api/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
       ),
     enabled: !!date && !!barberId && !!serviceId,
@@ -90,7 +90,7 @@ export function useBarberSlots(
   return useQuery({
     queryKey: ["barberSlots", date, barberId, serviceId],
     queryFn: () =>
-      apiGet<TimeSlot[]>(
+      apiGet<BookingAvailability>(
         `/api/barbers/me/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
       ),
     enabled: !!date && !!barberId && !!serviceId,
