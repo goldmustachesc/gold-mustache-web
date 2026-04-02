@@ -4,32 +4,17 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BarberDashboard } from "../BarberDashboard";
 
+const barberProfile = {
+  id: "barber-1",
+  name: "Carlos Silva",
+} as const;
+
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
   usePrivateHeader: vi.fn(),
-  userState: {
-    data: { id: "user-1" } as { id: string } | null,
-    isLoading: false,
-  },
-  barberState: {
-    data: { id: "barber-1", name: "Carlos Silva" } as {
-      id: string;
-      name: string;
-    } | null,
-    isLoading: false,
-  },
-  statsState: {
-    data: {
-      barber: {
-        todayAppointments: 2,
-        todayEarnings: 120,
-        weekAppointments: 8,
-        weekEarnings: 480,
-      },
-    },
-  },
+  useBarberAppointments: vi.fn(),
   appointmentsState: {
     data: [
       {
@@ -38,9 +23,12 @@ const mocks = vi.hoisted(() => ({
         startTime: "09:00",
         endTime: "09:30",
         status: "CONFIRMED",
-        service: { name: "Corte", price: 50 },
-        client: { fullName: "João" },
+        updatedAt: "2026-03-19T09:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
         guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
       },
     ],
     isLoading: false,
@@ -100,18 +88,6 @@ vi.mock("sonner", () => ({
   },
 }));
 
-vi.mock("@/hooks/useAuth", () => ({
-  useUser: () => mocks.userState,
-}));
-
-vi.mock("@/hooks/useBarberProfile", () => ({
-  useBarberProfile: () => mocks.barberState,
-}));
-
-vi.mock("@/hooks/useDashboardStats", () => ({
-  useDashboardStats: () => mocks.statsState,
-}));
-
 vi.mock("@/hooks/useBarberWorkingHours", () => ({
   useMyWorkingHours: () => mocks.workingHoursState,
 }));
@@ -121,7 +97,8 @@ vi.mock("@/hooks/useBarberAbsences", () => ({
 }));
 
 vi.mock("@/hooks/useBooking", () => ({
-  useBarberAppointments: () => mocks.appointmentsState,
+  useBarberAppointments: (...args: unknown[]) =>
+    mocks.useBarberAppointments(...args),
   useCancelAppointmentByBarber: () => mocks.cancelMutation,
   useMarkNoShow: () => mocks.noShowMutation,
   useMarkCompleted: () => mocks.completeMutation,
@@ -139,8 +116,23 @@ vi.mock("@/components/private/mobile-nav-layout", () => ({
 }));
 
 vi.mock("../BarberStatsCards", () => ({
-  BarberStatsCards: ({ hideValues }: { hideValues: boolean }) => (
-    <div data-testid="stats-cards">{hideValues ? "hidden" : "visible"}</div>
+  BarberStatsCards: ({
+    hideValues,
+    todayCount,
+    todayRevenue,
+    weekCount,
+    weekRevenue,
+  }: {
+    hideValues: boolean;
+    todayCount: number;
+    todayRevenue: number;
+    weekCount: number;
+    weekRevenue: number;
+  }) => (
+    <div data-testid="stats-cards">
+      {hideValues ? "hidden" : "visible"}:{todayCount}:{todayRevenue}:
+      {weekCount}:{weekRevenue}
+    </div>
   ),
 }));
 
@@ -233,46 +225,36 @@ vi.mock("@/utils/time-slots", async () => {
 describe("BarberDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.userState.data = { id: "user-1" };
-    mocks.userState.isLoading = false;
-    mocks.barberState.data = { id: "barber-1", name: "Carlos Silva" };
-    mocks.barberState.isLoading = false;
     mocks.appointmentsState.isLoading = false;
     mocks.absencesState.isLoading = false;
+    mocks.useBarberAppointments.mockImplementation(
+      () => mocks.appointmentsState,
+    );
     mocks.cancelMutation.mutateAsync.mockResolvedValue(undefined);
     mocks.noShowMutation.mutateAsync.mockResolvedValue(undefined);
     mocks.completeMutation.mutateAsync.mockResolvedValue(undefined);
   });
 
   it("mostra estado de loading enquanto os dados iniciais carregam", () => {
-    mocks.userState.isLoading = true;
+    mocks.appointmentsState.isLoading = true;
+    mocks.appointmentsState.data = [];
+    mocks.absencesState.isLoading = true;
+    mocks.absencesState.data = [];
 
-    render(<BarberDashboard locale="pt-BR" />);
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
 
-    expect(screen.getByText("Carregando...")).toBeInTheDocument();
+    expect(screen.queryByText("Carregando...")).not.toBeInTheDocument();
+    expect(screen.getByTestId("weekly-calendar")).toBeInTheDocument();
+    expect(screen.getByTestId("stats-cards-loading")).toBeInTheDocument();
+    expect(screen.getByTestId("daily-schedule-loading")).toBeInTheDocument();
   });
 
-  it("redireciona visitante para login", async () => {
-    mocks.userState.data = null;
+  it("renderiza uma unica instancia de calendario, cards e agenda", () => {
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
 
-    render(<BarberDashboard locale="pt-BR" />);
-
-    await waitFor(() => {
-      expect(mocks.push).toHaveBeenCalledWith("/pt-BR/login");
-    });
-  });
-
-  it("bloqueia usuario sem perfil de barbeiro", async () => {
-    mocks.barberState.data = null;
-
-    render(<BarberDashboard locale="pt-BR" />);
-
-    await waitFor(() => {
-      expect(mocks.toastError).toHaveBeenCalledWith(
-        "Acesso restrito a barbeiros",
-      );
-      expect(mocks.push).toHaveBeenCalledWith("/pt-BR/dashboard");
-    });
+    expect(screen.getAllByTestId("weekly-calendar")).toHaveLength(1);
+    expect(screen.getAllByTestId("stats-cards")).toHaveLength(1);
+    expect(screen.getAllByTestId("daily-schedule")).toHaveLength(1);
   });
 
   it("renderiza dashboard e alterna o estado de ocultar valores", async () => {
@@ -304,10 +286,10 @@ describe("BarberDashboard", () => {
       },
     ];
 
-    render(<BarberDashboard locale="pt-BR" />);
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
 
     expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent(
-      "visible",
+      "visible:1:50:1:50",
     );
     expect(screen.getAllByTestId("daily-schedule")[0]).toHaveTextContent(
       "appointments:1",
@@ -324,7 +306,7 @@ describe("BarberDashboard", () => {
   it("navega para criar agendamento e ausencia a partir do DailySchedule", async () => {
     const user = userEvent.setup();
 
-    render(<BarberDashboard locale="pt-BR" />);
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
 
     await user.click(screen.getAllByText("create-appointment")[0]);
     await user.click(screen.getAllByText("create-absence")[0]);
@@ -340,7 +322,7 @@ describe("BarberDashboard", () => {
   it("mostra toasts de sucesso para acoes do agendamento", async () => {
     const user = userEvent.setup();
 
-    render(<BarberDashboard locale="pt-BR" />);
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
 
     await user.click(screen.getAllByText("cancel-appointment")[0]);
     await user.click(screen.getAllByText("mark-no-show")[0]);
@@ -357,5 +339,216 @@ describe("BarberDashboard", () => {
         "Atendimento concluído com sucesso!",
       );
     });
+  });
+
+  it("deriva os cards do barbeiro a partir dos agendamentos semanais", () => {
+    mocks.appointmentsState.data = [
+      {
+        id: "apt-today-1",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T09:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+      {
+        id: "apt-today-2",
+        date: "2026-03-19",
+        startTime: "11:00",
+        endTime: "12:00",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T11:00:00.000Z",
+        createdAt: "2026-03-19T11:00:00.000Z",
+        service: { id: "svc-2", name: "Barba", duration: 60, price: 70 },
+        client: { id: "client-2", fullName: "Pedro", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+      {
+        id: "apt-week-1",
+        date: "2026-03-20",
+        startTime: "10:00",
+        endTime: "10:45",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-20T10:00:00.000Z",
+        createdAt: "2026-03-20T10:00:00.000Z",
+        service: { id: "svc-3", name: "Pigmentação", duration: 45, price: 60 },
+        client: { id: "client-3", fullName: "Marcos", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+      {
+        id: "apt-completed",
+        date: "2026-03-19",
+        startTime: "08:00",
+        endTime: "08:30",
+        status: "COMPLETED",
+        updatedAt: "2026-03-19T08:30:00.000Z",
+        createdAt: "2026-03-19T08:00:00.000Z",
+        service: { id: "svc-4", name: "Lavagem", duration: 30, price: 30 },
+        client: { id: "client-4", fullName: "Bruno", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent(
+      "visible:2:120:3:180",
+    );
+  });
+
+  it("mantem os cards ancorados na semana atual ao navegar para outra semana", async () => {
+    const user = userEvent.setup();
+    const currentWeekAppointments = [
+      {
+        id: "apt-current",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T09:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+    const nextWeekAppointments = [
+      {
+        id: "apt-next-1",
+        date: "2026-03-26",
+        startTime: "10:00",
+        endTime: "10:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-26T10:00:00.000Z",
+        createdAt: "2026-03-26T10:00:00.000Z",
+        service: { id: "svc-2", name: "Barba", duration: 30, price: 80 },
+        client: { id: "client-2", fullName: "Pedro", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+      {
+        id: "apt-next-2",
+        date: "2026-03-27",
+        startTime: "11:00",
+        endTime: "11:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-27T11:00:00.000Z",
+        createdAt: "2026-03-27T11:00:00.000Z",
+        service: { id: "svc-3", name: "Pigmentação", duration: 30, price: 100 },
+        client: { id: "client-3", fullName: "Marcos", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+
+    mocks.useBarberAppointments.mockImplementation(
+      (_barberId: string | null, startDate: Date | null) => {
+        const startKey = startDate?.toISOString().slice(0, 10);
+
+        if (startKey === "2026-03-22") {
+          return { data: nextWeekAppointments, isLoading: false };
+        }
+
+        return { data: currentWeekAppointments, isLoading: false };
+      },
+    );
+
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent(
+      "visible:1:50:1:50",
+    );
+
+    await user.click(screen.getByText("next-week"));
+
+    expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent(
+      "visible:1:50:1:50",
+    );
+  });
+
+  it("mostra skeleton ao voltar para a semana atual enquanto os dados atuais ainda estao refetchando", async () => {
+    const user = userEvent.setup();
+    const currentWeekAppointments = [
+      {
+        id: "apt-current",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T09:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+    const nextWeekAppointments = [
+      {
+        id: "apt-next",
+        date: "2026-03-26",
+        startTime: "10:00",
+        endTime: "10:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-26T10:00:00.000Z",
+        createdAt: "2026-03-26T10:00:00.000Z",
+        service: { id: "svc-2", name: "Barba", duration: 30, price: 80 },
+        client: { id: "client-2", fullName: "Pedro", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+    let phase: "current" | "next" | "returning" = "current";
+
+    mocks.useBarberAppointments.mockImplementation(
+      (_barberId: string | null, startDate: Date | null) => {
+        const startKey = startDate?.toISOString().slice(0, 10);
+
+        if (startKey === "2026-03-22") {
+          return {
+            data: nextWeekAppointments,
+            isLoading: false,
+            isFetching: phase === "next",
+          };
+        }
+
+        if (phase === "returning") {
+          return {
+            data: nextWeekAppointments,
+            isLoading: false,
+            isFetching: true,
+          };
+        }
+
+        return {
+          data: currentWeekAppointments,
+          isLoading: false,
+          isFetching: false,
+        };
+      },
+    );
+
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    phase = "next";
+    await user.click(screen.getByText("next-week"));
+    expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent(
+      "visible:1:50:1:50",
+    );
+
+    phase = "returning";
+    await user.click(screen.getByText("next-week"));
+
+    expect(screen.getByTestId("stats-cards-loading")).toBeInTheDocument();
+    expect(screen.getByTestId("daily-schedule-loading")).toBeInTheDocument();
   });
 });

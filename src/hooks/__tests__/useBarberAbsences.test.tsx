@@ -98,6 +98,65 @@ describe("useBarberAbsences", () => {
       expect(fetch).toHaveBeenCalledWith("/api/barbers/me/absences", undefined);
     });
   });
+
+  it("keeps previous absences while fetching a new date range", async () => {
+    let resolveSecondFetch: (() => void) | undefined;
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ data: [MOCK_ABSENCE] }),
+        })
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecondFetch = () =>
+                resolve({
+                  ok: true,
+                  json: () =>
+                    Promise.resolve({
+                      data: [
+                        { ...MOCK_ABSENCE, id: "a-2", date: "2026-04-12" },
+                      ],
+                    }),
+                });
+            }),
+        ),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ startDate, endDate }: { startDate: string; endDate: string }) =>
+        useBarberAbsences(startDate, endDate),
+      {
+        wrapper: createWrapper(),
+        initialProps: {
+          startDate: "2026-03-01",
+          endDate: "2026-03-31",
+        },
+      },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([MOCK_ABSENCE]);
+
+    rerender({
+      startDate: "2026-04-01",
+      endDate: "2026-04-30",
+    });
+
+    expect(result.current.data).toEqual([MOCK_ABSENCE]);
+
+    resolveSecondFetch?.();
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        { ...MOCK_ABSENCE, id: "a-2", date: "2026-04-12" },
+      ]);
+    });
+  });
 });
 
 describe("useCreateBarberAbsence", () => {

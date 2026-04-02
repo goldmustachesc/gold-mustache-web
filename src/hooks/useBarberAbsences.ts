@@ -41,6 +41,7 @@ export function useBarberAbsences(startDate?: string, endDate?: string) {
         `/api/barbers/me/absences${query ? `?${query}` : ""}`,
       ),
     staleTime: 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 }
 

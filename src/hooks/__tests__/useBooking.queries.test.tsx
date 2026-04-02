@@ -139,6 +139,58 @@ describe("useBarberAppointments", () => {
       undefined,
     );
   });
+
+  it("keeps previous barber appointments while fetching a new range", async () => {
+    let resolveSecondFetch: (() => void) | undefined;
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ data: [{ id: "apt-1" }] }),
+        })
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecondFetch = () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ data: [{ id: "apt-2" }] }),
+                });
+            }),
+        ),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ startDate, endDate }: { startDate: Date; endDate: Date }) =>
+        useBarberAppointments("b-1", startDate, endDate),
+      {
+        wrapper: createWrapper(),
+        initialProps: {
+          startDate: new Date("2026-03-01"),
+          endDate: new Date("2026-03-31"),
+        },
+      },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ id: "apt-1" }]);
+
+    rerender({
+      startDate: new Date("2026-04-01"),
+      endDate: new Date("2026-04-30"),
+    });
+
+    expect(result.current.data).toEqual([{ id: "apt-1" }]);
+
+    resolveSecondFetch?.();
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([{ id: "apt-2" }]);
+    });
+  });
 });
 
 describe("useGuestAppointments", () => {

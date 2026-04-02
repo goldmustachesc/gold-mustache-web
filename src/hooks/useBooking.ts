@@ -228,6 +228,7 @@ export function useBarberAppointments(
         `/api/appointments?barberId=${barberId}&startDate=${formatDateToString(startDate as Date)}&endDate=${formatDateToString(endDate as Date)}`,
       ),
     enabled: !!barberId && !!startDate && !!endDate,
+    placeholderData: (previousData) => previousData,
   });
 }
 
