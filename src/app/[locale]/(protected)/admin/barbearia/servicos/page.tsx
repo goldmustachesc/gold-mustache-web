@@ -151,15 +151,15 @@ export default function AdminServicesPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (profileError) {
     return (
-      <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-red-400">Erro ao carregar perfil.</p>
       </div>
     );
@@ -283,35 +283,43 @@ export default function AdminServicesPage() {
             {/* Sidebar - Desktop */}
             <aside className="hidden lg:block lg:w-3/12 space-y-4">
               {/* Stats Card */}
-              <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
-                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-amber-500" />
+              <div className="bg-card/50 rounded-xl border border-border p-4">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
                   Resumo dos Serviços
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Ativos</span>
+                    <span className="text-muted-foreground text-sm">
+                      Ativos
+                    </span>
                     <span className="font-semibold text-green-400">
                       {activeServices.length}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Inativos</span>
-                    <span className="font-semibold text-zinc-500">
+                    <span className="text-muted-foreground text-sm">
+                      Inativos
+                    </span>
+                    <span className="font-semibold text-muted-foreground">
                       {inactiveServices.length}
                     </span>
                   </div>
-                  <div className="border-t border-zinc-700/50 pt-3">
+                  <div className="border-t border-border pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400 text-sm">Preço médio</span>
-                      <span className="font-semibold text-amber-400">
+                      <span className="text-muted-foreground text-sm">
+                        Preço médio
+                      </span>
+                      <span className="font-semibold text-primary">
                         {formatPrice(avgPrice)}
                       </span>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Duração média</span>
-                    <span className="font-semibold text-amber-400">
+                    <span className="text-muted-foreground text-sm">
+                      Duração média
+                    </span>
+                    <span className="font-semibold text-primary">
                       {formatDuration(avgDuration)}
                     </span>
                   </div>
@@ -319,14 +327,14 @@ export default function AdminServicesPage() {
               </div>
 
               {/* Quick Links */}
-              <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
-                <h3 className="font-semibold text-white mb-3 text-sm">
+              <div className="bg-card/50 rounded-xl border border-border p-4">
+                <h3 className="font-semibold text-foreground mb-3 text-sm">
                   Outras Configurações
                 </h3>
                 <div className="space-y-2">
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                     onClick={() =>
                       router.push(`/${locale}/admin/barbearia/horarios`)
                     }
@@ -336,7 +344,7 @@ export default function AdminServicesPage() {
                   </Button>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                     onClick={() =>
                       router.push(`/${locale}/admin/barbearia/configuracoes`)
                     }
@@ -346,7 +354,7 @@ export default function AdminServicesPage() {
                   </Button>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                     onClick={() => router.push(`/${locale}/admin/barbeiros`)}
                   >
                     <Users className="h-4 w-4 mr-2" />
@@ -356,14 +364,14 @@ export default function AdminServicesPage() {
               </div>
 
               {/* Info Card */}
-              <div className="bg-gradient-to-br from-amber-500/10 to-yellow-600/5 rounded-xl border border-amber-500/20 p-4">
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20 p-4">
                 <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-amber-400 text-sm mb-1">
+                    <h4 className="font-medium text-primary text-sm mb-1">
                       Dica
                     </h4>
-                    <p className="text-xs text-zinc-400 leading-relaxed">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
                       Serviços inativos não aparecem para os clientes no
                       agendamento, mas o histórico é mantido.
                     </p>
@@ -377,26 +385,28 @@ export default function AdminServicesPage() {
               {/* Form Card */}
               <div
                 className={cn(
-                  "bg-zinc-800/50 rounded-xl border p-5 transition-all",
+                  "bg-card/50 rounded-xl border p-5 transition-all",
                   formMode === "edit"
-                    ? "border-amber-500/50 shadow-lg shadow-amber-500/5"
-                    : "border-zinc-700/50",
+                    ? "border-primary/50 shadow-lg shadow-primary/5"
+                    : "border-border",
                 )}
               >
                 <div className="flex items-center gap-2 mb-4">
                   {formMode === "create" ? (
                     <>
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
                         <Plus className="h-4 w-4 text-black" />
                       </div>
-                      <h2 className="font-semibold text-white">Novo Serviço</h2>
+                      <h2 className="font-semibold text-foreground">
+                        Novo Serviço
+                      </h2>
                     </>
                   ) : (
                     <>
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                        <Pencil className="h-4 w-4 text-white" />
+                        <Pencil className="h-4 w-4 text-foreground" />
                       </div>
-                      <h2 className="font-semibold text-white">
+                      <h2 className="font-semibold text-foreground">
                         Editar Serviço
                       </h2>
                     </>
@@ -408,7 +418,7 @@ export default function AdminServicesPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="name"
-                      className="text-sm text-zinc-400 flex items-center gap-1"
+                      className="text-sm text-muted-foreground flex items-center gap-1"
                     >
                       <Tag className="h-3 w-3" />
                       Nome *
@@ -421,7 +431,7 @@ export default function AdminServicesPage() {
                         setForm((prev) => ({ ...prev, name: e.target.value }))
                       }
                       className={cn(
-                        "bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-amber-500/50 focus:ring-amber-500/20",
+                        "bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20",
                         formErrors.name && "border-red-500/50",
                       )}
                     />
@@ -434,7 +444,7 @@ export default function AdminServicesPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="description"
-                      className="text-sm text-zinc-400"
+                      className="text-sm text-muted-foreground"
                     >
                       Descrição (opcional)
                     </Label>
@@ -448,7 +458,7 @@ export default function AdminServicesPage() {
                           description: e.target.value,
                         }))
                       }
-                      className="bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-amber-500/50 focus:ring-amber-500/20"
+                      className="bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20"
                     />
                   </div>
 
@@ -456,7 +466,7 @@ export default function AdminServicesPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="duration"
-                      className="text-sm text-zinc-400 flex items-center gap-1"
+                      className="text-sm text-muted-foreground flex items-center gap-1"
                     >
                       <Clock className="h-3 w-3" />
                       Duração *
@@ -470,7 +480,7 @@ export default function AdminServicesPage() {
                         }))
                       }
                     >
-                      <SelectTrigger className="w-full bg-card border-border text-foreground focus:border-amber-500/50 focus:ring-amber-500/20">
+                      <SelectTrigger className="w-full bg-card border-border text-foreground focus:border-primary/50 focus:ring-primary/20">
                         <SelectValue placeholder="Selecione a duração" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border">
@@ -491,7 +501,7 @@ export default function AdminServicesPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="price"
-                      className="text-sm text-zinc-400 flex items-center gap-1"
+                      className="text-sm text-muted-foreground flex items-center gap-1"
                     >
                       <DollarSign className="h-3 w-3" />
                       Preço (R$) *
@@ -504,7 +514,7 @@ export default function AdminServicesPage() {
                         setForm((prev) => ({ ...prev, price: e.target.value }))
                       }
                       className={cn(
-                        "bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-amber-500/50 focus:ring-amber-500/20",
+                        "bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20",
                         formErrors.price && "border-red-500/50",
                       )}
                     />
@@ -518,7 +528,7 @@ export default function AdminServicesPage() {
                   <Button
                     onClick={handleSubmit}
                     disabled={isMutating}
-                    className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-semibold"
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-black font-semibold"
                   >
                     {createService.isPending || updateService.isPending ? (
                       <>
@@ -538,7 +548,7 @@ export default function AdminServicesPage() {
                     <Button
                       variant="outline"
                       onClick={handleCancelEdit}
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                      className="border-border text-muted-foreground hover:bg-accent"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Cancelar
@@ -548,51 +558,59 @@ export default function AdminServicesPage() {
               </div>
 
               {/* Mobile Stats */}
-              <div className="lg:hidden bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
+              <div className="lg:hidden bg-card/50 rounded-xl border border-border p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="text-center">
                       <div className="text-lg font-bold text-green-400">
                         {activeServices.length}
                       </div>
-                      <div className="text-xs text-zinc-400">Ativos</div>
+                      <div className="text-xs text-muted-foreground">
+                        Ativos
+                      </div>
                     </div>
-                    <div className="w-px h-8 bg-zinc-700" />
+                    <div className="w-px h-8 bg-border" />
                     <div className="text-center">
-                      <div className="text-lg font-bold text-zinc-500">
+                      <div className="text-lg font-bold text-muted-foreground">
                         {inactiveServices.length}
                       </div>
-                      <div className="text-xs text-zinc-400">Inativos</div>
+                      <div className="text-xs text-muted-foreground">
+                        Inativos
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-semibold text-amber-400">
+                    <div className="text-sm font-semibold text-primary">
                       {formatPrice(avgPrice)}
                     </div>
-                    <div className="text-xs text-zinc-400">Preço médio</div>
+                    <div className="text-xs text-muted-foreground">
+                      Preço médio
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Services List */}
               <div className="space-y-4">
-                <h2 className="font-semibold text-white flex items-center gap-2">
-                  <Scissors className="h-4 w-4 text-amber-500" />
+                <h2 className="font-semibold text-foreground flex items-center gap-2">
+                  <Scissors className="h-4 w-4 text-primary" />
                   Serviços Cadastrados
                 </h2>
 
                 {servicesLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-                    <span className="ml-2 text-zinc-400">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">
                       Carregando serviços...
                     </span>
                   </div>
                 ) : services.length === 0 ? (
-                  <div className="bg-zinc-800/30 rounded-xl border border-zinc-700/50 p-8 text-center">
-                    <Scissors className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
-                    <p className="text-zinc-400">Nenhum serviço cadastrado.</p>
-                    <p className="text-zinc-500 text-sm">
+                  <div className="bg-card/30 rounded-xl border border-border p-8 text-center">
+                    <Scissors className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">
+                      Nenhum serviço cadastrado.
+                    </p>
+                    <p className="text-muted-foreground text-sm">
                       Crie o primeiro serviço usando o formulário acima.
                     </p>
                   </div>
@@ -604,16 +622,16 @@ export default function AdminServicesPage() {
                         className={cn(
                           "rounded-xl border p-4 transition-all duration-200",
                           service.active
-                            ? "bg-zinc-800/30 border-zinc-700/50 hover:border-zinc-600/50"
-                            : "bg-zinc-900/50 border-zinc-800/50 opacity-60",
+                            ? "bg-card/30 border-border hover:border-border"
+                            : "bg-background/50 border-border opacity-60",
                           editingId === service.id &&
-                            "border-amber-500/50 bg-amber-500/5",
+                            "border-primary/50 bg-primary/5",
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <h3 className="font-semibold text-white truncate">
+                              <h3 className="font-semibold text-foreground truncate">
                                 {service.name}
                               </h3>
                               <Badge
@@ -621,35 +639,35 @@ export default function AdminServicesPage() {
                                   "text-xs",
                                   service.active
                                     ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                    : "bg-zinc-700/50 text-zinc-500 border-zinc-600/30",
+                                    : "bg-muted/50 text-muted-foreground border-border",
                                 )}
                               >
                                 {service.active ? "Ativo" : "Inativo"}
                               </Badge>
                             </div>
                             {service.description && (
-                              <p className="text-sm text-zinc-400 mb-2 line-clamp-1">
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
                                 {service.description}
                               </p>
                             )}
                             <div className="flex items-center gap-3 text-sm">
-                              <span className="flex items-center gap-1 text-zinc-400">
+                              <span className="flex items-center gap-1 text-muted-foreground">
                                 <Clock className="h-3 w-3" />
                                 {formatDuration(service.duration)}
                               </span>
-                              <span className="font-semibold text-amber-400">
+                              <span className="font-semibold text-primary">
                                 {formatPrice(service.price)}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-700/30">
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
                           <Button
                             variant="ghost"
                             onClick={() => handleEdit(service)}
                             disabled={isMutating}
-                            className="flex-1 text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                            className="flex-1 text-muted-foreground hover:text-foreground hover:bg-accent"
                           >
                             <Pencil className="h-3.5 w-3.5 mr-1.5" />
                             Editar
@@ -661,8 +679,8 @@ export default function AdminServicesPage() {
                             className={cn(
                               "flex-1",
                               service.active
-                                ? "text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
-                                : "text-zinc-400 hover:text-green-400 hover:bg-green-500/10",
+                                ? "text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                                : "text-muted-foreground hover:text-green-400 hover:bg-green-500/10",
                             )}
                           >
                             {service.active ? (

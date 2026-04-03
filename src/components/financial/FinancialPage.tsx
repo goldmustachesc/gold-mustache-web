@@ -144,17 +144,17 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
             <aside className="hidden lg:block lg:w-3/12 space-y-4">
               {/* Revenue Summary Card */}
               {stats && (
-                <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/10 rounded-xl border border-amber-500/30 p-5">
+                <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/30 p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <DollarSign className="h-5 w-5 text-amber-500" />
-                    <span className="text-sm text-amber-400 font-medium">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <span className="text-sm text-primary font-medium">
                       Receita Total
                     </span>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-1">
+                  <div className="text-3xl font-bold text-foreground mb-1">
                     {formatCurrency(stats.totalRevenue)}
                   </div>
-                  <div className="text-sm text-zinc-400">
+                  <div className="text-sm text-muted-foreground">
                     {stats.totalAppointments} atendimentos
                   </div>
                 </div>
@@ -162,37 +162,41 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
 
               {/* Quick Stats */}
               {stats && (
-                <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
-                  <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-amber-500" />
+                <div className="bg-muted rounded-xl border border-border p-4">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
                     Resumo do Período
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400 text-sm">
+                      <span className="text-muted-foreground text-sm">
                         Ticket Médio
                       </span>
-                      <span className="font-semibold text-amber-400">
+                      <span className="font-semibold text-primary">
                         {formatCurrency(stats.ticketMedio)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400 text-sm">Ocupação</span>
-                      <span className="font-semibold text-white">
+                      <span className="text-muted-foreground text-sm">
+                        Ocupação
+                      </span>
+                      <span className="font-semibold text-foreground">
                         {stats.occupancyRate}%
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400 text-sm">Clientes</span>
-                      <span className="font-semibold text-white">
+                      <span className="text-muted-foreground text-sm">
+                        Clientes
+                      </span>
+                      <span className="font-semibold text-foreground">
                         {stats.uniqueClients}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400 text-sm">
+                      <span className="text-muted-foreground text-sm">
                         Horas Trabalhadas
                       </span>
-                      <span className="font-semibold text-white">
+                      <span className="font-semibold text-foreground">
                         {stats.workedHours}h
                       </span>
                     </div>
@@ -201,8 +205,8 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
               )}
 
               {/* Quick Links */}
-              <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
-                <h3 className="font-semibold text-white mb-3 text-sm">
+              <div className="bg-muted rounded-xl border border-border p-4">
+                <h3 className="font-semibold text-foreground mb-3 text-sm">
                   Outras Configurações
                 </h3>
                 <div className="space-y-2">
@@ -210,7 +214,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                     <>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/admin/barbeiros`}>
@@ -220,7 +224,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/admin/barbearia/servicos`}>
@@ -230,7 +234,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/admin/barbearia/horarios`}>
@@ -240,7 +244,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/admin/barbearia/configuracoes`}>
@@ -253,7 +257,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                     <>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/barbeiro`}>
@@ -263,7 +267,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/barbeiro/horarios`}>
@@ -273,7 +277,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-700/50"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
                         asChild
                       >
                         <Link href={`/${locale}/barbeiro/ausencias`}>
@@ -287,14 +291,14 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
               </div>
 
               {/* Info Card */}
-              <div className="bg-gradient-to-br from-amber-500/10 to-yellow-600/5 rounded-xl border border-amber-500/20 p-4">
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20 p-4">
                 <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-amber-400 text-sm mb-1">
+                    <h4 className="font-medium text-primary text-sm mb-1">
                       Relatório PDF
                     </h4>
-                    <p className="text-xs text-zinc-400 leading-relaxed">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
                       Clique em &quot;Gerar PDF&quot; para exportar um relatório
                       completo do período selecionado.
                     </p>
@@ -306,7 +310,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
             {/* Main Content */}
             <div className="lg:w-9/12 space-y-6">
               {/* Month Selector */}
-              <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
+              <div className="bg-muted rounded-xl border border-border p-4">
                 <MonthSelector
                   months={months}
                   selectedMonth={selectedMonth}
@@ -317,8 +321,8 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
 
               {/* Admin: Barber Selector */}
               {isAdmin && barbers.length > 0 && (
-                <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4">
-                  <span className="text-sm text-zinc-400 mb-2 block">
+                <div className="bg-muted rounded-xl border border-border p-4">
+                  <span className="text-sm text-muted-foreground mb-2 block">
                     Filtrar por Barbeiro
                   </span>
                   <Select
@@ -327,13 +331,13 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       setSelectedBarberId(value === "all" ? undefined : value)
                     }
                   >
-                    <SelectTrigger className="w-full max-w-xs bg-zinc-900/50 border-zinc-700/50 text-white focus:border-amber-500/50 focus:ring-amber-500/20">
+                    <SelectTrigger className="w-full max-w-xs bg-background border-border text-foreground focus:border-primary/50 focus:ring-primary/20">
                       <SelectValue placeholder="Selecione o barbeiro" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectContent className="bg-card border-border">
                       <SelectItem
                         value="all"
-                        className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                        className="text-foreground hover:bg-accent focus:bg-accent"
                       >
                         Todos os Barbeiros
                       </SelectItem>
@@ -341,7 +345,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                         <SelectItem
                           key={barber.id}
                           value={barber.id}
-                          className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                          className="text-foreground hover:bg-accent focus:bg-accent"
                         >
                           {barber.name}
                         </SelectItem>
@@ -354,62 +358,62 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
               {/* Content */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : error ? (
-                <div className="bg-zinc-800/30 rounded-xl border border-red-500/30 p-8 text-center">
+                <div className="bg-muted rounded-xl border border-red-500/30 p-8 text-center">
                   <p className="text-red-400 font-medium">
                     Erro ao carregar dados
                   </p>
-                  <p className="text-zinc-500 text-sm mt-1">
+                  <p className="text-muted-foreground text-sm mt-1">
                     Tente novamente mais tarde
                   </p>
                 </div>
               ) : stats ? (
                 <div className="space-y-6">
                   {/* Mobile Revenue Summary */}
-                  <div className="lg:hidden bg-gradient-to-br from-amber-500/20 to-yellow-600/10 rounded-xl border border-amber-500/30 p-5">
+                  <div className="lg:hidden bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/30 p-5">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-amber-400 uppercase tracking-wide">
+                      <span className="text-sm text-primary uppercase tracking-wide">
                         Balanço Serviços
                       </span>
                       {isAdmin && barberName && (
-                        <span className="text-xs text-zinc-400">
+                        <span className="text-xs text-muted-foreground">
                           {barberName}
                         </span>
                       )}
                     </div>
-                    <div className="text-4xl font-bold text-white">
+                    <div className="text-4xl font-bold text-foreground">
                       {formatCurrency(stats.totalRevenue)}
                     </div>
-                    <div className="text-zinc-400">
+                    <div className="text-muted-foreground">
                       {stats.totalAppointments} atendimentos
                     </div>
                   </div>
 
                   {/* Desktop Revenue Summary */}
-                  <div className="hidden lg:block bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-6">
+                  <div className="hidden lg:block bg-muted rounded-xl border border-border p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
                           <BarChart3 className="h-5 w-5 text-black" />
                         </div>
                         <div>
-                          <span className="text-sm text-zinc-400 uppercase tracking-wide block">
+                          <span className="text-sm text-muted-foreground uppercase tracking-wide block">
                             Balanço Serviços
                           </span>
                           {isAdmin && barberName && (
-                            <span className="text-xs text-amber-400">
+                            <span className="text-xs text-primary">
                               {barberName}
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-4xl font-bold text-white">
+                        <div className="text-4xl font-bold text-foreground">
                           {formatCurrency(stats.totalRevenue)}
                         </div>
-                        <div className="text-zinc-400">
+                        <div className="text-muted-foreground">
                           {stats.totalAppointments} atendimentos
                         </div>
                       </div>
@@ -417,20 +421,20 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                   </div>
 
                   {/* Daily Revenue Chart */}
-                  <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-6">
+                  <div className="bg-muted rounded-xl border border-border p-6">
                     <RevenueChart dailyRevenue={stats.dailyRevenue} />
                   </div>
 
                   {/* Filter and PDF buttons - Mobile */}
                   <div className="lg:hidden flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-zinc-500 uppercase">
+                      <span className="text-xs text-muted-foreground uppercase">
                         Filtro:
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-xs border-zinc-700 text-zinc-400"
+                        className="text-xs border-border text-muted-foreground"
                         disabled
                       >
                         <Calendar className="h-3 w-3 mr-1" />
@@ -442,7 +446,7 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
                       size="sm"
                       onClick={handleGeneratePdf}
                       disabled={isGeneratingPdf}
-                      className="text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                      className="text-xs border-border text-muted-foreground hover:bg-accent"
                     >
                       {isGeneratingPdf ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />

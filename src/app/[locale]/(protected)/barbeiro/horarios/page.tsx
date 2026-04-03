@@ -7,6 +7,7 @@ import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useUser } from "@/hooks/useAuth";
 import { useBarberProfile } from "@/hooks/useBarberProfile";
 import {
@@ -326,16 +327,12 @@ export default function BarberWorkingHoursPage() {
                           {dayInfo?.label}
                         </span>
                       </div>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center gap-2 text-sm">
+                        <Switch
                           checked={day.isWorking}
-                          onChange={(e) =>
-                            updateDay(day.dayOfWeek, {
-                              isWorking: e.target.checked,
-                            })
+                          onCheckedChange={(checked) =>
+                            updateDay(day.dayOfWeek, { isWorking: checked })
                           }
-                          className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
                         />
                         <span
                           className={cn(
@@ -346,7 +343,7 @@ export default function BarberWorkingHoursPage() {
                         >
                           Ativo
                         </span>
-                      </label>
+                      </div>
                     </div>
 
                     <div
@@ -398,21 +395,17 @@ export default function BarberWorkingHoursPage() {
                         </div>
                       </div>
 
-                      <label className="flex items-center gap-2 text-sm cursor-pointer p-3 min-h-11 rounded-lg bg-background/50 border border-border hover:border-border transition-colors">
+                      <div className="flex items-center gap-2 text-sm p-3 min-h-11 rounded-lg bg-background/50 border border-border">
                         <Coffee className="h-4 w-4 text-muted-foreground" />
-                        <input
-                          type="checkbox"
+                        <Switch
                           checked={day.hasBreak}
-                          onChange={(e) =>
-                            updateDay(day.dayOfWeek, {
-                              hasBreak: e.target.checked,
-                            })
+                          onCheckedChange={(checked) =>
+                            updateDay(day.dayOfWeek, { hasBreak: checked })
                           }
                           disabled={!day.isWorking}
-                          className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
                         />
                         <span className="text-muted-foreground">Intervalo</span>
-                      </label>
+                      </div>
 
                       <div
                         className={cn(

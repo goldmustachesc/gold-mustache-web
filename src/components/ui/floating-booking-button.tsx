@@ -19,7 +19,7 @@ export function FloatingBookingButton() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-40 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <Button
         size="lg"
         className="rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-semibold px-6 py-3 h-auto"

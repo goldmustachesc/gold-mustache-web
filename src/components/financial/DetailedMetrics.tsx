@@ -28,19 +28,19 @@ interface MetricRowProps {
 
 function MetricRow({ label, value, icon, highlight }: MetricRowProps) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-zinc-700/30 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
       <div className="flex items-center gap-2">
-        <span className={highlight ? "text-amber-500" : "text-zinc-500"}>
+        <span className={highlight ? "text-primary" : "text-muted-foreground"}>
           {icon}
         </span>
-        <span className="text-sm text-zinc-400 uppercase tracking-wide">
+        <span className="text-sm text-muted-foreground uppercase tracking-wide">
           {label}
         </span>
       </div>
       <span
         className={cn(
           "text-sm font-semibold",
-          highlight ? "text-amber-400" : "text-white",
+          highlight ? "text-primary" : "text-foreground",
         )}
       >
         {value}
@@ -59,12 +59,12 @@ export function DetailedMetrics({
 }: DetailedMetricsProps) {
   return (
     <div className={cn("space-y-3", className)}>
-      <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wide flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-amber-500" />
+      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-primary" />
         Mais Dados
       </h3>
 
-      <div className="bg-zinc-800/50 rounded-xl px-4 border border-zinc-700/50">
+      <div className="bg-muted rounded-xl px-4 border border-border">
         <MetricRow
           label="Clientes Únicos"
           value={String(uniqueClients)}

@@ -41,18 +41,18 @@ export function RevenueChart({ dailyRevenue, className }: RevenueChartProps) {
     <div className={cn("relative", className)}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="h-4 w-4 text-amber-500" />
-        <span className="text-sm font-medium text-zinc-400 uppercase tracking-wide">
+        <TrendingUp className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           Receita Diária
         </span>
       </div>
 
       {/* Scroll indicators */}
       {canScrollLeft && (
-        <div className="absolute left-0 top-12 bottom-12 w-8 bg-gradient-to-r from-zinc-800/80 to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-12 bottom-12 w-8 bg-gradient-to-r from-muted to-transparent z-10 pointer-events-none" />
       )}
       {canScrollRight && (
-        <div className="absolute right-0 top-12 bottom-12 w-8 bg-gradient-to-l from-zinc-800/80 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-12 bottom-12 w-8 bg-gradient-to-l from-muted to-transparent z-10 pointer-events-none" />
       )}
 
       {/* Chart container */}
@@ -84,8 +84,8 @@ export function RevenueChart({ dailyRevenue, className }: RevenueChartProps) {
                   className={cn(
                     "absolute inset-0 rounded-t-sm transition-colors",
                     hasRevenue
-                      ? "bg-gradient-to-t from-amber-600 to-amber-400 group-hover:from-amber-500 group-hover:to-yellow-400"
-                      : "bg-zinc-700",
+                      ? "bg-gradient-to-t from-primary to-primary/70 group-hover:from-primary/90 group-hover:to-primary/60"
+                      : "bg-accent",
                   )}
                 />
               </div>
@@ -95,8 +95,8 @@ export function RevenueChart({ dailyRevenue, className }: RevenueChartProps) {
                 className={cn(
                   "text-xs font-medium transition-colors",
                   hasRevenue
-                    ? "text-zinc-400 group-hover:text-amber-400"
-                    : "text-zinc-600",
+                    ? "text-muted-foreground group-hover:text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 {String(day).padStart(2, "0")}
@@ -107,12 +107,12 @@ export function RevenueChart({ dailyRevenue, className }: RevenueChartProps) {
       </div>
 
       {/* Scroll hint */}
-      <div className="flex items-center justify-center gap-2 mt-2 text-xs text-zinc-500">
-        <div className="w-8 h-px bg-zinc-700" />
+      <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">
+        <div className="w-8 h-px bg-border" />
         <span className="uppercase tracking-wider">
           Arraste para o lado para ver mais
         </span>
-        <div className="w-8 h-px bg-zinc-700" />
+        <div className="w-8 h-px bg-border" />
       </div>
     </div>
   );

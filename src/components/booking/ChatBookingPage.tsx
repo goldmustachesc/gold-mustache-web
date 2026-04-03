@@ -905,7 +905,7 @@ export function ChatBookingPage({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)]">
+    <div className="flex flex-col h-[calc(100dvh-120px)]">
       {/* Header */}
       <div className="flex items-center justify-between py-3 px-1 border-b border-zinc-300/50 dark:border-zinc-800/50">
         <div className="flex items-center gap-2.5">

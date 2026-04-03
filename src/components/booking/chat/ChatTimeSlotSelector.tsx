@@ -158,20 +158,22 @@ export function ChatTimeSlotSelector({
         )}
       </div>
 
-      <Button
-        type="button"
-        className="w-full"
-        disabled={!selectedTime || selectedTimeError !== null}
-        onClick={() =>
-          onSelect({
-            time: selectedTime,
-            available: true,
-            barberId: availability?.barberId,
-          })
-        }
-      >
-        Confirmar horário
-      </Button>
+      <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-4 -mx-4 mt-4 lg:static lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:p-0 lg:mx-0 lg:mt-6">
+        <Button
+          type="button"
+          className="w-full"
+          disabled={!selectedTime || selectedTimeError !== null}
+          onClick={() =>
+            onSelect({
+              time: selectedTime,
+              available: true,
+              barberId: availability?.barberId,
+            })
+          }
+        >
+          Confirmar horário
+        </Button>
+      </div>
     </div>
   );
 }
