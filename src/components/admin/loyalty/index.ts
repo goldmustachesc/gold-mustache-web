@@ -1,0 +1,1 @@
+export { AdminLoyaltyPage } from "./AdminLoyaltyPage";
