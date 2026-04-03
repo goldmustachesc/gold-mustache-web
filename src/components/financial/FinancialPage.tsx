@@ -39,7 +39,6 @@ import { RevenueChart } from "./RevenueChart";
 import { ServiceBreakdown } from "./ServiceBreakdown";
 import { MetricCards } from "./MetricCards";
 import { DetailedMetrics } from "./DetailedMetrics";
-import { generateFinancialPDF } from "@/lib/pdf/financial-report";
 import type { FinancialStats } from "@/types/financial";
 import Link from "next/link";
 
@@ -101,6 +100,9 @@ export function FinancialPage({ locale, isAdmin = false }: FinancialPageProps) {
 
     setIsGeneratingPdf(true);
     try {
+      const { generateFinancialPDF } = await import(
+        "@/lib/pdf/financial-report"
+      );
       await generateFinancialPDF(
         stats,
         selectedMonth,

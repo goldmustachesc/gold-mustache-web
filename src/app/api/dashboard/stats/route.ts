@@ -39,6 +39,7 @@ export async function GET(request: Request) {
       }),
       prisma.barber.findUnique({
         where: { userId: user.id },
+        select: { id: true, name: true, avatarUrl: true, active: true },
       }),
     ]);
 

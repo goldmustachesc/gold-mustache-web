@@ -12,17 +12,28 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     loyaltyAccount: {
       findMany: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({
-  getAuthUserEmailMap: vi.fn(),
+  getAuthUserEmailsByIds: vi.fn(),
 }));
 
 import { GET } from "../route";
 
 const NOW = new Date("2026-03-01T12:00:00.000Z");
+
+function makeRequest(params?: Record<string, string>): Request {
+  const url = new URL("http://localhost:3001/api/admin/loyalty/accounts");
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      url.searchParams.set(k, v);
+    }
+  }
+  return new Request(url);
+}
 
 function adminAuthenticated() {
   mockRequireAdmin.mockResolvedValue({
@@ -59,7 +70,7 @@ describe("GET /api/admin/loyalty/accounts", () => {
   it("should return 401 when not admin", async () => {
     adminUnauthorized();
 
-    const response = await GET();
+    const response = await GET(makeRequest());
 
     expect(response.status).toBe(401);
   });
@@ -67,7 +78,7 @@ describe("GET /api/admin/loyalty/accounts", () => {
   it("should return 200 with accounts list including email", async () => {
     adminAuthenticated();
     const { prisma } = await import("@/lib/prisma");
-    const { getAuthUserEmailMap } = await import("@/lib/supabase/admin");
+    const { getAuthUserEmailsByIds } = await import("@/lib/supabase/admin");
 
     const mockAccounts = [
       {
@@ -95,19 +106,20 @@ describe("GET /api/admin/loyalty/accounts", () => {
     vi.mocked(prisma.loyaltyAccount.findMany).mockResolvedValue(
       mockAccounts as never,
     );
-    vi.mocked(getAuthUserEmailMap).mockResolvedValue(
+    vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(2);
+    vi.mocked(getAuthUserEmailsByIds).mockResolvedValue(
       new Map([
         ["user-1", "john@example.com"],
         ["user-2", "jane@example.com"],
       ]),
     );
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json.data).toHaveLength(2);
-    expect(json.data[0]).toMatchObject({
+    expect(json.data.data).toHaveLength(2);
+    expect(json.data.data[0]).toMatchObject({
       id: "acc-1",
       userId: "user-1",
       fullName: "John Doe",
@@ -115,7 +127,7 @@ describe("GET /api/admin/loyalty/accounts", () => {
       points: 500,
       tier: "GOLD",
     });
-    expect(json.data[1]).toMatchObject({
+    expect(json.data.data[1]).toMatchObject({
       id: "acc-2",
       userId: "user-2",
       fullName: "Sem nome",
@@ -123,20 +135,26 @@ describe("GET /api/admin/loyalty/accounts", () => {
       points: 100,
       tier: "BRONZE",
     });
+    expect(json.data.meta).toMatchObject({
+      page: 1,
+      total: 2,
+      totalPages: 1,
+    });
   });
 
   it("should return empty list when no accounts exist", async () => {
     adminAuthenticated();
     const { prisma } = await import("@/lib/prisma");
-    const { getAuthUserEmailMap } = await import("@/lib/supabase/admin");
+    const { getAuthUserEmailsByIds } = await import("@/lib/supabase/admin");
 
     vi.mocked(prisma.loyaltyAccount.findMany).mockResolvedValue([]);
-    vi.mocked(getAuthUserEmailMap).mockResolvedValue(new Map());
+    vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(0);
+    vi.mocked(getAuthUserEmailsByIds).mockResolvedValue(new Map());
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json.data).toEqual([]);
+    expect(json.data.data).toEqual([]);
   });
 });

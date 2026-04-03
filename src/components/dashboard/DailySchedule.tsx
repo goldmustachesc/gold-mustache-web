@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -136,38 +136,46 @@ export function DailySchedule({
     availableSlotCount,
   } = operationalModel;
 
-  const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
-    setSelectedAppointment(appointment);
-    setSheetOpen(true);
-  };
+  const handleOpenAppointmentDetail = useCallback(
+    (appointment: AppointmentWithDetails) => {
+      setSelectedAppointment(appointment);
+      setSheetOpen(true);
+    },
+    [],
+  );
 
-  const handleOpenSlotSheet = (start: string, end: string) => {
+  const handleOpenSlotSheet = useCallback((start: string, end: string) => {
     setSlotSheetSlot({ start, end });
-  };
+  }, []);
 
-  const handleSelectTimeFromSlotSheet = (time: string) => {
-    setSlotSheetSlot(null);
-    onCreateAppointmentFromSlot?.(time);
-  };
+  const handleSelectTimeFromSlotSheet = useCallback(
+    (time: string) => {
+      setSlotSheetSlot(null);
+      onCreateAppointmentFromSlot?.(time);
+    },
+    [onCreateAppointmentFromSlot],
+  );
 
-  const handleAbsenceFromSlotSheet = (startTime: string, endTime: string) => {
-    setSlotSheetSlot(null);
-    onCreateAbsenceFromSlot?.(startTime, endTime);
-  };
+  const handleAbsenceFromSlotSheet = useCallback(
+    (startTime: string, endTime: string) => {
+      setSlotSheetSlot(null);
+      onCreateAbsenceFromSlot?.(startTime, endTime);
+    },
+    [onCreateAbsenceFromSlot],
+  );
 
-  const handleCloseSheet = (open: boolean) => {
+  const handleCloseSheet = useCallback((open: boolean) => {
     setSheetOpen(open);
     if (!open) {
-      // Limpa o appointment selecionado após a animação de fechamento
       setTimeout(() => setSelectedAppointment(null), 300);
     }
-  };
+  }, []);
 
   const formatDate = (d: Date) => {
     return formatDateDdMmYyyyInSaoPaulo(d);
   };
 
-  const handleSendReminder = async (appointmentId: string) => {
+  const handleSendReminder = useCallback(async (appointmentId: string) => {
     setSendingReminderId(appointmentId);
     try {
       const payload = await apiMutate<{
@@ -192,7 +200,7 @@ export function DailySchedule({
     } finally {
       setSendingReminderId(null);
     }
-  };
+  }, []);
 
   // Group appointments by hour for timeline view
   const appointmentsByHour = sortedAppointments.reduce(
@@ -209,23 +217,41 @@ export function DailySchedule({
     (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
   );
 
-  const compactAppointmentCardProps = {
-    onOpenDetail: handleOpenAppointmentDetail,
-    onSendReminder: handleSendReminder,
-    sendingReminderId,
-    onCancelAppointment,
-    isCancelling,
-    cancellingId,
-    onMarkNoShow,
-    isMarkingNoShow,
-    markingNoShowId,
-    onMarkComplete,
-    isMarkingComplete,
-    markingCompleteId,
-    hideValues,
-    maskedValue,
-    operationalNow,
-  };
+  const compactAppointmentCardProps = useMemo(
+    () => ({
+      onOpenDetail: handleOpenAppointmentDetail,
+      onSendReminder: handleSendReminder,
+      sendingReminderId,
+      onCancelAppointment,
+      isCancelling,
+      cancellingId,
+      onMarkNoShow,
+      isMarkingNoShow,
+      markingNoShowId,
+      onMarkComplete,
+      isMarkingComplete,
+      markingCompleteId,
+      hideValues,
+      maskedValue,
+      operationalNow,
+    }),
+    [
+      handleOpenAppointmentDetail,
+      handleSendReminder,
+      sendingReminderId,
+      onCancelAppointment,
+      isCancelling,
+      cancellingId,
+      onMarkNoShow,
+      isMarkingNoShow,
+      markingNoShowId,
+      onMarkComplete,
+      isMarkingComplete,
+      markingCompleteId,
+      hideValues,
+      operationalNow,
+    ],
+  );
 
   if (variant === "compact") {
     const fullDayAbsenceReason = fullDayAbsence?.reason?.trim() ?? null;

@@ -69,6 +69,7 @@ export function LoadingElevator({
             src="/logo.png"
             alt="Gold Mustache"
             fill
+            sizes="(max-width: 768px) 192px, (max-width: 1024px) 256px, 320px"
             className="object-contain"
             style={{
               filter:

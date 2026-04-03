@@ -26,9 +26,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  const { supabaseResponse, user } = await updateSession(request);
-
   if (pathname.startsWith("/api")) {
+    const { supabaseResponse } = await updateSession(request);
     return supabaseResponse;
   }
 
@@ -41,6 +40,14 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.some((route) =>
     pathnameWithoutLocale.startsWith(route),
   );
+
+  const needsSession = isProtectedRoute || isAuthRoute;
+
+  if (!needsSession) {
+    return intlMiddleware(request);
+  }
+
+  const { supabaseResponse, user } = await updateSession(request);
 
   if (isProtectedRoute && !user) {
     const locale = pathname.split("/")[1] || defaultLocale;

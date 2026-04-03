@@ -18,11 +18,20 @@ export interface AdminLoyaltyAccount {
   tier: LoyaltyTier;
 }
 
-export function useAdminLoyaltyAccounts() {
+interface PaginatedAccountsResponse {
+  data: AdminLoyaltyAccount[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export function useAdminLoyaltyAccounts(page = 1, limit = 50) {
   return useQuery({
-    queryKey: ["admin", "loyalty", "accounts"],
-    queryFn: () => apiGet<AdminLoyaltyAccount[]>("/api/admin/loyalty/accounts"),
+    queryKey: ["admin", "loyalty", "accounts", { page, limit }],
+    queryFn: () =>
+      apiGet<PaginatedAccountsResponse>(
+        `/api/admin/loyalty/accounts?page=${page}&limit=${limit}`,
+      ),
     staleTime: 60 * 1000,
+    select: (response) => response.data,
   });
 }
 
@@ -46,38 +55,40 @@ export function useAdminAdjustPoints() {
     onMutate: async ({ accountId, points }) => {
       await queryClient.cancelQueries({
         queryKey: ["admin", "loyalty", "accounts"],
+        exact: false,
       });
-      const previousAccounts = queryClient.getQueryData([
-        "admin",
-        "loyalty",
-        "accounts",
-      ]);
+      const previousQueries = queryClient.getQueriesData({
+        queryKey: ["admin", "loyalty", "accounts"],
+      });
 
-      queryClient.setQueryData(
-        ["admin", "loyalty", "accounts"],
-        (old: AdminLoyaltyAccount[] | undefined) => {
-          if (!old) return old;
-          return old.map((acc: AdminLoyaltyAccount) =>
-            acc.id === accountId
-              ? { ...acc, points: Math.max(0, acc.points + points) }
-              : acc,
-          );
+      queryClient.setQueriesData(
+        { queryKey: ["admin", "loyalty", "accounts"] },
+        (old: PaginatedAccountsResponse | undefined) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.map((acc) =>
+              acc.id === accountId
+                ? { ...acc, points: Math.max(0, acc.points + points) }
+                : acc,
+            ),
+          };
         },
       );
 
-      return { previousAccounts };
+      return { previousQueries };
     },
     onError: (_err, _variables, context) => {
-      if (context?.previousAccounts) {
-        queryClient.setQueryData(
-          ["admin", "loyalty", "accounts"],
-          context.previousAccounts,
-        );
+      if (context?.previousQueries) {
+        for (const [key, data] of context.previousQueries) {
+          queryClient.setQueryData(key, data);
+        }
       }
     },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "accounts"],
+        exact: false,
       });
     },
   });

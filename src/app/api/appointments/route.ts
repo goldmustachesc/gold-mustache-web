@@ -50,9 +50,9 @@ export async function GET(request: Request) {
 
     const { startDate, endDate, barberId } = queryValidation.data;
 
-    // Check if user is a barber
     const barber = await prisma.barber.findUnique({
       where: { userId: user.id },
+      select: { id: true },
     });
 
     if (barber && barberId === barber.id) {

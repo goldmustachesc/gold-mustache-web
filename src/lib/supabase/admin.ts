@@ -63,6 +63,8 @@ export async function findAuthUserByEmail(
 /**
  * Builds a userId → email lookup map for all Supabase Auth users.
  * Useful for batch-resolving emails (e.g., admin loyalty dashboard).
+ *
+ * @deprecated Prefer {@link getAuthUserEmailsByIds} for paginated endpoints.
  */
 export async function getAuthUserEmailMap(): Promise<Map<string, string>> {
   const map = new Map<string, string>();
@@ -86,6 +88,30 @@ export async function getAuthUserEmailMap(): Promise<Map<string, string>> {
 
     if (data.users.length < perPage) break;
     page++;
+  }
+
+  return map;
+}
+
+/**
+ * Resolves emails for a specific set of user IDs via individual lookups.
+ * Much cheaper than {@link getAuthUserEmailMap} when the set is small (e.g. a single page).
+ */
+export async function getAuthUserEmailsByIds(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const admin = getSupabaseAdmin();
+  if (!admin || userIds.length === 0) return map;
+
+  const results = await Promise.all(
+    userIds.map((id) => admin.auth.admin.getUserById(id)),
+  );
+
+  for (const { data, error } of results) {
+    if (!error && data?.user?.email) {
+      map.set(data.user.id, data.user.email);
+    }
   }
 
   return map;

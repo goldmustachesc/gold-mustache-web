@@ -194,7 +194,14 @@ export async function getDashboardStatsData({
     shouldLoadClientStats
       ? prisma.appointment.findMany({
           where: { clientId: profile.id },
-          include: { barber: true, service: true },
+          include: {
+            barber: {
+              select: { id: true, name: true, avatarUrl: true },
+            },
+            service: {
+              select: { id: true, name: true, duration: true, price: true },
+            },
+          },
           orderBy: { date: "desc" },
           take: MAX_CLIENT_HISTORY,
         })
@@ -205,7 +212,13 @@ export async function getDashboardStatsData({
             barberId: barberProfile.id,
             date: { gte: startOfWeek, lte: endOfWeek },
           },
-          include: { client: true, guestClient: true, service: true },
+          include: {
+            client: { select: { fullName: true } },
+            guestClient: { select: { fullName: true } },
+            service: {
+              select: { name: true, price: true, duration: true },
+            },
+          },
           orderBy: [{ date: "asc" }, { startTime: "asc" }],
         })
       : Promise.resolve(null),

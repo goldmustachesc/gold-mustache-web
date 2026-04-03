@@ -8,18 +8,23 @@ import {
   useAdminToggleReward,
 } from "../useAdminLoyalty";
 
-const accountsResponse = {
-  data: [
-    {
-      id: "acc-1",
-      userId: "user-1",
-      fullName: "Carlos Silva",
-      email: "carlos@test.com",
-      points: 100,
-      tier: "SILVER",
-    },
-  ],
+const accountsApiResponse = {
+  data: {
+    data: [
+      {
+        id: "acc-1",
+        userId: "user-1",
+        fullName: "Carlos Silva",
+        email: "carlos@test.com",
+        points: 100,
+        tier: "SILVER",
+      },
+    ],
+    meta: { page: 1, limit: 50, total: 1, totalPages: 1 },
+  },
 };
+
+const accountsData = accountsApiResponse.data.data;
 
 const rewardsResponse = {
   data: [
@@ -65,7 +70,7 @@ describe("useAdminLoyaltyAccounts", () => {
   });
 
   it("busca a lista de contas de fidelidade do admin", async () => {
-    stubFetchOk(accountsResponse);
+    stubFetchOk(accountsApiResponse);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -77,10 +82,10 @@ describe("useAdminLoyaltyAccounts", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(fetch).toHaveBeenCalledWith(
-      "/api/admin/loyalty/accounts",
+      "/api/admin/loyalty/accounts?page=1&limit=50",
       undefined,
     );
-    expect(result.current.data).toEqual(accountsResponse.data);
+    expect(result.current.data).toEqual(accountsData);
   });
 });
 
@@ -97,10 +102,8 @@ describe("useAdminAdjustPoints", () => {
         mutations: { retry: false },
       },
     });
-    queryClient.setQueryData(
-      ["admin", "loyalty", "accounts"],
-      accountsResponse.data,
-    );
+    const cacheKey = ["admin", "loyalty", "accounts", { page: 1, limit: 50 }];
+    queryClient.setQueryData(cacheKey, accountsApiResponse.data);
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     const { result } = renderHook(() => useAdminAdjustPoints(), {
@@ -115,14 +118,13 @@ describe("useAdminAdjustPoints", () => {
       });
     });
 
-    expect(queryClient.getQueryData(["admin", "loyalty", "accounts"])).toEqual([
-      {
-        ...accountsResponse.data[0],
-        points: 125,
-      },
-    ]);
+    const cached = queryClient.getQueryData(cacheKey) as {
+      data: Array<{ points: number }>;
+    };
+    expect(cached.data[0].points).toBe(125);
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["admin", "loyalty", "accounts"],
+      exact: false,
     });
   });
 
@@ -134,10 +136,8 @@ describe("useAdminAdjustPoints", () => {
         mutations: { retry: false },
       },
     });
-    queryClient.setQueryData(
-      ["admin", "loyalty", "accounts"],
-      accountsResponse.data,
-    );
+    const cacheKey = ["admin", "loyalty", "accounts", { page: 1, limit: 50 }];
+    queryClient.setQueryData(cacheKey, accountsApiResponse.data);
 
     const { result } = renderHook(() => useAdminAdjustPoints(), {
       wrapper: createWrapper(queryClient),
@@ -153,8 +153,8 @@ describe("useAdminAdjustPoints", () => {
       ).rejects.toThrow("ADJUST_FAILED");
     });
 
-    expect(queryClient.getQueryData(["admin", "loyalty", "accounts"])).toEqual(
-      accountsResponse.data,
+    expect(queryClient.getQueryData(cacheKey)).toEqual(
+      accountsApiResponse.data,
     );
   });
 
@@ -179,9 +179,10 @@ describe("useAdminAdjustPoints", () => {
       });
     });
 
-    expect(
-      queryClient.getQueryData(["admin", "loyalty", "accounts"]),
-    ).toBeUndefined();
+    const allQueries = queryClient.getQueriesData({
+      queryKey: ["admin", "loyalty", "accounts"],
+    });
+    expect(allQueries.length).toBe(0);
   });
 });
 
