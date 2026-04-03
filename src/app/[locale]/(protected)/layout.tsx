@@ -1,7 +1,10 @@
 import { AppToaster } from "@/components/ui/app-toaster";
 import { PrivateShell } from "@/components/private/PrivateShell";
-import { QueryProvider } from "@/providers/query-provider";
-import { QueryClient, dehydrate } from "@tanstack/react-query";
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({
@@ -18,9 +21,9 @@ export default async function ProtectedLayout({
   queryClient.setQueryData(["user"], user ?? null);
 
   return (
-    <QueryProvider dehydratedState={dehydrate(queryClient)}>
+    <HydrationBoundary state={dehydrate(queryClient)}>
       <PrivateShell>{children}</PrivateShell>
       <AppToaster />
-    </QueryProvider>
+    </HydrationBoundary>
   );
 }

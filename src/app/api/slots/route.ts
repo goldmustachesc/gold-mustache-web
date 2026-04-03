@@ -51,7 +51,12 @@ export async function GET(request: Request) {
       { applyLeadTime: true },
     );
 
-    return apiSuccess(availability);
+    const response = apiSuccess(availability);
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=30, stale-while-revalidate=60",
+    );
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar horários");
   }

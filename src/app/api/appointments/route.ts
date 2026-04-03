@@ -72,7 +72,9 @@ export async function GET(request: Request) {
       };
 
       const appointments = await getBarberAppointments(barber.id, dateRange);
-      return apiSuccess(appointments);
+      const response = apiSuccess(appointments);
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
     }
 
     // Client viewing their appointments - get or create profile
@@ -94,7 +96,9 @@ export async function GET(request: Request) {
     }
 
     const appointments = await getClientAppointments(profile.id);
-    return apiSuccess(appointments);
+    const response = apiSuccess(appointments);
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos");
   }
