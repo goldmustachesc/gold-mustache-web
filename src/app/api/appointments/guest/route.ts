@@ -6,9 +6,13 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const settings = await getBarbershopSettings();
     const mode = resolveBookingMode(settings);
     if (mode !== "internal") {
@@ -19,7 +23,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Rate limiting check - stricter for guest appointments
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {

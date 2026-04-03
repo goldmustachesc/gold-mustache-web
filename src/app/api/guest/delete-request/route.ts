@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
-import { apiSuccess, apiMessage, apiError } from "@/lib/api/response";
+import { apiSuccess, apiError } from "@/lib/api/response";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { z } from "zod";
 
 const deleteRequestSchema = z.object({
@@ -25,7 +26,9 @@ const deleteRequestSchema = z.object({
  */
 export async function POST(request: Request) {
   try {
-    // Rate limiting - sensitive operation
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("sensitive", clientId);
     if (!rateLimitResult.success) {
@@ -58,10 +61,11 @@ export async function POST(request: Request) {
     });
 
     if (!guestClient) {
-      // Don't reveal if guest exists for security
-      return apiMessage(
-        "Se existir uma conta associada a este telefone, ela será processada para exclusão.",
-      );
+      return apiSuccess({
+        message:
+          "Se existir uma conta associada a este telefone, ela será processada para exclusão.",
+        immediate: false,
+      });
     }
 
     // If access token provided, verify it matches

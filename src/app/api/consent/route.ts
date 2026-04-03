@@ -7,6 +7,7 @@ import {
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 /**
  * GET /api/consent
@@ -109,6 +110,9 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("api", clientId);
     if (!rateLimitResult.success) {

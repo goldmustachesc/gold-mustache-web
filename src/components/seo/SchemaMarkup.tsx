@@ -2,6 +2,10 @@ import { barbershopConfig } from "@/config/barbershop";
 import { siteConfig } from "@/config/site";
 import { getServices } from "@/services/booking";
 
+function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export async function SchemaMarkup() {
   // Em ambientes não-produção, não renderizar schema markup para SEO
   if (!siteConfig.isProduction) {
@@ -274,37 +278,37 @@ export async function SchemaMarkup() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(localBusinessSchema),
+          __html: safeJsonLd(localBusinessSchema),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(servicesSchema),
+          __html: safeJsonLd(servicesSchema),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(organizationSchema),
+          __html: safeJsonLd(organizationSchema),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbSchema),
+          __html: safeJsonLd(breadcrumbSchema),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(websiteSchema),
+          __html: safeJsonLd(websiteSchema),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(reviewSchema),
+          __html: safeJsonLd(reviewSchema),
         }}
       />
     </>
