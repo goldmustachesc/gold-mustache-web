@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   useAdminLoyaltyAccounts,
-  useAdminAdjustPoints,
   useAdminToggleReward,
   type AdminLoyaltyAccount,
 } from "@/hooks/useAdminLoyalty";
@@ -16,30 +15,21 @@ import {
   Settings,
   Users,
   Gift,
-  Save,
   TicketCheck,
   BarChart3,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { TierBadge } from "@/components/loyalty/TierBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslations } from "next-intl";
 import { RewardModal } from "@/components/loyalty/RewardModal";
 import { RedemptionsTab } from "@/components/admin/RedemptionsTab";
 import { ReportsTab } from "@/components/admin/ReportsTab";
+import { AdjustPointsDialog } from "@/components/admin/loyalty/AdjustPointsDialog";
 
 export default function AdminLoyaltyPage() {
   const t = useTranslations("loyalty.admin");
@@ -50,13 +40,10 @@ export default function AdminLoyaltyPage() {
     useAdminLoyaltyAccounts();
   const { data: rewards, isLoading: rewardsLoading } = useAdminRewards();
 
-  const adjustPointsMut = useAdminAdjustPoints();
   const toggleRewardMut = useAdminToggleReward();
 
   const [selectedAccount, setSelectedAccount] =
     useState<AdminLoyaltyAccount | null>(null);
-  const [adjustAmount, setAdjustAmount] = useState<string>("");
-  const [adjustReason, setAdjustReason] = useState<string>("");
   const [isNewRewardModalOpen, setIsNewRewardModalOpen] = useState(false);
 
   usePrivateHeader({
@@ -67,27 +54,10 @@ export default function AdminLoyaltyPage() {
 
   const handleOpenAdjust = (acc: AdminLoyaltyAccount) => {
     setSelectedAccount(acc);
-    setAdjustAmount("");
-    setAdjustReason("");
   };
 
   const handleOpenNewReward = () => {
     setIsNewRewardModalOpen(true);
-  };
-
-  const handleSaveAdjustment = async () => {
-    if (!selectedAccount || !adjustAmount) return;
-    try {
-      await adjustPointsMut.mutateAsync({
-        accountId: selectedAccount.id,
-        points: parseInt(adjustAmount, 10),
-        reason: adjustReason || "Ajuste manual admin",
-      });
-      setSelectedAccount(null);
-    } catch (e) {
-      console.error(e);
-      setSelectedAccount(null);
-    }
   };
 
   const handleToggleReward = async (rewardId: string, newState: boolean) => {
@@ -308,81 +278,11 @@ export default function AdminLoyaltyPage() {
             </TabsContent>
           </Tabs>
 
-          <Dialog
+          <AdjustPointsDialog
             open={!!selectedAccount}
-            onOpenChange={(open) => !open && setSelectedAccount(null)}
-          >
-            <DialogContent className="sm:max-w-md bg-background border-border">
-              <DialogHeader>
-                <DialogTitle>
-                  {t("adjustPoints") || "Ajuste de Pontos"}
-                </DialogTitle>
-                <DialogDescription>
-                  Modificando saldo de{" "}
-                  <strong className="text-foreground">
-                    {selectedAccount?.fullName}
-                  </strong>{" "}
-                  (Atual:{" "}
-                  <strong className="text-primary font-mono tabular-nums">
-                    {selectedAccount?.points} pts
-                  </strong>
-                  ).
-                  <br />
-                  Use valores positivos para adicionar e negativos para remover
-                  pontos.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="points" className="text-right">
-                    Pontos
-                  </Label>
-                  <Input
-                    id="points"
-                    type="number"
-                    value={adjustAmount}
-                    onChange={(e) => setAdjustAmount(e.target.value)}
-                    placeholder="+100 ou -50"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="reason" className="text-right">
-                    {t("reason") || "Motivo"}
-                  </Label>
-                  <Input
-                    id="reason"
-                    value={adjustReason}
-                    onChange={(e) => setAdjustReason(e.target.value)}
-                    placeholder="Ex: Correção, Bônus extra..."
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedAccount(null)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleSaveAdjustment}
-                  disabled={!adjustAmount || adjustPointsMut.isPending}
-                >
-                  {adjustPointsMut.isPending ? (
-                    "Salvando..."
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" /> Salvar
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            account={selectedAccount}
+            onClose={() => setSelectedAccount(null)}
+          />
         </div>
       </main>
 
