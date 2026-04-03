@@ -64,10 +64,12 @@ export function QuickStats() {
   const expiringCount = expiring?.length ?? 0;
   const pendingRedemptions = reports?.redemptionsByStatus.PENDING ?? 0;
 
+  const iconClass = "h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5";
+
   const expiringCard = (
     <KpiCard
       testId="kpi-quick-expiring-points"
-      icon={<AlertTriangle className="h-5 w-5 text-primary" />}
+      icon={<AlertTriangle className={iconClass} />}
       label={t("expiringPoints")}
       value={expiringCount}
       locale={locale}
@@ -75,24 +77,24 @@ export function QuickStats() {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <KpiCard
         testId="kpi-quick-total-accounts"
-        icon={<Users className="h-5 w-5 text-primary" />}
+        icon={<Users className={iconClass} />}
         label={t("totalAccounts")}
         value={reports?.totalAccounts ?? 0}
         locale={locale}
       />
       <KpiCard
         testId="kpi-quick-points-circulation"
-        icon={<Coins className="h-5 w-5 text-primary" />}
+        icon={<Coins className={iconClass} />}
         label={t("pointsInCirculation")}
         value={reports?.totalPointsInCirculation ?? 0}
         locale={locale}
       />
       <KpiCard
         testId="kpi-quick-pending-redemptions"
-        icon={<TicketCheck className="h-5 w-5 text-primary" />}
+        icon={<TicketCheck className={iconClass} />}
         label={t("pendingRedemptions")}
         value={pendingRedemptions}
         locale={locale}
@@ -100,7 +102,7 @@ export function QuickStats() {
       {expiringCount > 0 ? (
         <div
           data-testid="quick-stats-expiring-highlight"
-          className="rounded-xl ring-2 ring-amber-500/60"
+          className="h-full rounded-xl ring-2 ring-amber-500/60"
         >
           {expiringCard}
         </div>

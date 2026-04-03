@@ -3,7 +3,7 @@
 import type { LoyaltyTier } from "@/components/loyalty/TierBadge";
 import type { AccountsParams, AccountsSortBy } from "@/hooks/useAdminLoyalty";
 import { cn } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,21 +128,21 @@ export function AccountFilters({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label
-            htmlFor="account-sort-by"
-            className="text-xs text-muted-foreground"
-          >
-            {t("sortBy")}
-          </Label>
+      <div className="space-y-2">
+        <Label
+          htmlFor="account-sort-by"
+          className="text-xs text-muted-foreground"
+        >
+          {t("sortBy")}
+        </Label>
+        <div className="flex gap-2">
           <Select
             value={filters.sortBy}
             onValueChange={(v) =>
               onChange({ ...filters, sortBy: v as AccountsSortBy })
             }
           >
-            <SelectTrigger id="account-sort-by" className="w-full">
+            <SelectTrigger id="account-sort-by" className="min-w-0 flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -153,32 +153,27 @@ export function AccountFilters({
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">
-            {t("sortOrder")}
-          </Label>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={filters.sortOrder === "desc" ? "default" : "outline"}
-              className="flex-1"
-              onClick={() => onChange({ ...filters, sortOrder: "desc" })}
-              aria-pressed={filters.sortOrder === "desc"}
-            >
-              {t("sortDesc")}
-            </Button>
-            <Button
-              type="button"
-              variant={filters.sortOrder === "asc" ? "default" : "outline"}
-              className="flex-1"
-              onClick={() => onChange({ ...filters, sortOrder: "asc" })}
-              aria-pressed={filters.sortOrder === "asc"}
-            >
-              {t("sortAsc")}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() =>
+              onChange({
+                ...filters,
+                sortOrder: filters.sortOrder === "desc" ? "asc" : "desc",
+              })
+            }
+            aria-label={t("toggleSortOrder", {
+              order: t(filters.sortOrder === "desc" ? "sortDesc" : "sortAsc"),
+            })}
+          >
+            {filters.sortOrder === "desc" ? (
+              <ArrowDown className="h-4 w-4" aria-hidden />
+            ) : (
+              <ArrowUp className="h-4 w-4" aria-hidden />
+            )}
+          </Button>
         </div>
       </div>
     </div>

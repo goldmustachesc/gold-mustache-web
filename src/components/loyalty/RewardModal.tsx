@@ -18,6 +18,7 @@ import {
 import { CheckCircle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import type { Reward } from "./RewardCard";
 
 interface RewardModalProps {
@@ -45,6 +46,7 @@ export function RewardModal({
   onOpenChange,
   rewardId = null,
 }: RewardModalProps) {
+  const t = useTranslations("loyalty.admin.rewardModal");
   const [submitted, setSubmitted] = useState(false);
   const createRewardMut = useAdminCreateReward();
   const updateRewardMut = useAdminUpdateReward();
@@ -197,9 +199,7 @@ export function RewardModal({
     }
   };
 
-  const errorTitle = isEditMode
-    ? "Erro ao atualizar recompensa"
-    : "Erro ao criar recompensa";
+  const errorTitle = isEditMode ? t("errorUpdateTitle") : t("errorCreateTitle");
 
   const showFormLoader = isEditMode && rewardLoading;
   const showFormError = isEditMode && rewardError && !rewardLoading;
@@ -209,7 +209,7 @@ export function RewardModal({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            {isEditMode ? "Editar Recompensa" : "Nova Recompensa"}
+            {isEditMode ? t("editTitle") : t("createTitle")}
             <Button
               variant="ghost"
               size="sm"
@@ -220,9 +220,7 @@ export function RewardModal({
             </Button>
           </DialogTitle>
           <DialogDescription>
-            {isEditMode
-              ? "Atualize os dados da recompensa no catálogo de fidelidade."
-              : "Crie uma nova recompensa para o catálogo de fidelidade."}
+            {isEditMode ? t("editDescription") : t("createDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -230,26 +228,21 @@ export function RewardModal({
           {showFormLoader ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">
-                Carregando recompensa...
-              </p>
+              <p className="text-sm text-muted-foreground">{t("loading")}</p>
             </div>
           ) : showFormError ? (
             <div className="py-8 text-center text-sm text-destructive">
-              Não foi possível carregar esta recompensa. Tente novamente ou
-              feche o modal.
+              {t("loadError")}
             </div>
           ) : submitted ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
               <CheckCircle className="h-16 w-16 text-green-500" />
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">
-                  {isEditMode ? "Recompensa atualizada!" : "Recompensa criada!"}
+                  {isEditMode ? t("editSuccess") : t("createSuccess")}
                 </h3>
                 <p className="text-muted-foreground">
-                  {isEditMode
-                    ? "As alterações foram salvas com sucesso."
-                    : "A nova recompensa foi adicionada ao catálogo com sucesso."}
+                  {isEditMode ? t("editSuccessDesc") : t("createSuccessDesc")}
                 </p>
               </div>
             </div>
@@ -276,8 +269,7 @@ export function RewardModal({
               <div>
                 <h4 className="font-semibold text-destructive">{errorTitle}</h4>
                 <p className="text-sm text-destructive/80 mt-1">
-                  {mutationError.message ||
-                    "Ocorreu um erro inesperado. Tente novamente."}
+                  {mutationError.message || t("errorGeneric")}
                 </p>
               </div>
             </div>

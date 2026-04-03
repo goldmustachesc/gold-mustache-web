@@ -102,7 +102,7 @@
   "admin": {
     "title": "Gestión de Lealtad",
     "users": "Cuentas",
-    "catalog": "Catálogo",
+    "catalogTab": "Catálogo",
     "adjustPoints": "Ajustar Puntos",
     "reason": "Razón del Ajuste",
     "accountsCount": "cuentas registradas",
@@ -172,6 +172,7 @@
         },
         "sortBy": "Ordenar por",
         "sortOrder": "Orden",
+        "toggleSortOrder": "Orden actual: {order}. Toca para invertir.",
         "sortAsc": "Ascendente",
         "sortDesc": "Descendente",
         "sort": {
@@ -214,6 +215,69 @@
         "previous": "Anterior",
         "next": "Siguiente",
         "pageStatus": "Página {page} de {totalPages} · {total, plural, one {# cuenta} other {# cuentas}}"
+      }
+    },
+    "catalog": {
+      "title": "Artículos del catálogo",
+      "newItem": "Nuevo artículo",
+      "emptyState": "No hay recompensas registradas. Haz clic en \"Nuevo artículo\" para añadir.",
+      "deleteTitle": "¿Eliminar recompensa?",
+      "deleteDescription": "¿Seguro que deseas eliminar \"{name}\"? Esta acción no se puede deshacer. Solo se pueden eliminar artículos sin canjes asociados.",
+      "cancel": "Cancelar",
+      "deleting": "Eliminando...",
+      "delete": "Eliminar",
+      "rewardCard": {
+        "pointsShort": "{count} pts",
+        "inactive": "Inactivo",
+        "active": "Activo",
+        "edit": "Editar",
+        "delete": "Eliminar"
+      }
+    },
+    "rewardModal": {
+      "editTitle": "Editar recompensa",
+      "createTitle": "Nueva recompensa",
+      "editDescription": "Actualiza los datos de la recompensa en el catálogo de fidelidad.",
+      "createDescription": "Crea una nueva recompensa para el catálogo de fidelidad.",
+      "loading": "Cargando recompensa...",
+      "loadError": "No se pudo cargar esta recompensa. Inténtalo de nuevo o cierra el modal.",
+      "editSuccess": "¡Recompensa actualizada!",
+      "createSuccess": "¡Recompensa creada!",
+      "editSuccessDesc": "Los cambios se guardaron correctamente.",
+      "createSuccessDesc": "La nueva recompensa se añadió al catálogo correctamente.",
+      "errorUpdateTitle": "Error al actualizar la recompensa",
+      "errorCreateTitle": "Error al crear la recompensa",
+      "errorGeneric": "Ocurrió un error inesperado. Inténtalo de nuevo."
+    },
+    "rewardForm": {
+      "nameLabel": "Nombre de la recompensa *",
+      "namePlaceholder": "Ej.: Corte gratis",
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "Describe los detalles de la recompensa...",
+      "pointsCostLabel": "Coste en puntos *",
+      "typeLabel": "Tipo *",
+      "typePlaceholder": "Selecciona el tipo",
+      "typeFreeService": "Servicio gratis",
+      "typeDiscount": "Descuento",
+      "typeProduct": "Producto",
+      "discountValueLabel": "Valor del descuento *",
+      "discountValueHint": "Descuento porcentual (ej.: 20 para 20%)",
+      "imageUrlLabel": "URL de la imagen",
+      "imageUrlPlaceholder": "https://ejemplo.com/imagen.jpg",
+      "imageUrlHint": "URL opcional de la imagen de la recompensa",
+      "stockLabel": "Stock",
+      "stockPlaceholder": "Deja en blanco para ilimitado",
+      "stockHint": "Cantidad disponible. Deja en blanco para ilimitado.",
+      "activeLabel": "Activo",
+      "activeHint": "La recompensa será visible para los clientes",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "saveChanges": "Guardar cambios",
+      "createReward": "Crear recompensa",
+      "validation": {
+        "nameRequired": "El nombre es obligatorio",
+        "nameMaxLength": "El nombre debe tener como máximo 100 caracteres",
+        "pointsCostPositive": "El coste en puntos debe ser positivo"
       }
     }
   }

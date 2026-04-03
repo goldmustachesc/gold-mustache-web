@@ -102,7 +102,7 @@
   "admin": {
     "title": "Loyalty Management",
     "users": "Accounts",
-    "catalog": "Catalog",
+    "catalogTab": "Catalog",
     "adjustPoints": "Adjust Points",
     "reason": "Adjustment Reason",
     "accountsCount": "registered accounts",
@@ -172,6 +172,7 @@
         },
         "sortBy": "Sort by",
         "sortOrder": "Order",
+        "toggleSortOrder": "Current order: {order}. Tap to reverse.",
         "sortAsc": "Ascending",
         "sortDesc": "Descending",
         "sort": {
@@ -214,6 +215,69 @@
         "previous": "Previous",
         "next": "Next",
         "pageStatus": "Page {page} of {totalPages} · {total, plural, one {# account} other {# accounts}}"
+      }
+    },
+    "catalog": {
+      "title": "Catalog items",
+      "newItem": "New item",
+      "emptyState": "No rewards yet. Click \"New item\" to add one.",
+      "deleteTitle": "Delete reward?",
+      "deleteDescription": "Are you sure you want to remove \"{name}\"? This cannot be undone. You can only delete items with no associated redemptions.",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "delete": "Delete",
+      "rewardCard": {
+        "pointsShort": "{count} pts",
+        "inactive": "Inactive",
+        "active": "Active",
+        "edit": "Edit",
+        "delete": "Delete"
+      }
+    },
+    "rewardModal": {
+      "editTitle": "Edit reward",
+      "createTitle": "New reward",
+      "editDescription": "Update the reward details in the loyalty catalog.",
+      "createDescription": "Create a new reward for the loyalty catalog.",
+      "loading": "Loading reward...",
+      "loadError": "Could not load this reward. Try again or close the modal.",
+      "editSuccess": "Reward updated!",
+      "createSuccess": "Reward created!",
+      "editSuccessDesc": "Your changes were saved successfully.",
+      "createSuccessDesc": "The new reward was added to the catalog successfully.",
+      "errorUpdateTitle": "Error updating reward",
+      "errorCreateTitle": "Error creating reward",
+      "errorGeneric": "Something went wrong. Please try again."
+    },
+    "rewardForm": {
+      "nameLabel": "Reward name *",
+      "namePlaceholder": "e.g. Free haircut",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe the reward...",
+      "pointsCostLabel": "Points cost *",
+      "typeLabel": "Type *",
+      "typePlaceholder": "Select type",
+      "typeFreeService": "Free service",
+      "typeDiscount": "Discount",
+      "typeProduct": "Product",
+      "discountValueLabel": "Discount value *",
+      "discountValueHint": "Percentage discount (e.g. 20 for 20%)",
+      "imageUrlLabel": "Image URL",
+      "imageUrlPlaceholder": "https://example.com/image.jpg",
+      "imageUrlHint": "Optional image URL for the reward",
+      "stockLabel": "Stock",
+      "stockPlaceholder": "Leave blank for unlimited",
+      "stockHint": "Available quantity. Leave blank for unlimited.",
+      "activeLabel": "Active",
+      "activeHint": "Reward will be visible to customers",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save changes",
+      "createReward": "Create reward",
+      "validation": {
+        "nameRequired": "Name is required",
+        "nameMaxLength": "Name must be at most 100 characters",
+        "pointsCostPositive": "Points cost must be positive"
       }
     }
   }

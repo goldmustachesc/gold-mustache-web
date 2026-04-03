@@ -166,7 +166,10 @@ export function AccountsTab() {
   };
 
   return (
-    <div data-testid="accounts-tab" className="space-y-6 md:space-y-8">
+    <div
+      data-testid="accounts-tab"
+      className="space-y-4 sm:space-y-6 md:space-y-8"
+    >
       <AccountFilters filters={filters} onChange={setFilters} />
 
       <ExpirationAlert />

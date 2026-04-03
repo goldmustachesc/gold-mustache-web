@@ -97,6 +97,10 @@ vi.mock("@/hooks/useBarberAbsences", () => ({
   useBarberAbsences: () => mocks.absencesState,
 }));
 
+vi.mock("@/hooks/useRealtimeAppointments", () => ({
+  useRealtimeAppointments: vi.fn(),
+}));
+
 vi.mock("@/hooks/useBooking", () => ({
   useBarberAppointments: (...args: unknown[]) =>
     mocks.useBarberAppointments(...args),

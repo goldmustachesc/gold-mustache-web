@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,23 +15,25 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
-// Schema de validação para o formulário
-const rewardSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Nome é obrigatório")
-    .max(100, "Nome deve ter no máximo 100 caracteres"),
-  description: z.string().optional(),
-  pointsCost: z.number().int().min(1, "Custo em pontos deve ser positivo"),
-  type: z.enum(["DISCOUNT", "FREE_SERVICE", "PRODUCT"]),
-  value: z.number().optional(),
-  imageUrl: z.string().url().optional().or(z.literal("")),
-  stock: z.number().int().positive().optional(),
-  active: z.boolean().default(true),
-});
+function createRewardSchema(t: (key: string) => string) {
+  return z.object({
+    name: z
+      .string()
+      .min(1, t("validation.nameRequired"))
+      .max(100, t("validation.nameMaxLength")),
+    description: z.string().optional(),
+    pointsCost: z.number().int().min(1, t("validation.pointsCostPositive")),
+    type: z.enum(["DISCOUNT", "FREE_SERVICE", "PRODUCT"]),
+    value: z.number().optional(),
+    imageUrl: z.string().url().optional().or(z.literal("")),
+    stock: z.number().int().positive().optional(),
+    active: z.boolean().default(true),
+  });
+}
 
-export type CreateRewardData = z.infer<typeof rewardSchema>;
+export type CreateRewardData = z.infer<ReturnType<typeof createRewardSchema>>;
 
 interface RewardFormProps {
   initialData?: Partial<CreateRewardData>;
@@ -48,6 +50,9 @@ export function RewardForm({
   mode = "create",
   onCancel,
 }: RewardFormProps) {
+  const t = useTranslations("loyalty.admin.rewardForm");
+  const rewardSchema = useMemo(() => createRewardSchema(t), [t]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CreateRewardData>({
     name: "",
@@ -114,7 +119,6 @@ export function RewardForm({
 
   const updateField = (field: keyof CreateRewardData, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -123,10 +127,10 @@ export function RewardForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Nome da Recompensa *</Label>
+        <Label htmlFor="name">{t("nameLabel")}</Label>
         <Input
           id="name"
-          placeholder="Ex: Corte de Cabelo Grátis"
+          placeholder={t("namePlaceholder")}
           value={formData.name}
           onChange={(e) => updateField("name", e.target.value)}
           disabled={isLoading || isSubmitting}
@@ -137,10 +141,10 @@ export function RewardForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição</Label>
+        <Label htmlFor="description">{t("descriptionLabel")}</Label>
         <Textarea
           id="description"
-          placeholder="Descreva detalhes da recompensa..."
+          placeholder={t("descriptionPlaceholder")}
           rows={3}
           value={formData.description || ""}
           onChange={(e) => updateField("description", e.target.value)}
@@ -153,7 +157,7 @@ export function RewardForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="pointsCost">Custo em Pontos *</Label>
+          <Label htmlFor="pointsCost">{t("pointsCostLabel")}</Label>
           <Input
             id="pointsCost"
             type="number"
@@ -177,7 +181,7 @@ export function RewardForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="type">Tipo *</Label>
+          <Label htmlFor="type">{t("typeLabel")}</Label>
           <Select
             value={formData.type}
             onValueChange={(value) =>
@@ -185,13 +189,15 @@ export function RewardForm({
             }
             disabled={isLoading || isSubmitting}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
+            <SelectTrigger id="type">
+              <SelectValue placeholder={t("typePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="FREE_SERVICE">Serviço Grátis</SelectItem>
-              <SelectItem value="DISCOUNT">Desconto</SelectItem>
-              <SelectItem value="PRODUCT">Produto</SelectItem>
+              <SelectItem value="FREE_SERVICE">
+                {t("typeFreeService")}
+              </SelectItem>
+              <SelectItem value="DISCOUNT">{t("typeDiscount")}</SelectItem>
+              <SelectItem value="PRODUCT">{t("typeProduct")}</SelectItem>
             </SelectContent>
           </Select>
           {errors.type && (
@@ -202,7 +208,7 @@ export function RewardForm({
 
       {formData.type === "DISCOUNT" && (
         <div className="space-y-2">
-          <Label htmlFor="value">Valor do Desconto *</Label>
+          <Label htmlFor="value">{t("discountValueLabel")}</Label>
           <Input
             id="value"
             type="number"
@@ -221,7 +227,7 @@ export function RewardForm({
             disabled={isLoading || isSubmitting}
           />
           <p className="text-sm text-muted-foreground">
-            Valor percentual do desconto (ex: 20 para 20%)
+            {t("discountValueHint")}
           </p>
           {errors.value && (
             <p className="text-sm text-destructive">{errors.value}</p>
@@ -230,28 +236,26 @@ export function RewardForm({
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="imageUrl">URL da Imagem</Label>
+        <Label htmlFor="imageUrl">{t("imageUrlLabel")}</Label>
         <Input
           id="imageUrl"
-          placeholder="https://exemplo.com/imagem.jpg"
+          placeholder={t("imageUrlPlaceholder")}
           value={formData.imageUrl || ""}
           onChange={(e) => updateField("imageUrl", e.target.value)}
           disabled={isLoading || isSubmitting}
         />
-        <p className="text-sm text-muted-foreground">
-          URL opcional para imagem da recompensa
-        </p>
+        <p className="text-sm text-muted-foreground">{t("imageUrlHint")}</p>
         {errors.imageUrl && (
           <p className="text-sm text-destructive">{errors.imageUrl}</p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="stock">Estoque</Label>
+        <Label htmlFor="stock">{t("stockLabel")}</Label>
         <Input
           id="stock"
           type="number"
-          placeholder="Deixe em branco para ilimitado"
+          placeholder={t("stockPlaceholder")}
           min={1}
           value={formData.stock || ""}
           onChange={(e) =>
@@ -266,9 +270,7 @@ export function RewardForm({
           }
           disabled={isLoading || isSubmitting}
         />
-        <p className="text-sm text-muted-foreground">
-          Quantidade disponível. Deixe em branco para ilimitado.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("stockHint")}</p>
         {errors.stock && (
           <p className="text-sm text-destructive">{errors.stock}</p>
         )}
@@ -276,10 +278,8 @@ export function RewardForm({
 
       <div className="flex flex-row items-center justify-between rounded-lg border p-4">
         <div className="space-y-0.5">
-          <Label className="text-base font-medium">Ativo</Label>
-          <p className="text-sm text-muted-foreground">
-            Recompensa estará visível para os clientes
-          </p>
+          <Label className="text-base font-medium">{t("activeLabel")}</Label>
+          <p className="text-sm text-muted-foreground">{t("activeHint")}</p>
         </div>
         <Switch
           checked={formData.active}
@@ -310,18 +310,18 @@ export function RewardForm({
           }}
           disabled={isLoading || isSubmitting}
         >
-          Cancelar
+          {t("cancel")}
         </Button>
         <Button type="submit" disabled={isLoading || isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
+              {t("saving")}
             </>
           ) : mode === "edit" ? (
-            "Salvar Alterações"
+            t("saveChanges")
           ) : (
-            "Criar Recompensa"
+            t("createReward")
           )}
         </Button>
       </div>

@@ -46,4 +46,21 @@ describe("AccountFilters", () => {
     const state = screen.getByTestId("filter-state").textContent ?? "";
     expect(state).toContain('"tier":"SILVER"');
   });
+
+  it("alterna ordem crescente/decrescente pelo botão ao lado do select", async () => {
+    const user = userEvent.setup();
+    render(<ControlledFilters />);
+
+    let state = screen.getByTestId("filter-state").textContent ?? "";
+    expect(state).toContain('"sortOrder":"desc"');
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /filters\.toggleSortOrder/,
+      }),
+    );
+
+    state = screen.getByTestId("filter-state").textContent ?? "";
+    expect(state).toContain('"sortOrder":"asc"');
+  });
 });

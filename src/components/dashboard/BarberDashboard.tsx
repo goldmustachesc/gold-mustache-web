@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useBooking";
 import { useMyWorkingHours } from "@/hooks/useBarberWorkingHours";
 import { useBarberAbsences } from "@/hooks/useBarberAbsences";
+import { useRealtimeAppointments } from "@/hooks/useRealtimeAppointments";
 import {
   usePrivateHeader,
   PrivateHeaderActions,
@@ -214,6 +215,7 @@ export function BarberDashboard({
   );
 
   const barberId = barberProfile.id;
+  useRealtimeAppointments(barberId);
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
   const currentWeekEnd = useMemo(
     () => getWeekEnd(currentWeekStart),

@@ -4,6 +4,31 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RewardModal } from "../RewardModal";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => {
+    const pt: Record<string, string> = {
+      editTitle: "Editar Recompensa",
+      createTitle: "Nova Recompensa",
+      editDescription:
+        "Atualize os dados da recompensa no catálogo de fidelidade.",
+      createDescription:
+        "Crie uma nova recompensa para o catálogo de fidelidade.",
+      loading: "Carregando recompensa...",
+      loadError:
+        "Não foi possível carregar esta recompensa. Tente novamente ou feche o modal.",
+      editSuccess: "Recompensa atualizada!",
+      createSuccess: "Recompensa criada!",
+      editSuccessDesc: "As alterações foram salvas com sucesso.",
+      createSuccessDesc:
+        "A nova recompensa foi adicionada ao catálogo com sucesso.",
+      errorUpdateTitle: "Erro ao atualizar recompensa",
+      errorCreateTitle: "Erro ao criar recompensa",
+      errorGeneric: "Ocorreu um erro inesperado. Tente novamente.",
+    };
+    return pt[key] ?? key;
+  },
+}));
+
 const mocks = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
   setQueryData: vi.fn(),

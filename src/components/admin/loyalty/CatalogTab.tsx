@@ -20,8 +20,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function CatalogTab() {
+  const t = useTranslations("loyalty.admin.catalog");
   const { data: rewards, isLoading } = useAdminRewards();
   const toggleRewardMut = useAdminToggleReward();
   const deleteRewardMut = useAdminDeleteReward();
@@ -69,9 +71,9 @@ export function CatalogTab() {
     <>
       <div className="bg-card border border-border rounded-xl overflow-hidden p-6 shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold">Itens do Catálogo</h3>
+          <h3 className="text-lg font-bold">{t("title")}</h3>
           <Button type="button" onClick={handleOpenNew}>
-            <Plus className="h-4 w-4 mr-2" /> Novo Item
+            <Plus className="h-4 w-4 mr-2" aria-hidden /> {t("newItem")}
           </Button>
         </div>
 
@@ -83,8 +85,7 @@ export function CatalogTab() {
           <div className="space-y-4">
             {rewards?.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhuma recompensa cadastrada. Clique em &quot;Novo Item&quot;
-                para adicionar.
+                {t("emptyState")}
               </p>
             ) : (
               rewards?.map((r) => (
@@ -116,16 +117,14 @@ export function CatalogTab() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir recompensa?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover &quot;{deleteTarget?.name}&quot;?
-              Esta ação não pode ser desfeita. Só é possível excluir itens sem
-              resgates associados.
+              {t("deleteDescription", { name: deleteTarget?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteRewardMut.isPending}>
-              Cancelar
+              {t("cancel")}
             </AlertDialogCancel>
             <Button
               type="button"
@@ -135,11 +134,14 @@ export function CatalogTab() {
             >
               {deleteRewardMut.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                  Excluindo...
+                  <Loader2
+                    className="mr-2 h-4 w-4 animate-spin inline"
+                    aria-hidden
+                  />
+                  {t("deleting")}
                 </>
               ) : (
-                "Excluir"
+                t("delete")
               )}
             </Button>
           </AlertDialogFooter>

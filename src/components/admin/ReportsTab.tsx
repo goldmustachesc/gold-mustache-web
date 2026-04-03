@@ -47,33 +47,35 @@ export function ReportsTab() {
   );
   const maxTierCount = Math.max(...tierValues, 1);
 
+  const kpiIconClass = "h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5";
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard
           testId="kpi-total-accounts"
-          icon={<Users className="h-5 w-5 text-primary" />}
+          icon={<Users className={kpiIconClass} />}
           label={t("reports.totalAccounts")}
           value={data.totalAccounts}
           locale={locale}
         />
         <KpiCard
           testId="kpi-points-in-circulation"
-          icon={<Coins className="h-5 w-5 text-primary" />}
+          icon={<Coins className={kpiIconClass} />}
           label={t("reports.pointsInCirculation")}
           value={data.totalPointsInCirculation}
           locale={locale}
         />
         <KpiCard
           testId="kpi-redemptions-month"
-          icon={<TicketCheck className="h-5 w-5 text-primary" />}
+          icon={<TicketCheck className={kpiIconClass} />}
           label={t("reports.redemptionsMonth")}
           value={data.recentActivity.redemptionsLast30Days}
           locale={locale}
         />
         <KpiCard
           testId="kpi-redemption-rate"
-          icon={<TrendingUp className="h-5 w-5 text-primary" />}
+          icon={<TrendingUp className={kpiIconClass} />}
           label={t("reports.redemptionRate")}
           value={`${redemptionRate}%`}
           locale={locale}

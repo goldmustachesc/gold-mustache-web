@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Pencil, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export interface RewardAdminCardProps {
   reward: AdminReward;
@@ -22,6 +23,8 @@ export function RewardAdminCard({
   onToggle,
   isTogglePending = false,
 }: RewardAdminCardProps) {
+  const t = useTranslations("loyalty.admin.catalog.rewardCard");
+
   return (
     <div
       className={cn(
@@ -33,11 +36,11 @@ export function RewardAdminCard({
         <div className="font-bold flex flex-wrap items-center gap-2">
           <span className="truncate">{reward.name}</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
-            {reward.costInPoints} pts
+            {t("pointsShort", { count: reward.costInPoints })}
           </span>
           {reward.active === false && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive shrink-0">
-              Inativo
+              {t("inactive")}
             </span>
           )}
         </div>
@@ -54,7 +57,7 @@ export function RewardAdminCard({
             htmlFor={`reward-active-${reward.id}`}
             className="text-muted-foreground text-sm"
           >
-            Ativo
+            {t("active")}
           </Label>
           <Switch
             id={`reward-active-${reward.id}`}
@@ -71,7 +74,7 @@ export function RewardAdminCard({
           className="gap-1"
         >
           <Pencil className="h-4 w-4" />
-          Editar
+          {t("edit")}
         </Button>
         <Button
           type="button"
@@ -81,7 +84,7 @@ export function RewardAdminCard({
           className="gap-1 text-destructive hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
-          Excluir
+          {t("delete")}
         </Button>
       </div>
     </div>

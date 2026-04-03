@@ -23,38 +23,48 @@ export function AdminLoyaltyPage() {
   });
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <main className="container mx-auto px-4 py-4 sm:py-8">
+      <div className="mx-auto max-w-7xl space-y-4 sm:space-y-8">
         <QuickStats />
         <Tabs defaultValue="accounts" className="w-full">
-          <TabsList className="mb-6 flex h-12 w-full max-w-xl rounded-xl border border-border bg-muted p-1">
+          <TabsList className="mb-4 flex h-12 w-full max-w-xl rounded-xl border border-border bg-muted p-1 sm:mb-6">
             <TabsTrigger
               value="accounts"
+              aria-label={t("users")}
               className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <Users className="mr-2 h-4 w-4" />
-              {t("users") || "Contas"}
+              <Users className="h-4 w-4 sm:mr-2" aria-hidden />
+              <span className="hidden sm:inline">{t("users") || "Contas"}</span>
             </TabsTrigger>
             <TabsTrigger
               value="catalog"
+              aria-label={t("catalogTab")}
               className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <Gift className="mr-2 h-4 w-4" />
-              {t("catalog") || "Catálogo"}
+              <Gift className="h-4 w-4 sm:mr-2" aria-hidden />
+              <span className="hidden sm:inline">
+                {t("catalogTab") || "Catálogo"}
+              </span>
             </TabsTrigger>
             <TabsTrigger
               value="redemptions"
+              aria-label={t("redemptions.tab")}
               className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <TicketCheck className="mr-2 h-4 w-4" />
-              {t("redemptions.tab") || "Resgates"}
+              <TicketCheck className="h-4 w-4 sm:mr-2" aria-hidden />
+              <span className="hidden sm:inline">
+                {t("redemptions.tab") || "Resgates"}
+              </span>
             </TabsTrigger>
             <TabsTrigger
               value="reports"
+              aria-label={t("reports.tab")}
               className="min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <BarChart3 className="mr-2 h-4 w-4" />
-              {t("reports.tab") || "Relatórios"}
+              <BarChart3 className="h-4 w-4 sm:mr-2" aria-hidden />
+              <span className="hidden sm:inline">
+                {t("reports.tab") || "Relatórios"}
+              </span>
             </TabsTrigger>
           </TabsList>
 
