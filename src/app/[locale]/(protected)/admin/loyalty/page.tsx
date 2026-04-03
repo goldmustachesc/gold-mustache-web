@@ -4,14 +4,12 @@ import { useState } from "react";
 import {
   useAdminLoyaltyAccounts,
   useAdminToggleReward,
-  type AdminLoyaltyAccount,
 } from "@/hooks/useAdminLoyalty";
 import { useAdminRewards } from "@/hooks/useAdminRewards";
 import { cn } from "@/lib/utils";
 import {
   Loader2,
   Plus,
-  ArrowLeftRight,
   Settings,
   Users,
   Gift,
@@ -23,27 +21,23 @@ import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { TierBadge } from "@/components/loyalty/TierBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslations } from "next-intl";
 import { RewardModal } from "@/components/loyalty/RewardModal";
 import { RedemptionsTab } from "@/components/admin/RedemptionsTab";
 import { ReportsTab } from "@/components/admin/ReportsTab";
-import { AdjustPointsDialog } from "@/components/admin/loyalty/AdjustPointsDialog";
+import { AccountsTab } from "@/components/admin/loyalty/AccountsTab";
 
 export default function AdminLoyaltyPage() {
   const t = useTranslations("loyalty.admin");
   const params = useParams();
   const locale = (params.locale as string) || "pt-BR";
 
-  const { data: accounts, isLoading: accountsLoading } =
-    useAdminLoyaltyAccounts();
+  const { data: accountsSummary } = useAdminLoyaltyAccounts(1, 1);
   const { data: rewards, isLoading: rewardsLoading } = useAdminRewards();
 
   const toggleRewardMut = useAdminToggleReward();
 
-  const [selectedAccount, setSelectedAccount] =
-    useState<AdminLoyaltyAccount | null>(null);
   const [isNewRewardModalOpen, setIsNewRewardModalOpen] = useState(false);
 
   usePrivateHeader({
@@ -51,10 +45,6 @@ export default function AdminLoyaltyPage() {
     icon: Settings,
     backHref: `/${locale}/dashboard`,
   });
-
-  const handleOpenAdjust = (acc: AdminLoyaltyAccount) => {
-    setSelectedAccount(acc);
-  };
 
   const handleOpenNewReward = () => {
     setIsNewRewardModalOpen(true);
@@ -68,7 +58,7 @@ export default function AdminLoyaltyPage() {
     }
   };
 
-  if (accountsLoading || rewardsLoading) {
+  if (rewardsLoading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -81,7 +71,7 @@ export default function AdminLoyaltyPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <p className="text-sm text-muted-foreground">
-            {accounts?.length ?? 0} {t("accountsCount")} •{" "}
+            {accountsSummary?.meta.total ?? 0} {t("accountsCount")} •{" "}
             {rewards?.length ?? 0} {t("rewardsCount")}
           </p>
           <Tabs defaultValue="accounts" className="w-full">
@@ -117,103 +107,7 @@ export default function AdminLoyaltyPage() {
             </TabsList>
 
             <TabsContent value="accounts" className="space-y-6 md:space-y-8">
-              <div className="hidden lg:block bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs uppercase bg-muted text-muted-foreground border-b border-border">
-                      <tr>
-                        <th className="px-6 py-4">Cliente</th>
-                        <th className="px-6 py-4">Nível</th>
-                        <th className="px-6 py-4 text-right">Pontos</th>
-                        <th className="px-6 py-4 text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {accounts?.map((acc) => (
-                        <tr
-                          key={acc.id}
-                          className="border-b border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-foreground">
-                              {acc.fullName}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {acc.email}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <TierBadge tier={acc.tier} />
-                          </td>
-                          <td className="px-6 py-4 text-right font-black font-mono tabular-nums text-primary text-lg">
-                            {acc.points}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleOpenAdjust(acc)}
-                            >
-                              <ArrowLeftRight className="h-4 w-4 mr-2" />
-                              {t("adjustPoints") || "Ajustar"}
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                      {(!accounts || accounts.length === 0) && (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="px-6 py-12 text-center text-muted-foreground"
-                          >
-                            Nenhuma conta encontrada.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="lg:hidden space-y-3">
-                {accounts?.map((acc) => (
-                  <div
-                    key={acc.id}
-                    className="bg-card border border-border rounded-xl p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-foreground truncate">
-                          {acc.fullName}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {acc.email}
-                        </div>
-                      </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <div className="font-black font-mono tabular-nums text-primary text-lg">
-                          {acc.points}
-                        </div>
-                        <TierBadge tier={acc.tier} />
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleOpenAdjust(acc)}
-                        className="w-full"
-                      >
-                        <ArrowLeftRight className="h-4 w-4 mr-2" />
-                        {t("adjustPoints") || "Ajustar"}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {(!accounts || accounts.length === 0) && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Nenhuma conta encontrada.
-                  </div>
-                )}
-              </div>
+              <AccountsTab />
             </TabsContent>
 
             <TabsContent value="catalog" className="space-y-6">
@@ -277,12 +171,6 @@ export default function AdminLoyaltyPage() {
               <ReportsTab />
             </TabsContent>
           </Tabs>
-
-          <AdjustPointsDialog
-            open={!!selectedAccount}
-            account={selectedAccount}
-            onClose={() => setSelectedAccount(null)}
-          />
         </div>
       </main>
 

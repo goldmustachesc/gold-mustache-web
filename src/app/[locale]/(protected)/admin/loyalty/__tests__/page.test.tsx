@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "pt-BR",
 }));
 
 vi.mock("next/navigation", () => ({
@@ -19,18 +20,30 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@/hooks/useAdminLoyalty", () => ({
-  useAdminLoyaltyAccounts: () => ({
-    data: [
-      {
-        id: "acc-1",
-        userId: "u-1",
-        fullName: "Test User",
-        email: "test@test.com",
-        points: 100,
-        tier: "BRONZE",
-      },
-    ],
+  useAdminExpiringPoints: () => ({
+    data: [],
     isLoading: false,
+    isError: false,
+  }),
+  useAdminLoyaltyAccounts: () => ({
+    data: {
+      accounts: [
+        {
+          id: "acc-1",
+          userId: "u-1",
+          fullName: "Test User",
+          email: "test@test.com",
+          points: 100,
+          tier: "BRONZE",
+          lifetimePoints: 200,
+          memberSince: "2024-01-01T00:00:00.000Z",
+          redemptionCount: 0,
+        },
+      ],
+      meta: { page: 1, limit: 50, total: 1, totalPages: 1 },
+    },
+    isLoading: false,
+    isError: false,
   }),
   useAdminAdjustPoints: () => ({
     mutateAsync: vi.fn(),

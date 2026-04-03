@@ -40,9 +40,16 @@ export interface AccountsParams {
   sortOrder?: "asc" | "desc";
 }
 
+export interface AdminLoyaltyAccountsPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface PaginatedAccountsResponse {
   data: AdminLoyaltyAccountExtended[];
-  meta: { page: number; limit: number; total: number; totalPages: number };
+  meta: AdminLoyaltyAccountsPageMeta;
 }
 
 function buildAdminAccountsQuery(
@@ -73,7 +80,10 @@ export function useAdminLoyaltyAccounts(
         buildAdminAccountsQuery(page, limit, params),
       ),
     staleTime: 60 * 1000,
-    select: (response) => response.data,
+    select: (response) => ({
+      accounts: response.data,
+      meta: response.meta,
+    }),
   });
 }
 
@@ -164,11 +174,18 @@ export function useAdminAdjustPoints() {
 
       queryClient.setQueriesData(
         { queryKey: ["admin", "loyalty", "accounts"] },
-        (old: PaginatedAccountsResponse | undefined) => {
-          if (!old?.data) return old;
+        (
+          old:
+            | {
+                accounts: AdminLoyaltyAccountExtended[];
+                meta: AdminLoyaltyAccountsPageMeta;
+              }
+            | undefined,
+        ) => {
+          if (!old?.accounts) return old;
           return {
             ...old,
-            data: old.data.map((acc) =>
+            accounts: old.accounts.map((acc) =>
               acc.id === accountId
                 ? { ...acc, points: Math.max(0, acc.points + points) }
                 : acc,

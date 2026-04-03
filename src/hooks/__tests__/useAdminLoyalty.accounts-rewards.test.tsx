@@ -28,6 +28,12 @@ const accountsApiResponse = {
 
 const accountsData = accountsApiResponse.data.data;
 
+/** Mesmo formato retornado por `select` em `useAdminLoyaltyAccounts`. */
+const accountsQueryCacheValue = {
+  accounts: accountsData,
+  meta: accountsApiResponse.data.meta,
+};
+
 const defaultAccountsQueryKey = {
   page: 1,
   limit: 50,
@@ -93,7 +99,10 @@ describe("useAdminLoyaltyAccounts", () => {
       "/api/admin/loyalty/accounts?page=1&limit=50",
       undefined,
     );
-    expect(result.current.data).toEqual(accountsData);
+    expect(result.current.data).toEqual({
+      accounts: accountsData,
+      meta: { page: 1, limit: 50, total: 1, totalPages: 1 },
+    });
   });
 
   it("inclui filtros e ordenação na URL e no queryKey", async () => {
@@ -246,7 +255,7 @@ describe("useAdminAdjustPoints", () => {
       "accounts",
       { ...defaultAccountsQueryKey },
     ];
-    queryClient.setQueryData(cacheKey, accountsApiResponse.data);
+    queryClient.setQueryData(cacheKey, accountsQueryCacheValue);
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     const { result } = renderHook(() => useAdminAdjustPoints(), {
@@ -262,9 +271,9 @@ describe("useAdminAdjustPoints", () => {
     });
 
     const cached = queryClient.getQueryData(cacheKey) as {
-      data: Array<{ points: number }>;
+      accounts: Array<{ points: number }>;
     };
-    expect(cached.data[0].points).toBe(125);
+    expect(cached.accounts[0].points).toBe(125);
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["admin", "loyalty", "accounts"],
       exact: false,
@@ -285,7 +294,7 @@ describe("useAdminAdjustPoints", () => {
       "accounts",
       { ...defaultAccountsQueryKey },
     ];
-    queryClient.setQueryData(cacheKey, accountsApiResponse.data);
+    queryClient.setQueryData(cacheKey, accountsQueryCacheValue);
 
     const { result } = renderHook(() => useAdminAdjustPoints(), {
       wrapper: createWrapper(queryClient),
@@ -301,9 +310,7 @@ describe("useAdminAdjustPoints", () => {
       ).rejects.toThrow("ADJUST_FAILED");
     });
 
-    expect(queryClient.getQueryData(cacheKey)).toEqual(
-      accountsApiResponse.data,
-    );
+    expect(queryClient.getQueryData(cacheKey)).toEqual(accountsQueryCacheValue);
   });
 
   it("mantém cache ausente no update otimista quando a lista ainda não foi carregada", async () => {

@@ -197,6 +197,23 @@
       "expirationAlert": {
         "title": "Puntos a punto de expirar",
         "description": "{count, plural, one {Hay # movimiento con puntos a punto de expirar.} other {Hay # movimientos con puntos a punto de expirar.}}"
+      },
+      "table": {
+        "loadError": "No se pudieron cargar las cuentas.",
+        "empty": "No se encontraron cuentas.",
+        "sortByColumn": "Ordenar por {column}",
+        "columns": {
+          "client": "Cliente",
+          "tier": "Nivel",
+          "currentPoints": "Puntos",
+          "lifetimePoints": "Vitalicio",
+          "memberSince": "Cliente desde",
+          "redemptions": "Canjes",
+          "actions": "Acciones"
+        },
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "pageStatus": "Página {page} de {totalPages} · {total, plural, one {# cuenta} other {# cuentas}}"
       }
     }
   }
