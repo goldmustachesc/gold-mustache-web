@@ -57,6 +57,7 @@ export function useBarbers() {
 }
 
 export function useServices(barberId?: string) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["services", barberId],
     queryFn: () =>
@@ -64,6 +65,15 @@ export function useServices(barberId?: string) {
         barberId ? `/api/services?barberId=${barberId}` : "/api/services",
       ),
     staleTime: 5 * 60 * 1000,
+    placeholderData: () => {
+      if (!barberId) return undefined;
+      const cached = queryClient.getQueryData<ServiceData[]>([
+        "services",
+        undefined,
+      ]);
+      if (!cached?.length || cached[0]?.price === undefined) return undefined;
+      return cached;
+    },
   });
 }
 

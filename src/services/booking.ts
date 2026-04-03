@@ -67,10 +67,28 @@ async function getBookingPolicyError(params: {
 
   const dayOfWeek = appointmentDateLocal.getDay();
 
+  const shopHoursSelect = {
+    isOpen: true,
+    startTime: true,
+    endTime: true,
+    breakStart: true,
+    breakEnd: true,
+  } as const;
+  const workingHoursSelect = {
+    startTime: true,
+    endTime: true,
+    breakStart: true,
+    breakEnd: true,
+  } as const;
+
   const [shopHours, workingHours, shopClosures, absences] = await Promise.all([
-    prisma.shopHours.findUnique({ where: { dayOfWeek } }),
+    prisma.shopHours.findUnique({
+      where: { dayOfWeek },
+      select: shopHoursSelect,
+    }),
     prisma.workingHours.findUnique({
       where: { barberId_dayOfWeek: { barberId, dayOfWeek } },
+      select: workingHoursSelect,
     }),
     prisma.shopClosure.findMany({
       where: { date: appointmentDateDb },
@@ -257,6 +275,15 @@ export async function getServices(barberId?: string): Promise<ServiceData[]> {
   const services = await prisma.service.findMany({
     where,
     orderBy: { name: "asc" },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      duration: true,
+      price: true,
+      active: true,
+    },
   });
 
   return services.map((service) => ({
@@ -339,7 +366,16 @@ async function loadBookingAvailabilityContext(
         barbers: { select: { barberId: true } },
       },
     }),
-    prisma.shopHours.findUnique({ where: { dayOfWeek } }),
+    prisma.shopHours.findUnique({
+      where: { dayOfWeek },
+      select: {
+        isOpen: true,
+        startTime: true,
+        endTime: true,
+        breakStart: true,
+        breakEnd: true,
+      },
+    }),
     prisma.shopClosure.findMany({
       where: { date: dateForDb },
       select: { startTime: true, endTime: true },
@@ -350,6 +386,12 @@ async function loadBookingAvailabilityContext(
     }),
     prisma.workingHours.findUnique({
       where: { barberId_dayOfWeek: { barberId, dayOfWeek } },
+      select: {
+        startTime: true,
+        endTime: true,
+        breakStart: true,
+        breakEnd: true,
+      },
     }),
     prisma.appointment.findMany({
       where: {

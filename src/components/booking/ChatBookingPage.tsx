@@ -147,7 +147,7 @@ export function ChatBookingPage({
   }, []);
 
   const showTypingThenMessage = useCallback(
-    (data: MessageData, delay = 400) => {
+    (data: MessageData, delay = 250) => {
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
@@ -263,7 +263,7 @@ export function ChatBookingPage({
 
       clearProcessedStepsFrom(targetStep);
       setStep(targetStep);
-      setTimeout(() => setShowSelector(targetStep), 300);
+      setTimeout(() => setShowSelector(targetStep), 150);
     },
     [clearProcessedStepsFrom, getPreviousStep, pruneMessagesForBackNavigation],
   );
@@ -277,7 +277,7 @@ export function ChatBookingPage({
       setSelectedDate(null);
       setSelectedSlot(null);
       addMessage({ type: "user", text: barber.name });
-      setTimeout(() => setStep("service"), 100);
+      setTimeout(() => setStep("service"), 50);
     },
     [addMessage],
   );
@@ -292,7 +292,7 @@ export function ChatBookingPage({
         type: "user",
         text: `${service.name} • R$ ${service.price.toFixed(2).replace(".", ",")}`,
       });
-      setTimeout(() => setStep("date"), 100);
+      setTimeout(() => setStep("date"), 50);
     },
     [addMessage],
   );
@@ -306,7 +306,7 @@ export function ChatBookingPage({
         type: "user",
         text: formatDateDdMmYyyyInSaoPaulo(date),
       });
-      setTimeout(() => setStep("time"), 100);
+      setTimeout(() => setStep("time"), 50);
     },
     [addMessage],
   );
@@ -320,7 +320,7 @@ export function ChatBookingPage({
     // Also remove "date" so the prompt shows again
     processedStepsRef.current.delete("date");
     setStep("date");
-    setTimeout(() => setShowSelector("date"), 300);
+    setTimeout(() => setShowSelector("date"), 150);
   }, []);
 
   const handleSlotSelect = useCallback(
@@ -330,17 +330,13 @@ export function ChatBookingPage({
       addMessage({ type: "user", text: slot.time });
 
       if (isGuest) {
-        setTimeout(() => setStep("info"), 100);
+        setTimeout(() => setStep("info"), 50);
       } else if (!profileReady) {
-        // Profile still loading for logged-in user - wait then decide
-        // The useEffect below will handle the transition once profile loads
-        setTimeout(() => setStep("profile-update"), 100);
+        setTimeout(() => setStep("profile-update"), 50);
       } else if (!hasCompleteProfile) {
-        // Logged in user without complete profile - ask for missing info
-        setTimeout(() => setStep("profile-update"), 100);
+        setTimeout(() => setStep("profile-update"), 50);
       } else {
-        // Logged in user with complete profile - go to review step
-        setTimeout(() => setStep("review"), 100);
+        setTimeout(() => setStep("review"), 50);
       }
     },
     [addMessage, isGuest, hasCompleteProfile, profileReady],
@@ -359,7 +355,7 @@ export function ChatBookingPage({
       });
 
       // Go to review step instead of confirming immediately
-      setTimeout(() => setStep("review"), 100);
+      setTimeout(() => setStep("review"), 50);
     },
     [selectedBarber, selectedService, selectedDate, selectedSlot, addMessage],
   );
@@ -371,7 +367,7 @@ export function ChatBookingPage({
       text: "Perfil atualizado ✓",
     });
     // Go to review step after profile is complete
-    setTimeout(() => setStep("review"), 100);
+    setTimeout(() => setStep("review"), 50);
   }, [addMessage]);
 
   // Handle booking confirmation (called from review step)
@@ -428,7 +424,7 @@ export function ChatBookingPage({
         setSelectedSlot(null);
         processedStepsRef.current.delete("time");
         setStep("time");
-        setTimeout(() => setShowSelector("time"), 300);
+        setTimeout(() => setShowSelector("time"), 150);
       } else if (isSlotOccupiedError) {
         addMessage({
           type: "bot",
@@ -437,7 +433,7 @@ export function ChatBookingPage({
         setSelectedSlot(null);
         processedStepsRef.current.delete("time");
         setStep("time");
-        setTimeout(() => setShowSelector("time"), 300);
+        setTimeout(() => setShowSelector("time"), 150);
       } else {
         addMessage({ type: "bot", text: `❌ ${errorMessage}` });
         // Go back to review so user can try again
@@ -461,12 +457,10 @@ export function ChatBookingPage({
     processedStepsRef.current.delete("review");
     if (isGuest) {
       setStep("info");
-      setTimeout(() => setShowSelector("info"), 300);
+      setTimeout(() => setShowSelector("info"), 150);
     } else {
-      // For logged-in users, always go back to time selection
-      // The profile was already updated if needed
       setStep("time");
-      setTimeout(() => setShowSelector("time"), 300);
+      setTimeout(() => setShowSelector("time"), 150);
     }
   }, [isGuest]);
 
@@ -513,8 +507,7 @@ export function ChatBookingPage({
             </span>
           ),
         });
-        // Skip to service selection
-        setTimeout(() => setStep("service"), 100);
+        setTimeout(() => setStep("service"), 50);
       }
     }
   }, [
@@ -541,7 +534,7 @@ export function ChatBookingPage({
         type: "bot-jsx",
         content: greetingMessage,
       });
-      setTimeout(() => setStep("barber"), 800);
+      setTimeout(() => setStep("barber"), 400);
     }
   }, [step, showTypingThenMessage, preSelectedBarberId]);
 
@@ -559,8 +552,8 @@ export function ChatBookingPage({
           text: "Qual barbeiro você prefere? ✂️",
           step: "barber",
         });
-        setTimeout(() => setShowSelector("barber"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("barber"), 200);
+      }, 150);
     }
   }, [step, showTypingThenMessage, preSelectedBarberId]);
 
@@ -582,8 +575,8 @@ export function ChatBookingPage({
           ),
           step: "service",
         });
-        setTimeout(() => setShowSelector("service"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("service"), 200);
+      }, 150);
     }
   }, [step, selectedBarber, showTypingThenMessage]);
 
@@ -600,8 +593,8 @@ export function ChatBookingPage({
           text: "Perfeito! 📅 Qual dia é melhor para você?",
           step: "date",
         });
-        setTimeout(() => setShowSelector("date"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("date"), 200);
+      }, 150);
     }
   }, [step, selectedService, showTypingThenMessage]);
 
@@ -618,8 +611,8 @@ export function ChatBookingPage({
           text: "🕐 Que horário funciona melhor?",
           step: "time",
         });
-        setTimeout(() => setShowSelector("time"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("time"), 200);
+      }, 150);
     }
   }, [step, selectedDate, showTypingThenMessage]);
 
@@ -636,8 +629,8 @@ export function ChatBookingPage({
           text: "Quase lá! 📝 Para finalizar, preciso de alguns dados para confirmar seu agendamento.",
           step: "info",
         });
-        setTimeout(() => setShowSelector("info"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("info"), 200);
+      }, 150);
     }
   }, [step, selectedSlot, showTypingThenMessage]);
 
@@ -655,8 +648,8 @@ export function ChatBookingPage({
           text: "📱 Para concluir o agendamento, precisamos completar seu cadastro.",
           step: "profile-update",
         });
-        setTimeout(() => setShowSelector("profile-update"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("profile-update"), 200);
+      }, 150);
     }
   }, [step, selectedSlot, showTypingThenMessage]);
 
@@ -670,8 +663,8 @@ export function ChatBookingPage({
           text: "📋 Confira os detalhes do seu agendamento antes de confirmar:",
           step: "review",
         });
-        setTimeout(() => setShowSelector("review"), 500);
-      }, 300);
+        setTimeout(() => setShowSelector("review"), 200);
+      }, 150);
     }
   }, [step, showTypingThenMessage]);
 
@@ -912,7 +905,7 @@ export function ChatBookingPage({
           <div className="p-2 bg-primary/10 rounded-lg">
             <Calendar className="h-5 w-5 text-primary" />
           </div>
-          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             Novo Agendamento
           </h2>
         </div>

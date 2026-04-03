@@ -135,8 +135,13 @@ export function ChatTimeSlotSelector({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="chat-exact-time">Escolha o início exato</Label>
+      <div className="rounded-xl border border-zinc-300/50 bg-zinc-100/40 p-3 dark:border-zinc-700/50 dark:bg-zinc-800/40">
+        <Label
+          htmlFor="chat-exact-time"
+          className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+        >
+          Escolha o início exato
+        </Label>
         <Input
           id="chat-exact-time"
           aria-label="Escolha o início exato"
@@ -145,16 +150,17 @@ export function ChatTimeSlotSelector({
           value={selectedTime}
           onChange={(event) => setSelectedTime(event.target.value)}
           className={cn(
-            "bg-zinc-100/80 border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50",
+            "mt-2 text-lg font-semibold tabular-nums",
+            "bg-white/80 border-zinc-300/60 dark:bg-zinc-900/60 dark:border-zinc-700/60",
             selectedTimeError &&
               "border-destructive focus-visible:ring-destructive/30",
           )}
         />
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Você pode escolher qualquer minuto dentro das janelas acima.
+        <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          Qualquer minuto dentro das janelas acima.
         </p>
         {selectedTimeError && (
-          <p className="text-sm text-destructive">{selectedTimeError}</p>
+          <p className="mt-1 text-sm text-destructive">{selectedTimeError}</p>
         )}
       </div>
 

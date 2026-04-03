@@ -110,10 +110,21 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       },
     ]);
 
+    const serviceSelect = {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      duration: true,
+      price: true,
+      active: true,
+    };
+
     const all = await getServices();
     expect(prisma.service.findMany).toHaveBeenCalledWith({
       where: { active: true },
       orderBy: { name: "asc" },
+      select: serviceSelect,
     });
     expect(all[0]?.price).toBe(10);
 
@@ -140,6 +151,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
         },
       },
       orderBy: { name: "asc" },
+      select: serviceSelect,
     });
     expect(filtered[0]?.id).toBe("s-2");
   });
