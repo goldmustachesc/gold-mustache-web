@@ -28,17 +28,10 @@ import {
   EyeOff,
   Plus,
   Calendar,
-  MoreVertical,
   CalendarPlus,
   Users,
   Clock,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import {
   formatDateToString,
@@ -490,54 +483,6 @@ export function BarberDashboard({
   return (
     <div>
       <PrivateHeaderActions>
-        {/* Mobile: CTA + Dropdown para ações secundárias */}
-        <div className="flex items-center gap-1 lg:hidden">
-          <Link href={`/${locale}/barbeiro/agendar`}>
-            <Button
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Agendar
-            </Button>
-          </Link>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground hover:bg-accent"
-                aria-label="Mais ações"
-              >
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link
-                  href={absencesPageHref}
-                  className="flex items-center gap-2"
-                >
-                  <CalendarOff className="h-4 w-4" />
-                  Nova Ausência
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setHideValues((prev) => !prev)}
-                className="flex items-center gap-2"
-              >
-                {hideValues ? (
-                  <Eye className="h-4 w-4" />
-                ) : (
-                  <EyeOff className="h-4 w-4" />
-                )}
-                {hideValues ? "Mostrar Valores" : "Ocultar Valores"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
         {/* Desktop: CTAs completos */}
         <Link href={`/${locale}/barbeiro/agendar`} className="hidden lg:block">
           <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
@@ -594,6 +539,8 @@ export function BarberDashboard({
                 hasConfiguredWorkingHours={
                   dashboardOperationalModel.hasConfiguredWorkingHours
                 }
+                absencesHref={absencesPageHref}
+                onToggleHideValues={() => setHideValues((prev) => !prev)}
               />
             )}
             <div

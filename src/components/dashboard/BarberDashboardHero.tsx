@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { CalendarOff, Eye, EyeOff, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { AppointmentWithDetails } from "@/types/booking";
 import type {
@@ -19,6 +26,9 @@ export type BarberDashboardHeroProps = {
   viewingToday: boolean;
   hasConfiguredWorkingHours: boolean;
   agendaSectionId?: string;
+  /** Mobile-only contextual actions (desktop uses the global header). */
+  absencesHref?: string;
+  onToggleHideValues?: () => void;
 };
 
 function clientLabel(
@@ -55,6 +65,8 @@ export function BarberDashboardHero({
   viewingToday,
   hasConfiguredWorkingHours,
   agendaSectionId = "agenda-do-dia",
+  absencesHref,
+  onToggleHideValues,
 }: BarberDashboardHeroProps) {
   const fillSlotTime =
     hero.kind === "available-slot" && hero.primaryTime
@@ -145,6 +157,9 @@ export function BarberDashboardHero({
   const showFillSlotPrimary =
     hero.kind === "available-slot" && Boolean(fillSlotHref);
 
+  const showMobileAgendaActions =
+    Boolean(absencesHref) && typeof onToggleHideValues === "function";
+
   return (
     <section
       data-testid="barber-dashboard-hero"
@@ -154,20 +169,65 @@ export function BarberDashboardHero({
         "dark:border-primary/40 dark:from-card dark:via-card dark:to-primary/12",
       )}
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-        {eyebrow}
-      </p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
-        {primaryLine}
-      </p>
-      {secondaryLine ? (
-        <p className="mt-1 text-sm text-muted-foreground">{secondaryLine}</p>
-      ) : null}
-      {tertiaryLine ? (
-        <p className="mt-0.5 text-sm font-medium text-foreground">
-          {tertiaryLine}
-        </p>
-      ) : null}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            {eyebrow}
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+            {primaryLine}
+          </p>
+          {secondaryLine ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {secondaryLine}
+            </p>
+          ) : null}
+          {tertiaryLine ? (
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              {tertiaryLine}
+            </p>
+          ) : null}
+        </div>
+
+        {showMobileAgendaActions && absencesHref ? (
+          <div
+            className="shrink-0 lg:hidden"
+            data-testid="barber-dashboard-hero-mobile-actions"
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:bg-accent hover:text-foreground"
+                  aria-label="Mais ações"
+                >
+                  <MoreVertical className="h-5 w-5" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={absencesHref} className="flex items-center gap-2">
+                    <CalendarOff className="h-4 w-4" aria-hidden />
+                    Nova Ausência
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={onToggleHideValues}
+                  className="flex items-center gap-2"
+                >
+                  {hideValues ? (
+                    <Eye className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <EyeOff className="h-4 w-4" aria-hidden />
+                  )}
+                  {hideValues ? "Mostrar Valores" : "Ocultar Valores"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : null}
+      </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {showFillSlotPrimary && fillSlotHref ? (

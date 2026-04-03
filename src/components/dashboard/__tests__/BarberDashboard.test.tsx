@@ -142,9 +142,27 @@ vi.mock("../BarberStatsCards", () => ({
 }));
 
 vi.mock("../BarberDashboardHero", () => ({
-  BarberDashboardHero: ({ hideValues }: { hideValues: boolean }) => (
+  BarberDashboardHero: ({
+    hideValues,
+    absencesHref,
+    onToggleHideValues,
+  }: {
+    hideValues: boolean;
+    absencesHref?: string;
+    onToggleHideValues?: () => void;
+  }) => (
     <div data-testid="barber-dashboard-hero">
       {hideValues ? "hero-hidden" : "hero-visible"}
+      {absencesHref && onToggleHideValues ? (
+        <button
+          type="button"
+          data-testid="barber-dashboard-hero-mock-toggle-hide"
+          title="Ocultar valores (via hero)"
+          onClick={onToggleHideValues}
+        >
+          hero-toggle-hide
+        </button>
+      ) : null}
     </div>
   ),
 }));
@@ -546,7 +564,9 @@ describe("BarberDashboard", () => {
       "appointments:1",
     );
 
-    await user.click(screen.getByTitle("Ocultar valores"));
+    await user.click(
+      screen.getByTestId("barber-dashboard-hero-mock-toggle-hide"),
+    );
 
     expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent("hidden");
     expect(screen.getAllByTestId("daily-schedule")[0]).toHaveTextContent(

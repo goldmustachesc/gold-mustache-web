@@ -52,22 +52,24 @@ export function ClientDashboard({ locale }: ClientDashboardProps) {
     <div>
       <PrivateHeaderActions>
         {shouldShowBooking && bookingHref ? (
-          <Button
-            asChild
-            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold"
-          >
-            <Link
-              href={bookingHref}
-              aria-label="Agendar"
-              title="Agendar"
-              {...(isExternal
-                ? { target: "_blank", rel: "noopener noreferrer" }
-                : {})}
+          <div className="hidden lg:contents">
+            <Button
+              asChild
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold"
             >
-              <Calendar className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Agendar</span>
-            </Link>
-          </Button>
+              <Link
+                href={bookingHref}
+                aria-label="Agendar"
+                title="Agendar"
+                {...(isExternal
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Agendar
+              </Link>
+            </Button>
+          </div>
         ) : null}
       </PrivateHeaderActions>
       <main className="max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8 space-y-6">

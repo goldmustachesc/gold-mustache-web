@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { BarberDashboardHero } from "../BarberDashboardHero";
 import type { OperationalScheduleSlot } from "../buildDailyOperationalModel";
 
@@ -130,6 +131,49 @@ describe("BarberDashboardHero", () => {
     expect(screen.queryByText("Corte + Barba")).not.toBeInTheDocument();
     expect(screen.getByText("Nome oculto")).toBeInTheDocument();
     expect(screen.getByText("Serviço oculto")).toBeInTheDocument();
+  });
+
+  it("expõe Nova Ausência e ocultar valores no menu contextual do hero (mobile)", async () => {
+    const user = userEvent.setup();
+    const onToggleHideValues = vi.fn();
+
+    render(
+      <BarberDashboardHero
+        hideValues={false}
+        hero={{
+          kind: "free-day",
+          primaryTime: null,
+          appointmentId: null,
+        }}
+        firstAvailableSlot={null}
+        focusedAppointment={null}
+        locale="pt-BR"
+        selectedDateStr="2026-04-08"
+        viewingToday
+        hasConfiguredWorkingHours
+        absencesHref="/pt-BR/barbeiro/ausencias?date=2026-04-08"
+        onToggleHideValues={onToggleHideValues}
+      />,
+    );
+
+    expect(
+      screen.getByTestId("barber-dashboard-hero-mobile-actions"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mais ações" }));
+
+    const absenceLink = screen.getByRole("menuitem", {
+      name: /Nova Ausência/i,
+    });
+    expect(absenceLink).toHaveAttribute(
+      "href",
+      "/pt-BR/barbeiro/ausencias?date=2026-04-08",
+    );
+
+    await user.click(
+      screen.getByRole("menuitem", { name: /Ocultar Valores/i }),
+    );
+    expect(onToggleHideValues).toHaveBeenCalledTimes(1);
   });
 
   it("reforça a superfície do hero para dark mode com contraste de borda e fundo", () => {
