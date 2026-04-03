@@ -84,22 +84,28 @@ describe("GET /api/admin/loyalty/accounts", () => {
       {
         id: "acc-1",
         currentPoints: 500,
+        lifetimePoints: 800,
         tier: "GOLD",
+        createdAt: new Date("2025-01-01T00:00:00.000Z"),
         profileId: "profile-1",
         profile: {
           userId: "user-1",
           fullName: "John Doe",
         },
+        _count: { redemptions: 2 },
       },
       {
         id: "acc-2",
         currentPoints: 100,
+        lifetimePoints: 200,
         tier: "BRONZE",
+        createdAt: new Date("2025-02-01T00:00:00.000Z"),
         profileId: "profile-2",
         profile: {
           userId: "user-2",
           fullName: null,
         },
+        _count: { redemptions: 0 },
       },
     ];
 
@@ -126,6 +132,9 @@ describe("GET /api/admin/loyalty/accounts", () => {
       email: "john@example.com",
       points: 500,
       tier: "GOLD",
+      lifetimePoints: 800,
+      memberSince: "2025-01-01T00:00:00.000Z",
+      redemptionCount: 2,
     });
     expect(json.data.data[1]).toMatchObject({
       id: "acc-2",
@@ -134,6 +143,9 @@ describe("GET /api/admin/loyalty/accounts", () => {
       email: "jane@example.com",
       points: 100,
       tier: "BRONZE",
+      lifetimePoints: 200,
+      memberSince: "2025-02-01T00:00:00.000Z",
+      redemptionCount: 0,
     });
     expect(json.data.meta).toMatchObject({
       page: 1,
