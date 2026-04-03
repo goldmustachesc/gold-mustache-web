@@ -90,6 +90,10 @@ vi.mock("@/hooks/useAdminRewards", () => ({
     ],
     isLoading: false,
   }),
+  useAdminDeleteReward: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/components/loyalty/RewardModal", () => ({

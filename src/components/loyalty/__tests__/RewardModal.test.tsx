@@ -25,6 +25,16 @@ vi.mock("@/hooks/useAdminRewards", () => ({
     isPending: mocks.isPending,
     error: mocks.rewardError,
   }),
+  useAdminReward: () => ({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  }),
+  useAdminUpdateReward: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
 }));
 
 vi.mock("@/components/ui/dialog", () => ({

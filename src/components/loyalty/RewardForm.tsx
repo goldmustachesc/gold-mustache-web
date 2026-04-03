@@ -37,12 +37,16 @@ interface RewardFormProps {
   initialData?: Partial<CreateRewardData>;
   onSubmit: (data: CreateRewardData) => Promise<void>;
   isLoading?: boolean;
+  mode?: "create" | "edit";
+  onCancel?: () => void;
 }
 
 export function RewardForm({
   initialData,
   onSubmit,
   isLoading = false,
+  mode = "create",
+  onCancel,
 }: RewardFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CreateRewardData>({
@@ -89,17 +93,18 @@ export function RewardForm({
     setIsSubmitting(true);
     try {
       await onSubmit(formData);
-      // Reset form on success
-      setFormData({
-        name: "",
-        description: "",
-        pointsCost: 100,
-        type: "FREE_SERVICE",
-        value: undefined,
-        imageUrl: "",
-        stock: undefined,
-        active: true,
-      });
+      if (mode === "create") {
+        setFormData({
+          name: "",
+          description: "",
+          pointsCost: 100,
+          type: "FREE_SERVICE",
+          value: undefined,
+          imageUrl: "",
+          stock: undefined,
+          active: true,
+        });
+      }
     } catch (error) {
       console.error("Error submitting reward:", error);
     } finally {
@@ -287,7 +292,11 @@ export function RewardForm({
         <Button
           type="button"
           variant="outline"
-          onClick={() =>
+          onClick={() => {
+            if (onCancel) {
+              onCancel();
+              return;
+            }
             setFormData({
               name: "",
               description: "",
@@ -297,8 +306,8 @@ export function RewardForm({
               imageUrl: "",
               stock: undefined,
               active: true,
-            })
-          }
+            });
+          }}
           disabled={isLoading || isSubmitting}
         >
           Cancelar
@@ -309,6 +318,8 @@ export function RewardForm({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Salvando...
             </>
+          ) : mode === "edit" ? (
+            "Salvar Alterações"
           ) : (
             "Criar Recompensa"
           )}

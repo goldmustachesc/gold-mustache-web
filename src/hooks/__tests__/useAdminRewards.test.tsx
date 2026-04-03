@@ -156,7 +156,19 @@ describe("useAdminUpdateReward", () => {
     });
 
     await act(async () => {
-      result.current.mutate({ id: "r-1", data: { name: "Updated" } });
+      result.current.mutate({
+        id: "r-1",
+        data: {
+          name: "Updated",
+          description: "",
+          pointsCost: 100,
+          type: "FREE_SERVICE",
+          value: undefined,
+          imageUrl: "",
+          stock: undefined,
+          active: true,
+        },
+      });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

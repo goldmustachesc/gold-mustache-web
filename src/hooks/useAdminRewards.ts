@@ -19,11 +19,11 @@ export function useAdminRewards() {
   });
 }
 
-export function useAdminReward(id: string) {
+export function useAdminReward(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["admin", "loyalty", "rewards", id],
     queryFn: () => apiGet<AdminReward>(`/api/admin/loyalty/rewards/${id}`),
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
   });
 }
 
@@ -61,9 +61,25 @@ export function useAdminUpdateReward() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<AdminReward> }) =>
-      apiMutate<AdminReward>(`/api/admin/loyalty/rewards/${id}`, "PUT", data),
+    mutationFn: ({ id, data }: { id: string; data: CreateRewardData }) => {
+      const mappedData = {
+        name: data.name,
+        description: data.description,
+        pointsCost: data.pointsCost,
+        type: data.type,
+        value: data.value,
+        imageUrl: data.imageUrl,
+        stock: data.stock,
+        active: data.active,
+      };
+      return apiMutate<AdminReward>(
+        `/api/admin/loyalty/rewards/${id}`,
+        "PUT",
+        mappedData,
+      );
+    },
     onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "rewards"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
       });
