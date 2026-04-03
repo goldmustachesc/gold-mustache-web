@@ -60,13 +60,13 @@ export const ClientCard = memo(function ClientCard({
   return (
     <div
       className={cn(
-        "flex items-center justify-between p-4 rounded-xl transition-all duration-200",
+        "flex flex-wrap sm:flex-nowrap items-center gap-2 p-4 rounded-xl transition-all duration-200",
         "bg-card/50 border border-border",
         "hover:border-border hover:bg-card/70",
         client.isBanned && "border-destructive/30 bg-destructive/10",
       )}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto sm:flex-1">
         <div
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
@@ -113,7 +113,7 @@ export const ClientCard = memo(function ClientCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 ml-auto sm:ml-0">
         <Button
           variant="ghost"
           size="icon"
