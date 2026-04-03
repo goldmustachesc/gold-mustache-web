@@ -65,7 +65,7 @@ describe("GET /api/barbers/me/clients/[id]/appointments", () => {
     expect(body.error).toBe("NOT_FOUND");
   });
 
-  it("returns appointments for a registered profile", async () => {
+  it("returns appointments for a registered profile scoped to barber", async () => {
     mockRequireBarber.mockResolvedValue({
       ok: true,
       barberId: "barber-1",
@@ -90,6 +90,11 @@ describe("GET /api/barbers/me/clients/[id]/appointments", () => {
     expect(body.data).toHaveLength(1);
     expect(body.data[0].date).toBe("2026-03-10");
     expect(body.data[0].servicePrice).toBe(50);
+    expect(mockAppointmentFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ barberId: "barber-1" }),
+      }),
+    );
   });
 
   it("returns appointments for a guest client", async () => {

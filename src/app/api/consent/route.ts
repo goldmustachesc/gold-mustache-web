@@ -55,29 +55,19 @@ export async function GET(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Build query conditions
-    const whereConditions = [];
-
-    if (user) {
-      whereConditions.push({ userId: user.id });
-    }
-
-    if (anonymousId) {
-      whereConditions.push({ anonymousId });
-    }
-
-    if (whereConditions.length === 0) {
+    if (!user && !anonymousId) {
       return apiSuccess({
         consent: null,
         message: "Nenhum identificador fornecido",
       });
     }
 
-    // Find consent record
+    const where = user
+      ? { userId: user.id }
+      : { anonymousId: anonymousId as string };
+
     const consent = await prisma.cookieConsent.findFirst({
-      where: {
-        OR: whereConditions,
-      },
+      where,
       orderBy: {
         consentDate: "desc",
       },

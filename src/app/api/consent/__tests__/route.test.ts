@@ -204,7 +204,7 @@ describe("/api/consent", () => {
       expect(body.data.consent).toBeNull();
     });
 
-    it("uses OR condition with both userId and anonymousId when authenticated", async () => {
+    it("queries by userId only when authenticated (ignores anonymousId)", async () => {
       rateLimitOk();
       authenticated();
       const { prisma } = await import("@/lib/prisma");
@@ -213,7 +213,7 @@ describe("/api/consent", () => {
       await GET(getRequest(`anonymousId=${ANON_ID}`));
 
       expect(prisma.cookieConsent.findFirst).toHaveBeenCalledWith({
-        where: { OR: [{ userId: USER_ID }, { anonymousId: ANON_ID }] },
+        where: { userId: USER_ID },
         orderBy: { consentDate: "desc" },
       });
     });
@@ -227,7 +227,7 @@ describe("/api/consent", () => {
       await GET(getRequest(`anonymousId=${ANON_ID}`));
 
       expect(prisma.cookieConsent.findFirst).toHaveBeenCalledWith({
-        where: { OR: [{ anonymousId: ANON_ID }] },
+        where: { anonymousId: ANON_ID },
         orderBy: { consentDate: "desc" },
       });
     });

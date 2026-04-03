@@ -62,6 +62,19 @@ export async function PATCH(
       return apiError("NOT_FOUND", "Cliente não encontrado", 404);
     }
 
+    const hasRelationship = await prisma.appointment.findFirst({
+      where: { guestClientId: clientId, barberId: auth.barberId },
+      select: { id: true },
+    });
+
+    if (!hasRelationship) {
+      return apiError(
+        "FORBIDDEN",
+        "Sem permissão para editar este cliente",
+        403,
+      );
+    }
+
     const body = await request.json();
     const validation = updateClientSchema.safeParse(body);
 

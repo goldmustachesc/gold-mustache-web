@@ -94,7 +94,7 @@ describe("GET /api/barbers/me/clients", () => {
     expect(response.status).toBe(401);
   });
 
-  it("returns merged list of registered and guest clients", async () => {
+  it("returns clients scoped to barber's appointments", async () => {
     barberAuthenticated();
     vi.mocked(prisma.profile.findMany).mockResolvedValue([
       REGISTERED_CLIENT,
@@ -114,6 +114,21 @@ describe("GET /api/barbers/me/clients", () => {
     expect(json.data[0].type).toBe("registered");
     expect(json.data[1].fullName).toBe("Carlos Santos");
     expect(json.data[1].type).toBe("guest");
+
+    expect(prisma.profile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          appointments: { some: { barberId: "barber-1" } },
+        }),
+      }),
+    );
+    expect(prisma.guestClient.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          appointments: { some: { barberId: "barber-1" } },
+        }),
+      }),
+    );
   });
 
   it("sorts clients alphabetically", async () => {
