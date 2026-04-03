@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  useAdminAccountTransactions,
   useAdminAdjustPoints,
+  useAdminExpiringPoints,
   useAdminLoyaltyAccounts,
   useAdminToggleReward,
 } from "../useAdminLoyalty";
@@ -25,6 +27,12 @@ const accountsApiResponse = {
 };
 
 const accountsData = accountsApiResponse.data.data;
+
+const defaultAccountsQueryKey = {
+  page: 1,
+  limit: 50,
+  params: undefined as import("../useAdminLoyalty").AccountsParams | undefined,
+};
 
 const rewardsResponse = {
   data: [
@@ -87,6 +95,136 @@ describe("useAdminLoyaltyAccounts", () => {
     );
     expect(result.current.data).toEqual(accountsData);
   });
+
+  it("inclui filtros e ordenação na URL e no queryKey", async () => {
+    stubFetchOk(accountsApiResponse);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const params = {
+      search: "João",
+      tier: "GOLD" as const,
+      sortBy: "lifetimePoints" as const,
+      sortOrder: "asc" as const,
+    };
+
+    const { result } = renderHook(
+      () => useAdminLoyaltyAccounts(2, 25, params),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    expect(fetchMock.mock.calls[0]?.[0]).toContain(
+      "/api/admin/loyalty/accounts?",
+    );
+    const calledUrl = String(fetchMock.mock.calls[0]?.[0]);
+    const qs = new URLSearchParams(calledUrl.split("?")[1]);
+    expect(qs.get("page")).toBe("2");
+    expect(qs.get("limit")).toBe("25");
+    expect(qs.get("search")).toBe("João");
+    expect(qs.get("tier")).toBe("GOLD");
+    expect(qs.get("sortBy")).toBe("lifetimePoints");
+    expect(qs.get("sortOrder")).toBe("asc");
+
+    const cached = queryClient.getQueryData([
+      "admin",
+      "loyalty",
+      "accounts",
+      { page: 2, limit: 25, params },
+    ]);
+    expect(cached).toBeDefined();
+  });
+});
+
+describe("useAdminAccountTransactions", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("busca transações quando enabled é true", async () => {
+    const txResponse = {
+      data: {
+        data: [
+          {
+            id: "tx-1",
+            loyaltyAccountId: "acc-1",
+            type: "EARN",
+            points: 10,
+            description: "Corte",
+            referenceId: null,
+            expiresAt: null,
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        meta: { page: 1, limit: 50, total: 1, totalPages: 1 },
+      },
+    };
+    stubFetchOk(txResponse);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(
+      () => useAdminAccountTransactions("acc-1", 1, 50, true),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/loyalty/accounts/acc-1/transactions?page=1&limit=50",
+      undefined,
+    );
+    expect(result.current.data).toEqual(txResponse.data.data);
+  });
+
+  it("não dispara fetch quando enabled é false", async () => {
+    stubFetchOk({
+      data: { data: [], meta: { page: 1, limit: 50, total: 0, totalPages: 0 } },
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(
+      () => useAdminAccountTransactions("acc-1", 1, 50, false),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.fetchStatus).toBe("idle"));
+    expect(result.current.data).toBeUndefined();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("useAdminExpiringPoints", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("busca pontos prestes a expirar", async () => {
+    const expiring = [
+      { id: "tx-1", points: 100, expiresAt: "2026-07-01T00:00:00.000Z" },
+    ];
+    stubFetchOk({ data: expiring });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useAdminExpiringPoints(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/loyalty/expiring-points",
+      undefined,
+    );
+    expect(result.current.data).toEqual(expiring);
+  });
 });
 
 describe("useAdminAdjustPoints", () => {
@@ -102,7 +240,12 @@ describe("useAdminAdjustPoints", () => {
         mutations: { retry: false },
       },
     });
-    const cacheKey = ["admin", "loyalty", "accounts", { page: 1, limit: 50 }];
+    const cacheKey = [
+      "admin",
+      "loyalty",
+      "accounts",
+      { ...defaultAccountsQueryKey },
+    ];
     queryClient.setQueryData(cacheKey, accountsApiResponse.data);
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
@@ -136,7 +279,12 @@ describe("useAdminAdjustPoints", () => {
         mutations: { retry: false },
       },
     });
-    const cacheKey = ["admin", "loyalty", "accounts", { page: 1, limit: 50 }];
+    const cacheKey = [
+      "admin",
+      "loyalty",
+      "accounts",
+      { ...defaultAccountsQueryKey },
+    ];
     queryClient.setQueryData(cacheKey, accountsApiResponse.data);
 
     const { result } = renderHook(() => useAdminAdjustPoints(), {
