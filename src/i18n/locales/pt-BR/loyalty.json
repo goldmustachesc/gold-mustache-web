@@ -157,6 +157,47 @@
       "pointsEarned30d": "Pontos ganhos",
       "redemptions30d": "Resgates realizados",
       "newAccounts30d": "Novas contas"
+    },
+    "accounts": {
+      "filters": {
+        "searchAria": "Buscar contas",
+        "searchPlaceholder": "Nome ou e-mail...",
+        "tierLabel": "Nível",
+        "tierAll": "Todos",
+        "tier": {
+          "BRONZE": "Bronze",
+          "SILVER": "Prata",
+          "GOLD": "Ouro",
+          "DIAMOND": "Diamante"
+        },
+        "sortBy": "Ordenar por",
+        "sortOrder": "Ordem",
+        "sortAsc": "Crescente",
+        "sortDesc": "Decrescente",
+        "sort": {
+          "currentPoints": "Saldo atual",
+          "lifetimePoints": "Pontos vitalícios",
+          "memberSince": "Cliente desde",
+          "createdAt": "Data de cadastro",
+          "tier": "Nível",
+          "fullName": "Nome"
+        }
+      },
+      "card": {
+        "memberSince": "Cliente desde",
+        "lifetimePoints": "Pontos vitalícios",
+        "redemptions": "Resgates",
+        "transactionsToggle": "Histórico de pontos"
+      },
+      "transactions": {
+        "empty": "Nenhuma movimentação encontrada.",
+        "loadError": "Não foi possível carregar o histórico.",
+        "loading": "Carregando..."
+      },
+      "expirationAlert": {
+        "title": "Pontos prestes a expirar",
+        "description": "{count, plural, one {Há # movimentação com pontos prestes a expirar.} other {Há # movimentações com pontos prestes a expirar.}}"
+      }
     }
   }
 }

@@ -157,6 +157,47 @@
       "pointsEarned30d": "Puntos ganados",
       "redemptions30d": "Canjes realizados",
       "newAccounts30d": "Nuevas cuentas"
+    },
+    "accounts": {
+      "filters": {
+        "searchAria": "Buscar cuentas",
+        "searchPlaceholder": "Nombre o correo...",
+        "tierLabel": "Nivel",
+        "tierAll": "Todos",
+        "tier": {
+          "BRONZE": "Bronce",
+          "SILVER": "Plata",
+          "GOLD": "Oro",
+          "DIAMOND": "Diamante"
+        },
+        "sortBy": "Ordenar por",
+        "sortOrder": "Orden",
+        "sortAsc": "Ascendente",
+        "sortDesc": "Descendente",
+        "sort": {
+          "currentPoints": "Saldo actual",
+          "lifetimePoints": "Puntos de por vida",
+          "memberSince": "Cliente desde",
+          "createdAt": "Fecha de alta",
+          "tier": "Nivel",
+          "fullName": "Nombre"
+        }
+      },
+      "card": {
+        "memberSince": "Cliente desde",
+        "lifetimePoints": "Puntos de por vida",
+        "redemptions": "Canjes",
+        "transactionsToggle": "Historial de puntos"
+      },
+      "transactions": {
+        "empty": "No hay movimientos.",
+        "loadError": "No se pudo cargar el historial.",
+        "loading": "Cargando..."
+      },
+      "expirationAlert": {
+        "title": "Puntos a punto de expirar",
+        "description": "{count, plural, one {Hay # movimiento con puntos a punto de expirar.} other {Hay # movimientos con puntos a punto de expirar.}}"
+      }
     }
   }
 }

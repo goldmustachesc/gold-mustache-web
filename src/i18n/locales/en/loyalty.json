@@ -157,6 +157,47 @@
       "pointsEarned30d": "Points earned",
       "redemptions30d": "Redemptions made",
       "newAccounts30d": "New accounts"
+    },
+    "accounts": {
+      "filters": {
+        "searchAria": "Search accounts",
+        "searchPlaceholder": "Name or email...",
+        "tierLabel": "Tier",
+        "tierAll": "All",
+        "tier": {
+          "BRONZE": "Bronze",
+          "SILVER": "Silver",
+          "GOLD": "Gold",
+          "DIAMOND": "Diamond"
+        },
+        "sortBy": "Sort by",
+        "sortOrder": "Order",
+        "sortAsc": "Ascending",
+        "sortDesc": "Descending",
+        "sort": {
+          "currentPoints": "Current balance",
+          "lifetimePoints": "Lifetime points",
+          "memberSince": "Member since",
+          "createdAt": "Sign-up date",
+          "tier": "Tier",
+          "fullName": "Name"
+        }
+      },
+      "card": {
+        "memberSince": "Member since",
+        "lifetimePoints": "Lifetime points",
+        "redemptions": "Redemptions",
+        "transactionsToggle": "Points history"
+      },
+      "transactions": {
+        "empty": "No transactions yet.",
+        "loadError": "Could not load history.",
+        "loading": "Loading..."
+      },
+      "expirationAlert": {
+        "title": "Points about to expire",
+        "description": "{count, plural, one {There is # transaction with points expiring soon.} other {There are # transactions with points expiring soon.}}"
+      }
     }
   }
 }
