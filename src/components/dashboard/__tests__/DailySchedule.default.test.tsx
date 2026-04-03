@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -8,7 +8,10 @@ import type {
 import { DailySchedule } from "../DailySchedule";
 
 const mockGetMinutesUntilAppointment = vi.hoisted(() => vi.fn(() => 30));
-const mockPrompt = vi.hoisted(() => vi.fn());
+
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useIsDesktop: () => false,
+}));
 
 vi.mock("@/utils/time-slots", async () => {
   const actual =
@@ -26,8 +29,6 @@ vi.mock("@/utils/time-slots", async () => {
 vi.mock("@/components/barber/AppointmentDetailSheet", () => ({
   AppointmentDetailSheet: () => null,
 }));
-
-vi.stubGlobal("prompt", mockPrompt);
 
 function buildAppointment(
   overrides: Partial<AppointmentWithDetails> = {},
@@ -86,7 +87,6 @@ describe("DailySchedule default", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetMinutesUntilAppointment.mockReturnValue(30);
-    mockPrompt.mockReset();
   });
 
   it("mostra dia livre quando nao ha agendamentos nem ausencia", () => {
@@ -124,8 +124,7 @@ describe("DailySchedule default", () => {
 
   it("permite cancelar um agendamento futuro no layout default", async () => {
     const user = userEvent.setup();
-    const onCancelAppointment = vi.fn();
-    mockPrompt.mockReturnValue("Cliente pediu cancelamento");
+    const onCancelAppointment = vi.fn().mockResolvedValue(true);
 
     render(
       <DailySchedule
@@ -137,7 +136,15 @@ describe("DailySchedule default", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(mockPrompt).toHaveBeenCalledWith("Motivo do cancelamento:");
+    expect(screen.getByText("Cancelar atendimento")).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "Cliente pediu cancelamento" } },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    );
+
     expect(onCancelAppointment).toHaveBeenCalledWith(
       "apt-1",
       "Cliente pediu cancelamento",

@@ -63,7 +63,7 @@ export function Header() {
               height={28}
               className="rounded-md object-cover"
             />
-            <span className="font-playfair text-lg font-bold text-primary hidden min-[400px]:inline">
+            <span className="font-playfair text-lg font-bold text-primary hidden xs:inline">
               Gold Mustache
             </span>
           </Link>

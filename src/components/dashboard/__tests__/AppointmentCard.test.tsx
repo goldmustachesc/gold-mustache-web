@@ -6,11 +6,14 @@ import { AppointmentCard } from "../AppointmentCard";
 import type { AppointmentWithDetails } from "@/types/booking";
 
 const mockGetMinutesUntilAppointment = vi.hoisted(() => vi.fn(() => 30));
-const mockPrompt = vi.hoisted(() => vi.fn());
 
 vi.mock("@/utils/time-slots", () => ({
   getMinutesUntilAppointment: (...args: unknown[]) =>
     mockGetMinutesUntilAppointment(...args),
+}));
+
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useIsDesktop: () => false,
 }));
 
 vi.mock("@/components/ui/dropdown-menu", () => ({
@@ -45,8 +48,6 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 vi.mock("../BarberChairIcon", () => ({
   BarberChairIcon: () => null,
 }));
-
-vi.stubGlobal("prompt", mockPrompt);
 
 function buildAppointment(
   overrides: Partial<AppointmentWithDetails> = {},
@@ -94,7 +95,7 @@ function renderAppointmentCard(
 ) {
   const onOpenDetail = vi.fn();
   const onSendReminder = vi.fn();
-  const onCancelAppointment = vi.fn();
+  const onCancelAppointment = vi.fn().mockResolvedValue(true);
   const onMarkNoShow = vi.fn();
   const onMarkComplete = vi.fn();
 
@@ -124,7 +125,6 @@ function renderAppointmentCard(
 describe("dashboard AppointmentCard", () => {
   beforeEach(() => {
     mockGetMinutesUntilAppointment.mockReturnValue(30);
-    mockPrompt.mockReset();
   });
 
   it("opens the detail sheet when the card is clicked", async () => {
@@ -173,27 +173,60 @@ describe("dashboard AppointmentCard", () => {
     expect(onSendReminder).toHaveBeenCalledWith("apt-1");
   });
 
-  it("cancels an appointment with the prompt reason", async () => {
+  it("abre o sheet de cancelamento e envia o motivo ao confirmar", async () => {
     const user = userEvent.setup();
-    mockPrompt.mockReturnValue("Cliente pediu cancelamento");
     const { onCancelAppointment } = renderAppointmentCard();
 
     await user.click(screen.getByText("Cancelar"));
 
-    expect(mockPrompt).toHaveBeenCalledWith("Motivo do cancelamento:");
+    expect(screen.getByText("Cancelar atendimento")).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "Cliente pediu cancelamento" } },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    );
+
     expect(onCancelAppointment).toHaveBeenCalledWith(
       "apt-1",
       "Cliente pediu cancelamento",
     );
   });
 
-  it("does not cancel when prompt returns empty", async () => {
+  it("envia ao pai o motivo já sem espaços nas pontas", async () => {
     const user = userEvent.setup();
-    mockPrompt.mockReturnValue("");
+    const { onCancelAppointment } = renderAppointmentCard();
+
+    await user.click(screen.getByText("Cancelar"));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "  texto útil  " } },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    );
+
+    expect(onCancelAppointment).toHaveBeenCalledWith("apt-1", "texto útil");
+  });
+
+  it("não envia cancelamento sem motivo nem só com espaços (botão desabilitado)", async () => {
+    const user = userEvent.setup();
     const { onCancelAppointment } = renderAppointmentCard();
 
     await user.click(screen.getByText("Cancelar"));
 
+    expect(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    ).toBeDisabled();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "   \n  " } },
+    );
+    expect(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    ).toBeDisabled();
     expect(onCancelAppointment).not.toHaveBeenCalled();
   });
 

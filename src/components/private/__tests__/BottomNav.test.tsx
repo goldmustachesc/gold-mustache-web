@@ -8,8 +8,13 @@ const mockProfile = vi.hoisted(() => ({
   value: null as { role: string; fullName: string | null } | null,
 }));
 
+const mockBarberProfile = vi.hoisted(() => ({
+  value: null as { id: string; name: string } | null,
+  isLoading: false,
+}));
+
 const mockPathname = vi.hoisted(() => ({
-  value: "/pt-BR/barbeiro",
+  value: "/pt-BR/dashboard",
 }));
 
 const mockBookingSettings = vi.hoisted(() => ({
@@ -22,6 +27,13 @@ const mockBookingSettings = vi.hoisted(() => ({
 
 vi.mock("@/hooks/useProfileMe", () => ({
   useProfileMe: () => ({ data: mockProfile.value }),
+}));
+
+vi.mock("@/hooks/useBarberProfile", () => ({
+  useBarberProfile: () => ({
+    data: mockBarberProfile.value,
+    isLoading: mockBarberProfile.isLoading,
+  }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -55,7 +67,9 @@ function Wrapper({ children }: { children: ReactNode }) {
 describe("BottomNav", () => {
   beforeEach(() => {
     mockProfile.value = null;
-    mockPathname.value = "/pt-BR/barbeiro";
+    mockBarberProfile.value = null;
+    mockBarberProfile.isLoading = false;
+    mockPathname.value = "/pt-BR/dashboard";
     mockBookingSettings.value = {
       bookingHref: "/pt-BR/agendar",
       shouldShowBooking: true,
@@ -73,9 +87,39 @@ describe("BottomNav", () => {
     render(<BottomNav />, { wrapper: Wrapper });
 
     expect(screen.getByText("Início")).toBeInTheDocument();
-    expect(screen.getByText("Agenda")).toBeInTheDocument();
+    expect(screen.getByText("Agendar")).toBeInTheDocument();
     expect(screen.getByText("Clientes")).toBeInTheDocument();
     expect(screen.getByText("Mais")).toBeInTheDocument();
+  });
+
+  it("usa /dashboard como entrada principal do barbeiro", () => {
+    mockProfile.value = { role: "BARBER", fullName: "João" };
+    mockPathname.value = "/pt-BR/dashboard";
+    render(<BottomNav />, { wrapper: Wrapper });
+
+    expect(screen.getByRole("link", { name: "Início" })).toHaveAttribute(
+      "href",
+      "/pt-BR/dashboard",
+    );
+  });
+
+  it("BARBER: o link Agendar aponta para /pt-BR/barbeiro/agendar", () => {
+    mockProfile.value = { role: "BARBER", fullName: "João" };
+    render(<BottomNav />, { wrapper: Wrapper });
+
+    expect(screen.getByRole("link", { name: "Agendar" })).toHaveAttribute(
+      "href",
+      "/pt-BR/barbeiro/agendar",
+    );
+  });
+
+  it("barber bottom nav does not contain duplicate routes", () => {
+    mockProfile.value = { role: "BARBER", fullName: "João" };
+    render(<BottomNav />, { wrapper: Wrapper });
+
+    const links = screen.getAllByRole("link");
+    const hrefs = links.map((l) => l.getAttribute("href"));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
   it("renders admin navigation items for ADMIN role with correct destinations", () => {
@@ -93,6 +137,42 @@ describe("BottomNav", () => {
 
     const teamLink = screen.getByRole("link", { name: "Equipe" });
     expect(teamLink).toHaveAttribute("href", "/pt-BR/admin/barbeiros");
+  });
+
+  it("usa a navegação de barbeiro quando ADMIN também tem barberProfile no dashboard", () => {
+    mockProfile.value = { role: "ADMIN", fullName: "Admin" };
+    mockBarberProfile.value = { id: "barber-1", name: "Carlos" };
+    mockPathname.value = "/pt-BR/dashboard";
+
+    render(<BottomNav />, { wrapper: Wrapper });
+
+    expect(screen.getByText("Agendar")).toBeInTheDocument();
+    expect(screen.getByText("Clientes")).toBeInTheDocument();
+    expect(screen.queryByText("Equipe")).not.toBeInTheDocument();
+    expect(screen.queryByText("Serviços")).not.toBeInTheDocument();
+  });
+
+  it("não renderiza navegação de admin enquanto o contexto de barbeiro ainda carrega", () => {
+    mockProfile.value = { role: "ADMIN", fullName: "Admin" };
+    mockPathname.value = "/pt-BR/barbeiro/clientes";
+    mockBarberProfile.value = null;
+    mockBarberProfile.isLoading = true;
+
+    const { container } = render(<BottomNav />, { wrapper: Wrapper });
+
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("mantém a navegação de admin fora do contexto de barbeiro mesmo com barberProfile", () => {
+    mockProfile.value = { role: "ADMIN", fullName: "Admin" };
+    mockBarberProfile.value = { id: "barber-1", name: "Carlos" };
+    mockPathname.value = "/pt-BR/admin/barbeiros";
+
+    render(<BottomNav />, { wrapper: Wrapper });
+
+    expect(screen.getByText("Equipe")).toBeInTheDocument();
+    expect(screen.getByText("Serviços")).toBeInTheDocument();
+    expect(screen.queryByText("Clientes")).not.toBeInTheDocument();
   });
 
   it("admin bottom nav does not contain duplicate routes", () => {

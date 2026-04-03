@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   usePrivateHeader: vi.fn(),
   useBarberAppointments: vi.fn(),
+  desktopSidebarProps: vi.fn(),
   appointmentsState: {
     data: [
       {
@@ -136,6 +137,23 @@ vi.mock("../BarberStatsCards", () => ({
   ),
 }));
 
+vi.mock("../BarberDashboardHero", () => ({
+  BarberDashboardHero: ({ hideValues }: { hideValues: boolean }) => (
+    <div data-testid="barber-dashboard-hero">
+      {hideValues ? "hero-hidden" : "hero-visible"}
+    </div>
+  ),
+}));
+
+vi.mock("../BarberDashboardDesktopSidebar", () => ({
+  BarberDashboardDesktopSidebar: (props: unknown) => {
+    mocks.desktopSidebarProps(props);
+    return (
+      <div data-testid="barber-dashboard-desktop-sidebar">desktop-sidebar</div>
+    );
+  },
+}));
+
 vi.mock("../WeeklyCalendar", () => ({
   WeeklyCalendar: ({
     onWeekChange,
@@ -172,7 +190,7 @@ vi.mock("../DailySchedule", () => ({
     hideValues: boolean;
     onCreateAppointmentFromSlot?: (time: string) => void;
     onCreateAbsenceFromSlot?: (startTime: string, endTime: string) => void;
-    onCancelAppointment: (id: string, reason: string) => Promise<void>;
+    onCancelAppointment: (id: string, reason: string) => Promise<boolean>;
     onMarkNoShow?: (id: string) => Promise<void>;
     onMarkComplete?: (id: string) => Promise<void>;
   }) => (
@@ -222,6 +240,23 @@ vi.mock("@/utils/time-slots", async () => {
   };
 });
 
+/** Alinha o “hoje” de `formatIsoDateYyyyMmDdInSaoPaulo(operationalNow)` ao mesmo dia fixo de `getBrazilDateString` acima. */
+vi.mock("@/utils/datetime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/utils/datetime")>();
+  const frozenTestToday = "2026-03-19";
+  return {
+    ...actual,
+    formatIsoDateYyyyMmDdInSaoPaulo: (date: Date) => {
+      const todayReal = actual.formatIsoDateYyyyMmDdInSaoPaulo(new Date());
+      const requested = actual.formatIsoDateYyyyMmDdInSaoPaulo(date);
+      if (requested === todayReal) {
+        return frozenTestToday;
+      }
+      return requested;
+    },
+  };
+});
+
 describe("BarberDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -247,6 +282,9 @@ describe("BarberDashboard", () => {
     expect(screen.getByTestId("weekly-calendar")).toBeInTheDocument();
     expect(screen.getByTestId("stats-cards-loading")).toBeInTheDocument();
     expect(screen.getByTestId("daily-schedule-loading")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("barber-dashboard-desktop-sidebar-skeleton"),
+    ).toBeInTheDocument();
   });
 
   it("renderiza uma unica instancia de calendario, cards e agenda", () => {
@@ -255,6 +293,215 @@ describe("BarberDashboard", () => {
     expect(screen.getAllByTestId("weekly-calendar")).toHaveLength(1);
     expect(screen.getAllByTestId("stats-cards")).toHaveLength(1);
     expect(screen.getAllByTestId("daily-schedule")).toHaveLength(1);
+    expect(screen.getAllByTestId("barber-dashboard-hero")).toHaveLength(1);
+  });
+
+  it("no mobile, renderiza o hero antes do calendario na ordem do DOM", () => {
+    const { container } = render(
+      <BarberDashboard barberProfile={barberProfile} locale="pt-BR" />,
+    );
+
+    const hero = container.querySelector(
+      '[data-testid="barber-dashboard-hero"]',
+    );
+    const calendar = container.querySelector('[data-testid="weekly-calendar"]');
+
+    expect(hero).toBeTruthy();
+    expect(calendar).toBeTruthy();
+    if (!hero || !calendar) {
+      throw new Error("hero e calendario devem existir no DOM");
+    }
+    expect(
+      hero.compareDocumentPosition(calendar) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("mostra o titulo explicito da agenda do dia", () => {
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Agenda do dia" }),
+    ).toBeInTheDocument();
+  });
+
+  it("exibe camada secundária com atalhos mínimos do hub", () => {
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    expect(
+      screen.getByTestId("barber-dashboard-secondary"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Agendar cliente/i }),
+    ).toHaveAttribute("href", "/pt-BR/barbeiro/agendar");
+    expect(screen.getByRole("link", { name: /^Clientes$/i })).toHaveAttribute(
+      "href",
+      "/pt-BR/barbeiro/clientes",
+    );
+    expect(screen.getByRole("link", { name: /^Ausências$/i })).toHaveAttribute(
+      "href",
+      "/pt-BR/barbeiro/ausencias?date=2026-03-19",
+    );
+    expect(screen.getByRole("link", { name: /^Horários$/i })).toHaveAttribute(
+      "href",
+      "/pt-BR/barbeiro/horarios",
+    );
+  });
+
+  it("renderiza painel lateral de apoio no desktop e mantém a camada secundária mobile separada", () => {
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    expect(
+      screen.getByTestId("barber-dashboard-desktop-sidebar"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("barber-dashboard-mobile-secondary")).toHaveClass(
+      "ipad:hidden",
+      "lg:hidden",
+    );
+  });
+
+  it("alinha a lateral desktop ao dia e à semana selecionados", async () => {
+    const user = userEvent.setup();
+
+    const currentWeekAppointments = [
+      {
+        id: "apt-current",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T09:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+    const selectedWeekAppointments = [
+      {
+        id: "apt-selected",
+        date: "2026-03-26",
+        startTime: "13:00",
+        endTime: "14:00",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-26T13:00:00.000Z",
+        createdAt: "2026-03-26T13:00:00.000Z",
+        service: {
+          id: "svc-2",
+          name: "Corte + Barba",
+          duration: 60,
+          price: 90,
+        },
+        client: { id: "client-2", fullName: "Pedro", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+
+    mocks.useBarberAppointments.mockImplementation(
+      (_barberId: string, weekStart: Date) => {
+        const weekStartLabel = weekStart.toISOString().slice(0, 10);
+
+        if (weekStartLabel === "2026-03-22") {
+          return { data: selectedWeekAppointments, isLoading: false };
+        }
+
+        return { data: currentWeekAppointments, isLoading: false };
+      },
+    );
+
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    await user.click(screen.getByRole("button", { name: "next-week" }));
+
+    await waitFor(() => {
+      const latestProps = mocks.desktopSidebarProps.mock.calls.at(-1)?.[0] as {
+        dailyAppointmentsCount: number;
+        dayRevenue: number;
+        weekRevenue: number;
+      };
+
+      expect(latestProps.dailyAppointmentsCount).toBe(1);
+      expect(latestProps.dayRevenue).toBe(90);
+      expect(latestProps.weekRevenue).toBe(90);
+    });
+  });
+
+  it("no mobile, coloca a agenda antes das métricas na ordem do DOM", () => {
+    const { container } = render(
+      <BarberDashboard barberProfile={barberProfile} locale="pt-BR" />,
+    );
+
+    const agenda = container.querySelector("#agenda-do-dia");
+    const stats = container.querySelector('[data-testid="stats-cards"]');
+
+    expect(agenda).toBeTruthy();
+    expect(stats).toBeTruthy();
+    if (!agenda || !stats) {
+      throw new Error("agenda e stats devem existir");
+    }
+
+    expect(
+      agenda.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("mantem o mobile por DOM e usa a grade desktop para distribuir hero, lateral e agenda", () => {
+    const { container } = render(
+      <BarberDashboard barberProfile={barberProfile} locale="pt-BR" />,
+    );
+
+    const layoutRoot = container.querySelector("main > div");
+    const heroWrapper = screen.getByTestId(
+      "barber-dashboard-hero",
+    ).parentElement;
+    const calendarWrapper =
+      screen.getByTestId("weekly-calendar").parentElement?.parentElement
+        ?.parentElement;
+    const calendarStickyWrapper =
+      screen.getByTestId("weekly-calendar").parentElement?.parentElement;
+    const desktopSidebarWrapper = screen.getByTestId(
+      "barber-dashboard-desktop-sidebar",
+    ).parentElement;
+    const agendaWrapper =
+      container.querySelector("#agenda-do-dia")?.parentElement;
+    const secondaryWrapper = screen.getByTestId(
+      "barber-dashboard-secondary",
+    ).parentElement;
+
+    expect(layoutRoot).toBeTruthy();
+    expect(heroWrapper).toBeTruthy();
+    expect(calendarWrapper).toBeTruthy();
+    expect(desktopSidebarWrapper).toBeTruthy();
+    expect(agendaWrapper).toBeTruthy();
+    expect(secondaryWrapper).toBeTruthy();
+
+    for (const element of [
+      heroWrapper,
+      calendarWrapper,
+      agendaWrapper,
+      secondaryWrapper,
+    ]) {
+      expect(element?.className).not.toMatch(/(^|\s)order-\d+/);
+    }
+
+    expect(heroWrapper).toBe(agendaWrapper);
+    expect(layoutRoot?.className).toContain("lg:grid");
+    expect(layoutRoot?.className).toContain("lg:grid-cols-10");
+    expect(heroWrapper?.className).toContain("space-y-4");
+    expect(heroWrapper?.className).toContain("ipad:col-span-5");
+    expect(heroWrapper?.className).toContain("lg:col-span-6");
+    expect(heroWrapper?.className).toContain("xl:col-span-8");
+    expect(calendarWrapper?.className).toContain("ipad:col-span-3");
+    expect(calendarWrapper?.className).toContain("lg:col-span-4");
+    expect(calendarWrapper?.className).toContain("xl:row-span-2");
+    expect(calendarStickyWrapper?.className).toContain("ipad:top-20");
+    expect(calendarStickyWrapper?.className).toContain("lg:sticky");
+    expect(calendarStickyWrapper?.className).toContain("lg:top-20");
+    expect(calendarStickyWrapper?.className).toContain("xl:top-24");
+    expect(desktopSidebarWrapper?.className).toContain("lg:block");
+    expect(secondaryWrapper?.className).toContain("ipad:hidden");
+    expect(secondaryWrapper?.className).toContain("lg:hidden");
   });
 
   it("renderiza dashboard e alterna o estado de ocultar valores", async () => {
@@ -300,6 +547,9 @@ describe("BarberDashboard", () => {
     expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent("hidden");
     expect(screen.getAllByTestId("daily-schedule")[0]).toHaveTextContent(
       "daily-hidden",
+    );
+    expect(screen.getAllByTestId("barber-dashboard-hero")[0]).toHaveTextContent(
+      "hero-hidden",
     );
   });
 
@@ -473,6 +723,60 @@ describe("BarberDashboard", () => {
     expect(screen.getAllByTestId("stats-cards")[0]).toHaveTextContent(
       "visible:1:50:1:50",
     );
+  });
+
+  it("ignora status não confirmados na receita da lateral desktop", () => {
+    mocks.appointmentsState.data = [
+      {
+        id: "apt-confirmed",
+        date: "2026-03-19",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "CONFIRMED",
+        updatedAt: "2026-03-19T09:00:00.000Z",
+        createdAt: "2026-03-19T09:00:00.000Z",
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+      {
+        id: "apt-completed",
+        date: "2026-03-19",
+        startTime: "10:00",
+        endTime: "10:30",
+        status: "COMPLETED",
+        updatedAt: "2026-03-19T10:30:00.000Z",
+        createdAt: "2026-03-19T10:00:00.000Z",
+        service: { id: "svc-2", name: "Barba", duration: 30, price: 30 },
+        client: { id: "client-2", fullName: "Pedro", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+      {
+        id: "apt-cancelled",
+        date: "2026-03-20",
+        startTime: "11:00",
+        endTime: "11:30",
+        status: "CANCELLED_BY_BARBER",
+        updatedAt: "2026-03-20T11:15:00.000Z",
+        createdAt: "2026-03-20T11:00:00.000Z",
+        service: { id: "svc-3", name: "Pigmentação", duration: 30, price: 80 },
+        client: { id: "client-3", fullName: "Marcos", phone: null },
+        guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
+      },
+    ];
+
+    render(<BarberDashboard barberProfile={barberProfile} locale="pt-BR" />);
+
+    const latestProps = mocks.desktopSidebarProps.mock.calls.at(-1)?.[0] as {
+      dayRevenue: number;
+      weekRevenue: number;
+    };
+
+    expect(latestProps.dayRevenue).toBe(50);
+    expect(latestProps.weekRevenue).toBe(50);
   });
 
   it("mostra skeleton ao voltar para a semana atual enquanto os dados atuais ainda estao refetchando", async () => {

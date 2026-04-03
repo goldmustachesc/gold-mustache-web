@@ -10,14 +10,16 @@ export interface NavItemDef {
   iconName: string;
 }
 
+interface ResolvePrimaryNavRoleOptions {
+  role: UserRole;
+  locale: string;
+  pathname: string;
+  hasBarberProfile: boolean;
+}
+
 function barberNavItems(locale: string): NavItemDef[] {
   return [
-    { href: `/${locale}/barbeiro`, label: "Início", iconName: "Scissors" },
-    {
-      href: `/${locale}/dashboard`,
-      label: "Minha Agenda",
-      iconName: "Calendar",
-    },
+    { href: `/${locale}/dashboard`, label: "Início", iconName: "Scissors" },
     {
       href: `/${locale}/barbeiro/meu-link`,
       label: "Meu Link",
@@ -136,6 +138,30 @@ export function getNavItems(
   }
 
   return items;
+}
+
+export function resolvePrimaryNavRole({
+  role,
+  locale,
+  pathname,
+  hasBarberProfile,
+}: ResolvePrimaryNavRoleOptions): UserRole {
+  if (!hasBarberProfile) {
+    return role;
+  }
+
+  const dashboardPath = `/${locale}/dashboard`;
+  const barberBasePath = `/${locale}/barbeiro`;
+
+  if (
+    pathname === dashboardPath ||
+    pathname === barberBasePath ||
+    pathname.startsWith(`${barberBasePath}/`)
+  ) {
+    return "BARBER";
+  }
+
+  return role;
 }
 
 export function getAdminNavItems(locale: string): NavItemDef[] {

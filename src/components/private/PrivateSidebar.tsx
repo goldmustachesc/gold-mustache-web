@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { useSignOut } from "@/hooks/useAuth";
 import { useProfileMe } from "@/hooks/useProfileMe";
+import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +41,7 @@ import { useLocale } from "next-intl";
 import {
   getNavItems,
   getAdminNavItems,
+  resolvePrimaryNavRole,
   type NavItemDef,
 } from "./private-nav-items";
 
@@ -109,12 +111,19 @@ export function PrivateSidebar({ open, onOpenChange }: PrivateSidebarProps) {
   const locale = useLocale();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
   const { data: profile } = useProfileMe();
+  const { data: barberProfile } = useBarberProfile();
 
   const role = profile?.role ?? "CLIENT";
   const isAdmin = role === "ADMIN";
   const flags = useFeatureFlags();
+  const primaryNavRole = resolvePrimaryNavRole({
+    role,
+    locale,
+    pathname,
+    hasBarberProfile: !!barberProfile,
+  });
 
-  const navItems = getNavItems(role, locale, flags);
+  const navItems = getNavItems(primaryNavRole, locale, flags);
   const adminItems = getAdminNavItems(locale);
 
   const handleNavigate = () => onOpenChange(false);

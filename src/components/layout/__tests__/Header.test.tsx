@@ -136,9 +136,11 @@ describe("Header", () => {
   });
 
   it("renders the logo with brand name", () => {
-    render(<Header />);
+    const { container } = render(<Header />);
     expect(screen.getByText("Gold Mustache")).toBeInTheDocument();
     expect(screen.getByAltText("Gold Mustache Logo")).toBeInTheDocument();
+    const brandWordmark = container.querySelector("span.font-playfair");
+    expect(brandWordmark?.className).toContain("xs:inline");
   });
 
   it("renders all navigation links with correct hrefs", () => {

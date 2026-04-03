@@ -122,6 +122,11 @@ describe("utils/time-slots (deterministic unit tests)", () => {
     expect(getMinutesUntilAppointment("2025-01-02", "01:15")).toBe(60);
     expect(getMinutesUntilAppointment("2025-01-02", "00:10")).toBe(-5);
 
+    const at0115Brt = new Date(Date.UTC(2025, 0, 2, 4, 15, 0, 0));
+    expect(getMinutesUntilAppointment("2025-01-02", "01:15", at0115Brt)).toBe(
+      0,
+    );
+
     const today = parseIsoDateYyyyMmDdAsSaoPauloDate("2025-01-02");
     expect(isToday(today)).toBe(true);
     expect(isToday(parseIsoDateYyyyMmDdAsSaoPauloDate("2025-01-03"))).toBe(

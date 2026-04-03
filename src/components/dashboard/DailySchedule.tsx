@@ -10,12 +10,12 @@ import type {
   BarberWorkingHoursDay,
 } from "@/types/booking";
 import { Calendar, CalendarOff, Clock, Phone } from "lucide-react";
-import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 import {
-  getMinutesUntilAppointment,
-  minutesToTime,
-  parseTimeToMinutes,
-} from "@/utils/time-slots";
+  formatDateDdMmYyyyInSaoPaulo,
+  formatIsoDateYyyyMmDdInSaoPaulo,
+  formatTimeHHmmInSaoPaulo,
+} from "@/utils/datetime";
+import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import { ApiError, apiMutate } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ import { BarberChairIcon } from "./BarberChairIcon";
 import { AppointmentCard } from "./AppointmentCard";
 import { EmptySlot } from "./EmptySlot";
 import { SlotActionSheet } from "./SlotActionSheet";
+import { AppointmentCancelSheet } from "./AppointmentCancelSheet";
+import { buildDailyOperationalModel } from "./buildDailyOperationalModel";
 
 interface DailyScheduleProps {
   date: Date;
@@ -32,7 +34,10 @@ interface DailyScheduleProps {
   absences?: BarberAbsenceData[];
   onCreateAppointmentFromSlot?: (startTime: string) => void;
   onCreateAbsenceFromSlot?: (startTime: string, endTime: string) => void;
-  onCancelAppointment: (id: string, reason: string) => void;
+  onCancelAppointment: (
+    id: string,
+    reason: string,
+  ) => boolean | Promise<boolean>;
   isCancelling?: boolean;
   cancellingId?: string | null;
   onMarkNoShow?: (id: string) => void;
@@ -44,24 +49,11 @@ interface DailyScheduleProps {
   variant?: "default" | "compact";
   hideValues?: boolean;
   workingHours?: BarberWorkingHoursDay | null;
-}
-
-// Represents a time slot in the schedule (either empty or with an appointment)
-interface ScheduleSlot {
-  time: string;
-  endTime: string;
-  appointment: AppointmentWithDetails | null;
-  isAvailable: boolean;
-  isBlockedByAbsence: boolean;
-  absenceReason: string | null;
-}
-
-interface CompactTimelineItem {
-  type: "appointment" | "slot";
-  sortMinutes: number;
-  startTime: string;
-  appointment?: AppointmentWithDetails;
-  slot?: ScheduleSlot;
+  /**
+   * Relógio operacional compartilhado com o cockpit (ex.: `operationalNow` do `BarberDashboard`).
+   * Se omitido, usa `new Date()` local — útil para testes e usos fora do dashboard.
+   */
+  operationalNow?: Date;
 }
 
 function formatCurrency(value: number): string {
@@ -69,10 +61,6 @@ function formatCurrency(value: number): string {
     style: "currency",
     currency: "BRL",
   }).format(value);
-}
-
-function isFullDayAbsence(absence: BarberAbsenceData): boolean {
-  return !absence.startTime || !absence.endTime;
 }
 
 export function DailySchedule({
@@ -93,6 +81,7 @@ export function DailySchedule({
   variant = "default",
   hideValues = false,
   workingHours,
+  operationalNow,
 }: DailyScheduleProps) {
   const completedUi = getDashboardAppointmentStatusUi("COMPLETED");
   const noShowUi = getDashboardAppointmentStatusUi("NO_SHOW");
@@ -107,134 +96,45 @@ export function DailySchedule({
     start: string;
     end: string;
   } | null>(null);
-  const fullDayAbsence = useMemo(
-    () => absences.find(isFullDayAbsence) ?? null,
-    [absences],
-  );
-  const partialDayAbsences = useMemo(
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+
+  const cancelTargetAppointment = useMemo(
     () =>
-      absences.filter(
-        (
-          absence,
-        ): absence is BarberAbsenceData & {
-          startTime: string;
-          endTime: string;
-        } => Boolean(absence.startTime && absence.endTime),
-      ),
-    [absences],
+      cancelTargetId
+        ? (appointments.find((a) => a.id === cancelTargetId) ?? null)
+        : null,
+    [appointments, cancelTargetId],
   );
-  const hasFullDayAbsence = fullDayAbsence !== null;
+  const cancelContextLabel = cancelTargetAppointment
+    ? cancelTargetAppointment.client?.fullName ||
+      cancelTargetAppointment.guestClient?.fullName ||
+      "Cliente"
+    : undefined;
 
-  const availabilitySlots = useMemo((): ScheduleSlot[] => {
-    if (hasFullDayAbsence) {
-      return [];
-    }
+  const operationalModel = useMemo(() => {
+    const now = operationalNow ?? new Date();
+    return buildDailyOperationalModel({
+      selectedDate: formatIsoDateYyyyMmDdInSaoPaulo(date),
+      currentDate: formatIsoDateYyyyMmDdInSaoPaulo(now),
+      currentTime: formatTimeHHmmInSaoPaulo(now),
+      appointments,
+      absences,
+      workingHours,
+    });
+  }, [date, appointments, absences, workingHours, operationalNow]);
 
-    // If no working hours or not working, return empty
-    if (
-      !workingHours ||
-      !workingHours.isWorking ||
-      !workingHours.startTime ||
-      !workingHours.endTime
-    ) {
-      return [];
-    }
-
-    const dayAppointments = [...appointments].sort((a, b) =>
-      a.startTime.localeCompare(b.startTime),
-    );
-    const workStart = parseTimeToMinutes(workingHours.startTime);
-    const workEnd = parseTimeToMinutes(workingHours.endTime);
-    const breakStartMinutes = workingHours.breakStart
-      ? parseTimeToMinutes(workingHours.breakStart)
-      : null;
-    const breakEndMinutes = workingHours.breakEnd
-      ? parseTimeToMinutes(workingHours.breakEnd)
-      : null;
-    const boundaries = new Set<number>([workStart, workEnd]);
-
-    if (breakStartMinutes !== null && breakEndMinutes !== null) {
-      boundaries.add(breakStartMinutes);
-      boundaries.add(breakEndMinutes);
-    }
-
-    for (const appointment of dayAppointments) {
-      const appointmentStart = parseTimeToMinutes(appointment.startTime);
-      const appointmentEnd = parseTimeToMinutes(appointment.endTime);
-
-      if (appointmentEnd <= workStart || appointmentStart >= workEnd) {
-        continue;
-      }
-
-      boundaries.add(Math.max(appointmentStart, workStart));
-      boundaries.add(Math.min(appointmentEnd, workEnd));
-    }
-
-    for (const absence of partialDayAbsences) {
-      const absenceStart = parseTimeToMinutes(absence.startTime);
-      const absenceEnd = parseTimeToMinutes(absence.endTime);
-
-      if (absenceEnd <= workStart || absenceStart >= workEnd) {
-        continue;
-      }
-
-      boundaries.add(Math.max(absenceStart, workStart));
-      boundaries.add(Math.min(absenceEnd, workEnd));
-    }
-
-    const sortedBoundaries = [...boundaries]
-      .filter((minutes) => minutes >= workStart && minutes <= workEnd)
-      .sort((a, b) => a - b);
-    const slots: ScheduleSlot[] = [];
-
-    for (let index = 0; index < sortedBoundaries.length - 1; index++) {
-      const slotStart = sortedBoundaries[index];
-      const slotEnd = sortedBoundaries[index + 1];
-
-      if (slotEnd <= slotStart) {
-        continue;
-      }
-
-      if (
-        breakStartMinutes !== null &&
-        breakEndMinutes !== null &&
-        slotStart >= breakStartMinutes &&
-        slotEnd <= breakEndMinutes
-      ) {
-        continue;
-      }
-
-      const overlapsAppointment = dayAppointments.some((appointment) => {
-        const appointmentStart = parseTimeToMinutes(appointment.startTime);
-        const appointmentEnd = parseTimeToMinutes(appointment.endTime);
-
-        return slotStart < appointmentEnd && appointmentStart < slotEnd;
-      });
-
-      if (overlapsAppointment) {
-        continue;
-      }
-
-      const blockingAbsence =
-        partialDayAbsences.find((absence) => {
-          const absenceStart = parseTimeToMinutes(absence.startTime);
-          const absenceEnd = parseTimeToMinutes(absence.endTime);
-
-          return slotStart < absenceEnd && absenceStart < slotEnd;
-        }) ?? null;
-
-      slots.push({
-        time: minutesToTime(slotStart),
-        endTime: minutesToTime(slotEnd),
-        appointment: null,
-        isAvailable: !blockingAbsence,
-        isBlockedByAbsence: Boolean(blockingAbsence),
-        absenceReason: blockingAbsence?.reason ?? null,
-      });
-    }
-
-    return slots;
-  }, [workingHours, appointments, hasFullDayAbsence, partialDayAbsences]);
+  const {
+    fullDayAbsence,
+    hasFullDayAbsence,
+    hasPartialAbsences,
+    isDayOff,
+    hasConfiguredWorkingHours,
+    sortedAppointments,
+    timelineItems,
+    timelineByHour,
+    timelineHours,
+    availableSlotCount,
+  } = operationalModel;
 
   const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
     setSelectedAppointment(appointment);
@@ -294,11 +194,6 @@ export function DailySchedule({
     }
   };
 
-  // Sort appointments by start time
-  const sortedAppointments = [...appointments].sort((a, b) => {
-    return a.startTime.localeCompare(b.startTime);
-  });
-
   // Group appointments by hour for timeline view
   const appointmentsByHour = sortedAppointments.reduce(
     (acc, apt) => {
@@ -329,58 +224,12 @@ export function DailySchedule({
     markingCompleteId,
     hideValues,
     maskedValue,
+    operationalNow,
   };
 
   if (variant === "compact") {
-    // Check if it's a day off (not working)
-    const isDayOff = workingHours && !workingHours.isWorking;
-    const hasPartialAbsences = partialDayAbsences.length > 0;
     const fullDayAbsenceReason = fullDayAbsence?.reason?.trim() ?? null;
     const hasAppointments = appointments.length > 0;
-    const hasConfiguredWorkingHours = Boolean(
-      workingHours?.isWorking && workingHours.startTime && workingHours.endTime,
-    );
-    const timelineItems = [
-      ...sortedAppointments.map(
-        (appointment): CompactTimelineItem => ({
-          type: "appointment",
-          sortMinutes: parseTimeToMinutes(appointment.startTime),
-          startTime: appointment.startTime,
-          appointment,
-        }),
-      ),
-      ...(!hasFullDayAbsence && !isDayOff && hasConfiguredWorkingHours
-        ? availabilitySlots.map(
-            (slot): CompactTimelineItem => ({
-              type: "slot",
-              sortMinutes: parseTimeToMinutes(slot.time),
-              startTime: slot.time,
-              slot,
-            }),
-          )
-        : []),
-    ].sort((left, right) => {
-      if (left.sortMinutes !== right.sortMinutes) {
-        return left.sortMinutes - right.sortMinutes;
-      }
-
-      return left.type === "appointment" ? -1 : 1;
-    });
-    const availableSlotCount = availabilitySlots.filter(
-      (slot) => slot.isAvailable,
-    ).length;
-    const timelineByHour = timelineItems.reduce(
-      (acc, slot) => {
-        const hour = slot.startTime.split(":")[0];
-        if (!acc[hour]) acc[hour] = [];
-        acc[hour].push(slot);
-        return acc;
-      },
-      {} as Record<string, CompactTimelineItem[]>,
-    );
-    const timelineHours = Object.keys(timelineByHour).sort(
-      (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
-    );
 
     return (
       <div className="space-y-4">
@@ -463,14 +312,17 @@ export function DailySchedule({
                   <span className="font-mono tabular-nums">{hour}:00</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
-                {timelineByHour[hour].map((item) =>
-                  item.type === "appointment" && item.appointment ? (
-                    <AppointmentCard
-                      key={item.appointment.id}
-                      appointment={item.appointment}
-                      {...compactAppointmentCardProps}
-                    />
-                  ) : item.slot ? (
+                {timelineByHour[hour].map((item) => {
+                  if (item.type === "appointment") {
+                    return (
+                      <AppointmentCard
+                        key={item.appointment.id}
+                        appointment={item.appointment}
+                        {...compactAppointmentCardProps}
+                      />
+                    );
+                  }
+                  return (
                     <EmptySlot
                       key={`empty-${item.slot.time}`}
                       time={item.slot.time}
@@ -483,8 +335,8 @@ export function DailySchedule({
                           : undefined
                       }
                     />
-                  ) : null,
-                )}
+                  );
+                })}
               </div>
             ))
           ) : !hasConfiguredWorkingHours && !hasFullDayAbsence && !isDayOff ? (
@@ -536,6 +388,7 @@ export function DailySchedule({
           isMarkingComplete={
             isMarkingComplete && markingCompleteId === selectedAppointment?.id
           }
+          operationalNow={operationalNow}
         />
 
         {/* Slot Action Sheet */}
@@ -555,167 +408,178 @@ export function DailySchedule({
 
   // Default variant (original design)
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          <CardTitle className="capitalize">{formatDate(date)}</CardTitle>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {hasFullDayAbsence
-            ? "Agenda bloqueada por ausência"
-            : appointments.length === 0
-              ? "Nenhum agendamento para este dia"
-              : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""}`}
-        </p>
-      </CardHeader>
-
-      <CardContent>
-        {appointments.length === 0 ? (
-          <div className="text-center py-8">
-            {hasFullDayAbsence ? (
-              <>
-                <CalendarOff className="h-12 w-12 mx-auto text-primary/60 mb-3" />
-                <p className="text-muted-foreground">
-                  Agenda bloqueada por ausência.
-                </p>
-              </>
-            ) : (
-              <>
-                <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">Dia livre!</p>
-              </>
-            )}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <CardTitle className="capitalize">{formatDate(date)}</CardTitle>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {hours.map((hour) => (
-              <div key={hour} className="relative">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="text-sm font-medium text-muted-foreground w-12">
-                    {hour}:00
-                  </div>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
-                <div className="ml-14 space-y-3">
-                  {appointmentsByHour[hour].map((appointment) => {
-                    const minutesUntil = getMinutesUntilAppointment(
-                      appointment.date,
-                      appointment.startTime,
-                    );
-                    const isConfirmed = appointment.status === "CONFIRMED";
-                    const isNoShow = appointment.status === "NO_SHOW";
-                    const statusUi = getDashboardAppointmentStatusUi(
-                      appointment.status,
-                    );
-                    const isPast = minutesUntil <= 0;
+          <p className="text-sm text-muted-foreground">
+            {hasFullDayAbsence
+              ? "Agenda bloqueada por ausência"
+              : appointments.length === 0
+                ? "Nenhum agendamento para este dia"
+                : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""}`}
+          </p>
+        </CardHeader>
 
-                    return (
-                      <div
-                        key={appointment.id}
-                        className={cn(
-                          "p-3 rounded-lg border bg-card",
-                          statusUi?.surfaceClassName,
-                        )}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2">
-                            <p className="font-medium">
-                              {appointment.client?.fullName ||
-                                appointment.guestClient?.fullName ||
-                                "Cliente"}
-                            </p>
-                            {statusUi && (
-                              <Badge
-                                className={["border", statusUi.badgeClassName]
-                                  .filter(Boolean)
-                                  .join(" ")}
-                              >
-                                {statusUi.label}
-                              </Badge>
-                            )}
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.startTime} - {appointment.endTime} •{" "}
-                              {appointment.service.name}
-                            </p>
-                            <p className="text-sm font-medium mt-1">
-                              {hideValues
-                                ? maskedValue
-                                : formatCurrency(
-                                    Number(appointment.service.price),
-                                  )}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            {isConfirmed && !isPast && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const reason = prompt(
-                                    "Motivo do cancelamento:",
-                                  );
-                                  if (reason) {
-                                    onCancelAppointment(appointment.id, reason);
-                                  }
-                                }}
-                                disabled={
-                                  isCancelling &&
-                                  cancellingId === appointment.id
-                                }
-                              >
-                                Cancelar
-                              </Button>
-                            )}
-                            {isConfirmed && isPast && onMarkComplete && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className={completedUi?.actionClassName}
-                                onClick={() => onMarkComplete(appointment.id)}
-                                disabled={
-                                  isMarkingComplete &&
-                                  markingCompleteId === appointment.id
-                                }
-                              >
-                                Concluir
-                              </Button>
-                            )}
-                            {isConfirmed && isPast && onMarkNoShow && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className={noShowUi?.actionClassName}
-                                onClick={() => onMarkNoShow(appointment.id)}
-                                disabled={
-                                  isMarkingNoShow &&
-                                  markingNoShowId === appointment.id
-                                }
-                              >
-                                Não compareceu
-                              </Button>
-                            )}
-                            {isNoShow && appointment.guestClient?.phone && (
-                              <Button variant="outline" size="sm" asChild>
-                                <a
-                                  href={`tel:${appointment.guestClient.phone}`}
+        <CardContent>
+          {appointments.length === 0 ? (
+            <div className="text-center py-8">
+              {hasFullDayAbsence ? (
+                <>
+                  <CalendarOff className="h-12 w-12 mx-auto text-primary/60 mb-3" />
+                  <p className="text-muted-foreground">
+                    Agenda bloqueada por ausência.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground">Dia livre!</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hours.map((hour) => (
+                <div key={hour} className="relative">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="text-sm font-medium text-muted-foreground w-12">
+                      {hour}:00
+                    </div>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <div className="ml-14 space-y-3">
+                    {appointmentsByHour[hour].map((appointment) => {
+                      const minutesUntil = getMinutesUntilAppointment(
+                        appointment.date,
+                        appointment.startTime,
+                        operationalNow,
+                      );
+                      const isConfirmed = appointment.status === "CONFIRMED";
+                      const isNoShow = appointment.status === "NO_SHOW";
+                      const statusUi = getDashboardAppointmentStatusUi(
+                        appointment.status,
+                      );
+                      const isPast = minutesUntil <= 0;
+
+                      return (
+                        <div
+                          key={appointment.id}
+                          className={cn(
+                            "p-3 rounded-lg border bg-card",
+                            statusUi?.surfaceClassName,
+                          )}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2">
+                              <p className="font-medium">
+                                {appointment.client?.fullName ||
+                                  appointment.guestClient?.fullName ||
+                                  "Cliente"}
+                              </p>
+                              {statusUi && (
+                                <Badge
+                                  className={["border", statusUi.badgeClassName]
+                                    .filter(Boolean)
+                                    .join(" ")}
                                 >
-                                  <Phone className="h-4 w-4 mr-1" />
-                                  Ligar
-                                </a>
-                              </Button>
-                            )}
+                                  {statusUi.label}
+                                </Badge>
+                              )}
+                              <p className="text-sm text-muted-foreground">
+                                {appointment.startTime} - {appointment.endTime}{" "}
+                                • {appointment.service.name}
+                              </p>
+                              <p className="text-sm font-medium mt-1">
+                                {hideValues
+                                  ? maskedValue
+                                  : formatCurrency(
+                                      Number(appointment.service.price),
+                                    )}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              {isConfirmed && !isPast && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setCancelTargetId(appointment.id);
+                                  }}
+                                  disabled={
+                                    isCancelling &&
+                                    cancellingId === appointment.id
+                                  }
+                                >
+                                  Cancelar
+                                </Button>
+                              )}
+                              {isConfirmed && isPast && onMarkComplete && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={completedUi?.actionClassName}
+                                  onClick={() => onMarkComplete(appointment.id)}
+                                  disabled={
+                                    isMarkingComplete &&
+                                    markingCompleteId === appointment.id
+                                  }
+                                >
+                                  Concluir
+                                </Button>
+                              )}
+                              {isConfirmed && isPast && onMarkNoShow && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={noShowUi?.actionClassName}
+                                  onClick={() => onMarkNoShow(appointment.id)}
+                                  disabled={
+                                    isMarkingNoShow &&
+                                    markingNoShowId === appointment.id
+                                  }
+                                >
+                                  Não compareceu
+                                </Button>
+                              )}
+                              {isNoShow && appointment.guestClient?.phone && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a
+                                    href={`tel:${appointment.guestClient.phone}`}
+                                  >
+                                    <Phone className="h-4 w-4 mr-1" />
+                                    Ligar
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AppointmentCancelSheet
+        open={cancelTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelTargetId(null);
+        }}
+        contextLabel={cancelContextLabel}
+        isPending={Boolean(isCancelling && cancellingId === cancelTargetId)}
+        onConfirm={(reason) => {
+          if (!cancelTargetId) return Promise.resolve(false);
+          return onCancelAppointment(cancelTargetId, reason);
+        }}
+      />
+    </>
   );
 }

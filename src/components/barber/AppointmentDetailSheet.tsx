@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -25,12 +25,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import { getDashboardAppointmentStatusUi } from "./appointment-status-ui";
+import { AppointmentCancelSheet } from "@/components/dashboard/AppointmentCancelSheet";
 
 interface AppointmentDetailSheetProps {
   appointment: AppointmentWithDetails | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCancelAppointment?: (id: string, reason: string) => void;
+  onCancelAppointment?: (
+    id: string,
+    reason: string,
+  ) => boolean | Promise<boolean>;
   isCancelling?: boolean;
   onMarkNoShow?: (id: string) => void;
   isMarkingNoShow?: boolean;
@@ -40,6 +44,8 @@ interface AppointmentDetailSheetProps {
     clientId: string,
     clientType: "registered" | "guest",
   ) => void;
+  /** Relógio do cockpit; omite para usar o instante atual. */
+  operationalNow?: Date;
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -165,8 +171,16 @@ export function AppointmentDetailSheet({
   onMarkComplete,
   isMarkingComplete = false,
   onViewClientHistory,
+  operationalNow,
 }: AppointmentDetailSheetProps) {
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setCancelSheetOpen(false);
+    }
+  }, [open]);
 
   if (!appointment) return null;
 
@@ -190,6 +204,7 @@ export function AppointmentDetailSheet({
   const minutesUntil = getMinutesUntilAppointment(
     appointment.date,
     appointment.startTime,
+    operationalNow,
   );
   const isPast = minutesUntil <= 0;
   const canCancel = isConfirmed && !isPast;
@@ -233,13 +248,6 @@ export function AppointmentDetailSheet({
     }
   };
 
-  const handleCancel = () => {
-    const reason = prompt("Motivo do cancelamento:");
-    if (reason && onCancelAppointment) {
-      onCancelAppointment(appointment.id, reason);
-    }
-  };
-
   const handleMarkNoShow = () => {
     if (onMarkNoShow) {
       onMarkNoShow(appointment.id);
@@ -253,230 +261,244 @@ export function AppointmentDetailSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className={cn(
-          "h-auto max-h-[90vh] rounded-t-3xl",
-          "bg-card border-t border-border",
-          "sm:max-w-lg sm:mx-auto sm:rounded-t-3xl",
-        )}
-      >
-        {/* Custom Header */}
-        <SheetHeader className="flex-row items-center justify-between px-4 pt-4 pb-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onOpenChange(false)}
-            className="h-10 w-10 rounded-xl"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <SheetTitle className="sr-only">Detalhes do Agendamento</SheetTitle>
-          <div className="flex items-center gap-2">
-            {/* Quick Reminder Button */}
-            {isConfirmed && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSendReminder}
-                disabled={sendingReminder}
-                className="rounded-xl gap-2"
-              >
-                {sendingReminder ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Bell className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Lembrete</span>
-              </Button>
-            )}
-          </div>
-        </SheetHeader>
-
-        <div className="px-4 pb-6 space-y-6 overflow-y-auto">
-          {/* Status Badge */}
-          {statusUi && (
-            <div className="flex justify-center">
-              <Badge
-                className={cn(
-                  "text-sm px-4 py-1.5 border",
-                  statusUi.badgeClassName,
-                )}
-              >
-                {statusUi.label}
-              </Badge>
-            </div>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className={cn(
+            "h-auto max-h-[90vh] rounded-t-3xl",
+            "bg-card border-t border-border",
+            "sm:max-w-lg sm:mx-auto sm:rounded-t-3xl",
           )}
-
-          {/* Date & Time Section */}
-          <div className="space-y-1">
-            <p
-              className={cn(
-                "text-lg font-semibold",
-                isCancelled && "line-through text-muted-foreground",
-              )}
+        >
+          {/* Custom Header */}
+          <SheetHeader className="flex-row items-center justify-between px-4 pt-4 pb-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="h-10 w-10 rounded-xl"
             >
-              {formatDateLong(appointment.date)}
-            </p>
-            <p className="text-base font-mono text-muted-foreground">
-              {appointment.startTime} às {appointment.endTime}
-            </p>
-          </div>
-
-          {/* Client Section */}
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Cliente
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xl font-semibold text-primary truncate max-w-[200px]">
-                  {clientName}
-                </p>
-                {clientPhone && (
-                  <p className="text-sm text-muted-foreground font-mono">
-                    {formatPhone(clientPhone)}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                {/* Client History */}
-                {onViewClientHistory && clientId && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => onViewClientHistory(clientId, clientType)}
-                    className="h-10 w-10 rounded-xl"
-                    title="Ver histórico"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                  </Button>
-                )}
-                {/* WhatsApp */}
-                {clientPhone && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleWhatsApp}
-                    className="h-10 w-10 rounded-xl hover:text-[#25D366] hover:border-[#25D366]"
-                    title="Enviar WhatsApp"
-                  >
-                    <WhatsAppIcon className="h-4 w-4" />
-                  </Button>
-                )}
-                {/* Edit Client - placeholder for future */}
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle className="sr-only">Detalhes do Agendamento</SheetTitle>
+            <div className="flex items-center gap-2">
+              {/* Quick Reminder Button */}
+              {isConfirmed && (
                 <Button
                   variant="outline"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl"
-                  title="Editar cliente"
-                  disabled
+                  size="sm"
+                  onClick={handleSendReminder}
+                  disabled={sendingReminder}
+                  className="rounded-xl gap-2"
                 >
-                  <Pencil className="h-4 w-4" />
+                  {sendingReminder ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Bell className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">Lembrete</span>
                 </Button>
-              </div>
+              )}
             </div>
-          </div>
+          </SheetHeader>
 
-          {/* Service Section */}
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Serviço
-            </p>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="secondary"
+          <div className="px-4 pb-6 space-y-6 overflow-y-auto">
+            {/* Status Badge */}
+            {statusUi && (
+              <div className="flex justify-center">
+                <Badge
+                  className={cn(
+                    "text-sm px-4 py-1.5 border",
+                    statusUi.badgeClassName,
+                  )}
+                >
+                  {statusUi.label}
+                </Badge>
+              </div>
+            )}
+
+            {/* Date & Time Section */}
+            <div className="space-y-1">
+              <p
                 className={cn(
-                  "text-sm px-4 py-2 rounded-xl",
-                  isCancelled && "opacity-50",
+                  "text-lg font-semibold",
+                  isCancelled && "line-through text-muted-foreground",
                 )}
               >
-                {appointment.service.name}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Total Section */}
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Total
-            </p>
-            <p
-              className={cn(
-                "text-3xl font-bold font-mono",
-                isCancelled && "line-through text-muted-foreground",
-              )}
-            >
-              {formatCurrency(Number(appointment.service.price))}
-            </p>
-          </div>
-
-          {/* Decorative Divider */}
-          <div className="relative py-4">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-border" />
-            <div className="absolute -left-8 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-background" />
-            <div className="absolute -right-8 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-background" />
-          </div>
-
-          {/* Barcode */}
-          <BarcodeDecoration code={ticketCode} />
-
-          {/* Cancel Reason */}
-          {appointment.cancelReason && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
-              <p className="text-sm text-destructive">
-                <strong>Motivo:</strong> {appointment.cancelReason}
+                {formatDateLong(appointment.date)}
+              </p>
+              <p className="text-base font-mono text-muted-foreground">
+                {appointment.startTime} às {appointment.endTime}
               </p>
             </div>
-          )}
 
-          {/* Actions */}
-          {(canCancel || canMarkNoShow || canMarkComplete) && (
-            <div className="space-y-2 pt-2">
-              {canMarkComplete && (
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-12 rounded-xl",
-                    completedUi?.actionClassName,
+            {/* Client Section */}
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Cliente
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xl font-semibold text-primary truncate max-w-[200px]">
+                    {clientName}
+                  </p>
+                  {clientPhone && (
+                    <p className="text-sm text-muted-foreground font-mono">
+                      {formatPhone(clientPhone)}
+                    </p>
                   )}
-                  onClick={handleMarkComplete}
-                  disabled={isMarkingComplete}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {isMarkingComplete ? "Concluindo..." : "Concluir atendimento"}
-                </Button>
-              )}
-              {canMarkNoShow && (
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-12 rounded-xl",
-                    noShowUi?.actionClassName,
+                </div>
+                <div className="flex items-center gap-1">
+                  {/* Client History */}
+                  {onViewClientHistory && clientId && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => onViewClientHistory(clientId, clientType)}
+                      className="h-10 w-10 rounded-xl"
+                      title="Ver histórico"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
                   )}
-                  onClick={handleMarkNoShow}
-                  disabled={isMarkingNoShow}
-                >
-                  <UserX className="h-4 w-4 mr-2" />
-                  {isMarkingNoShow ? "Marcando..." : "Marcar não compareceu"}
-                </Button>
-              )}
-              {canCancel && (
-                <Button
-                  variant="outline"
-                  className="w-full h-12 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10"
-                  onClick={handleCancel}
-                  disabled={isCancelling}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  {isCancelling ? "Cancelando..." : "Cancelar agendamento"}
-                </Button>
-              )}
+                  {/* WhatsApp */}
+                  {clientPhone && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleWhatsApp}
+                      className="h-10 w-10 rounded-xl hover:text-[#25D366] hover:border-[#25D366]"
+                      title="Enviar WhatsApp"
+                    >
+                      <WhatsAppIcon className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {/* Edit Client - placeholder for future */}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 rounded-xl"
+                    title="Editar cliente"
+                    disabled
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+
+            {/* Service Section */}
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Serviço
+              </p>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-sm px-4 py-2 rounded-xl",
+                    isCancelled && "opacity-50",
+                  )}
+                >
+                  {appointment.service.name}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Total Section */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Total
+              </p>
+              <p
+                className={cn(
+                  "text-3xl font-bold font-mono",
+                  isCancelled && "line-through text-muted-foreground",
+                )}
+              >
+                {formatCurrency(Number(appointment.service.price))}
+              </p>
+            </div>
+
+            {/* Decorative Divider */}
+            <div className="relative py-4">
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-border" />
+              <div className="absolute -left-8 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-background" />
+              <div className="absolute -right-8 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-background" />
+            </div>
+
+            {/* Barcode */}
+            <BarcodeDecoration code={ticketCode} />
+
+            {/* Cancel Reason */}
+            {appointment.cancelReason && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+                <p className="text-sm text-destructive">
+                  <strong>Motivo:</strong> {appointment.cancelReason}
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            {(canCancel || canMarkNoShow || canMarkComplete) && (
+              <div className="space-y-2 pt-2">
+                {canMarkComplete && (
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-12 rounded-xl",
+                      completedUi?.actionClassName,
+                    )}
+                    onClick={handleMarkComplete}
+                    disabled={isMarkingComplete}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {isMarkingComplete
+                      ? "Concluindo..."
+                      : "Concluir atendimento"}
+                  </Button>
+                )}
+                {canMarkNoShow && (
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-12 rounded-xl",
+                      noShowUi?.actionClassName,
+                    )}
+                    onClick={handleMarkNoShow}
+                    disabled={isMarkingNoShow}
+                  >
+                    <UserX className="h-4 w-4 mr-2" />
+                    {isMarkingNoShow ? "Marcando..." : "Marcar não compareceu"}
+                  </Button>
+                )}
+                {canCancel && onCancelAppointment && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => setCancelSheetOpen(true)}
+                    disabled={isCancelling}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    {isCancelling ? "Cancelando..." : "Cancelar agendamento"}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {onCancelAppointment ? (
+        <AppointmentCancelSheet
+          open={cancelSheetOpen}
+          onOpenChange={setCancelSheetOpen}
+          contextLabel={clientName}
+          isPending={isCancelling}
+          onConfirm={(reason) => onCancelAppointment(appointment.id, reason)}
+        />
+      ) : null}
+    </>
   );
 }

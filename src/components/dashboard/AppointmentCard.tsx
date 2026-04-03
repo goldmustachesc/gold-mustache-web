@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { AppointmentWithDetails } from "@/types/booking";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BarberChairIcon } from "./BarberChairIcon";
 import { getDashboardAppointmentStatusUi } from "@/components/barber/appointment-status-ui";
+import { AppointmentCancelSheet } from "./AppointmentCancelSheet";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -34,7 +35,10 @@ export interface AppointmentCardProps {
   onOpenDetail: (appointment: AppointmentWithDetails) => void;
   onSendReminder: (appointmentId: string) => void;
   sendingReminderId: string | null;
-  onCancelAppointment: (id: string, reason: string) => void;
+  onCancelAppointment: (
+    id: string,
+    reason: string,
+  ) => boolean | Promise<boolean>;
   isCancelling?: boolean;
   cancellingId?: string | null;
   onMarkNoShow?: (id: string) => void;
@@ -45,6 +49,8 @@ export interface AppointmentCardProps {
   markingCompleteId?: string | null;
   hideValues: boolean;
   maskedValue: string;
+  /** Relógio do cockpit; omite para usar o instante atual. */
+  operationalNow?: Date;
 }
 
 export const AppointmentCard = memo(function AppointmentCard({
@@ -63,12 +69,14 @@ export const AppointmentCard = memo(function AppointmentCard({
   markingCompleteId,
   hideValues,
   maskedValue,
+  operationalNow,
 }: AppointmentCardProps) {
   const completedUi = getDashboardAppointmentStatusUi("COMPLETED");
   const noShowUi = getDashboardAppointmentStatusUi("NO_SHOW");
   const minutesUntil = getMinutesUntilAppointment(
     appointment.date,
     appointment.startTime,
+    operationalNow,
   );
   const isConfirmed = appointment.status === "CONFIRMED";
   const isNoShow = appointment.status === "NO_SHOW";
@@ -83,6 +91,12 @@ export const AppointmentCard = memo(function AppointmentCard({
   const canCallClient = isNoShow && !!appointment.guestClient?.phone;
   const hasActions =
     canCancel || canMarkNoShow || canMarkComplete || canCallClient;
+
+  const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
+  const clientLabel =
+    appointment.client?.fullName ||
+    appointment.guestClient?.fullName ||
+    "Cliente";
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: Cannot use button as it would nest buttons (inner action buttons)
@@ -191,10 +205,7 @@ export const AppointmentCard = memo(function AppointmentCard({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      const reason = prompt("Motivo do cancelamento:");
-                      if (reason) {
-                        onCancelAppointment(appointment.id, reason);
-                      }
+                      setCancelSheetOpen(true);
                     }}
                     disabled={isCancelling && cancellingId === appointment.id}
                     className="text-red-600 dark:text-destructive focus:text-red-600 dark:focus:text-destructive focus:bg-red-500/10"
@@ -284,6 +295,14 @@ export const AppointmentCard = memo(function AppointmentCard({
       </div>
 
       <BarberChairIcon className="absolute -right-4 -bottom-4 h-20 w-20 text-white/5" />
+
+      <AppointmentCancelSheet
+        open={cancelSheetOpen}
+        onOpenChange={setCancelSheetOpen}
+        contextLabel={clientLabel}
+        isPending={Boolean(isCancelling && cancellingId === appointment.id)}
+        onConfirm={(reason) => onCancelAppointment(appointment.id, reason)}
+      />
     </div>
   );
 });
