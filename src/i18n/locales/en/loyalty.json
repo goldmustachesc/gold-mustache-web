@@ -140,7 +140,8 @@
       "totalAccounts": "Registered Accounts",
       "pointsInCirculation": "Points in Circulation",
       "pendingRedemptions": "Pending Redemptions",
-      "expiringPoints": "Expiring Points"
+      "expiringPoints": "Expiring Points",
+      "loadError": "Unable to load quick stats."
     },
     "reports": {
       "tab": "Reports",

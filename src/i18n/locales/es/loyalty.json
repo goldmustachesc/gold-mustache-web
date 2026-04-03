@@ -140,7 +140,8 @@
       "totalAccounts": "Cuentas Registradas",
       "pointsInCirculation": "Puntos en Circulación",
       "pendingRedemptions": "Canjes Pendientes",
-      "expiringPoints": "Puntos por Expirar"
+      "expiringPoints": "Puntos por Expirar",
+      "loadError": "No se pudieron cargar los indicadores."
     },
     "reports": {
       "tab": "Informes",

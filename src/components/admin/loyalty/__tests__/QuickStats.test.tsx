@@ -44,10 +44,12 @@ describe("QuickStats", () => {
     mockUseAdminLoyaltyReports.mockReturnValue({
       data: mockReportsData,
       isLoading: false,
+      isError: false,
     });
     mockUseAdminExpiringPoints.mockReturnValue({
       data: mockExpiring,
       isLoading: false,
+      isError: false,
     });
   });
 
@@ -75,10 +77,12 @@ describe("QuickStats", () => {
     mockUseAdminLoyaltyReports.mockReturnValue({
       data: undefined,
       isLoading: true,
+      isError: false,
     });
     mockUseAdminExpiringPoints.mockReturnValue({
       data: undefined,
       isLoading: false,
+      isError: false,
     });
 
     render(<QuickStats />);
@@ -87,6 +91,25 @@ describe("QuickStats", () => {
     expect(
       screen.queryByTestId("kpi-quick-total-accounts"),
     ).not.toBeInTheDocument();
+  });
+
+  it("mostra mensagem de erro em vez do spinner quando isError é true", () => {
+    mockUseAdminLoyaltyReports.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+    mockUseAdminExpiringPoints.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<QuickStats />);
+
+    expect(screen.getByTestId("quick-stats-error")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("loadError");
+    expect(screen.queryByTestId("quick-stats-loading")).not.toBeInTheDocument();
   });
 
   it("destaca o card de pontos expirando quando a contagem é maior que zero", () => {
@@ -101,6 +124,7 @@ describe("QuickStats", () => {
     mockUseAdminExpiringPoints.mockReturnValue({
       data: [],
       isLoading: false,
+      isError: false,
     });
 
     render(<QuickStats />);

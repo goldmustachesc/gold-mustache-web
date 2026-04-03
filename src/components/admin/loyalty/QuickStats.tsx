@@ -6,6 +6,7 @@ import {
 } from "@/hooks/useAdminLoyalty";
 import { KpiCard } from "@/components/admin/KpiCard";
 import {
+  AlertCircle,
   AlertTriangle,
   Coins,
   Loader2,
@@ -17,15 +18,37 @@ import { useLocale, useTranslations } from "next-intl";
 export function QuickStats() {
   const t = useTranslations("loyalty.admin.quickStats");
   const locale = useLocale();
-  const { data: reports, isLoading: reportsLoading } = useAdminLoyaltyReports();
-  const { data: expiring, isLoading: expiringLoading } =
-    useAdminExpiringPoints();
+  const {
+    data: reports,
+    isLoading: reportsLoading,
+    isError: reportsError,
+  } = useAdminLoyaltyReports();
+  const {
+    data: expiring,
+    isLoading: expiringLoading,
+    isError: expiringError,
+  } = useAdminExpiringPoints();
 
+  const hasError = reportsError || expiringError;
   const loading =
-    reportsLoading ||
-    expiringLoading ||
-    reports === undefined ||
-    expiring === undefined;
+    !hasError &&
+    (reportsLoading ||
+      expiringLoading ||
+      reports === undefined ||
+      expiring === undefined);
+
+  if (hasError) {
+    return (
+      <div
+        data-testid="quick-stats-error"
+        role="alert"
+        className="flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-8 text-center"
+      >
+        <AlertCircle className="h-8 w-8 text-destructive" aria-hidden />
+        <p className="text-sm text-destructive">{t("loadError")}</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
