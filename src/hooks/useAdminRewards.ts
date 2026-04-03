@@ -97,6 +97,7 @@ export function useAdminDeleteReward() {
     mutationFn: (id: string) =>
       apiAction(`/api/admin/loyalty/rewards/${id}`, "DELETE"),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "rewards"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
       });

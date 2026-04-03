@@ -204,6 +204,9 @@ describe("useAdminDeleteReward", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["loyalty", "rewards"],
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["admin", "loyalty", "rewards"],
     });
   });
