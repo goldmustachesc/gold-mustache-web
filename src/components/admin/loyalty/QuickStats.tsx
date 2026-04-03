@@ -61,8 +61,8 @@ export function QuickStats() {
     );
   }
 
-  const expiringCount = expiring.length;
-  const pendingRedemptions = reports.redemptionsByStatus.PENDING ?? 0;
+  const expiringCount = expiring?.length ?? 0;
+  const pendingRedemptions = reports?.redemptionsByStatus.PENDING ?? 0;
 
   const expiringCard = (
     <KpiCard
@@ -80,14 +80,14 @@ export function QuickStats() {
         testId="kpi-quick-total-accounts"
         icon={<Users className="h-5 w-5 text-primary" />}
         label={t("totalAccounts")}
-        value={reports.totalAccounts}
+        value={reports?.totalAccounts ?? 0}
         locale={locale}
       />
       <KpiCard
         testId="kpi-quick-points-circulation"
         icon={<Coins className="h-5 w-5 text-primary" />}
         label={t("pointsInCirculation")}
-        value={reports.totalPointsInCirculation}
+        value={reports?.totalPointsInCirculation ?? 0}
         locale={locale}
       />
       <KpiCard

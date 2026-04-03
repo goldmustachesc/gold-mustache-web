@@ -110,13 +110,20 @@ export function AccountsTab() {
     useState<AdminLoyaltyAccount | null>(null);
 
   const apiParams = useMemo(
-    () => accountFiltersToParams({ ...filters, search: debouncedSearch }),
-    [filters, debouncedSearch],
+    () =>
+      accountFiltersToParams({
+        search: debouncedSearch,
+        tier: filters.tier,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+      }),
+    [debouncedSearch, filters.tier, filters.sortBy, filters.sortOrder],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: voltar à página 1 quando filtros da API mudam
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filters.tier, filters.sortBy, filters.sortOrder]);
+  }, [apiParams]);
 
   const { data, isLoading, isError } = useAdminLoyaltyAccounts(
     page,
