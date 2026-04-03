@@ -64,6 +64,8 @@ export function RedemptionsTab() {
   const validateRedemptionMut = useAdminValidateRedemption();
   const useRedemptionMut = useAdminUseRedemption();
 
+  const recentRedemptions = redemptionsData?.data ?? [];
+
   const handleValidateCode = async () => {
     if (!redemptionCode.trim()) return;
     setValidateError(null);
@@ -229,87 +231,153 @@ export function RedemptionsTab() {
             </Select>
           </div>
 
-          <div className="overflow-x-auto">
-            {redemptionsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : (
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs uppercase bg-muted text-muted-foreground border-b border-border">
-                  <tr>
-                    <th className="px-6 py-4">
-                      {t("redemptions.colClient") || "Cliente"}
-                    </th>
-                    <th className="px-6 py-4">
-                      {t("redemptions.colReward") || "Recompensa"}
-                    </th>
-                    <th className="px-6 py-4">
-                      {t("redemptions.colCode") || "Código"}
-                    </th>
-                    <th className="px-6 py-4">
-                      {t("redemptions.colDate") || "Data"}
-                    </th>
-                    <th className="px-6 py-4">
-                      {t("redemptions.colStatus") || "Status"}
-                    </th>
-                    <th className="px-6 py-4 text-right">
-                      {t("redemptions.colAction") || "Ação"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {redemptionsData?.data?.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-b border-border hover:bg-muted/50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-foreground">
-                          {r.clientName}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {r.clientEmail}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">{r.rewardName}</td>
-                      <td className="px-6 py-4 font-mono">{r.code}</td>
-                      <td className="px-6 py-4">
-                        {new Date(r.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <RedemptionStatusBadge status={r.status} />
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {r.status === "PENDING" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setConfirmUseCode(r.code)}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            {t("redemptions.use") || "Usar"}
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {(!redemptionsData?.data ||
-                    redemptionsData.data.length === 0) && (
+          {redemptionsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs uppercase bg-muted text-muted-foreground border-b border-border">
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-12 text-center text-muted-foreground"
-                      >
-                        {t("redemptions.emptyState") ||
-                          "Nenhum resgate encontrado."}
-                      </td>
+                      <th className="px-6 py-4">
+                        {t("redemptions.colClient") || "Cliente"}
+                      </th>
+                      <th className="px-6 py-4">
+                        {t("redemptions.colReward") || "Recompensa"}
+                      </th>
+                      <th className="px-6 py-4">
+                        {t("redemptions.colCode") || "Código"}
+                      </th>
+                      <th className="px-6 py-4">
+                        {t("redemptions.colDate") || "Data"}
+                      </th>
+                      <th className="px-6 py-4">
+                        {t("redemptions.colStatus") || "Status"}
+                      </th>
+                      <th className="px-6 py-4 text-right">
+                        {t("redemptions.colAction") || "Ação"}
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
+                  </thead>
+                  <tbody>
+                    {recentRedemptions.map((r) => (
+                      <tr
+                        key={r.id}
+                        className="border-b border-border hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-foreground">
+                            {r.clientName}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {r.clientEmail}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">{r.rewardName}</td>
+                        <td className="px-6 py-4 font-mono">{r.code}</td>
+                        <td className="px-6 py-4">
+                          {new Date(r.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <RedemptionStatusBadge status={r.status} />
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {r.status === "PENDING" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConfirmUseCode(r.code)}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              {t("redemptions.use") || "Usar"}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {recentRedemptions.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-6 py-12 text-center text-muted-foreground"
+                        >
+                          {t("redemptions.emptyState") ||
+                            "Nenhum resgate encontrado."}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="lg:hidden space-y-3 px-6 pb-6">
+                {recentRedemptions.map((r) => (
+                  <article
+                    key={r.id}
+                    data-testid={`redemption-card-${r.id}`}
+                    className="bg-card border border-border rounded-xl p-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-foreground truncate">
+                          {r.clientName}
+                        </h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {r.clientEmail}
+                        </p>
+                      </div>
+                      <RedemptionStatusBadge status={r.status} />
+                    </div>
+                    <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs text-muted-foreground">
+                          {t("redemptions.colReward") || "Recompensa"}
+                        </dt>
+                        <dd className="font-medium text-foreground">
+                          {r.rewardName}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">
+                          {t("redemptions.colCode") || "Código"}
+                        </dt>
+                        <dd className="font-mono font-medium text-foreground">
+                          {r.code}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">
+                          {t("redemptions.colDate") || "Data"}
+                        </dt>
+                        <dd className="font-medium text-foreground">
+                          {new Date(r.createdAt).toLocaleDateString()}
+                        </dd>
+                      </div>
+                    </dl>
+                    {r.status === "PENDING" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-3 w-full"
+                        onClick={() => setConfirmUseCode(r.code)}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {t("redemptions.use") || "Usar"}
+                      </Button>
+                    ) : null}
+                  </article>
+                ))}
+                {recentRedemptions.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    {t("redemptions.emptyState") ||
+                      "Nenhum resgate encontrado."}
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

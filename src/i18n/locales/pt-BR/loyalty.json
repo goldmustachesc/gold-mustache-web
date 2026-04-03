@@ -161,7 +161,7 @@
     "accounts": {
       "filters": {
         "searchAria": "Buscar contas",
-        "searchPlaceholder": "Nome ou e-mail...",
+        "searchPlaceholder": "Buscar por nome...",
         "tierLabel": "Nível",
         "tierAll": "Todos",
         "tier": {
