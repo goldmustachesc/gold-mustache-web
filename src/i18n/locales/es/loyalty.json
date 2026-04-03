@@ -136,6 +136,12 @@
       "validateError": "Error al validar código",
       "useError": "Error al marcar canje como usado"
     },
+    "quickStats": {
+      "totalAccounts": "Cuentas Registradas",
+      "pointsInCirculation": "Puntos en Circulación",
+      "pendingRedemptions": "Canjes Pendientes",
+      "expiringPoints": "Puntos por Expirar"
+    },
     "reports": {
       "tab": "Informes",
       "totalAccounts": "Cuentas Registradas",

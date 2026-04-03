@@ -136,6 +136,12 @@
       "validateError": "Error validating code",
       "useError": "Error marking redemption as used"
     },
+    "quickStats": {
+      "totalAccounts": "Registered Accounts",
+      "pointsInCirculation": "Points in Circulation",
+      "pendingRedemptions": "Pending Redemptions",
+      "expiringPoints": "Expiring Points"
+    },
     "reports": {
       "tab": "Reports",
       "totalAccounts": "Registered Accounts",

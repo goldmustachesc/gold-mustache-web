@@ -136,6 +136,12 @@
       "validateError": "Erro ao validar código",
       "useError": "Erro ao marcar resgate como usado"
     },
+    "quickStats": {
+      "totalAccounts": "Contas Cadastradas",
+      "pointsInCirculation": "Pontos em Circulação",
+      "pendingRedemptions": "Resgates Pendentes",
+      "expiringPoints": "Pontos Expirando"
+    },
     "reports": {
       "tab": "Relatórios",
       "totalAccounts": "Contas Cadastradas",
