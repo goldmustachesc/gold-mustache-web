@@ -168,18 +168,18 @@ export async function ServicesSection() {
               </CardHeader>
 
               <CardContent className="text-center">
-                <div className="flex items-center justify-center space-x-4 mb-6">
-                  <div className="text-lg text-muted-foreground line-through">
+                <div className="mb-2 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
+                  <span className="text-base text-muted-foreground line-through sm:text-lg">
                     {formatPrice(featuredOriginalPrice)}
-                  </div>
-                  <div className="text-3xl font-bold text-primary">
+                  </span>
+                  <span className="text-3xl font-bold text-primary sm:text-4xl">
                     {formatPrice(featuredDiscountedPrice)}
-                  </div>
-                  <Badge variant="destructive">
-                    {t("featured.save")} {formatPrice(featuredSavings)}
-                  </Badge>
+                  </span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
+                <Badge variant="destructive" className="mb-4">
+                  {t("featured.save")} {formatPrice(featuredSavings)}
+                </Badge>
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   <span>{featuredDuration}</span>
                 </div>

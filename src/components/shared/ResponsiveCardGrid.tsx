@@ -32,8 +32,8 @@ export function ResponsiveCardGrid<T>({
 
   return (
     <>
-      {/* Mobile: carousel with loop and lateral padding */}
-      <div className={cn("md:hidden", className)}>
+      {/* Mobile: full-bleed carousel (negative margin cancels SectionLayout's px-4) */}
+      <div className={cn("-mx-4 md:hidden", className)}>
         <MobileCarousel>{slides}</MobileCarousel>
       </div>
 
