@@ -62,6 +62,7 @@ const guestClient = {
   type: "guest" as const,
   appointmentCount: 3,
   lastAppointment: "2026-03-10",
+  isBanned: false,
 };
 
 const registeredClient = {

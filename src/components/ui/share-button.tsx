@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Share2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 
 interface ShareButtonProps {
@@ -9,6 +10,7 @@ interface ShareButtonProps {
 }
 
 export function ShareButton({ title, url }: ShareButtonProps) {
+  const t = useTranslations("common");
   const [copied, setCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
@@ -34,7 +36,7 @@ export function ShareButton({ title, url }: ShareButtonProps) {
       type="button"
       onClick={handleShare}
       className="ml-auto flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
-      aria-label="Share"
+      aria-label={t("share")}
     >
       {copied ? (
         <Check className="h-5 w-5 text-green-500" />

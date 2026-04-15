@@ -162,14 +162,14 @@ describe("RewardModal", () => {
     const onOpenChange = vi.fn();
 
     mocks.mutateAsync.mockResolvedValue({ id: "reward-1" });
-    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      callback: TimerHandler,
-    ) => {
-      if (typeof callback === "function") {
-        callback();
-      }
-      return 0 as ReturnType<typeof setTimeout>;
-    }) as typeof setTimeout);
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(
+      (callback: TimerHandler, ..._args: unknown[]) => {
+        if (typeof callback === "function") {
+          (callback as () => void)();
+        }
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      },
+    );
 
     render(<RewardModal open onOpenChange={onOpenChange} />);
 

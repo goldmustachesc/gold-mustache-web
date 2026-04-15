@@ -3,6 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ShareButton } from "../share-button";
 
+const i18nMessages: Record<string, string> = {
+  share: "Share",
+};
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => i18nMessages[key] ?? key,
+}));
+
 describe("ShareButton", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,14 +50,14 @@ describe("ShareButton", () => {
     });
 
     let resetCopied: (() => void) | undefined;
-    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      callback: TimerHandler,
-    ) => {
-      if (typeof callback === "function") {
-        resetCopied = callback;
-      }
-      return 0 as ReturnType<typeof setTimeout>;
-    }) as typeof setTimeout);
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(
+      (callback: TimerHandler, ..._args: unknown[]) => {
+        if (typeof callback === "function") {
+          resetCopied = callback as () => void;
+        }
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      },
+    );
 
     render(<ShareButton title="Gold" url="https://gold.com" />);
 

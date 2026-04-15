@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { Calendar } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export function FloatingBookingButton() {
+  const t = useTranslations("common");
   const { isScrolledPastThreshold } = useScrollPosition(300);
   const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
   const bookingLinkProps = isExternal
@@ -23,7 +25,7 @@ export function FloatingBookingButton() {
       <Button
         size="lg"
         className="rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-semibold px-6 py-3 h-auto"
-        aria-label="Agendar horário na barbearia"
+        aria-label={t("scheduleAtBarbershop")}
         asChild
       >
         <Link
@@ -33,7 +35,7 @@ export function FloatingBookingButton() {
           {...bookingLinkProps}
         >
           <Calendar className="mr-2 h-5 w-5" />
-          Agendar
+          {t("schedule")}
         </Link>
       </Button>
     </div>

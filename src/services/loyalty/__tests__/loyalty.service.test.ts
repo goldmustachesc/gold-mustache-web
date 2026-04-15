@@ -10,6 +10,9 @@ vi.mock("@/lib/prisma", () => {
       create: vi.fn(),
       update: vi.fn(),
     },
+    pointTransaction: {
+      findFirst: vi.fn(),
+    },
     $transaction: vi.fn(),
   };
   return { prisma };
@@ -317,6 +320,39 @@ describe("services/loyalty.service", () => {
 
       const updateCall = mockTxUpdate.mock.calls[0][0];
       expect(updateCall.data).not.toHaveProperty("lifetimePoints");
+    });
+  });
+
+  describe("hasExistingTransaction", () => {
+    it("should return true when transaction with referenceId and type exists", async () => {
+      asMock(prisma.pointTransaction.findFirst).mockResolvedValue({
+        id: "tx-1",
+      });
+
+      const result = await LoyaltyService.hasExistingTransaction(
+        "ref-1",
+        PointTransactionType.EARNED_APPOINTMENT,
+      );
+
+      expect(prisma.pointTransaction.findFirst).toHaveBeenCalledWith({
+        where: {
+          referenceId: "ref-1",
+          type: PointTransactionType.EARNED_APPOINTMENT,
+        },
+        select: { id: true },
+      });
+      expect(result).toBe(true);
+    });
+
+    it("should return false when no matching transaction exists", async () => {
+      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+
+      const result = await LoyaltyService.hasExistingTransaction(
+        "ref-missing",
+        PointTransactionType.EARNED_APPOINTMENT,
+      );
+
+      expect(result).toBe(false);
     });
   });
 });

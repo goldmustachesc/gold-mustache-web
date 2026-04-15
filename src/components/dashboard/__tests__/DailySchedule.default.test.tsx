@@ -7,7 +7,9 @@ import type {
 } from "@/types/booking";
 import { DailySchedule } from "../DailySchedule";
 
-const mockGetMinutesUntilAppointment = vi.hoisted(() => vi.fn(() => 30));
+const mockGetMinutesUntilAppointment = vi.hoisted(() =>
+  vi.fn((_dateStr: string, _time: string, _ref?: Date) => 30),
+);
 
 vi.mock("@/hooks/useMediaQuery", () => ({
   useIsDesktop: () => false,
@@ -21,7 +23,7 @@ vi.mock("@/utils/time-slots", async () => {
 
   return {
     ...actual,
-    getMinutesUntilAppointment: (...args: unknown[]) =>
+    getMinutesUntilAppointment: (...args: [string, string, Date?]) =>
       mockGetMinutesUntilAppointment(...args),
   };
 });

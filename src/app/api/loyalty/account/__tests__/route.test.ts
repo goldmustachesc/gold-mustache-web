@@ -99,7 +99,7 @@ describe("/api/loyalty/account", () => {
       mockIsFeatureEnabled.mockResolvedValue(false);
 
       const request = new Request("http://localhost:3001/api/loyalty/account");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -115,7 +115,7 @@ describe("/api/loyalty/account", () => {
       });
 
       const request = new Request("http://localhost:3001/api/loyalty/account");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(429);
@@ -126,7 +126,7 @@ describe("/api/loyalty/account", () => {
       unauthenticatedUser();
 
       const request = new Request("http://localhost:3001/api/loyalty/account");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -138,7 +138,7 @@ describe("/api/loyalty/account", () => {
       vi.mocked(prisma.profile.findUnique).mockResolvedValue(null);
 
       const request = new Request("http://localhost:3001/api/loyalty/account");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -152,7 +152,7 @@ describe("/api/loyalty/account", () => {
       vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(3);
 
       const request = new Request("http://localhost:3001/api/loyalty/account");
-      const response = await GET(request);
+      const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -175,7 +175,7 @@ describe("/api/loyalty/account", () => {
       vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(0);
 
       const request = new Request("http://localhost:3001/api/loyalty/account");
-      await GET(request);
+      await GET();
 
       expect(LoyaltyService.getOrCreateAccount).toHaveBeenCalledWith(
         "profile-42",

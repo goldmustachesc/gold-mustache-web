@@ -41,7 +41,13 @@ const mocks = vi.hoisted(() => {
         { startTime: "09:00", endTime: "10:00" },
         { startTime: "10:30", endTime: "12:00" },
       ],
-    },
+    } as
+      | {
+          barberId: string;
+          serviceDuration: number;
+          windows: { startTime: string; endTime: string }[];
+        }
+      | undefined,
     clients: {
       data: [
         {
@@ -50,6 +56,8 @@ const mocks = vi.hoisted(() => {
           phone: "11999887766",
           type: "registered" as const,
           appointmentCount: 5,
+          lastAppointment: null,
+          isBanned: false,
         },
       ],
       meta: { total: 1, page: 1, limit: 20, totalPages: 1 },

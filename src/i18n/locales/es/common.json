@@ -18,5 +18,9 @@
     "system": "Sistema",
     "light": "Claro",
     "dark": "Oscuro"
-  }
+  },
+  "schedule": "Reservar",
+  "scheduleAtBarbershop": "Reservar cita en la barbería",
+  "share": "Compartir",
+  "changeLanguage": "Cambiar idioma"
 }

@@ -14,6 +14,7 @@ const REGISTERED_CLIENT = {
   type: "registered" as const,
   appointmentCount: 5,
   lastAppointment: "2026-03-01",
+  isBanned: false,
 };
 
 const GUEST_CLIENT = {
@@ -23,6 +24,7 @@ const GUEST_CLIENT = {
   type: "guest" as const,
   appointmentCount: 1,
   lastAppointment: "2026-02-15",
+  isBanned: false,
 };
 
 describe("ClientCard", () => {

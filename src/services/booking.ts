@@ -1717,50 +1717,74 @@ export async function markAppointmentAsCompleted(
   // Integrar pontuação do sistema de fidelidade para clientes cadastrados
   if (updated.clientId && updated.client) {
     try {
-      // Import dinâmico para evitar circular dependency
-      const { LoyaltyService } = await import("./loyalty/loyalty.service");
-      const { calculateAppointmentPoints } = await import(
-        "./loyalty/points.calculator"
-      );
+      const { isFeatureEnabled } = await import("./feature-flags");
+      const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
 
-      const account = await LoyaltyService.getOrCreateAccount(updated.clientId);
-      const pointsData = calculateAppointmentPoints(
-        Number(updated.service.price),
-        account.tier,
-      );
+      if (loyaltyEnabled) {
+        // Import dinâmico para evitar circular dependency
+        const { LoyaltyService } = await import("./loyalty/loyalty.service");
+        const { calculateAppointmentPoints } = await import(
+          "./loyalty/points.calculator"
+        );
+        const { LOYALTY_CONFIG } = await import("@/config/loyalty.config");
 
-      const pointsDescription = `Agendamento concluído: ${updated.service.name}`;
+        const account = await LoyaltyService.getOrCreateAccount(
+          updated.clientId,
+        );
+        const pointsData = calculateAppointmentPoints(
+          Number(updated.service.price),
+          account.tier,
+        );
 
-      await LoyaltyService.creditPoints({
-        accountId: account.id,
-        type: "EARNED_APPOINTMENT",
-        points: pointsData.total,
-        description: pointsDescription,
-        referenceId: updated.id,
-      });
+        const pointsDescription = `Agendamento concluído: ${updated.service.name}`;
 
-      const { LoyaltyNotificationService } = await import(
-        "./loyalty/notification.service"
-      );
-      await LoyaltyNotificationService.notifyPointsEarned(
-        updated.clientId,
-        pointsData.total,
-        pointsDescription,
-      );
-
-      if (account.referredById) {
-        const completedCount = await prisma.appointment.count({
-          where: {
-            clientId: updated.clientId,
-            status: AppointmentStatus.COMPLETED,
-          },
+        await LoyaltyService.creditPoints({
+          accountId: account.id,
+          type: "EARNED_APPOINTMENT",
+          points: pointsData.total,
+          description: pointsDescription,
+          referenceId: updated.id,
         });
 
-        if (completedCount === 1) {
-          const { ReferralService } = await import(
-            "./loyalty/referral.service"
-          );
-          await ReferralService.creditReferralBonus(account.id);
+        // Bônus de check-in por presença
+        const alreadyCheckedIn = await LoyaltyService.hasExistingTransaction(
+          updated.id,
+          "EARNED_CHECKIN",
+        );
+
+        if (!alreadyCheckedIn) {
+          await LoyaltyService.creditPoints({
+            accountId: account.id,
+            type: "EARNED_CHECKIN",
+            points: LOYALTY_CONFIG.CHECKIN_BONUS,
+            description: `Check-in: ${updated.service.name}`,
+            referenceId: updated.id,
+          });
+        }
+
+        const { LoyaltyNotificationService } = await import(
+          "./loyalty/notification.service"
+        );
+        await LoyaltyNotificationService.notifyPointsEarned(
+          updated.clientId,
+          pointsData.total,
+          pointsDescription,
+        );
+
+        if (account.referredById) {
+          const completedCount = await prisma.appointment.count({
+            where: {
+              clientId: updated.clientId,
+              status: AppointmentStatus.COMPLETED,
+            },
+          });
+
+          if (completedCount === 1) {
+            const { ReferralService } = await import(
+              "./loyalty/referral.service"
+            );
+            await ReferralService.creditReferralBonus(account.id);
+          }
         }
       }
     } catch (error) {

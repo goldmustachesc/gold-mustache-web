@@ -121,7 +121,7 @@ vi.mock("../chat/ChatBarberSelector", () => ({
     barbers,
     onSelect,
   }: {
-    barbers: Array<{ id: string; name: string }>;
+    barbers: Array<{ id: string; name: string; avatarUrl: string | null }>;
     onSelect: (barber: {
       id: string;
       name: string;

@@ -21,7 +21,7 @@ describe("redis", () => {
 
   it("alerta em produção quando Redis não está configurado", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
 

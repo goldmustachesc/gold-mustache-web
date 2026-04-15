@@ -19,7 +19,7 @@ const mockPathname = vi.hoisted(() => ({
 
 const mockBookingSettings = vi.hoisted(() => ({
   value: {
-    bookingHref: "/pt-BR/agendar",
+    bookingHref: "/pt-BR/agendar" as string | null,
     shouldShowBooking: true,
     isExternal: false,
   },

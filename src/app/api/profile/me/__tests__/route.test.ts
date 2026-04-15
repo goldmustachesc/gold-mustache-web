@@ -55,7 +55,7 @@ describe("GET /api/profile/me", () => {
     });
 
     const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(429);
@@ -66,7 +66,7 @@ describe("GET /api/profile/me", () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
     const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -98,7 +98,7 @@ describe("GET /api/profile/me", () => {
     });
 
     const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -139,7 +139,7 @@ describe("GET /api/profile/me", () => {
     });
 
     const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(200);

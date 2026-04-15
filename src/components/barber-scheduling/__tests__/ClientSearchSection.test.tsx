@@ -26,6 +26,8 @@ const MOCK_CLIENT = {
   phone: "11999887766",
   type: "registered" as const,
   appointmentCount: 5,
+  lastAppointment: null,
+  isBanned: false,
 };
 
 describe("ClientSearchSection", () => {

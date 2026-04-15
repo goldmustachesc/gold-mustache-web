@@ -5,10 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppointmentCard } from "../AppointmentCard";
 import type { AppointmentWithDetails } from "@/types/booking";
 
-const mockGetMinutesUntilAppointment = vi.hoisted(() => vi.fn(() => 30));
+const mockGetMinutesUntilAppointment = vi.hoisted(() =>
+  vi.fn((_dateStr: string, _time: string, _ref?: Date) => 30),
+);
 
 vi.mock("@/utils/time-slots", () => ({
-  getMinutesUntilAppointment: (...args: unknown[]) =>
+  getMinutesUntilAppointment: (...args: [string, string, Date?]) =>
     mockGetMinutesUntilAppointment(...args),
 }));
 

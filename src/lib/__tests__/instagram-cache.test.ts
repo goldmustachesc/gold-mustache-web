@@ -6,16 +6,14 @@ const sampleCache: InstagramCacheData = {
     {
       id: "post-1",
       mediaType: "IMAGE",
-      mediaUrl: "https://example.com/post-1.jpg",
-      permalink: "https://instagram.com/p/post-1",
+      image: "https://example.com/post-1.jpg",
+      url: "https://instagram.com/p/post-1",
       caption: "Legenda 1",
       timestamp: "2026-03-19T10:00:00.000Z",
-      username: "goldmustache",
-      likeCount: 10,
-      commentsCount: 2,
     },
   ],
-  syncedAt: "2026-03-19T10:00:00.000Z",
+  lastUpdated: "2026-03-19T10:00:00.000Z",
+  source: "api",
 };
 
 describe("instagram-cache", () => {

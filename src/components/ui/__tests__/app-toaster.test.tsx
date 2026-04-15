@@ -4,7 +4,7 @@ import { AppToaster } from "../app-toaster";
 
 const mocks = vi.hoisted(() => ({
   useTheme: vi.fn(),
-  Toaster: vi.fn(() => null),
+  Toaster: vi.fn((_props?: unknown) => null),
 }));
 
 vi.mock("next-themes", () => ({

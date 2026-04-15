@@ -11,7 +11,7 @@ vi.mock("@/hooks/useAuth", () => ({
 
 const mockBookingSettings = vi.hoisted(() =>
   vi.fn(() => ({
-    bookingHref: "/pt-BR/agendar",
+    bookingHref: "/pt-BR/agendar" as string | null,
     shouldShowBooking: true,
     isExternal: false,
     isInternal: true,

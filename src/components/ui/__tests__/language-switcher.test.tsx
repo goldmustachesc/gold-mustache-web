@@ -16,6 +16,12 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next-intl", () => ({
   useLocale: () => mocks.locale,
+  useTranslations: () => (key: string) => {
+    const messages: Record<string, string> = {
+      changeLanguage: "Change language",
+    };
+    return messages[key] ?? key;
+  },
 }));
 
 describe("LanguageSwitcher", () => {

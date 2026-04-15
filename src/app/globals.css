@@ -57,6 +57,11 @@
 
 :root {
   --radius: 0.625rem;
+  /* Loading elevator brand colors (fixed, not theme-dependent) */
+  --elevator-bg: #0b0b0b;
+  --elevator-gold: #d4af37;
+  --elevator-gold-light: #e5c158;
+  --elevator-gold-shadow: rgba(212, 175, 55, 0.5);
   /* Gold Mustache Brand Colors */
   --background: oklch(0.98 0.01 85);
   /* Warm off-white */

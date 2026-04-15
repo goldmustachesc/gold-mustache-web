@@ -48,8 +48,6 @@ describe("StarRatingDisplay", () => {
     render(<StarRatingDisplay value={4.5} size="lg" showValue />);
 
     expect(screen.getByText("4.5")).toBeInTheDocument();
-    expect(
-      screen.getByTitle("Avaliação: 4.5 de 5 estrelas"),
-    ).toBeInTheDocument();
+    expect(screen.getByTitle("4.5 de 5 estrelas")).toBeInTheDocument();
   });
 });

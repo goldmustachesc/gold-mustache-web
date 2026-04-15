@@ -1,10 +1,9 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 async function loadPostcssConfig(nodeEnv: string) {
-  const previousNodeEnv = process.env.NODE_ENV;
-  process.env.NODE_ENV = nodeEnv;
+  vi.stubEnv("NODE_ENV", nodeEnv);
 
   try {
     const moduleUrl = new URL(
@@ -14,7 +13,7 @@ async function loadPostcssConfig(nodeEnv: string) {
     const module = await import(moduleUrl.href);
     return module.default;
   } finally {
-    process.env.NODE_ENV = previousNodeEnv;
+    vi.unstubAllEnvs();
   }
 }
 

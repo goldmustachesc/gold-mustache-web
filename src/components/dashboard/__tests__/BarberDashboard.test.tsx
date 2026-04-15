@@ -537,9 +537,10 @@ describe("BarberDashboard", () => {
         status: "CANCELLED_BY_BARBER",
         updatedAt: "2026-03-19T12:00:00.000Z",
         createdAt: "2026-03-19T09:00:00.000Z",
-        service: { name: "Corte", price: 50 },
-        client: { fullName: "João" },
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João", phone: null },
         guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
       },
       {
         id: "apt-1",
@@ -549,9 +550,10 @@ describe("BarberDashboard", () => {
         status: "CONFIRMED",
         updatedAt: "2026-03-19T12:05:00.000Z",
         createdAt: "2026-03-19T12:05:00.000Z",
-        service: { name: "Corte", price: 50 },
-        client: { fullName: "João Atualizado" },
+        service: { id: "svc-1", name: "Corte", duration: 30, price: 50 },
+        client: { id: "client-1", fullName: "João Atualizado", phone: null },
         guestClient: null,
+        barber: { id: "barber-1", name: "Carlos Silva", avatarUrl: null },
       },
     ];
 

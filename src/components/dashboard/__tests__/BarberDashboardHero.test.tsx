@@ -15,10 +15,15 @@ const baseSlot: OperationalScheduleSlot = {
 
 const mockAppointment = {
   id: "apt-1",
+  clientId: "c1",
+  guestClientId: null,
+  barberId: "b1",
+  serviceId: "s1",
   date: "2026-04-08",
   startTime: "09:30",
   endTime: "10:15",
   status: "CONFIRMED" as const,
+  cancelReason: null,
   updatedAt: "2026-04-08T09:00:00.000Z",
   createdAt: "2026-04-08T09:00:00.000Z",
   service: { id: "s1", name: "Corte + Barba", duration: 45, price: 95 },

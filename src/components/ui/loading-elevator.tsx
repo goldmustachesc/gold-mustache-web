@@ -28,7 +28,7 @@ export function LoadingElevator({
   return (
     <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
       <div
-        className="absolute inset-0 bg-[#0B0B0B]"
+        className="absolute inset-0 bg-[var(--elevator-bg)]"
         style={{
           opacity: open ? 0 : 1,
           transition: "opacity 0.6s ease-in-out",
@@ -36,21 +36,21 @@ export function LoadingElevator({
       />
 
       <div
-        className="absolute left-0 top-0 h-full w-1/2 bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#D4AF37]"
+        className="absolute left-0 top-0 h-full w-1/2 bg-gradient-to-r from-[var(--elevator-gold)] via-[var(--elevator-gold-light)] to-[var(--elevator-gold)]"
         style={{
           transform: open ? "translateX(-100%)" : "translateX(0%)",
           transition: `transform 1s ${DOOR_EASE}`,
-          boxShadow: "4px 0 32px rgba(212, 175, 55, 0.5)",
+          boxShadow: `4px 0 32px var(--elevator-gold-shadow)`,
         }}
       />
 
       <div
         ref={rightDoorRef}
-        className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-[#D4AF37] via-[#E5C158] to-[#D4AF37]"
+        className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-[var(--elevator-gold)] via-[var(--elevator-gold-light)] to-[var(--elevator-gold)]"
         style={{
           transform: open ? "translateX(100%)" : "translateX(0%)",
           transition: `transform 1s ${DOOR_EASE}`,
-          boxShadow: "-4px 0 32px rgba(212, 175, 55, 0.5)",
+          boxShadow: `-4px 0 32px var(--elevator-gold-shadow)`,
         }}
       />
 
