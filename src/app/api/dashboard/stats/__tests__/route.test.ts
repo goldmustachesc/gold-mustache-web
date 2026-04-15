@@ -15,7 +15,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     profile: { findUnique: vi.fn(), count: vi.fn() },
     barber: { findUnique: vi.fn(), count: vi.fn() },
-    appointment: { findMany: vi.fn() },
+    appointment: { findMany: vi.fn(), count: vi.fn() },
   },
 }));
 
@@ -380,6 +380,83 @@ describe("GET /api/dashboard/stats", () => {
     expect(response.headers.get("Cache-Control")).toBe(
       "private, s-maxage=30, stale-while-revalidate=60",
     );
+  });
+
+  describe("pagination", () => {
+    beforeEach(() => {
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: "user-1" } },
+      });
+      vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+        PROFILE_FIXTURE as never,
+      );
+      vi.mocked(prisma.barber.findUnique).mockResolvedValue(null as never);
+      vi.mocked(prisma.appointment.findMany).mockResolvedValue([
+        PAST_APPOINTMENT,
+      ] as never);
+      vi.mocked(prisma.appointment.count).mockResolvedValue(42 as never);
+    });
+
+    it("returns meta with pagination info", async () => {
+      const request = new Request(
+        "http://localhost:3001/api/dashboard/stats?page=1&limit=10",
+      );
+      const response = await GET(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json.data.meta).toEqual({
+        total: 42,
+        page: 1,
+        limit: 10,
+        totalPages: 5,
+      });
+    });
+
+    it("applies skip and take to client appointments query", async () => {
+      const request = new Request(
+        "http://localhost:3001/api/dashboard/stats?page=2&limit=10",
+      );
+      await GET(request);
+
+      expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: "profile-1" },
+          skip: 10,
+          take: 10,
+        }),
+      );
+    });
+
+    it("uses MAX_CLIENT_HISTORY as default limit when no params", async () => {
+      const request = new Request("http://localhost:3001/api/dashboard/stats");
+      const response = await GET(request);
+      const json = await response.json();
+
+      expect(json.data.meta).toEqual({
+        total: 42,
+        page: 1,
+        limit: 200,
+        totalPages: 1,
+      });
+
+      expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 200,
+        }),
+      );
+    });
+
+    it("runs count query in parallel with findMany", async () => {
+      const request = new Request(
+        "http://localhost:3001/api/dashboard/stats?page=1&limit=10",
+      );
+      await GET(request);
+
+      expect(vi.mocked(prisma.appointment.count)).toHaveBeenCalledWith({
+        where: { clientId: "profile-1" },
+      });
+    });
   });
 
   it("returns 500 on Prisma failure", async () => {

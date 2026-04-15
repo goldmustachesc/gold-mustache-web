@@ -80,6 +80,7 @@ vi.mock("@/lib/prisma", () => ({
     appointment: {
       findMany: (...args: unknown[]) =>
         prismaMocks.appointmentFindMany(...args),
+      count: vi.fn().mockResolvedValue(0),
     },
     workingHours: {
       findMany: (...args: unknown[]) =>

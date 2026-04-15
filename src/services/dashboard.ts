@@ -4,6 +4,7 @@ import type {
   BarberWorkingHoursDay,
 } from "@/types/booking";
 import type { DashboardStats } from "@/types/dashboard";
+import type { PaginationMeta } from "@/types/api";
 import type { ProfileMeData, UserRole } from "@/types/profile";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,8 @@ import {
   parseDateStringToUTC,
 } from "@/utils/time-slots";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
+
+export const MAX_CLIENT_HISTORY = 200;
 
 type ProfileRecord = {
   id: string;
@@ -158,17 +161,24 @@ export async function getDashboardIdentity(): Promise<DashboardIdentity | null> 
   };
 }
 
+interface ClientPagination {
+  skip: number;
+  take: number;
+}
+
 interface DashboardStatsInput {
   profile: ProfileMeData;
   barberProfile: DashboardBarberProfile | null;
   includeClientStats?: boolean;
+  pagination?: ClientPagination;
 }
 
 export async function getDashboardStatsData({
   profile,
   barberProfile,
   includeClientStats = true,
-}: DashboardStatsInput): Promise<DashboardStats> {
+  pagination,
+}: DashboardStatsInput): Promise<DashboardStats & { meta?: PaginationMeta }> {
   const todayStr = getBrazilDateString();
   const today = parseDateStringToUTC(todayStr);
   const todayBusinessDate = parseIsoDateYyyyMmDdAsSaoPauloDate(todayStr);
@@ -187,42 +197,49 @@ export async function getDashboardStatsData({
     admin: null,
   };
 
-  const MAX_CLIENT_HISTORY = 200;
   const shouldLoadClientStats = includeClientStats || profile.role !== "BARBER";
+  const clientWhere = { clientId: profile.id };
+  const take = pagination?.take ?? MAX_CLIENT_HISTORY;
+  const skip = pagination?.skip ?? 0;
 
-  const [clientAppointments, barberAppointments] = await Promise.all([
-    shouldLoadClientStats
-      ? prisma.appointment.findMany({
-          where: { clientId: profile.id },
-          include: {
-            barber: {
-              select: { id: true, name: true, avatarUrl: true },
+  const [clientAppointments, clientTotal, barberAppointments] =
+    await Promise.all([
+      shouldLoadClientStats
+        ? prisma.appointment.findMany({
+            where: clientWhere,
+            include: {
+              barber: {
+                select: { id: true, name: true, avatarUrl: true },
+              },
+              service: {
+                select: { id: true, name: true, duration: true, price: true },
+              },
             },
-            service: {
-              select: { id: true, name: true, duration: true, price: true },
+            orderBy: { date: "desc" },
+            skip,
+            take,
+          })
+        : Promise.resolve(null),
+      shouldLoadClientStats
+        ? prisma.appointment.count({ where: clientWhere })
+        : Promise.resolve(0),
+      barberProfile
+        ? prisma.appointment.findMany({
+            where: {
+              barberId: barberProfile.id,
+              date: { gte: startOfWeek, lte: endOfWeek },
             },
-          },
-          orderBy: { date: "desc" },
-          take: MAX_CLIENT_HISTORY,
-        })
-      : Promise.resolve(null),
-    barberProfile
-      ? prisma.appointment.findMany({
-          where: {
-            barberId: barberProfile.id,
-            date: { gte: startOfWeek, lte: endOfWeek },
-          },
-          include: {
-            client: { select: { fullName: true } },
-            guestClient: { select: { fullName: true } },
-            service: {
-              select: { name: true, price: true, duration: true },
+            include: {
+              client: { select: { fullName: true } },
+              guestClient: { select: { fullName: true } },
+              service: {
+                select: { name: true, price: true, duration: true },
+              },
             },
-          },
-          orderBy: [{ date: "asc" }, { startTime: "asc" }],
-        })
-      : Promise.resolve(null),
-  ]);
+            orderBy: [{ date: "asc" }, { startTime: "asc" }],
+          })
+        : Promise.resolve(null),
+    ]);
 
   if (clientAppointments) {
     const upcomingAppointments = clientAppointments
@@ -443,7 +460,16 @@ export async function getDashboardStatsData({
     };
   }
 
-  return stats;
+  const meta: PaginationMeta | undefined = shouldLoadClientStats
+    ? {
+        total: clientTotal,
+        page: Math.floor(skip / take) + 1,
+        limit: take,
+        totalPages: Math.ceil(clientTotal / take),
+      }
+    : undefined;
+
+  return { ...stats, meta };
 }
 
 interface BarberDashboardInitialDataInput {

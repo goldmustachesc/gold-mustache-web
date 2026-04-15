@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
-import { getDashboardStatsData } from "@/services/dashboard";
+import {
+  getDashboardStatsData,
+  MAX_CLIENT_HISTORY,
+} from "@/services/dashboard";
 
 export async function GET(request: Request) {
   try {
@@ -32,6 +35,20 @@ export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
     const includeClientStats =
       requestUrl.searchParams.get("includeClientStats") !== "false";
+
+    const hasExplicitPagination =
+      requestUrl.searchParams.has("page") ||
+      requestUrl.searchParams.has("limit");
+    const page = hasExplicitPagination
+      ? Math.max(1, Number(requestUrl.searchParams.get("page")) || 1)
+      : 1;
+    const limit = hasExplicitPagination
+      ? Math.min(
+          100,
+          Math.max(1, Number(requestUrl.searchParams.get("limit")) || 20),
+        )
+      : MAX_CLIENT_HISTORY;
+    const skip = (page - 1) * limit;
 
     const [profile, barberProfile] = await Promise.all([
       prisma.profile.findUnique({
@@ -82,6 +99,7 @@ export async function GET(request: Request) {
       },
       barberProfile: activeBarberProfile,
       includeClientStats,
+      pagination: { skip, take: limit },
     });
 
     const response = apiSuccess(stats);

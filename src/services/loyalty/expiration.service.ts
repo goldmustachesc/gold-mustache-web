@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PointTransactionType, type Prisma } from "@prisma/client";
 import { addDays } from "date-fns";
 import { LOYALTY_CONFIG } from "@/config/loyalty.config";
+import { LoyaltyNotificationService } from "./notification.service";
 
 const EXPIRABLE_TYPES = [
   PointTransactionType.EARNED_APPOINTMENT,
@@ -120,8 +121,57 @@ async function getExpiringTransactions(
   });
 }
 
+async function notifyExpiringPoints(warningDays?: number): Promise<void> {
+  const transactions = await getExpiringTransactions(warningDays);
+
+  if (transactions.length === 0) return;
+
+  const grouped = new Map<
+    string,
+    { totalPoints: number; earliestExpiresAt: Date }
+  >();
+
+  for (const tx of transactions) {
+    const existing = grouped.get(tx.loyaltyAccountId);
+    if (existing) {
+      existing.totalPoints += tx.points;
+      if (tx.expiresAt && tx.expiresAt < existing.earliestExpiresAt) {
+        existing.earliestExpiresAt = tx.expiresAt;
+      }
+    } else {
+      grouped.set(tx.loyaltyAccountId, {
+        totalPoints: tx.points,
+        earliestExpiresAt: tx.expiresAt ?? new Date(),
+      });
+    }
+  }
+
+  for (const [accountId, { totalPoints, earliestExpiresAt }] of grouped) {
+    try {
+      const account = await prisma.loyaltyAccount.findUnique({
+        where: { id: accountId },
+        select: { profileId: true },
+      });
+
+      if (!account) continue;
+
+      await LoyaltyNotificationService.notifyPointsExpiring(
+        account.profileId,
+        totalPoints,
+        earliestExpiresAt,
+      );
+    } catch (error) {
+      console.error(
+        `[ExpirationService] Failed to notify account ${accountId}:`,
+        error,
+      );
+    }
+  }
+}
+
 export const ExpirationService = {
   getExpiredTransactions,
   expirePoints,
   getExpiringTransactions,
+  notifyExpiringPoints,
 };
