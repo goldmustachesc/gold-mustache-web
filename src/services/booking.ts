@@ -13,7 +13,10 @@ import {
   getAbsenceSlotError,
   getShopSlotError,
 } from "@/lib/booking/availability-policy";
-import { isSlotTooSoonForClient } from "@/lib/booking/lead-time";
+import {
+  CLIENT_BOOKING_LEAD_MINUTES,
+  isSlotTooSoonForClient,
+} from "@/lib/booking/lead-time";
 import {
   generateTimeSlots,
   filterAvailableSlots,
@@ -472,7 +475,8 @@ export async function getBookingAvailability(
 
   const minimumStartMinutes =
     dateStr === getBrazilDateString()
-      ? getCurrentBrazilMinutes() + (applyLeadTime ? 60 : 0)
+      ? getCurrentBrazilMinutes() +
+        (applyLeadTime ? CLIENT_BOOKING_LEAD_MINUTES : 0)
       : null;
 
   if (minimumStartMinutes !== null && minimumStartMinutes >= 24 * 60) {
