@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/sync-instagram",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/loyalty/expire-points",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/loyalty/birthday-bonuses",
+      "schedule": "0 9 * * *"
     }
   ]
 }

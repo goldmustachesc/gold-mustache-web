@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { AppToaster } from "@/components/ui/app-toaster";
 import { PrivateShell } from "@/components/private/PrivateShell";
 import { PROTECTED_NS } from "@/i18n/namespace-groups";

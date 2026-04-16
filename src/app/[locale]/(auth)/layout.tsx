@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { AppToaster } from "@/components/ui/app-toaster";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AUTH_NS } from "@/i18n/namespace-groups";

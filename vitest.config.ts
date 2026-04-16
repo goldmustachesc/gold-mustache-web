@@ -123,6 +123,10 @@ export default defineConfig({
     environment: "happy-dom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    env: {
+      UPSTASH_REDIS_REST_URL: "",
+      UPSTASH_REDIS_REST_TOKEN: "",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "json-summary", "html", "lcov"],
@@ -139,6 +143,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "next/image": path.resolve(__dirname, "./src/__mocks__/NextImage.tsx"),
     },
   },
 });

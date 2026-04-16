@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -54,7 +54,6 @@ import {
 } from "lucide-react";
 
 export function BarbeirosPageClient() {
-  const router = useRouter();
   const params = useParams();
   const locale = (params.locale as string) || "pt-BR";
 

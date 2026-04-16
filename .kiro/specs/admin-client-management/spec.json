@@ -1,0 +1,33 @@
+{
+  "feature_name": "admin-client-management",
+  "language": "pt",
+  "created_at": "2026-04-16T14:21:00Z",
+  "updated_at": "2026-04-16T14:21:00Z",
+  "status": "draft",
+  "phase": "initialized",
+  "priority": "P1",
+  "backlog_refs": ["audit-2026-04-15/P1-#6"],
+  "related_specs": [
+    "loyalty-bugfix-audit",
+    "admin-appointment-management",
+    "loyalty-automation"
+  ],
+  "area": "admin",
+  "owners": ["admin"],
+  "summary": "Painel admin para gestao completa de clientes (autenticados e guests): listagem paginada com busca, detalhe do cliente com historico consolidado (agendamentos, feedbacks, pontos de fidelidade, notas internas), filtros avancados (ativo/inativo, banido, tier loyalty, data de cadastro), relatorio de clientes inativos (30/60/90 dias), export CSV LGPD-safe, ban/unban via UI com audit log, lookup de guest por telefone e merge automatico ao claim da conta.",
+  "approvals": {
+    "requirements": {
+      "generated": false,
+      "approved": false
+    },
+    "design": {
+      "generated": false,
+      "approved": false
+    },
+    "tasks": {
+      "generated": false,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}

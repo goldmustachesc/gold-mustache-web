@@ -13,7 +13,7 @@ function getValidOrigin(candidate: string | undefined | null): string | null {
   }
 }
 
-export function isOAuthProviderUser(
+function isOAuthProviderUser(
   appMetadata: Record<string, unknown> | undefined,
 ): boolean {
   const provider =
@@ -30,7 +30,7 @@ export function isOAuthProviderUser(
   );
 }
 
-export function getSafeCallbackRedirectOrigin(request: Request): string {
+function getSafeCallbackRedirectOrigin(request: Request): string {
   const requestOrigin = new URL(request.url).origin;
 
   if (process.env.NODE_ENV === "development") {

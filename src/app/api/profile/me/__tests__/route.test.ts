@@ -54,7 +54,7 @@ describe("GET /api/profile/me", () => {
       reset: Date.now() + 60_000,
     });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
+    const _request = new Request("http://localhost:3001/api/profile/me");
     const response = await GET();
     const body = await response.json();
 
@@ -65,7 +65,7 @@ describe("GET /api/profile/me", () => {
   it("returns 401 when not authenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
+    const _request = new Request("http://localhost:3001/api/profile/me");
     const response = await GET();
     const body = await response.json();
 
@@ -97,7 +97,7 @@ describe("GET /api/profile/me", () => {
       updatedAt: new Date("2025-01-02T00:00:00.000Z"),
     });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
+    const _request = new Request("http://localhost:3001/api/profile/me");
     const response = await GET();
     const body = await response.json();
 
@@ -138,7 +138,7 @@ describe("GET /api/profile/me", () => {
       updatedAt: new Date("2025-01-02T00:00:00.000Z"),
     });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
+    const _request = new Request("http://localhost:3001/api/profile/me");
     const response = await GET();
     const body = await response.json();
 

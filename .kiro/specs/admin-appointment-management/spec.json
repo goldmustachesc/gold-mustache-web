@@ -1,0 +1,13 @@
+{
+  "feature_name": "admin-appointment-management",
+  "language": "pt",
+  "created_at": "2026-04-16T14:20:00Z",
+  "updated_at": "2026-04-16T14:20:00Z",
+  "status": "draft",
+  "priority": "P0",
+  "backlog_refs": ["audit-2026-04-15/P0-#2", "audit-2026-04-15/P0-#4"],
+  "related_specs": ["booking-reschedule", "admin-client-management"],
+  "area": "admin",
+  "owners": ["admin"],
+  "summary": "Painel admin para visao e gestao consolidada de agendamentos de todos os barbeiros: listar/filtrar/buscar, criar manualmente em nome do cliente, cancelar com bypass da janela de 2h, reagendar e visualizar calendario semanal/diario lado a lado."
+}

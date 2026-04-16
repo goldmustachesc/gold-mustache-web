@@ -98,7 +98,7 @@ describe("/api/loyalty/account", () => {
     it("should return 404 when loyaltyProgram flag is disabled (authenticated user)", async () => {
       mockIsFeatureEnabled.mockResolvedValue(false);
 
-      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const _request = new Request("http://localhost:3001/api/loyalty/account");
       const response = await GET();
       const data = await response.json();
 
@@ -114,7 +114,7 @@ describe("/api/loyalty/account", () => {
         reset: Date.now() + 60_000,
       });
 
-      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const _request = new Request("http://localhost:3001/api/loyalty/account");
       const response = await GET();
       const data = await response.json();
 
@@ -125,7 +125,7 @@ describe("/api/loyalty/account", () => {
     it("should return 401 when not authenticated", async () => {
       unauthenticatedUser();
 
-      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const _request = new Request("http://localhost:3001/api/loyalty/account");
       const response = await GET();
       const data = await response.json();
 
@@ -137,7 +137,7 @@ describe("/api/loyalty/account", () => {
       authenticatedUser();
       vi.mocked(prisma.profile.findUnique).mockResolvedValue(null);
 
-      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const _request = new Request("http://localhost:3001/api/loyalty/account");
       const response = await GET();
       const data = await response.json();
 
@@ -151,7 +151,7 @@ describe("/api/loyalty/account", () => {
       mockAccount();
       vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(3);
 
-      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const _request = new Request("http://localhost:3001/api/loyalty/account");
       const response = await GET();
       const data = await response.json();
 
@@ -174,7 +174,7 @@ describe("/api/loyalty/account", () => {
       mockAccount();
       vi.mocked(prisma.loyaltyAccount.count).mockResolvedValue(0);
 
-      const request = new Request("http://localhost:3001/api/loyalty/account");
+      const _request = new Request("http://localhost:3001/api/loyalty/account");
       await GET();
 
       expect(LoyaltyService.getOrCreateAccount).toHaveBeenCalledWith(

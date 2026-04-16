@@ -330,7 +330,7 @@ export async function PUT(request: Request) {
       create: { id: "default", ...parsed.data },
     });
 
-    revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG, "max");
+    revalidateTag(BARBERSHOP_SETTINGS_CACHE_TAG);
 
     return apiSuccess(settings);
   } catch (error) {

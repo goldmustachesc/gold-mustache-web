@@ -1,0 +1,25 @@
+{
+  "feature_name": "commission-report",
+  "created_at": "2026-04-16T17:21:00Z",
+  "updated_at": "2026-04-16T17:21:00Z",
+  "language": "pt",
+  "phase": "initialized",
+  "priority": "P1",
+  "backlog_reference": "auditoria-projeto-2026-04-15 #9",
+  "area": "Financeiro",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": false
+    },
+    "design": {
+      "generated": true,
+      "approved": false
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}

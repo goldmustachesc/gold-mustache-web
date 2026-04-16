@@ -44,7 +44,7 @@ function adminAuthenticated() {
   });
 }
 
-function adminUnauthorized() {
+function _adminUnauthorized() {
   mockRequireAdmin.mockResolvedValue({
     ok: false,
     response: NextResponse.json(

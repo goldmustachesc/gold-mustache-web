@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";

@@ -16,6 +16,7 @@ vi.mock("next/image", () => ({
     src: string;
     className?: string;
   }) => (
+    // biome-ignore lint/performance/noImgElement: mock stub for tests
     <img
       data-testid="next-image"
       alt={alt}
