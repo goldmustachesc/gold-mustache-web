@@ -26,6 +26,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  if (!pathname.startsWith("/api") && /\.[^/]+$/.test(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   if (pathname.startsWith("/api") && isPublicApiRoute(pathname)) {
     return NextResponse.next({ request });
   }
