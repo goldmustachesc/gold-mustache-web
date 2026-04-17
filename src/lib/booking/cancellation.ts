@@ -1,8 +1,8 @@
 export const CANCELLATION_BLOCK_WINDOW_MINUTES = 2 * 60;
 
 /**
- * @deprecated Use canClientCancelOutsideWindow for the new blocking behavior
  * Cancellation is allowed as long as the appointment hasn't started yet.
+ * Used for barber/admin paths where the 2-hour client window does not apply.
  * `minutesUntilAppointment` is expected to be relative to "now" (Brazil timezone business clock).
  */
 export function canCancelBeforeStart(minutesUntilAppointment: number): boolean {

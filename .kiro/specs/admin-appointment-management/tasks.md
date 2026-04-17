@@ -5,7 +5,7 @@
 
 ## 1. Setup e Migrations
 
-- [ ] 1.1 Migration Prisma — adicionar campos de auditoria em `Appointment`
+- [x] 1.1 Migration Prisma — adicionar campos de auditoria em `Appointment`
   - Criar migration `add_appointment_audit_fields`
   - Adicionar enum `AppointmentSource { CLIENT, BARBER, ADMIN, GUEST, IMPORT }`
   - Adicionar colunas `source` (default CLIENT), `created_by?`, `cancelled_by?`, `rescheduled_by?`
@@ -13,7 +13,7 @@
   - Arquivo: `prisma/schema.prisma:208`
   - _Requirements: 7.4_
 
-- [ ] 1.2 Extrair helper internal em `src/services/booking.ts` para bypass controlado
+- [x] 1.2 Extrair helper internal em `src/services/booking.ts` para bypass controlado
   - Criar funcao privada `cancelAppointmentInternal(id, actor, opts: { bypassCancelWindow: boolean })`
   - Refatorar `cancelAppointmentByBarber` (linha 1427) e `cancelAppointmentByClient` (linha 1330) para delegar
   - NAO alterar comportamento externo (tests existentes devem continuar passando)
@@ -21,7 +21,7 @@
 
 ## 2. Schemas Zod (P)
 
-- [ ] 2.1 (P) Criar `src/lib/validations/admin-appointments.ts`
+- [x] 2.1 (P) Criar `src/lib/validations/admin-appointments.ts`
   - Exportar `listAdminAppointmentsQuerySchema`
   - Exportar `adminCreateAppointmentSchema` (com refine que exige clientProfileId XOR guest)
   - Exportar `adminCancelAppointmentSchema`
@@ -36,7 +36,7 @@
 
 ## 3. Service Facade
 
-- [ ] 3.1 Criar `src/services/admin/appointments.ts` com todas as funcoes da interface do design
+- [x] 3.1 Criar `src/services/admin/appointments.ts` com todas as funcoes da interface do design
   - `listAppointmentsForAdmin(filters)` — usar `parsePagination`, aplicar filtros, indice `[barberId, date, status]`
   - `createAppointmentAsAdmin(input, adminProfileId)` — delegar a `createAppointment` ou `createAppointmentByBarber` setando `source=ADMIN`, `createdBy`
   - `cancelAppointmentAsAdmin(id, reason, adminProfileId)` — chamar `cancelAppointmentInternal` com `bypassCancelWindow: true`, prefixar `cancelReason` com `[ADMIN]`, setar `cancelledBy`
@@ -44,7 +44,7 @@
   - `getCalendarForAdmin({view,date,barberIds})` — gerar slots via `shop-hours` + `availability-windows`, anotar `blocked` para `BarberAbsence`/`ShopClosure`, acoplar `appointment?` do dia
   - _Requirements: 1, 2, 3, 4, 5_
 
-- [ ] 3.2 Criar `src/services/admin/__tests__/appointments.test.ts`
+- [x] 3.2 Criar `src/services/admin/__tests__/appointments.test.ts`
   - Unit: listagem com cada filtro
   - Unit: criacao com `clientProfileId` e com `guest` (incluindo reuso de `GuestClient` por telefone)
   - Unit: cancelamento bypassa janela de 2h mas respeita `APPOINTMENT_IN_PAST`
@@ -60,7 +60,7 @@
 
 ## 4. Route Handlers (P apos 3.1)
 
-- [ ] 4.1 (P) `src/app/api/admin/appointments/route.ts` — GET (list) + POST (create)
+- [x] 4.1 (P) `src/app/api/admin/appointments/route.ts` — GET (list) + POST (create)
   - `requireAdmin` + `requireValidOrigin` (POST) + `checkRateLimit("admin-appointments", ...)` (POST)
   - Mapear erros de dominio (tabela em `design.md`)
   - Retornar `apiCollection(rows, paginationMeta(total, page, limit))` para GET
@@ -68,20 +68,20 @@
   - Criar `__tests__/list.route.test.ts` e `__tests__/create.route.test.ts`
   - _Requirements: 1, 2, 6, 7_
 
-- [ ] 4.2 (P) `src/app/api/admin/appointments/[id]/cancel/route.ts` — PATCH
+- [x] 4.2 (P) `src/app/api/admin/appointments/[id]/cancel/route.ts` — PATCH
   - Validar `adminCancelAppointmentSchema`
   - Chamar `cancelAppointmentAsAdmin`
   - Notificar cliente (se `clientId`) e barbeiro
   - Criar `__tests__/cancel.route.test.ts`
   - _Requirements: 3, 7_
 
-- [ ] 4.3 (P) `src/app/api/admin/appointments/[id]/route.ts` — PATCH (reschedule stub)
+- [x] 4.3 (P) `src/app/api/admin/appointments/[id]/route.ts` — PATCH (reschedule stub)
   - Validar `adminRescheduleAppointmentSchema`
   - Delegar a `rescheduleAppointmentAsAdmin` (stub 501 ate spec `booking-reschedule`)
   - Criar `__tests__/reschedule.route.test.ts` (teste 501 por enquanto)
   - _Requirements: 4_
 
-- [ ] 4.4 (P) `src/app/api/admin/appointments/calendar/route.ts` — GET
+- [x] 4.4 (P) `src/app/api/admin/appointments/calendar/route.ts` — GET
   - Validar `calendarQuerySchema`
   - Rejeitar intervalo > 14 dias com `RANGE_TOO_LARGE`
   - Chamar `getCalendarForAdmin`
@@ -99,57 +99,57 @@
 
 ## 6. UI — Tabela e Filtros
 
-- [ ] 6.1 Criar pagina admin
+- [x] 6.1 Criar pagina admin
   - `src/app/[locale]/(protected)/admin/agendamentos/page.tsx` (server component)
   - `src/app/[locale]/(protected)/admin/agendamentos/AgendamentosPageClient.tsx` (client, Tabs "Lista" / "Calendario")
   - _Requirements: 1, 5_
 
-- [ ] 6.2 (P) Criar `src/components/admin/appointments/AdminAppointmentsFilters.tsx`
+- [x] 6.2 (P) Criar `src/components/admin/appointments/AdminAppointmentsFilters.tsx`
   - Inputs: date range, select barber, select status, busca `q`
   - Debounce 300ms para busca
   - _Requirements: 1_
 
-- [ ] 6.3 (P) Criar `src/components/admin/appointments/AdminAppointmentsTable.tsx`
+- [x] 6.3 (P) Criar `src/components/admin/appointments/AdminAppointmentsTable.tsx`
   - React Query para fetch `GET /api/admin/appointments`
   - Paginacao com `meta.totalPages`
   - Colunas: data, horario, cliente/guest, servico, barbeiro, status, acoes
   - Linha de acoes abre `AdminAppointmentDrawer`
   - _Requirements: 1, 6_
 
-- [ ] 6.4 (P) Criar `src/components/admin/appointments/AdminAppointmentDrawer.tsx`
+- [x] 6.4 (P) Criar `src/components/admin/appointments/AdminAppointmentDrawer.tsx`
   - Painel lateral com detalhes
   - Botoes: "Cancelar", "Reagendar", "Completar"
   - _Requirements: 3, 4_
 
-- [ ] 6.5 Criar `src/components/admin/appointments/AdminCreateAppointmentDialog.tsx`
+- [x] 6.5 Criar `src/components/admin/appointments/AdminCreateAppointmentDialog.tsx`
   - React-hook-form + `adminCreateAppointmentSchema`
   - Toggle "Cliente cadastrado" vs "Convidado" (XOR)
   - Autocomplete de cliente (reusar endpoint existente ou criar `GET /api/admin/clients?q=` — pode vir da spec `admin-client-management`)
   - Select de barbeiro/servico/slot disponivel
   - _Requirements: 2_
 
-- [ ] 6.6 Criar `src/components/admin/appointments/AdminCancelAppointmentDialog.tsx`
+- [x] 6.6 Criar `src/components/admin/appointments/AdminCancelAppointmentDialog.tsx`
   - Textarea motivo obrigatorio (>=3 chars)
   - Aviso amarelo quando estiver dentro da janela de 2h ("bypass admin ativo")
   - _Requirements: 3_
 
-- [ ] 6.7 Criar `src/components/admin/appointments/AdminRescheduleDialog.tsx` (stub)
+- [x] 6.7 Criar `src/components/admin/appointments/AdminRescheduleDialog.tsx` (stub)
   - Exibir estado "em breve" enquanto spec `booking-reschedule` nao estiver concluida
   - _Requirements: 4_
 
 ## 7. UI — Calendario consolidado
 
-- [ ] 7.1 (P) Criar `src/components/admin/appointments/AdminCalendarGrid.tsx`
+- [x] 7.1 (P) Criar `src/components/admin/appointments/AdminCalendarGrid.tsx`
   - Props: `view: "day"|"week"`, `date`, `barbers`, `slots`
   - View dia: colunas = barbeiros, linhas = horarios
   - View semana: tabs de dia OU matriz barbeiros x dias (escolher durante implementacao)
   - _Requirements: 5.1, 5.2_
 
-- [ ] 7.2 (P) Criar `src/components/admin/appointments/AdminCalendarSlot.tsx`
+- [x] 7.2 (P) Criar `src/components/admin/appointments/AdminCalendarSlot.tsx`
   - Estados: livre (clicavel -> CreateDialog pre-preenchido), ocupado (clicavel -> Drawer), bloqueado (disabled com tooltip)
   - _Requirements: 5.4, 5.5, 5.6_
 
-- [ ] 7.3 Integrar calendario na aba "Calendario" de `AgendamentosPageClient.tsx`
+- [x] 7.3 Integrar calendario na aba "Calendario" de `AgendamentosPageClient.tsx`
   - React Query para `GET /api/admin/appointments/calendar`
   - Seletor de view (day/week) e date picker
   - _Requirements: 5_

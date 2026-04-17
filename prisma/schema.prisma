@@ -216,6 +216,10 @@ model Appointment {
   endTime       String            @map("end_time") // "11:00"
   status        AppointmentStatus @default(CONFIRMED)
   cancelReason  String?           @map("cancel_reason")
+  source        AppointmentSource @default(CLIENT)
+  createdBy     String?           @map("created_by")
+  cancelledBy   String?           @map("cancelled_by")
+  rescheduledBy String?           @map("rescheduled_by")
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
@@ -236,6 +240,7 @@ model Appointment {
   @@index([clientId])
   @@index([guestClientId])
   @@index([status])
+  @@index([source])
   @@map("appointments")
 }
 
@@ -245,6 +250,14 @@ enum AppointmentStatus {
   CANCELLED_BY_BARBER
   COMPLETED
   NO_SHOW
+}
+
+enum AppointmentSource {
+  CLIENT
+  BARBER
+  ADMIN
+  GUEST
+  IMPORT
 }
 
 model Notification {

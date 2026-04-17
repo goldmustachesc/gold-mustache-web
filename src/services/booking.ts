@@ -1323,76 +1323,62 @@ export function shouldWarnLateCancellation(
   );
 }
 
-/**
- * Cancel an appointment by client
- * Cancellation is BLOCKED when within 2 hours of the appointment.
- */
-export async function cancelAppointmentByClient(
+export interface CancelAppointmentInternalOpts {
+  /** Caller is responsible for passing a valid cancellation status (e.g. CANCELLED_BY_CLIENT, CANCELLED_BY_BARBER). */
+  newStatus: AppointmentStatus;
+  cancelReason?: string;
+  bypassCancelWindow: boolean;
+  preloaded?: {
+    id: string;
+    status: AppointmentStatus;
+    date: Date;
+    startTime: string;
+  };
+}
+
+export async function cancelAppointmentInternal(
   appointmentId: string,
-  clientId: string,
+  opts: CancelAppointmentInternalOpts,
 ): Promise<AppointmentWithDetails> {
-  // Get the appointment
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-  });
+  const appointment =
+    opts.preloaded ??
+    (await prisma.appointment.findUnique({ where: { id: appointmentId } }));
 
-  if (!appointment) {
-    throw new Error("APPOINTMENT_NOT_FOUND");
-  }
-
-  if (appointment.clientId !== clientId) {
-    throw new Error("UNAUTHORIZED");
-  }
+  if (!appointment) throw new Error("APPOINTMENT_NOT_FOUND");
 
   if (appointment.status !== AppointmentStatus.CONFIRMED) {
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check if cancellation is blocked (within 2h window)
-  if (isClientCancellationBlocked(appointment.date, appointment.startTime)) {
+  if (
+    !opts.bypassCancelWindow &&
+    isClientCancellationBlocked(appointment.date, appointment.startTime)
+  ) {
     throw new Error("CANCELLATION_BLOCKED");
   }
 
-  // Check if appointment is in the past
-  if (!canClientCancel(appointment.date, appointment.startTime)) {
+  const minutesUntil = getMinutesUntilAppointmentFromPrisma(
+    appointment.date,
+    appointment.startTime,
+  );
+  if (!canCancelBeforeStart(minutesUntil)) {
     throw new Error("APPOINTMENT_IN_PAST");
   }
 
-  // Update the appointment
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
-      status: AppointmentStatus.CANCELLED_BY_CLIENT,
+      status: opts.newStatus,
+      ...(opts.cancelReason !== undefined
+        ? { cancelReason: opts.cancelReason }
+        : {}),
     },
     include: {
-      client: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      guestClient: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      barber: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
+      client: { select: { id: true, fullName: true, phone: true } },
+      guestClient: { select: { id: true, fullName: true, phone: true } },
+      barber: { select: { id: true, name: true, avatarUrl: true } },
       service: {
-        select: {
-          id: true,
-          name: true,
-          duration: true,
-          price: true,
-        },
+        select: { id: true, name: true, duration: true, price: true },
       },
     },
   });
@@ -1413,114 +1399,50 @@ export async function cancelAppointmentByClient(
     client: updated.client,
     guestClient: updated.guestClient,
     barber: updated.barber,
-    service: {
-      ...updated.service,
-      price: Number(updated.service.price),
-    },
+    service: { ...updated.service, price: Number(updated.service.price) },
   };
 }
 
-/**
- * Cancel an appointment by barber
- * Requires a cancellation reason
- */
+export async function cancelAppointmentByClient(
+  appointmentId: string,
+  clientId: string,
+): Promise<AppointmentWithDetails> {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+
+  if (!appointment) throw new Error("APPOINTMENT_NOT_FOUND");
+  if (appointment.clientId !== clientId) throw new Error("UNAUTHORIZED");
+
+  return cancelAppointmentInternal(appointmentId, {
+    newStatus: AppointmentStatus.CANCELLED_BY_CLIENT,
+    bypassCancelWindow: false,
+    preloaded: appointment,
+  });
+}
+
 export async function cancelAppointmentByBarber(
   appointmentId: string,
   barberId: string,
   reason: string,
 ): Promise<AppointmentWithDetails> {
-  // Validate reason is provided
   if (!reason || reason.trim().length === 0) {
     throw new Error("CANCELLATION_REASON_REQUIRED");
   }
 
-  // Get the appointment
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
   });
 
-  if (!appointment) {
-    throw new Error("APPOINTMENT_NOT_FOUND");
-  }
+  if (!appointment) throw new Error("APPOINTMENT_NOT_FOUND");
+  if (appointment.barberId !== barberId) throw new Error("UNAUTHORIZED");
 
-  if (appointment.barberId !== barberId) {
-    throw new Error("UNAUTHORIZED");
-  }
-
-  if (appointment.status !== AppointmentStatus.CONFIRMED) {
-    throw new Error("APPOINTMENT_NOT_CANCELLABLE");
-  }
-
-  // Barber can cancel until the appointment starts.
-  const minutesUntilAppointment = getMinutesUntilAppointmentFromPrisma(
-    appointment.date,
-    appointment.startTime,
-  );
-  if (!canCancelBeforeStart(minutesUntilAppointment)) {
-    throw new Error("APPOINTMENT_IN_PAST");
-  }
-
-  // Update the appointment
-  const updated = await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: {
-      status: AppointmentStatus.CANCELLED_BY_BARBER,
-      cancelReason: reason.trim(),
-    },
-    include: {
-      client: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      guestClient: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      barber: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          duration: true,
-          price: true,
-        },
-      },
-    },
+  return cancelAppointmentInternal(appointmentId, {
+    newStatus: AppointmentStatus.CANCELLED_BY_BARBER,
+    cancelReason: reason.trim(),
+    bypassCancelWindow: true,
+    preloaded: appointment,
   });
-
-  return {
-    id: updated.id,
-    clientId: updated.clientId,
-    guestClientId: updated.guestClientId,
-    barberId: updated.barberId,
-    serviceId: updated.serviceId,
-    date: formatPrismaDateToString(updated.date),
-    startTime: updated.startTime,
-    endTime: updated.endTime,
-    status: updated.status,
-    cancelReason: updated.cancelReason,
-    createdAt: updated.createdAt.toISOString(),
-    updatedAt: updated.updatedAt.toISOString(),
-    client: updated.client,
-    guestClient: updated.guestClient,
-    barber: updated.barber,
-    service: {
-      ...updated.service,
-      price: Number(updated.service.price),
-    },
-  };
 }
 
 /**

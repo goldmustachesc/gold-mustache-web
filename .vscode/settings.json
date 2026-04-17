@@ -1,28 +1,257 @@
 {
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
+  // ═══════════════════════════════════════════
+  //  APARÊNCIA & WORKBENCH
+  // ═══════════════════════════════════════════
+  "workbench.preferredDarkColorTheme": "Tokyo Night",
+  "workbench.preferredLightColorTheme": "Tokyo Night Light",
+  "window.autoDetectColorScheme": true,
+  "workbench.iconTheme": "minimal-icons-without-explorer-arrows",
+  "window.commandCenter": false,
+  "window.zoomLevel": 0,
+  "breadcrumbs.enabled": false,
+  "workbench.layoutControl.enabled": false,
+  "workbench.list.smoothScrolling": true,
+  "workbench.activityBar.location": "hidden",
+  "workbench.sideBar.location": "left",
+  "workbench.panel.defaultLocation": "bottom",
+  "workbench.panel.opensMaximized": "never",
+  "workbench.editor.tabSizing": "shrink",
+  "workbench.editor.tabActionCloseVisibility": false,
+  "workbench.startupEditor": "none",
+  "workbench.tips.enabled": false,
+  "workbench.tree.enableStickyScroll": false,
+  "workbench.tree.renderIndentGuides": "none",
+  "workbench.tree.indent": 8,
+
+  // ═══════════════════════════════════════════
+  //  FONTE / TIPOGRAFIA (RETINA M2)
+  // ═══════════════════════════════════════════
+  "editor.fontFamily": "Geist Mono, JetBrains Mono, monospace",
+  "editor.fontSize": 14,
+  "editor.lineHeight": 1.4,
+  "editor.letterSpacing": 0,
+  "editor.fontWeight": "450",
+  "editor.fontLigatures": false,
+  "terminal.integrated.fontFamily": "Geist Mono, JetBrains Mono, monospace",
+
+  // ═══════════════════════════════════════════
+  //  EDITOR — ZERO RUÍDO, MÁXIMA DENSIDADE
+  // ═══════════════════════════════════════════
+  "editor.minimap.enabled": false,
+  "editor.renderLineHighlight": "none",
+  "editor.accessibilitySupport": "off",
+  "editor.smoothScrolling": true,
+  "editor.cursorBlinking": "solid",
+  "editor.cursorStyle": "line-thin",
+  "editor.cursorSurroundingLines": 3,
+  "editor.roundedSelection": false,
+  "editor.scrollBeyondLastLine": false,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.wordWrap": "off",
+  "editor.renderWhitespace": "selection",
+  "editor.guides.bracketPairs": "active",
+  "editor.guides.indentation": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.semanticHighlighting.enabled": true,
+  "editor.stickyScroll.enabled": false,
+  "editor.rulers": [80],
+  "editor.codeLens": false,
+  "editor.colorDecorators": false,
+  "editor.links": false,
+  "editor.dragAndDrop": false,
+  "editor.folding": false,
+  "editor.showFoldingControls": "never",
+  "editor.selectionHighlight": false,
+  "editor.occurrencesHighlight": "off",
+  "editor.overviewRulerBorder": false,
+  "editor.hideCursorInOverviewRuler": true,
+  "editor.inlayHints.enabled": "off",
+  "editor.hover.delay": 800,
+  "editor.hover.sticky": false,
+  "editor.parameterHints.enabled": false,
+  "editor.lightbulb.enabled": "off",
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggest.localityBonus": true,
+  "editor.suggestSelection": "recentlyUsed",
+  "editor.quickSuggestions": {
+    "other": "off",
+    "comments": "off",
+    "strings": "off"
   },
-  "[javascriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
+  "editor.suggestOnTriggerCharacters": false,
+  "editor.acceptSuggestionOnCommitCharacter": false,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.tabCompletion": "on",
+  "editor.formatOnPaste": false,
+  "editor.formatOnType": false,
+  "editor.pasteAs.preferences": ["text.plain"],
+  "editor.scrollbar.vertical": "auto",
+  "editor.scrollbar.horizontal": "hidden",
+
+  // ═══════════════════════════════════════════
+  //  NAVEGAÇÃO DIRETA (sem peek)
+  // ═══════════════════════════════════════════
+  "editor.gotoLocation.multipleReferences": "goto",
+  "editor.gotoLocation.multipleDefinitions": "goto",
+  "editor.gotoLocation.multipleDeclarations": "goto",
+  "editor.gotoLocation.multipleImplementations": "goto",
+  "editor.gotoLocation.multipleTypeDefinitions": "goto",
+
+  // ═══════════════════════════════════════════
+  //  FILES / EXPLORER
+  // ═══════════════════════════════════════════
+  "files.autoSave": "onFocusChange",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.readonlyInclude": {
+    "**/node_modules/**/*.*": true,
+    "**/pnpm-lock.yaml": true,
+    "**/package-lock.json": true,
+    "**/yarn.lock": true
   },
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.cache": true
   },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
+  "explorer.compactFolders": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.confirmDelete": false,
+  "explorer.confirmPasteNative": false,
+  "explorer.decorations.badges": false,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, .npmrc, biome.json, next.config.*, tailwind.config.*, postcss.config.*, tsconfig.*",
+    "*.ts": "${capture}.js",
+    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts"
   },
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
+
+  // ═══════════════════════════════════════════
+  //  TYPESCRIPT / JAVASCRIPT
+  // ═══════════════════════════════════════════
+  "js/ts.suggest.autoImports": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "js/ts.tsserver.maxMemory": 4096,
+  "js/ts.tsserver.automaticTypeAcquisition.enabled": false,
+  "js/ts.experimental.useTsgo": true,
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
+  "js/ts.preferences.quoteStyle": "double",
+  "totalTypeScript.hideAllTips": true,
+  "totalTypeScript.hideBasicTips": true,
+
+  // ═══════════════════════════════════════════
+  //  FORMATAÇÃO (BIOME)
+  // ═══════════════════════════════════════════
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+
+  // ═══════════════════════════════════════════
+  //  TERMINAL
+  // ═══════════════════════════════════════════
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.smoothScrolling": true,
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.lineHeight": 1.4,
+  "terminal.integrated.defaultLocation": "editor",
+  "terminal.integrated.stickyScroll.enabled": false,
+  "terminal.integrated.shellIntegration.decorationsEnabled": "never",
+
+  // ═══════════════════════════════════════════
+  //  SEARCH
+  // ═══════════════════════════════════════════
+  "search.searchOnType": false,
+  "search.quickAccess.preserveInput": true,
+  "search.quickOpen.includeSymbols": false,
+  "search.quickOpen.history.filterSortOrder": "recency",
+
+  // ═══════════════════════════════════════════
+  //  PERFORMANCE & EXCLUDES
+  // ═══════════════════════════════════════════
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/.next/**": true,
+    "**/.turbo/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/coverage/**": true,
+    "**/node_modules/**": true,
+    "**/.cache/**": true
+  },
+  "search.exclude": {
+    "**/.git/**": true,
+    "**/.next/**": true,
+    "**/.turbo/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/coverage/**": true,
+    "**/node_modules/**": true
+  },
+
+  // ═══════════════════════════════════════════
+  //  GIT & SEGURANÇA
+  // ═══════════════════════════════════════════
+  "security.workspace.trust.enabled": true,
+  "telemetry.telemetryLevel": "off",
+  "git.confirmSync": false,
+  "git.autofetch": false,
+  "git.openRepositoryInParentFolders": "never",
+  "git.branchProtection": ["main", "master", "release/*"],
+  "git.branchProtectionPrompt": "alwaysCommitToNewBranch",
+  "git.pullBeforeCheckout": true,
+  "git.mergeEditor": true,
+  "git.enableSmartCommit": true,
+  "diffEditor.ignoreTrimWhitespace": false,
+  "diffEditor.renderSideBySide": true,
+  "scm.diffDecorations": "none",
+
+  // ═══════════════════════════════════════════
+  //  EXTENSÕES & IA
+  // ═══════════════════════════════════════════
+  "extensions.autoCheckUpdates": false,
+  "extensions.autoUpdate": false,
+  "extensions.ignoreRecommendations": true,
+  "update.mode": "manual",
+  "claudeCode.preferredLocation": "sidebar",
+  "claudeCode.selectedModel": "opus",
+  "github.copilot.editor.enableAutoCompletions": true,
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "chat.viewSessions.orientation": "stacked",
+  "extensions.experimental.affinity": {
+    "vscodevim.vim": 1
+  },
+
+  // ═══════════════════════════════════════════
+  //  TRUSTED DOMAINS
+  // ═══════════════════════════════════════════
+  "json.schemaDownload.trustedDomains": {
+    "https://schemastore.azurewebsites.net/": true,
+    "https://raw.githubusercontent.com/": true,
+    "https://www.schemastore.org/": true,
+    "https://json.schemastore.org/": true,
+    "https://json-schema.org/": true,
+    "https://biomejs.dev": true
+  },
+
+  // ═══════════════════════════════════════════
+  //  PER-LANGUAGE
+  // ═══════════════════════════════════════════
+  "[css]": {
+    "editor.colorDecorators": true
   },
   "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.colorDecorators": true
   },
-  "editor.codeActionsOnSave": {
-    "source.fixAll.biome": "explicit"
+  "[typescript]": {
+    "editor.formatOnSave": true
   },
-  "editor.formatOnSave": true,
-  "biome.enabled": true,
-  "biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
-  "eslint.enable": false,
-  "prettier.enable": false
+  "[javascript]": {
+    "editor.formatOnSave": true
+  }
 }
