@@ -1,0 +1,42 @@
+{
+  "title": "Citas",
+  "tabs": {
+    "list": "Lista",
+    "calendar": "Calendario"
+  },
+  "filters": {
+    "startDate": "Fecha inicial",
+    "endDate": "Fecha final",
+    "barber": "Barbero",
+    "status": "Estado",
+    "search": "Buscar cliente...",
+    "all": "Todos"
+  },
+  "table": {
+    "date": "Fecha",
+    "time": "Hora",
+    "client": "Cliente",
+    "service": "Servicio",
+    "barber": "Barbero",
+    "status": "Estado",
+    "actions": "Acciones",
+    "empty": "No se encontraron citas.",
+    "guest": "Invitado",
+    "loading": "Cargando..."
+  },
+  "status": {
+    "CONFIRMED": "Confirmado",
+    "CANCELLED_BY_CLIENT": "Cancelado por el cliente",
+    "CANCELLED_BY_BARBER": "Cancelado por el barbero",
+    "COMPLETED": "Completado",
+    "NO_SHOW": "No se presentó"
+  },
+  "calendar": {
+    "comingSoon": "Calendario próximamente"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página {page} de {total}"
+  }
+}

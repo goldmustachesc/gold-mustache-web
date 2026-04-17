@@ -22,6 +22,10 @@ function getPathnameWithoutLocale(pathname: string): string {
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
+  if (pathname.startsWith("/_next") || pathname.startsWith("/_vercel")) {
+    return NextResponse.next({ request });
+  }
+
   if (pathname.startsWith("/api") && isPublicApiRoute(pathname)) {
     return NextResponse.next({ request });
   }
