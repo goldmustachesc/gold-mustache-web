@@ -12,5 +12,8 @@
       "path": "/api/cron/loyalty/birthday-bonuses",
       "schedule": "0 9 * * *"
     }
-  ]
+  ],
+  "buildCommand": "pnpm install && pnpm build",
+  "installCommand": "pnpm install",
+  "packageManager": "pnpm@latest"
 }
