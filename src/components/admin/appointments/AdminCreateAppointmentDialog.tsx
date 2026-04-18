@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAdminBarbers } from "@/hooks/useAdminBarbers";
+import { useAdminClients } from "@/hooks/useAdminClients";
 import { useAdminServices } from "@/hooks/useAdminServices";
 
 interface Props {
@@ -50,10 +51,39 @@ export function AdminCreateAppointmentDialog({
   const [startTime, setStartTime] = useState(defaultStartTime);
   const [clientType, setClientType] = useState<ClientType>("registered");
   const [clientProfileId, setClientProfileId] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+  const [clientLabel, setClientLabel] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const clientBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(clientSearch.trim()), 250);
+    return () => clearTimeout(t);
+  }, [clientSearch]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        clientBoxRef.current &&
+        !clientBoxRef.current.contains(e.target as Node)
+      ) {
+        setShowClientDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const { data: clientsResult, isFetching: clientsLoading } = useAdminClients(
+    debouncedSearch,
+    clientType === "registered" && showClientDropdown,
+  );
+  const clientResults = clientsResult?.data ?? [];
 
   function resetForm() {
     setBarberId(defaultBarberId);
@@ -62,9 +92,31 @@ export function AdminCreateAppointmentDialog({
     setStartTime(defaultStartTime);
     setClientType("registered");
     setClientProfileId("");
+    setClientSearch("");
+    setClientLabel("");
+    setShowClientDropdown(false);
     setGuestName("");
     setGuestPhone("");
     setError("");
+  }
+
+  function handleSelectClient(c: {
+    id: string;
+    fullName: string;
+    phone: string;
+  }) {
+    setClientProfileId(c.id);
+    setClientLabel(`${c.fullName}${c.phone ? ` — ${c.phone}` : ""}`);
+    setClientSearch("");
+    setShowClientDropdown(false);
+  }
+
+  function handleClearClient() {
+    setClientProfileId("");
+    setClientLabel("");
+    setClientSearch("");
+    setDebouncedSearch("");
+    setShowClientDropdown(false);
   }
 
   async function handleSubmit() {
@@ -185,7 +237,12 @@ export function AdminCreateAppointmentDialog({
                 type="button"
                 size="sm"
                 variant={clientType === "registered" ? "default" : "outline"}
-                onClick={() => setClientType("registered")}
+                onClick={() => {
+                  setClientType("registered");
+                  setClientSearch("");
+                  setDebouncedSearch("");
+                  setShowClientDropdown(false);
+                }}
               >
                 Cliente cadastrado
               </Button>
@@ -193,7 +250,12 @@ export function AdminCreateAppointmentDialog({
                 type="button"
                 size="sm"
                 variant={clientType === "guest" ? "default" : "outline"}
-                onClick={() => setClientType("guest")}
+                onClick={() => {
+                  setClientType("guest");
+                  setClientSearch("");
+                  setDebouncedSearch("");
+                  setShowClientDropdown(false);
+                }}
               >
                 Convidado
               </Button>
@@ -201,14 +263,64 @@ export function AdminCreateAppointmentDialog({
           </div>
 
           {clientType === "registered" ? (
-            <div className="space-y-1">
-              <Label htmlFor="create-profile-id">ID do perfil do cliente</Label>
-              <Input
-                id="create-profile-id"
-                placeholder="UUID do perfil..."
-                value={clientProfileId}
-                onChange={(e) => setClientProfileId(e.target.value)}
-              />
+            <div className="space-y-1" ref={clientBoxRef}>
+              <Label htmlFor="create-client-search">Cliente</Label>
+              {clientProfileId ? (
+                <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span className="truncate">{clientLabel}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearClient}
+                  >
+                    Trocar
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Input
+                    id="create-client-search"
+                    placeholder="Buscar por nome ou telefone..."
+                    value={clientSearch}
+                    onChange={(e) => {
+                      setClientSearch(e.target.value);
+                      setShowClientDropdown(true);
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    autoComplete="off"
+                  />
+                  {showClientDropdown && debouncedSearch.length > 0 && (
+                    <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover shadow-md">
+                      {clientsLoading ? (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          Buscando...
+                        </div>
+                      ) : clientResults.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          Nenhum cliente encontrado.
+                        </div>
+                      ) : (
+                        clientResults.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-accent"
+                            onClick={() => handleSelectClient(c)}
+                          >
+                            <span className="font-medium">{c.fullName}</span>
+                            {c.phone && (
+                              <span className="text-xs text-muted-foreground">
+                                {c.phone}
+                              </span>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">

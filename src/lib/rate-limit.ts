@@ -38,6 +38,11 @@ const RATE_LIMIT_CONFIGS = {
     windowMs: 60_000,
     prefix: `ratelimit:${env}:admin-appts`,
   },
+  adminClients: {
+    maxRequests: 60,
+    windowMs: 60_000,
+    prefix: `ratelimit:${env}:admin-clients`,
+  },
 } as const;
 
 export type RateLimiterType = keyof typeof RATE_LIMIT_CONFIGS;

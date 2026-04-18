@@ -1,0 +1,109 @@
+import { prisma } from "@/lib/prisma";
+import { apiCollection, apiError } from "@/lib/api/response";
+import { handlePrismaError } from "@/lib/api/prisma-error-handler";
+import { parsePagination, paginationMeta } from "@/lib/api/pagination";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+export interface AdminClientData {
+  id: string;
+  fullName: string;
+  phone: string;
+  type: "registered" | "guest";
+}
+
+export async function GET(request: Request) {
+  try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
+    const rl = await checkRateLimit("adminClients", auth.profileId);
+    if (!rl.success) {
+      return apiError(
+        "RATE_LIMIT_EXCEEDED",
+        "Limite de requisições excedido",
+        429,
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search")?.trim() ?? "";
+    const type = searchParams.get("type") ?? "all";
+    const { page, limit, skip } = parsePagination(searchParams);
+
+    const searchFilter = search
+      ? {
+          OR: [
+            { fullName: { contains: search, mode: "insensitive" as const } },
+            { phone: { contains: search } },
+          ],
+        }
+      : {};
+
+    const selectFields = { id: true, fullName: true, phone: true };
+
+    if (type === "registered") {
+      const [profiles, total] = await Promise.all([
+        prisma.profile.findMany({
+          where: searchFilter,
+          select: selectFields,
+          orderBy: { fullName: "asc" },
+          skip,
+          take: limit,
+        }),
+        prisma.profile.count({ where: searchFilter }),
+      ]);
+
+      const data: AdminClientData[] = profiles.map((p) => ({
+        id: p.id,
+        fullName: p.fullName || "Cliente",
+        phone: p.phone || "",
+        type: "registered",
+      }));
+
+      return apiCollection(data, paginationMeta(total, page, limit));
+    }
+
+    const [profiles, guests, profilesTotal, guestsTotal] = await Promise.all([
+      prisma.profile.findMany({
+        where: searchFilter,
+        select: selectFields,
+        orderBy: { fullName: "asc" },
+        take: skip + limit,
+      }),
+      prisma.guestClient.findMany({
+        where: searchFilter,
+        select: selectFields,
+        orderBy: { fullName: "asc" },
+        take: skip + limit,
+      }),
+      prisma.profile.count({ where: searchFilter }),
+      prisma.guestClient.count({ where: searchFilter }),
+    ]);
+
+    const all: AdminClientData[] = [
+      ...profiles.map((p) => ({
+        id: p.id,
+        fullName: p.fullName || "Cliente",
+        phone: p.phone || "",
+        type: "registered" as const,
+      })),
+      ...guests.map((g) => ({
+        id: g.id,
+        fullName: g.fullName,
+        phone: g.phone,
+        type: "guest" as const,
+      })),
+    ];
+
+    all.sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+    const paged = all.slice(skip, skip + limit);
+    return apiCollection(
+      paged,
+      paginationMeta(profilesTotal + guestsTotal, page, limit),
+    );
+  } catch (error) {
+    return handlePrismaError(error, "Erro ao buscar clientes");
+  }
+}
