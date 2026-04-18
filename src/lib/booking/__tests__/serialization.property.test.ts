@@ -29,6 +29,14 @@ const isoDateStringArb = fc
   .integer({ min: Date.UTC(2020, 0, 1), max: Date.UTC(2030, 11, 31) })
   .map((timestamp) => new Date(timestamp).toISOString());
 
+const appointmentSourceArb = fc.constantFrom(
+  "CLIENT",
+  "BARBER",
+  "ADMIN",
+  "GUEST",
+  "IMPORT",
+) as fc.Arbitrary<AppointmentData["source"]>;
+
 const appointmentDataArb: fc.Arbitrary<AppointmentData> = fc.record({
   id: fc.uuid(),
   clientId: fc.option(fc.uuid(), { nil: null }),
@@ -42,6 +50,10 @@ const appointmentDataArb: fc.Arbitrary<AppointmentData> = fc.record({
   cancelReason: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
     nil: null,
   }),
+  source: appointmentSourceArb,
+  createdBy: fc.option(fc.uuid(), { nil: null }),
+  cancelledBy: fc.option(fc.uuid(), { nil: null }),
+  rescheduledBy: fc.option(fc.uuid(), { nil: null }),
   createdAt: isoDateStringArb,
   updatedAt: isoDateStringArb,
 });
@@ -124,6 +136,10 @@ describe("Appointment Serialization Properties", () => {
             endTime,
             status,
             cancelReason: null,
+            source: "CLIENT" as const,
+            createdBy: null,
+            cancelledBy: null,
+            rescheduledBy: null,
             createdAt,
             updatedAt,
           };

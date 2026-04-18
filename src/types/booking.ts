@@ -1,4 +1,8 @@
-import type { AppointmentStatus, NotificationType } from "@prisma/client";
+import type {
+  AppointmentSource,
+  AppointmentStatus,
+  NotificationType,
+} from "@prisma/client";
 
 // ============================================
 // Time Slot Types
@@ -62,6 +66,10 @@ export interface AppointmentData {
   endTime: string;
   status: AppointmentStatus;
   cancelReason: string | null;
+  source?: AppointmentSource;
+  createdBy?: string | null;
+  cancelledBy?: string | null;
+  rescheduledBy?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -18,6 +18,10 @@ export function serializeAppointment(
     endTime: appointment.endTime,
     status: appointment.status,
     cancelReason: appointment.cancelReason,
+    source: appointment.source,
+    createdBy: appointment.createdBy,
+    cancelledBy: appointment.cancelledBy,
+    rescheduledBy: appointment.rescheduledBy,
     createdAt: appointment.createdAt.toISOString(),
     updatedAt: appointment.updatedAt.toISOString(),
   };
@@ -45,6 +49,10 @@ export function deserializeAppointment(data: AppointmentData): Omit<
     endTime: data.endTime,
     status: data.status,
     cancelReason: data.cancelReason,
+    source: data.source ?? "CLIENT",
+    createdBy: data.createdBy ?? null,
+    cancelledBy: data.cancelledBy ?? null,
+    rescheduledBy: data.rescheduledBy ?? null,
     createdAt: new Date(data.createdAt),
     updatedAt: new Date(data.updatedAt),
   };

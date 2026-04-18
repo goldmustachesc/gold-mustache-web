@@ -66,7 +66,7 @@ function mapPrismaToAdminItem(apt: {
   service: {
     id: string;
     name: string;
-    price: { valueOf(): number } | number;
+    price: Prisma.Decimal | number | string;
     duration: number;
   } | null;
   client: AppointmentAdminItem["client"];
