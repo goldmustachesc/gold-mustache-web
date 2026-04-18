@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
       "path": "/api/cron/sync-instagram",
@@ -14,6 +15,5 @@
     }
   ],
   "buildCommand": "pnpm install && pnpm build",
-  "installCommand": "pnpm install",
-  "packageManager": "pnpm@latest"
+  "installCommand": "pnpm install"
 }
