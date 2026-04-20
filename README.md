@@ -38,6 +38,28 @@ pnpm build
 
 Acesse [http://localhost:3001](http://localhost:3001) para ver o resultado.
 
+## Snyk
+
+O CLI do Snyk está instalado como dependência de desenvolvimento do projeto, então você pode usá-lo diretamente daqui do workspace sem instalar globalmente.
+
+```bash
+# autenticar via navegador (OAuth recomendado pela Snyk)
+pnpm snyk:auth
+
+# testar dependências do projeto
+pnpm snyk:test
+
+# enviar snapshot para monitoramento no dashboard da Snyk
+pnpm snyk:monitor
+
+# testar SAST do código-fonte (se habilitado na sua conta)
+pnpm snyk:code
+```
+
+Se preferir autenticar por token no terminal, exporte `SNYK_TOKEN` no seu shell local. Neste repositório, o caminho mais seguro é usar um arquivo `.envrc.local` não versionado.
+
+No CI, o scan fica configurado no workflow `.github/workflows/ci.yml` e roda automaticamente quando o secret `SNYK_TOKEN` estiver configurado no GitHub Actions do repositório. Sem esse secret, a etapa é ignorada com mensagem explícita no log.
+
 ## Estrutura do Projeto
 
 ```

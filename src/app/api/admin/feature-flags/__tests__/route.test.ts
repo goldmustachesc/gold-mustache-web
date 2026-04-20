@@ -197,6 +197,9 @@ describe("PUT /api/admin/feature-flags", () => {
       },
       update: { enabled: true },
     });
-    expect(mockRevalidateTag).toHaveBeenCalledWith(FEATURE_FLAGS_CACHE_TAG);
+    expect(mockRevalidateTag).toHaveBeenCalledWith(
+      FEATURE_FLAGS_CACHE_TAG,
+      "max",
+    );
   });
 });

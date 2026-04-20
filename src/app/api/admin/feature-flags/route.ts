@@ -90,7 +90,7 @@ export async function PUT(request: Request) {
       });
     }
 
-    revalidateTag(FEATURE_FLAGS_CACHE_TAG);
+    revalidateTag(FEATURE_FLAGS_CACHE_TAG, "max");
 
     const snapshot = await getResolvedFeatureFlagsSnapshot({
       bypassCache: true,

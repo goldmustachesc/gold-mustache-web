@@ -160,6 +160,23 @@ CRON_SECRET=seu-token-secreto-aqui
 
 ---
 
+## Ferramentas de Desenvolvimento Local
+
+### `SNYK_TOKEN`
+
+Token opcional para autenticação não interativa do Snyk CLI.
+
+```
+SNYK_TOKEN=seu-token-da-snyk
+```
+
+- Use apenas no ambiente local/CI
+- Para uso no Codex, prefira exportar em `.envrc.local` ou no shell, não em `.env.local`
+- Alternativamente, autentique com OAuth via `pnpm snyk:auth`
+- No GitHub Actions, configure o valor como secret do repositório com o nome `SNYK_TOKEN`; sem ele, a etapa de Snyk no CI será pulada
+
+---
+
 ## Comportamento por Ambiente
 
 ### Staging (Homologação)
@@ -213,4 +230,3 @@ NEXT_PUBLIC_GTM_ID=GTM-MFC2V74P
 ```
 
 4. Selecione "Production" como o ambiente de destino
-

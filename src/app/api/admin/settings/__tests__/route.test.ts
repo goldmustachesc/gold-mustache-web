@@ -284,6 +284,7 @@ describe("PUT /api/admin/settings", () => {
     });
     expect(mockRevalidateTag).toHaveBeenCalledWith(
       BARBERSHOP_SETTINGS_CACHE_TAG,
+      "max",
     );
   });
 
