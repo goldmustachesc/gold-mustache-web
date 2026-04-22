@@ -10,6 +10,12 @@ vi.mock("@/lib/api/verify-origin", () => ({
   requireValidOrigin: () => null,
 }));
 
+const mockNotifyAppointmentCancelledByBarber = vi.fn();
+vi.mock("@/services/notification", () => ({
+  notifyAppointmentCancelledByBarber: (...args: unknown[]) =>
+    mockNotifyAppointmentCancelledByBarber(...args),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     barberAbsence: {
@@ -18,6 +24,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     appointment: {
       findMany: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));
@@ -41,7 +48,7 @@ const APPOINTMENT_FIXTURE = {
   startTime: "10:00",
   endTime: "11:00",
   service: { name: "Corte Masculino" },
-  client: { fullName: "João Silva" },
+  client: { fullName: "João Silva", userId: "client-user-1" },
   guestClient: null,
 };
 
@@ -81,6 +88,7 @@ function createPostRequest(body: unknown): Request {
 describe("GET /api/barbers/me/absences", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNotifyAppointmentCancelledByBarber.mockResolvedValue({});
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -230,6 +238,43 @@ describe("POST /api/barbers/me/absences", () => {
 
     expect(response.status).toBe(409);
     expect(json.error).toBe("ABSENCE_CONFLICT");
+  });
+
+  it("auto-cancels conflicting appointments when requested", async () => {
+    barberAuthenticated();
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([
+      APPOINTMENT_FIXTURE,
+    ] as never);
+    vi.mocked(prisma.barberAbsence.create).mockResolvedValue(
+      ABSENCE_FIXTURE as never,
+    );
+    vi.mocked(prisma.appointment.updateMany).mockResolvedValue({
+      count: 1,
+    } as never);
+
+    const response = await POST(
+      createPostRequest({
+        date: "2026-03-15",
+        autoCancelConflicts: true,
+      }),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(prisma.appointment.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["apt-1"] },
+        status: "CONFIRMED",
+      },
+      data: {
+        status: "CANCELLED_BY_BARBER",
+        cancelReason: "Cancelado automaticamente por ausência do barbeiro",
+        cancelledBy: "barber-1",
+        updatedAt: expect.any(Date),
+      },
+    });
+    expect(mockNotifyAppointmentCancelledByBarber).toHaveBeenCalledTimes(1);
+    expect(json.data.autoCancelledAppointments).toBe(1);
   });
 
   it("returns 500 on Prisma failure", async () => {

@@ -161,6 +161,7 @@ export const barberAbsenceSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
     startTime: timeStringSchema.nullable().optional(),
     endTime: timeStringSchema.nullable().optional(),
+    autoCancelConflicts: z.boolean().optional().default(false),
     reason: z
       .string()
       .max(500, "Motivo deve ter no máximo 500 caracteres")

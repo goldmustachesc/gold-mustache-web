@@ -99,6 +99,7 @@ export default function BarberAbsencesPage() {
   const [allDay, setAllDay] = useState<boolean>(true);
   const [startTime, setStartTime] = useState<string>("09:00");
   const [endTime, setEndTime] = useState<string>("18:00");
+  const [autoCancelConflicts, setAutoCancelConflicts] = useState(false);
   const [reason, setReason] = useState<string>("");
   const prefillAppliedRef = useRef(false);
 
@@ -148,6 +149,7 @@ export default function BarberAbsencesPage() {
         date,
         startTime: allDay ? null : startTime,
         endTime: allDay ? null : endTime,
+        autoCancelConflicts,
         reason: reason.trim().length ? reason.trim() : null,
       });
       toast.success("Ausência cadastrada");
@@ -274,6 +276,26 @@ export default function BarberAbsencesPage() {
                   />
                 </div>
 
+                <label className="flex items-center gap-3 text-sm cursor-pointer p-3 rounded-xl bg-background/50 border border-border hover:border-border transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={autoCancelConflicts}
+                    onChange={(event) =>
+                      setAutoCancelConflicts(event.target.checked)
+                    }
+                    className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                  />
+                  <div>
+                    <span className="text-foreground font-medium">
+                      Cancelar agendamentos conflitantes
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      Se ativo, conflitos no período serão cancelados
+                      automaticamente.
+                    </p>
+                  </div>
+                </label>
+
                 <Button
                   onClick={handleCreate}
                   disabled={createAbsence.isPending}
@@ -320,7 +342,8 @@ export default function BarberAbsencesPage() {
                 <li className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <span>
-                    Agendamentos existentes não são cancelados automaticamente
+                    Você pode optar por cancelar automaticamente os conflitos na
+                    criação da ausência
                   </span>
                 </li>
               </ul>

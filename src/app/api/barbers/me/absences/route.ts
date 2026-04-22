@@ -9,10 +9,12 @@ import {
   parseTimeToMinutes,
   formatPrismaDateToString,
 } from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { requireBarber } from "@/lib/auth/requireBarber";
+import { notifyAppointmentCancelledByBarber } from "@/services/notification";
 
 function rangesOverlap(
   aStart: number,
@@ -106,6 +108,7 @@ export async function POST(request: Request) {
       date,
       startTime = null,
       endTime = null,
+      autoCancelConflicts = false,
       reason = null,
     } = validation.data;
     const dateDb = parseDateStringToUTC(date);
@@ -117,7 +120,7 @@ export async function POST(request: Request) {
         status: AppointmentStatus.CONFIRMED,
       },
       include: {
-        client: { select: { fullName: true } },
+        client: { select: { fullName: true, userId: true } },
         guestClient: { select: { fullName: true } },
         service: { select: { name: true } },
       },
@@ -135,7 +138,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (conflicts.length > 0) {
+    if (conflicts.length > 0 && !autoCancelConflicts) {
       return apiError(
         "ABSENCE_CONFLICT",
         "Existem agendamentos confirmados no período informado.",
@@ -160,6 +163,40 @@ export async function POST(request: Request) {
       },
     });
 
+    let autoCancelledAppointments = 0;
+    if (autoCancelConflicts && conflicts.length > 0) {
+      const conflictIds = conflicts.map((conflict) => conflict.id);
+      const updateResult = await prisma.appointment.updateMany({
+        where: {
+          id: { in: conflictIds },
+          status: AppointmentStatus.CONFIRMED,
+        },
+        data: {
+          status: AppointmentStatus.CANCELLED_BY_BARBER,
+          cancelReason: "Cancelado automaticamente por ausência do barbeiro",
+          cancelledBy: auth.barberId,
+          updatedAt: new Date(),
+        },
+      });
+      autoCancelledAppointments = updateResult.count;
+
+      const notificationPromises = conflicts.flatMap((conflict) => {
+        const userId = conflict.client?.userId;
+        if (!userId) return [];
+        return [
+          notifyAppointmentCancelledByBarber(userId, {
+            serviceName: conflict.service.name,
+            barberName: auth.barberName,
+            date: formatDateDdMmYyyyFromIsoDateLike(date),
+            time: conflict.startTime,
+            reason: "Ausência do barbeiro",
+          }),
+        ];
+      });
+
+      await Promise.allSettled(notificationPromises);
+    }
+
     const absence = {
       id: created.id,
       barberId: created.barberId,
@@ -169,6 +206,7 @@ export async function POST(request: Request) {
       reason: created.reason,
       createdAt: created.createdAt.toISOString(),
       updatedAt: created.updatedAt.toISOString(),
+      autoCancelledAppointments,
     };
     return apiSuccess(absence, 201);
   } catch (error) {

@@ -409,6 +409,17 @@ describe("lib/validations/booking", () => {
       expect(result.success).toBe(true);
     });
 
+    it("should accept autoCancelConflicts flag", () => {
+      const result = barberAbsenceSchema.safeParse({
+        date: "2026-03-15",
+        autoCancelConflicts: true,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.autoCancelConflicts).toBe(true);
+      }
+    });
+
     it("should accept null reason", () => {
       const result = barberAbsenceSchema.safeParse({
         date: "2026-03-15",

@@ -8,6 +8,7 @@ type CreateAbsenceInput = {
   date: string;
   startTime?: string | null;
   endTime?: string | null;
+  autoCancelConflicts?: boolean;
   reason?: string | null;
 };
 
