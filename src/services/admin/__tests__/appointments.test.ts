@@ -4,7 +4,12 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     profile: { findMany: vi.fn() },
     guestClient: { findMany: vi.fn() },
-    appointment: { findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
+    appointment: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
+    },
     barberAbsence: { findMany: vi.fn() },
   },
 }));
@@ -12,6 +17,22 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/utils/time-slots", () => ({
   getBrazilDateString: vi.fn(() => "2026-04-17"),
   formatPrismaDateToString: vi.fn((d: Date) => d.toISOString().slice(0, 10)),
+  parseDateString: vi.fn((s: string) => new Date(`${s}T12:00:00Z`)),
+  parseDateStringToUTC: vi.fn((s: string) => new Date(`${s}T00:00:00.000Z`)),
+  parseTimeToMinutes: vi.fn((time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  }),
+  addMinutesToTime: vi.fn((time: string, minutes: number) => {
+    const [h, m] = time.split(":").map(Number);
+    const total = h * 60 + m + minutes;
+    const hh = Math.floor(total / 60)
+      .toString()
+      .padStart(2, "0");
+    const mm = (total % 60).toString().padStart(2, "0");
+    return `${hh}:${mm}`;
+  }),
+  isDateTimeInPast: vi.fn(() => false),
 }));
 
 vi.mock("@/utils/datetime", () => ({
@@ -24,6 +45,7 @@ const mockCreateAppointment = vi.fn();
 const mockCreateAppointmentByBarber = vi.fn();
 const mockCancelAppointmentInternal = vi.fn();
 const mockGetActiveBarbers = vi.fn();
+const mockGetAvailableSlots = vi.fn();
 
 vi.mock("@/services/booking", () => ({
   createAppointment: (...args: unknown[]) => mockCreateAppointment(...args),
@@ -32,6 +54,7 @@ vi.mock("@/services/booking", () => ({
   cancelAppointmentInternal: (...args: unknown[]) =>
     mockCancelAppointmentInternal(...args),
   getActiveBarbers: () => mockGetActiveBarbers(),
+  getAvailableSlots: (...args: unknown[]) => mockGetAvailableSlots(...args),
 }));
 
 import { prisma } from "@/lib/prisma";
@@ -39,6 +62,7 @@ import {
   listAppointmentsForAdmin,
   createAppointmentAsAdmin,
   cancelAppointmentAsAdmin,
+  rescheduleAppointmentAsAdmin,
   getCalendarForAdmin,
 } from "../appointments";
 
@@ -82,11 +106,21 @@ beforeEach(() => {
   vi.mocked(prisma.appointment.findMany).mockResolvedValue([
     mockAppointment,
   ] as never);
+  vi.mocked(prisma.appointment.findUnique).mockResolvedValue({
+    ...mockAppointment,
+    clientId: "profile-1",
+    guestClientId: null,
+    serviceId: "svc-1",
+    barberId: "barber-1",
+  } as never);
   vi.mocked(prisma.appointment.count).mockResolvedValue(1);
   vi.mocked(prisma.appointment.update).mockResolvedValue({} as never);
   vi.mocked(prisma.profile.findMany).mockResolvedValue([]);
   vi.mocked(prisma.guestClient.findMany).mockResolvedValue([]);
   vi.mocked(prisma.barberAbsence.findMany).mockResolvedValue([]);
+  mockGetAvailableSlots.mockResolvedValue([
+    { time: "10:30", available: true, barberId: "barber-1" },
+  ]);
   mockGetActiveBarbers.mockResolvedValue([{ id: "barber-1", name: "João" }]);
   mockCreateAppointment.mockResolvedValue(mockAppointmentWithDetails);
   mockCreateAppointmentByBarber.mockResolvedValue({
@@ -321,6 +355,97 @@ describe("cancelAppointmentAsAdmin", () => {
     await expect(
       cancelAppointmentAsAdmin("bad-id", "Motivo", "admin-1"),
     ).rejects.toThrow("APPOINTMENT_NOT_FOUND");
+  });
+});
+
+describe("rescheduleAppointmentAsAdmin", () => {
+  it("throws when appointment is not found", async () => {
+    vi.mocked(prisma.appointment.findUnique).mockResolvedValue(null as never);
+
+    await expect(
+      rescheduleAppointmentAsAdmin(
+        "missing",
+        { date: "2026-04-25", startTime: "10:30" },
+        "admin-1",
+      ),
+    ).rejects.toThrow("APPOINTMENT_NOT_FOUND");
+  });
+
+  it("throws when appointment is not CONFIRMED", async () => {
+    vi.mocked(prisma.appointment.findUnique).mockResolvedValue({
+      ...mockAppointment,
+      status: "CANCELLED_BY_BARBER",
+      clientId: "profile-1",
+      guestClientId: null,
+      serviceId: "svc-1",
+      barberId: "barber-1",
+    } as never);
+
+    await expect(
+      rescheduleAppointmentAsAdmin(
+        "apt-1",
+        { date: "2026-04-25", startTime: "10:30" },
+        "admin-1",
+      ),
+    ).rejects.toThrow("APPOINTMENT_NOT_RESCHEDULABLE");
+  });
+
+  it("throws when slot is unavailable", async () => {
+    mockGetAvailableSlots.mockResolvedValue([
+      { time: "10:30", available: false, barberId: "barber-1" },
+    ]);
+
+    await expect(
+      rescheduleAppointmentAsAdmin(
+        "apt-1",
+        { date: "2026-04-25", startTime: "10:30" },
+        "admin-1",
+      ),
+    ).rejects.toThrow("SLOT_UNAVAILABLE");
+  });
+
+  it("throws when client has overlap on target slot", async () => {
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([
+      { startTime: "10:30", endTime: "11:00" },
+    ] as never);
+
+    await expect(
+      rescheduleAppointmentAsAdmin(
+        "apt-1",
+        { date: "2026-04-25", startTime: "10:30" },
+        "admin-1",
+      ),
+    ).rejects.toThrow("CLIENT_OVERLAPPING_APPOINTMENT");
+  });
+
+  it("updates appointment date/time and audit field on success", async () => {
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.appointment.update).mockResolvedValue({
+      ...mockAppointment,
+      date: new Date("2026-04-25T00:00:00.000Z"),
+      startTime: "10:30",
+      endTime: "11:00",
+      source: "ADMIN",
+    } as never);
+
+    const result = await rescheduleAppointmentAsAdmin(
+      "apt-1",
+      { date: "2026-04-25", startTime: "10:30" },
+      "admin-1",
+    );
+
+    expect(result.date).toBe("2026-04-25");
+    expect(result.startTime).toBe("10:30");
+    expect(result.endTime).toBe("11:00");
+    expect(prisma.appointment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "apt-1" },
+        data: expect.objectContaining({
+          source: "ADMIN",
+          rescheduledBy: "admin-1",
+        }),
+      }),
+    );
   });
 });
 

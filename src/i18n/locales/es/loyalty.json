@@ -70,9 +70,16 @@
     },
     "types": {
       "EARNED": "Ganado",
+      "EARNED_APPOINTMENT": "Ganado por cita",
+      "EARNED_REFERRAL": "Ganado por referencia",
+      "EARNED_REVIEW": "Ganado por reseña",
+      "EARNED_CHECKIN": "Bono por asistencia",
+      "EARNED_BIRTHDAY": "Bono de cumpleaños",
+      "EARNED_BONUS": "Bono promocional",
       "REDEEMED": "Canjeado",
       "EXPIRED": "Expirado",
-      "ADJUSTED": "Ajustado"
+      "ADJUSTED": "Ajustado",
+      "PENALTY_NO_SHOW": "Penalidad por inasistencia"
     }
   },
   "referral": {

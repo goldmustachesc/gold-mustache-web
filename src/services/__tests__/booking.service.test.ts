@@ -43,6 +43,10 @@ vi.mock("../loyalty/points.calculator", () => ({
   }),
 }));
 
+vi.mock("../feature-flags", () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
+
 import { prisma } from "@/lib/prisma";
 import {
   canClientCancel,
@@ -779,6 +783,62 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("SLOT_OCCUPIED");
   });
 
+  it("createAppointment rejects when client already has overlapping appointment", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      duration: 30,
+      price: 10,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      const callback = cb as (tx: unknown) => Promise<unknown>;
+      const tx = {
+        $executeRaw: vi.fn(),
+        appointment: {
+          findMany: vi
+            .fn()
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([
+              {
+                startTime: "09:00",
+                endTime: "09:30",
+              },
+            ]),
+          create: vi.fn(),
+        },
+      };
+      return await callback(tx);
+    });
+
+    await expect(
+      createAppointment(
+        {
+          serviceId: "service-1",
+          barberId: "barber-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+        },
+        "client-1",
+      ),
+    ).rejects.toThrow("CLIENT_OVERLAPPING_APPOINTMENT");
+  });
+
   it("createGuestAppointment creates appointment when no overlap", async () => {
     asMock(prisma.service.findUnique).mockResolvedValue({ duration: 30 });
     asMock(prisma.workingHours.findUnique).mockResolvedValue({
@@ -1073,6 +1133,65 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
         clientPhone: "(11) 99999-8888",
       }),
     ).rejects.toThrow("SLOT_OCCUPIED");
+  });
+
+  it("createGuestAppointment rejects when guest already has overlapping appointment", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({ duration: 30 });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "10:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "10:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      const callback = cb as (tx: unknown) => Promise<unknown>;
+      const tx = {
+        $executeRaw: vi.fn(),
+        appointment: {
+          findMany: vi
+            .fn()
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([
+              {
+                startTime: "09:00",
+                endTime: "09:30",
+              },
+            ]),
+          create: vi.fn(),
+        },
+        guestClient: {
+          upsert: vi.fn().mockResolvedValue({
+            id: "guest-1",
+            fullName: "X",
+            phone: "11999998888",
+          }),
+        },
+      };
+      return await callback(tx);
+    });
+
+    await expect(
+      createGuestAppointment({
+        serviceId: "service-1",
+        barberId: "barber-1",
+        date: "2099-01-01",
+        startTime: "09:00",
+        clientName: "X",
+        clientPhone: "(11) 99999-8888",
+      }),
+    ).rejects.toThrow("CLIENT_OVERLAPPING_APPOINTMENT");
   });
 
   it("createGuestAppointment rejects when slot is in the past", async () => {
@@ -2209,6 +2328,71 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
         "barber-1",
       ),
     ).rejects.toThrow("SLOT_OCCUPIED");
+  });
+
+  it("createAppointmentByBarber rejects when guest already has overlapping appointment", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      id: "service-1",
+      duration: 30,
+      price: 10,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    asMock(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      const callback = cb as (tx: unknown) => Promise<unknown>;
+      const tx = {
+        $executeRaw: vi.fn(),
+        appointment: {
+          findMany: vi
+            .fn()
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([
+              {
+                startTime: "09:00",
+                endTime: "09:30",
+              },
+            ]),
+          create: vi.fn(),
+        },
+        guestClient: {
+          upsert: vi.fn().mockResolvedValue({
+            id: "guest-1",
+            fullName: "João Silva",
+            phone: "11999998888",
+          }),
+        },
+      };
+      return await callback(tx);
+    });
+
+    await expect(
+      createAppointmentByBarber(
+        {
+          serviceId: "service-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+          clientName: "João Silva",
+          clientPhone: "11999998888",
+        },
+        "barber-1",
+      ),
+    ).rejects.toThrow("CLIENT_OVERLAPPING_APPOINTMENT");
   });
 
   it("createAppointmentByBarber normalizes phone number", async () => {

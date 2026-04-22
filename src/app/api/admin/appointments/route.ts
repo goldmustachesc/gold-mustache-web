@@ -63,6 +63,10 @@ const CREATE_ERROR_MAP: Record<string, { status: number; message: string }> = {
   BARBER_UNAVAILABLE: { status: 400, message: "Barbeiro indisponível" },
   SLOT_UNAVAILABLE: { status: 400, message: "Horário indisponível" },
   CLIENT_BANNED: { status: 400, message: "Cliente banido" },
+  CLIENT_OVERLAPPING_APPOINTMENT: {
+    status: 409,
+    message: "Cliente já possui agendamento neste horário",
+  },
   PROFILE_NOT_FOUND: { status: 404, message: "Perfil não encontrado" },
 };
 

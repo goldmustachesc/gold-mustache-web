@@ -99,8 +99,13 @@ export function AdminAppointmentDrawer({
             }}
           />
           <AdminRescheduleDialog
+            appointment={appointment}
             open={rescheduleOpen}
             onOpenChange={setRescheduleOpen}
+            onSuccess={() => {
+              onOpenChange(false);
+              onActionComplete();
+            }}
           />
         </>
       )}

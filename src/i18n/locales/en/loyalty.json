@@ -70,9 +70,16 @@
     },
     "types": {
       "EARNED": "Earned",
+      "EARNED_APPOINTMENT": "Earned from appointment",
+      "EARNED_REFERRAL": "Earned from referral",
+      "EARNED_REVIEW": "Earned from review",
+      "EARNED_CHECKIN": "Check-in bonus",
+      "EARNED_BIRTHDAY": "Birthday bonus",
+      "EARNED_BONUS": "Promotional bonus",
       "REDEEMED": "Redeemed",
       "EXPIRED": "Expired",
-      "ADJUSTED": "Adjusted"
+      "ADJUSTED": "Adjusted",
+      "PENALTY_NO_SHOW": "No-show penalty"
     }
   },
   "referral": {

@@ -192,6 +192,11 @@ export function getAdminNavItems(locale: string): NavItemDef[] {
       iconName: "Users",
     },
     {
+      href: `/${locale}/admin/clientes`,
+      label: "Clientes",
+      iconName: "Users",
+    },
+    {
       href: `/${locale}/admin/agendamentos`,
       label: "Agendamentos",
       iconName: "Calendar",

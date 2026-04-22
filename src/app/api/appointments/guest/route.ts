@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           status: 400,
           error: "SLOT_TOO_SOON",
           message:
-            "Agendamento deve ser feito com pelo menos 1 hora de antecedência",
+            "Agendamento deve ser feito com pelo menos 90 minutos de antecedência",
         },
         SHOP_CLOSED: {
           status: 400,
@@ -102,6 +102,11 @@ export async function POST(request: Request) {
           status: 409,
           error: "SLOT_OCCUPIED",
           message: "Este horário já está ocupado",
+        },
+        CLIENT_OVERLAPPING_APPOINTMENT: {
+          status: 409,
+          error: "CLIENT_OVERLAPPING_APPOINTMENT",
+          message: "Você já possui um agendamento neste horário",
         },
       };
 

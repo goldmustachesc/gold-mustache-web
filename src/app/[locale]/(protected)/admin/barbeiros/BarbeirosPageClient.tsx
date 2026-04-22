@@ -322,6 +322,18 @@ export function BarbeirosPageClient() {
                             Horários
                           </Button>
                         </Link>
+                        <Link
+                          href={`/${locale}/admin/barbeiros/${barber.id}/servicos`}
+                          className="flex-1"
+                        >
+                          <Button
+                            variant="outline"
+                            className="w-full border-border text-foreground hover:bg-accent hover:text-foreground"
+                          >
+                            <Settings className="h-4 w-4 mr-2 text-primary" />
+                            Serviços
+                          </Button>
+                        </Link>
                         <Button
                           variant="ghost"
                           size="icon"

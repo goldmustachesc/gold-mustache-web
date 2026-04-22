@@ -79,11 +79,29 @@ export function AccountTransactions({
     );
   }
 
-  const knownTypes = ["EARNED", "REDEEMED", "EXPIRED", "ADJUSTED"] as const;
+  const knownTypes = [
+    "EARNED",
+    "EARNED_APPOINTMENT",
+    "EARNED_REFERRAL",
+    "EARNED_REVIEW",
+    "EARNED_CHECKIN",
+    "EARNED_BIRTHDAY",
+    "EARNED_BONUS",
+    "REDEEMED",
+    "EXPIRED",
+    "ADJUSTED",
+    "PENALTY_NO_SHOW",
+  ] as const;
+
+  const typeAlias: Record<string, string> = {
+    ADJUSTED_ADD: "ADJUSTED",
+    ADJUSTED_REMOVE: "ADJUSTED",
+  };
 
   const labelForType = (type: string) => {
-    if ((knownTypes as readonly string[]).includes(type)) {
-      return tTypes(type as (typeof knownTypes)[number]);
+    const resolvedType = typeAlias[type] ?? type;
+    if ((knownTypes as readonly string[]).includes(resolvedType)) {
+      return tTypes(resolvedType as (typeof knownTypes)[number]);
     }
     return type;
   };

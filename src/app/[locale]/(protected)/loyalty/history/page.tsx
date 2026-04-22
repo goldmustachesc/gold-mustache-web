@@ -11,6 +11,22 @@ export default function LoyaltyHistoryPage() {
   const params = useParams();
   const locale = params.locale as string;
 
+  const POSITIVE_TYPES = new Set([
+    "EARNED",
+    "EARNED_APPOINTMENT",
+    "EARNED_REFERRAL",
+    "EARNED_REVIEW",
+    "EARNED_CHECKIN",
+    "EARNED_BIRTHDAY",
+    "EARNED_BONUS",
+    "ADJUSTED_ADD",
+  ]);
+
+  const TYPE_TRANSLATION_ALIAS: Record<string, string> = {
+    ADJUSTED_ADD: "ADJUSTED",
+    ADJUSTED_REMOVE: "ADJUSTED",
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -20,15 +36,15 @@ export default function LoyaltyHistoryPage() {
   }
 
   const getTypeIcon = (type: string) => {
-    if (type === "EARNED" || type === "ADJUSTED_ADD") {
+    if (POSITIVE_TYPES.has(type)) {
       return <ArrowUpRight className="h-5 w-5 text-success" />;
     }
     return <ArrowDownRight className="h-5 w-5 text-destructive" />;
   };
 
   const getTypeLabel = (type: string) => {
-    const key = type.startsWith("ADJUSTED") ? "ADJUSTED" : type;
-    return t(`types.${key}` as `types.${string}`) || type;
+    const key = TYPE_TRANSLATION_ALIAS[type] ?? type;
+    return t(`types.${key}` as `types.${string}`);
   };
 
   return (

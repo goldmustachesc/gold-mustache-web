@@ -34,6 +34,11 @@ vi.mock("../loyalty/points.calculator", () => {
   };
 });
 
+const mockIsFeatureEnabled = vi.fn();
+vi.mock("../feature-flags", () => ({
+  isFeatureEnabled: (...args: unknown[]) => mockIsFeatureEnabled(...args),
+}));
+
 describe("services/booking/noshow-penalty", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -82,6 +87,7 @@ describe("services/booking/noshow-penalty", () => {
       bonus: 0,
       total: 50,
     });
+    mockIsFeatureEnabled.mockResolvedValue(true);
 
     await markAppointmentAsNoShow("apt-noshow", "barber-1");
 
@@ -128,6 +134,7 @@ describe("services/booking/noshow-penalty", () => {
     });
 
     const { LoyaltyService } = await import("../loyalty/loyalty.service");
+    mockIsFeatureEnabled.mockResolvedValue(true);
 
     await markAppointmentAsNoShow("apt-guest", "barber-1");
 
@@ -164,6 +171,7 @@ describe("services/booking/noshow-penalty", () => {
     asMock(LoyaltyService.getOrCreateAccount).mockRejectedValue(
       new Error("DB connection error"),
     );
+    mockIsFeatureEnabled.mockResolvedValue(true);
 
     const result = await markAppointmentAsNoShow("apt-err", "barber-1");
     expect(result.status).toBe(AppointmentStatus.NO_SHOW);
@@ -172,5 +180,38 @@ describe("services/booking/noshow-penalty", () => {
       expect.any(Error),
     );
     consoleSpy.mockRestore();
+  });
+
+  it("does not penalize when loyalty feature flag is disabled", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
+
+    asMock(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-flag-off",
+      barberId: "barber-1",
+      status: AppointmentStatus.CONFIRMED,
+      startTime: "18:00",
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-flag-off",
+      clientId: "reg-client-1",
+      client: { id: "reg-client-1" },
+      service: { price: 50, name: "Corte" },
+      status: AppointmentStatus.NO_SHOW,
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      startTime: "18:00",
+      endTime: "18:30",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const { LoyaltyService } = await import("../loyalty/loyalty.service");
+    mockIsFeatureEnabled.mockResolvedValue(false);
+
+    await markAppointmentAsNoShow("apt-flag-off", "barber-1");
+
+    expect(LoyaltyService.getOrCreateAccount).not.toHaveBeenCalled();
+    expect(LoyaltyService.penalizePoints).not.toHaveBeenCalled();
   });
 });

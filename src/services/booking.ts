@@ -211,6 +211,17 @@ async function lockBarberDateForBooking(
   `;
 }
 
+async function lockClientDateForBooking(
+  tx: Pick<Prisma.TransactionClient, "$executeRaw">,
+  clientLockKey: string,
+  appointmentDateDb: Date,
+): Promise<void> {
+  const dateKey = formatPrismaDateToString(appointmentDateDb);
+  await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(hashtext(${clientLockKey}), hashtext(${dateKey}))
+  `;
+}
+
 /**
  * Checks if a new appointment time range overlaps with any existing confirmed appointments.
  * Two time ranges [A, B) and [C, D) overlap if: A < D AND C < B
@@ -229,6 +240,7 @@ async function hasOverlappingAppointment(
   appointmentDate: Date,
   newStartTime: string,
   newEndTime: string,
+  excludeAppointmentId?: string,
 ): Promise<boolean> {
   // Fetch all confirmed appointments for this barber on this date
   const existingAppointments = await db.appointment.findMany({
@@ -236,6 +248,7 @@ async function hasOverlappingAppointment(
       barberId,
       date: appointmentDate,
       status: AppointmentStatus.CONFIRMED,
+      ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
     },
     select: {
       startTime: true,
@@ -252,6 +265,55 @@ async function hasOverlappingAppointment(
     const aptEndMinutes = parseTimeToMinutes(apt.endTime);
 
     // Two intervals [A, B) and [C, D) overlap if A < D AND C < B
+    return newStartMinutes < aptEndMinutes && aptStartMinutes < newEndMinutes;
+  });
+}
+
+async function hasOverlappingAppointmentForClient(
+  db: Pick<Prisma.TransactionClient, "appointment">,
+  appointmentDate: Date,
+  newStartTime: string,
+  newEndTime: string,
+  identifiers: {
+    clientId?: string | null;
+    guestClientId?: string | null;
+  },
+  excludeAppointmentId?: string,
+): Promise<boolean> {
+  const clientFilters: Prisma.AppointmentWhereInput[] = [];
+
+  if (identifiers.clientId) {
+    clientFilters.push({ clientId: identifiers.clientId });
+  }
+
+  if (identifiers.guestClientId) {
+    clientFilters.push({ guestClientId: identifiers.guestClientId });
+  }
+
+  if (clientFilters.length === 0) {
+    return false;
+  }
+
+  const existingAppointments = await db.appointment.findMany({
+    where: {
+      date: appointmentDate,
+      status: AppointmentStatus.CONFIRMED,
+      OR: clientFilters,
+      ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+    },
+    select: {
+      startTime: true,
+      endTime: true,
+    },
+  });
+
+  const newStartMinutes = parseTimeToMinutes(newStartTime);
+  const newEndMinutes = parseTimeToMinutes(newEndTime);
+
+  return existingAppointments.some((apt) => {
+    const aptStartMinutes = parseTimeToMinutes(apt.startTime);
+    const aptEndMinutes = parseTimeToMinutes(apt.endTime);
+
     return newStartMinutes < aptEndMinutes && aptStartMinutes < newEndMinutes;
   });
 }
@@ -668,6 +730,7 @@ export async function createAppointment(
   // serialize overlap-check + create via an advisory lock (barber+date) in a transaction.
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+    await lockClientDateForBooking(tx, `client:${clientId}`, appointmentDateDb);
 
     const hasOverlap = await hasOverlappingAppointment(
       tx,
@@ -679,6 +742,18 @@ export async function createAppointment(
 
     if (hasOverlap) {
       throw new Error("SLOT_OCCUPIED");
+    }
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClient(
+      tx,
+      appointmentDateDb,
+      startTime,
+      endTime,
+      { clientId },
+    );
+
+    if (hasClientOverlap) {
+      throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
     }
 
     return tx.appointment.create({
@@ -822,6 +897,11 @@ export async function createGuestAppointment(
 
   const result = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+    await lockClientDateForBooking(
+      tx,
+      `guest-phone:${normalizedPhone}`,
+      appointmentDateDb,
+    );
 
     const hasOverlap = await hasOverlappingAppointment(
       tx,
@@ -853,6 +933,18 @@ export async function createGuestAppointment(
         accessTokenConsumedAt: null,
       },
     });
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClient(
+      tx,
+      appointmentDateDb,
+      startTime,
+      endTime,
+      { guestClientId: guestClient.id },
+    );
+
+    if (hasClientOverlap) {
+      throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
+    }
 
     const appointment = await tx.appointment.create({
       data: {
@@ -988,6 +1080,11 @@ export async function createAppointmentByBarber(
   }
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+    await lockClientDateForBooking(
+      tx,
+      `guest-phone:${normalizedPhone}`,
+      appointmentDateDb,
+    );
 
     const hasOverlap = await hasOverlappingAppointment(
       tx,
@@ -1014,6 +1111,18 @@ export async function createAppointmentByBarber(
         // No accessToken for barber-created bookings
       },
     });
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClient(
+      tx,
+      appointmentDateDb,
+      startTime,
+      endTime,
+      { guestClientId: guestClient.id },
+    );
+
+    if (hasClientOverlap) {
+      throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
+    }
 
     return tx.appointment.create({
       data: {
@@ -1521,23 +1630,29 @@ export async function markAppointmentAsNoShow(
 
   if (updated.clientId && updated.client) {
     try {
-      const { LoyaltyService } = await import("./loyalty/loyalty.service");
-      const { calculateAppointmentPoints } = await import(
-        "./loyalty/points.calculator"
-      );
+      const { isFeatureEnabled } = await import("./feature-flags");
+      const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+      if (loyaltyEnabled) {
+        const { LoyaltyService } = await import("./loyalty/loyalty.service");
+        const { calculateAppointmentPoints } = await import(
+          "./loyalty/points.calculator"
+        );
 
-      const account = await LoyaltyService.getOrCreateAccount(updated.clientId);
-      const pointsData = calculateAppointmentPoints(
-        Number(updated.service.price),
-        account.tier,
-      );
+        const account = await LoyaltyService.getOrCreateAccount(
+          updated.clientId,
+        );
+        const pointsData = calculateAppointmentPoints(
+          Number(updated.service.price),
+          account.tier,
+        );
 
-      await LoyaltyService.penalizePoints({
-        accountId: account.id,
-        points: pointsData.total,
-        description: `Não compareceu: ${updated.service.name}`,
-        referenceId: updated.id,
-      });
+        await LoyaltyService.penalizePoints({
+          accountId: account.id,
+          points: pointsData.total,
+          description: `Não compareceu: ${updated.service.name}`,
+          referenceId: updated.id,
+        });
+      }
     } catch (error) {
       console.error("Falha ao aplicar penalidade de pontos", error);
     }
