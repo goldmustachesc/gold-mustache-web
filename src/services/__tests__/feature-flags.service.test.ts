@@ -33,6 +33,9 @@ describe("services/feature-flags", () => {
     delete process.env[loyaltyEnv];
     delete process.env[featureFlagEnvVarName("referralProgram")];
     delete process.env[featureFlagEnvVarName("eventsSection")];
+    delete process.env[featureFlagEnvVarName("transactionalEmails")];
+    delete process.env[featureFlagEnvVarName("appointmentReminders")];
+    delete process.env[featureFlagEnvVarName("appointmentRemindersWhatsapp")];
   });
 
   afterEach(() => {
