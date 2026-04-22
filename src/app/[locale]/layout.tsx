@@ -4,6 +4,7 @@ import {
   GoogleTagManagerNoScript,
 } from "@/components/analytics/GoogleTagManager";
 import { StagingBanner } from "@/components/layout/StagingBanner";
+import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
@@ -217,6 +218,7 @@ export default async function LocaleLayout({
         <GoogleTagManagerNoScript
           gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
         />
+        <ServiceWorkerRegistrar />
         <GoogleAnalytics
           trackingId={barbershopConfig.analytics.googleAnalyticsId}
         />
