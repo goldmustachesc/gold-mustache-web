@@ -36,6 +36,7 @@ model Profile {
   loyaltyAccount LoyaltyAccount?
   bannedClient   BannedClient?
   claimedGuestClients GuestClient[] @relation("GuestClientClaimedByProfile")
+  adminAuditLogs AdminAuditLog[] @relation("AdminAuditActor")
 
   @@index([role])
   @@map("profiles")
@@ -359,6 +360,23 @@ model FeatureFlag {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("feature_flags")
+}
+
+model AdminAuditLog {
+  id             String   @id @default(uuid())
+  actorProfileId String   @map("actor_profile_id")
+  action         String
+  resourceType   String   @map("resource_type")
+  resourceId     String?  @map("resource_id")
+  metadata       Json?
+  ipAddress      String?  @map("ip_address")
+  createdAt      DateTime @default(now()) @map("created_at")
+  actorProfile   Profile  @relation("AdminAuditActor", fields: [actorProfileId], references: [id], onDelete: Restrict)
+
+  @@index([actorProfileId, createdAt(sort: Desc)])
+  @@index([resourceType, resourceId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("admin_audit_logs")
 }
 
 // ============================================

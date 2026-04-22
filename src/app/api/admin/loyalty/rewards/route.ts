@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiError, apiSuccess } from "@/lib/api/response";
+import { extractClientIp, logAdminAudit } from "@/services/admin-audit";
 import { z } from "zod";
 
 // Schema para validação de criação de reward
@@ -120,8 +121,18 @@ export async function POST(req: Request) {
       },
     });
 
-    // Log de auditoria
-    console.info(`[AUDIT] Reward ${newReward.id} created by admin`);
+    await logAdminAudit({
+      actorProfileId: admin.profileId,
+      action: "REWARD_CREATE",
+      resourceType: "reward",
+      resourceId: newReward.id,
+      ipAddress: extractClientIp(req),
+      metadata: {
+        name: newReward.name,
+        pointsCost: newReward.pointsCost,
+        type: newReward.type,
+      },
+    });
 
     return apiSuccess(
       {

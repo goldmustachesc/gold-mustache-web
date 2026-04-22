@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiError, apiMessage, apiSuccess } from "@/lib/api/response";
+import { extractClientIp, logAdminAudit } from "@/services/admin-audit";
 import { z } from "zod";
 
 // Schema para validação de atualização de reward (todos campos opcionais)
@@ -173,8 +174,16 @@ export async function PUT(
       },
     });
 
-    // Log de auditoria
-    console.info(`[AUDIT] Reward ${id} updated by admin`);
+    await logAdminAudit({
+      actorProfileId: admin.profileId,
+      action: "REWARD_UPDATE",
+      resourceType: "reward",
+      resourceId: id,
+      ipAddress: extractClientIp(req),
+      metadata: {
+        changedFields: Object.keys(data),
+      },
+    });
 
     return apiSuccess({
       id: updatedReward.id,
@@ -242,8 +251,16 @@ export async function DELETE(
       where: { id },
     });
 
-    // Log de auditoria
-    console.info(`[AUDIT] Reward ${id} deleted by admin`);
+    await logAdminAudit({
+      actorProfileId: admin.profileId,
+      action: "REWARD_DELETE",
+      resourceType: "reward",
+      resourceId: id,
+      ipAddress: extractClientIp(req),
+      metadata: {
+        name: existingReward.name,
+      },
+    });
 
     return apiMessage("Recompensa removida com sucesso");
   } catch (error) {

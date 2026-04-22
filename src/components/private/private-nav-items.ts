@@ -216,5 +216,10 @@ export function getAdminNavItems(locale: string): NavItemDef[] {
       label: "Fidelidade",
       iconName: "Gift",
     },
+    {
+      href: `/${locale}/admin/auditoria`,
+      label: "Auditoria",
+      iconName: "ShieldCheck",
+    },
   ];
 }
