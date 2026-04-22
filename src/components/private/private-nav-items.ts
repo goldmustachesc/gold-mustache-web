@@ -207,6 +207,11 @@ export function getAdminNavItems(locale: string): NavItemDef[] {
       iconName: "DollarSign",
     },
     {
+      href: `/${locale}/admin/relatorios`,
+      label: "Relatórios Operacionais",
+      iconName: "BarChart3",
+    },
+    {
       href: `/${locale}/admin/feedbacks`,
       label: "Avaliações",
       iconName: "Star",

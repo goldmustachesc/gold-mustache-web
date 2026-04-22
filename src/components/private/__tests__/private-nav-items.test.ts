@@ -103,6 +103,7 @@ describe("private-nav-items", () => {
       expect(labels).toContain("Feature flags");
       expect(labels).toContain("Serviços");
       expect(labels).toContain("Gerenciar Barbeiros");
+      expect(labels).toContain("Relatórios Operacionais");
       expect(labels).toContain("Auditoria");
     });
 

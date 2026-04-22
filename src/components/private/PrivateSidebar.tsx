@@ -15,6 +15,7 @@ import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import {
+  BarChart3,
   Building2,
   Calendar,
   CalendarOff,
@@ -48,6 +49,7 @@ import {
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Building2,
+  BarChart3,
   Calendar,
   CalendarOff,
   Clock,
