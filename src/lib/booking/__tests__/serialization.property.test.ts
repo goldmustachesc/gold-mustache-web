@@ -47,6 +47,7 @@ const appointmentDataArb: fc.Arbitrary<AppointmentData> = fc.record({
   startTime: timeStringArb,
   endTime: timeStringArb,
   status: appointmentStatusArb,
+  reminderSentAt: fc.option(isoDateStringArb, { nil: null }),
   cancelReason: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
     nil: null,
   }),
@@ -84,6 +85,7 @@ describe("Appointment Serialization Properties", () => {
         expect(restored.startTime).toBe(appointmentData.startTime);
         expect(restored.endTime).toBe(appointmentData.endTime);
         expect(restored.status).toBe(appointmentData.status);
+        expect(restored.reminderSentAt).toBe(appointmentData.reminderSentAt);
         expect(restored.cancelReason).toBe(appointmentData.cancelReason);
         expect(restored.createdAt).toBe(appointmentData.createdAt);
         expect(restored.updatedAt).toBe(appointmentData.updatedAt);
@@ -135,6 +137,7 @@ describe("Appointment Serialization Properties", () => {
             startTime,
             endTime,
             status,
+            reminderSentAt: null,
             cancelReason: null,
             source: "CLIENT" as const,
             createdBy: null,

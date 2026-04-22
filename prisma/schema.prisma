@@ -215,6 +215,7 @@ model Appointment {
   startTime     String            @map("start_time") // "10:30"
   endTime       String            @map("end_time") // "11:00"
   status        AppointmentStatus @default(CONFIRMED)
+  reminderSentAt DateTime?         @map("reminder_sent_at")
   cancelReason  String?           @map("cancel_reason")
   source        AppointmentSource @default(CLIENT)
   createdBy     String?           @map("created_by")
@@ -237,6 +238,7 @@ model Appointment {
   @@index([barberId, date, startTime])
   @@index([barberId, date, status])
   @@index([date, status])
+  @@index([status, date, reminderSentAt])
   @@index([clientId])
   @@index([guestClientId])
   @@index([status])

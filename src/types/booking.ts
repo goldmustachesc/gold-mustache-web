@@ -65,6 +65,7 @@ export interface AppointmentData {
   startTime: string;
   endTime: string;
   status: AppointmentStatus;
+  reminderSentAt?: string | null;
   cancelReason: string | null;
   source?: AppointmentSource;
   createdBy?: string | null;
