@@ -51,3 +51,4 @@ CLAUDE.local.md
 .omc/
 
 /src/generated/prisma
+.env*.local

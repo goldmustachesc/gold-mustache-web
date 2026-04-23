@@ -1,4 +1,4 @@
-const CACHE_NAME = "gold-mustache-shell-v1";
+const CACHE_NAME = "gold-mustache-shell-v3";
 const SHELL_URLS = ["/", "/pt-BR"];
 
 self.addEventListener("install", (event) => {
@@ -57,7 +57,9 @@ self.addEventListener("fetch", (event) => {
         cache.match(event.request).then((cached) => {
           const networkPromise = fetch(event.request)
             .then((response) => {
-              cache.put(event.request, response.clone());
+              if (response.ok) {
+                cache.put(event.request, response.clone());
+              }
               return response;
             })
             .catch(() => cached);

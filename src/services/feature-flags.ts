@@ -35,7 +35,22 @@ interface LoadedDbFlags {
   persistenceAvailable: boolean;
 }
 
+function shouldReadDbFlags(): boolean {
+  return (
+    Boolean(process.env.DATABASE_URL) ||
+    process.env.NODE_ENV === "test" ||
+    process.env.VITEST === "true"
+  );
+}
+
 async function loadDbFlags(): Promise<LoadedDbFlags> {
+  if (!shouldReadDbFlags()) {
+    return {
+      flags: new Map(),
+      persistenceAvailable: false,
+    };
+  }
+
   try {
     const rows = await prisma.featureFlag.findMany();
     const map = new Map<FeatureFlagKey, boolean>();

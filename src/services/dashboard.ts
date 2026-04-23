@@ -9,6 +9,7 @@ import type { ProfileMeData, UserRole } from "@/types/profile";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { buildWorkingHoursResponse } from "@/lib/working-hours";
+import { normalizePhoneOrNull } from "@/lib/booking/phone";
 import { getBarberAppointments } from "@/services/booking";
 import {
   formatPrismaDateToString,
@@ -109,6 +110,7 @@ async function getOrCreateProfileForUser(
         user.email?.split("@")[0] ||
         null,
       phone: user.user_metadata?.phone || null,
+      phoneNormalized: normalizePhoneOrNull(user.user_metadata?.phone),
     },
   });
 }

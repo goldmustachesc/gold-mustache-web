@@ -16,6 +16,7 @@ model Profile {
   fullName      String?  @map("full_name")
   avatarUrl     String?  @map("avatar_url")
   phone         String?
+  phoneNormalized String? @map("phone_normalized")
   // Address fields
   street        String?
   number        String?
@@ -39,6 +40,7 @@ model Profile {
   adminAuditLogs AdminAuditLog[] @relation("AdminAuditActor")
 
   @@index([role])
+  @@index([phoneNormalized])
   @@map("profiles")
 }
 
@@ -241,7 +243,9 @@ model Appointment {
   @@index([date, status])
   @@index([status, date, reminderSentAt])
   @@index([clientId])
+  @@index([clientId, date(sort: Desc)])
   @@index([guestClientId])
+  @@index([guestClientId, date(sort: Desc)])
   @@index([status])
   @@index([source])
   @@map("appointments")

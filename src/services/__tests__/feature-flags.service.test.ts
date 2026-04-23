@@ -16,6 +16,7 @@ import {
   getClientFeatureFlags,
   getFeatureFlags,
   getResolvedFeatureFlags,
+  getResolvedFeatureFlagsSnapshot,
   isFeatureEnabled,
 } from "../feature-flags";
 
@@ -40,6 +41,7 @@ describe("services/feature-flags", () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
+    vi.unstubAllEnvs();
   });
 
   it("usa default quando nao ha env nem linha no banco", async () => {
@@ -126,5 +128,21 @@ describe("services/feature-flags", () => {
     expect(flags.referralProgram).toBe(true);
 
     consoleSpy.mockRestore();
+  });
+
+  it("nao consulta o banco quando DATABASE_URL esta ausente fora de teste", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VITEST", "false");
+
+    const snapshot = await getResolvedFeatureFlagsSnapshot({
+      bypassCache: true,
+    });
+
+    expect(prisma.featureFlag.findMany).not.toHaveBeenCalled();
+    expect(snapshot.persistenceAvailable).toBe(false);
+    expect(snapshot.flags.every((flag) => flag.source === "default")).toBe(
+      true,
+    );
   });
 });

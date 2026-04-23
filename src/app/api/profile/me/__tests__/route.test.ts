@@ -244,7 +244,7 @@ describe("PUT /api/profile/me", () => {
     expect(body.data.profile.id).toBe("profile-1");
     expect(mockProfileUpdate).toHaveBeenCalledWith({
       where: { userId: "user-1" },
-      data: { phone: "11999998888" },
+      data: { phone: "11999998888", phoneNormalized: "11999998888" },
     });
     expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });

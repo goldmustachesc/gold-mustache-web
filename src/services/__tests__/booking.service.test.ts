@@ -6,7 +6,7 @@ import { AppointmentStatus } from "@prisma/client";
 vi.mock("@/lib/prisma", () => {
   const prisma = {
     service: { findUnique: vi.fn(), findMany: vi.fn() },
-    profile: { findMany: vi.fn() },
+    profile: { findFirst: vi.fn(), findMany: vi.fn() },
     shopHours: { findUnique: vi.fn() },
     shopClosure: { findMany: vi.fn() },
     barberAbsence: { findMany: vi.fn() },
@@ -75,6 +75,7 @@ function asMock(fn: unknown): MockInstance {
 describe("services/booking (Prisma-mocked unit tests)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    asMock(prisma.profile.findFirst).mockResolvedValue(null);
     asMock(prisma.profile.findMany).mockResolvedValue([]);
   });
 
@@ -1046,6 +1047,28 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       barbers: [{ barberId: "barber-1" }],
     });
     asMock(prisma.guestClient.findUnique).mockResolvedValue(null);
+    asMock(prisma.profile.findFirst).mockResolvedValue({ id: "profile-1" });
+
+    await expect(
+      createGuestAppointment({
+        serviceId: "service-1",
+        barberId: "barber-1",
+        date: "2099-01-01",
+        startTime: "09:00",
+        clientName: "X",
+        clientPhone: "11999998888",
+      }),
+    ).rejects.toThrow("CLIENT_BANNED");
+  });
+
+  it("createGuestAppointment rejects when legacy banned profile has null phoneNormalized", async () => {
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      duration: 30,
+      active: true,
+      barbers: [{ barberId: "barber-1" }],
+    });
+    asMock(prisma.guestClient.findUnique).mockResolvedValue(null);
+    asMock(prisma.profile.findFirst).mockResolvedValue(null);
     asMock(prisma.profile.findMany).mockResolvedValue([
       { phone: "(11) 99999-8888" },
     ]);
@@ -2168,9 +2191,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       barbers: [{ barberId: "barber-1" }],
     });
     asMock(prisma.guestClient.findUnique).mockResolvedValue(null);
-    asMock(prisma.profile.findMany).mockResolvedValue([
-      { phone: "11 99999 8888" },
-    ]);
+    asMock(prisma.profile.findFirst).mockResolvedValue({ id: "profile-1" });
 
     await expect(
       createAppointmentByBarber(

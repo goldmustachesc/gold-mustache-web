@@ -6,7 +6,10 @@ import {
   CANCELLATION_BLOCK_WINDOW_MINUTES,
   shouldWarnLateCancellation as shouldWarnLateCancellationCore,
 } from "@/lib/booking/cancellation";
-import { normalizePhoneDigits } from "@/lib/booking/phone";
+import {
+  normalizePhoneDigits,
+  normalizePhoneOrNull,
+} from "@/lib/booking/phone";
 import { calculateEndTime } from "@/lib/booking/time";
 import { getWorkingHoursSlotError } from "@/lib/booking/slots-policy";
 import {
@@ -178,22 +181,37 @@ function isServiceAvailableForBarber(
 }
 
 async function isPhoneLinkedToBannedProfile(phone: string): Promise<boolean> {
-  const normalizedPhone = normalizePhoneDigits(phone);
+  const normalizedPhone = normalizePhoneOrNull(phone);
 
   if (!normalizedPhone) {
     return false;
   }
 
-  const bannedProfiles = await prisma.profile.findMany({
+  const bannedProfile = await prisma.profile.findFirst({
     where: {
+      phoneNormalized: normalizedPhone,
+      bannedClient: { isNot: null },
+    },
+    select: { id: true },
+  });
+
+  if (bannedProfile) {
+    return true;
+  }
+
+  // Defensive fallback for legacy or manually edited rows where
+  // phoneNormalized may still be null while the profile is banned.
+  const legacyBannedProfiles = await prisma.profile.findMany({
+    where: {
+      phoneNormalized: null,
       phone: { not: null },
       bannedClient: { isNot: null },
     },
     select: { phone: true },
   });
 
-  return bannedProfiles.some(
-    (profile) => normalizePhoneDigits(profile.phone ?? "") === normalizedPhone,
+  return legacyBannedProfiles.some(
+    (profile) => normalizePhoneOrNull(profile.phone) === normalizedPhone,
   );
 }
 

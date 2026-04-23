@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { normalizePhoneOrNull } from "@/lib/booking/phone";
 import { getSafeRedirectPath } from "@/utils/redirect";
 import { NextResponse } from "next/server";
 import { getSafeCallbackRedirectOrigin, isOAuthProviderUser } from "./utils";
@@ -39,9 +40,15 @@ export async function GET(request: Request) {
 
       if (shouldVerifyEmail) {
         try {
+          const phoneNormalized = normalizePhoneOrNull(
+            user.user_metadata?.phone as null | string | undefined,
+          );
           await prisma.profile.updateMany({
             where: { userId: user.id },
-            data: { emailVerified: true },
+            data: {
+              emailVerified: true,
+              ...(phoneNormalized ? { phoneNormalized } : {}),
+            },
           });
         } catch (e) {
           // Log but don't fail the callback - user is already authenticated

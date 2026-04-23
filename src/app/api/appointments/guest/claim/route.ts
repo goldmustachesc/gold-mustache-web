@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { createClient } from "@/lib/supabase/server";
 import { claimGuestAppointmentsToProfile } from "@/services/guest-linking";
+import { normalizePhoneOrNull } from "@/lib/booking/phone";
 
 export async function POST(request: Request) {
   try {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
             user.user_metadata?.full_name ||
             user.email?.split("@")[0],
           phone: user.user_metadata?.phone || null,
+          phoneNormalized: normalizePhoneOrNull(user.user_metadata?.phone),
         },
       });
     }

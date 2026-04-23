@@ -6,6 +6,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
+const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   // Performance optimizations
@@ -42,6 +43,14 @@ const nextConfig: NextConfig = {
 
   // Headers for SEO and security
   async headers() {
+    const scriptSrc = [
+      "'self'",
+      "'unsafe-inline'",
+      ...(isProduction ? [] : ["'unsafe-eval'"]),
+      "https://www.googletagmanager.com",
+      "https://vercel.live",
+    ].join(" ");
+
     return [
       {
         source: "/(.*)",
@@ -66,7 +75,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://vercel.live",
+              `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self'",

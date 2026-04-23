@@ -121,6 +121,52 @@ async function getExpiringTransactions(
   });
 }
 
+async function loadAccountProfileIds(
+  accountIds: string[],
+): Promise<Map<string, string>> {
+  if (accountIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const accounts = await prisma.loyaltyAccount.findMany({
+      where: { id: { in: accountIds } },
+      select: { id: true, profileId: true },
+    });
+
+    return new Map(accounts.map((account) => [account.id, account.profileId]));
+  } catch (error) {
+    console.error(
+      "[ExpirationService] Failed to load loyalty accounts for notifications:",
+      error,
+    );
+    return new Map();
+  }
+}
+
+async function resolveAccountProfileId(
+  accountId: string,
+  cachedProfileIds: Map<string, string>,
+): Promise<string | null> {
+  const cached = cachedProfileIds.get(accountId);
+  if (cached) return cached;
+
+  try {
+    const account = await prisma.loyaltyAccount.findUnique({
+      where: { id: accountId },
+      select: { profileId: true },
+    });
+
+    return account?.profileId ?? null;
+  } catch (error) {
+    console.error(
+      `[ExpirationService] Failed to resolve loyalty account ${accountId}:`,
+      error,
+    );
+    return null;
+  }
+}
+
 async function notifyExpiringPoints(warningDays?: number): Promise<void> {
   const transactions = await getExpiringTransactions(warningDays);
 
@@ -146,17 +192,19 @@ async function notifyExpiringPoints(warningDays?: number): Promise<void> {
     }
   }
 
+  const accountIds = [...grouped.keys()];
+  const profileIdByAccountId = await loadAccountProfileIds(accountIds);
+
   for (const [accountId, { totalPoints, earliestExpiresAt }] of grouped) {
     try {
-      const account = await prisma.loyaltyAccount.findUnique({
-        where: { id: accountId },
-        select: { profileId: true },
-      });
-
-      if (!account) continue;
+      const profileId = await resolveAccountProfileId(
+        accountId,
+        profileIdByAccountId,
+      );
+      if (!profileId) continue;
 
       await LoyaltyNotificationService.notifyPointsExpiring(
-        account.profileId,
+        profileId,
         totalPoints,
         earliestExpiresAt,
       );

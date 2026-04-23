@@ -107,6 +107,7 @@ describe("POST /api/appointments/guest/claim", () => {
         userId: "user-1",
         fullName: "Cliente Teste",
         phone: "11999998888",
+        phoneNormalized: "11999998888",
       },
     });
     expect(mockClaimGuestAppointmentsToProfile).toHaveBeenCalledWith({
