@@ -33,6 +33,8 @@
     "db:migrate:deploy": "node scripts/enforce-production-migration-rollouts.cjs && prisma migrate deploy",
     "predb:migrate:status": "node scripts/ensure-worktree-env.cjs",
     "db:migrate:status": "prisma migrate status",
+    "db:rollout:verify": "node scripts/verify-phone-normalized-rollout.cjs",
+    "release:verify": "node scripts/verify-release.cjs",
     "prepare": "husky",
     "postinstall": "prisma generate",
     "commit": "git-cz",
