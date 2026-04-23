@@ -79,6 +79,12 @@ O sistema de agendamento utiliza o **Inbarber App** já estabelecido:
 - Integração via redirect (preserva fluxo existente)
 - Tracking de conversão implementado
 
+## Lembretes automáticos
+
+Os lembretes de agenda usam o endpoint `POST /api/cron/appointment-reminders` e são disparados por GitHub Actions em produção a cada 15 minutos.
+
+Runbook operacional: [`docs/ops/appointment-reminders.md`](./docs/ops/appointment-reminders.md)
+
 ## Administração (horários e ausências)
 
 - **Horário global da barbearia** e **fechamentos por data** (ADMIN)

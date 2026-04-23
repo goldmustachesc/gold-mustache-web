@@ -148,7 +148,7 @@ Token de autenticação do Upstash Redis.
 
 ### `CRON_SECRET`
 
-Token secreto para autenticar chamadas de cron jobs (ex: limpeza de dados de guests).
+Token secreto para autenticar chamadas de cron jobs e automações externas (ex: GitHub Actions de lembretes).
 
 ```
 CRON_SECRET=seu-token-secreto-aqui
@@ -157,6 +157,16 @@ CRON_SECRET=seu-token-secreto-aqui
 **Como gerar:** `openssl rand -base64 32`
 
 **Uso:** Enviar no header `Authorization: Bearer {CRON_SECRET}`
+
+### `APPOINTMENT_REMINDERS_URL`
+
+URL do endpoint de produção chamado pelo workflow de GitHub Actions para enviar lembretes automáticos.
+
+```bash
+APPOINTMENT_REMINDERS_URL=https://www.goldmustachebarbearia.com.br/api/cron/appointment-reminders
+```
+
+**Observação:** esse valor é usado apenas na automação de lembretes; não é lido pela aplicação em runtime.
 
 ---
 

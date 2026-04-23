@@ -11,11 +11,11 @@ Este documento define o checklist mínimo para considerar o que está em `stagin
 
 ## Status atual
 
-**Decisão atual: NAO APROVADO PARA PROD** *(requer reconciliar staging, redeploy do candidato atual e revalidar o smoke operacional)*
+**Decisão atual: NAO APROVADO PARA PROD** *(requer validar o scheduler de lembretes fora da Vercel e concluir os checks operacionais restantes)*
 
 > Última atualização: 2026-04-23 — auditoria operacional dos agendamentos do site
 >
-> O fluxo público continua funcional, mas o staging atual não representa o candidato real de release até o rollout `phone_normalized` ser reconciliado e a rota de cron de lembretes voltar a responder no deploy atual.
+> O fluxo público continua funcional, mas o staging/produção ainda dependem de validação operacional final. O cron de lembretes saiu da Vercel Hobby e agora precisa ser confirmado no GitHub Actions antes do go-live.
 
 ### Itens resolvidos
 
@@ -31,7 +31,7 @@ Este documento define o checklist mínimo para considerar o que está em `stagin
 
 - ⏳ `pnpm db:rollout:verify` em staging e production após o rollout online de `phone_normalized`.
 - ⏳ `pnpm db:migrate:status` em staging e production depois do rollout para confirmar ausência de pendências.
-- ⏳ Redeploy do candidato atual em staging e validação de `POST /api/cron/appointment-reminders`.
+- ⏳ Validação do workflow `appointment-reminders` no GitHub Actions e confirmação de `POST /api/cron/appointment-reminders`.
 - ⏳ Decisão explícita sobre `/api/cron/cleanup-guests` em produção.
 - ⏳ Visual e Responsividade multi-browser/device (seção 9 — manual).
 - ⏳ Conclusão de atendimento pelo barbeiro + fluxo de feedback pós-atendimento.
@@ -92,6 +92,9 @@ Este documento define o checklist mínimo para considerar o que está em `stagin
 ### 6. Cron jobs e rotinas automáticas
 
 - [x] `/api/cron/sync-instagram` está agendado em `vercel.json` (`0 10 * * *`).
+- [x] `/api/cron/loyalty/expire-points` está agendado em `vercel.json` (`30 3 * * *`).
+- [x] `/api/cron/loyalty/birthday-bonuses` está agendado em `vercel.json` (`0 9 * * *`).
+- [ ] `appointment-reminders` está agendado via GitHub Actions a cada 15 minutos em produção.
 - [ ] Foi decidido explicitamente se `/api/cron/cleanup-guests` deve rodar em produção.
 - [ ] Se o cron de limpeza for obrigatório, ele está agendado na infraestrutura.
 - [x] `CRON_SECRET` configurada em produção e autenticação dos cron jobs validada. (auditoria Vercel ✅)

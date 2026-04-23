@@ -1,0 +1,63 @@
+name: Appointment reminders
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    name: Trigger appointment reminders
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      APPOINTMENT_REMINDERS_URL: ${{ secrets.APPOINTMENT_REMINDERS_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Ensure production branch
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_NAME}" != "main" ]]; then
+            echo "This workflow is production-only and must run from main." >&2
+            exit 1
+          fi
+
+      - name: Validate configuration
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${APPOINTMENT_REMINDERS_URL:-}" ]]; then
+            echo "APPOINTMENT_REMINDERS_URL secret is not configured." >&2
+            exit 1
+          fi
+
+          if [[ -z "${CRON_SECRET:-}" ]]; then
+            echo "CRON_SECRET secret is not configured." >&2
+            exit 1
+          fi
+
+      - name: Call appointment reminders endpoint
+        run: |
+          set -euo pipefail
+
+          echo "Calling ${APPOINTMENT_REMINDERS_URL}"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --location \
+            --request POST \
+            "${APPOINTMENT_REMINDERS_URL}" \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            --header "Content-Type: application/json" \
+            --data '{}' \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --connect-timeout 10 \
+            --max-time 60
