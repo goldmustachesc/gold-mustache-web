@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/sheet";
 import { useSignOut } from "@/hooks/useAuth";
 import { useProfileMe } from "@/hooks/useProfileMe";
+import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import {
+  BarChart3,
   Building2,
   Calendar,
   CalendarOff,
@@ -24,6 +26,7 @@ import {
   Link2,
   LogOut,
   Scissors,
+  ShieldCheck,
   Star,
   ToggleLeft,
   User,
@@ -40,11 +43,13 @@ import { useLocale } from "next-intl";
 import {
   getNavItems,
   getAdminNavItems,
+  resolvePrimaryNavRole,
   type NavItemDef,
 } from "./private-nav-items";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Building2,
+  BarChart3,
   Calendar,
   CalendarOff,
   Clock,
@@ -53,6 +58,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Home,
   Link2,
   Scissors,
+  ShieldCheck,
   Star,
   ToggleLeft,
   User,
@@ -109,12 +115,19 @@ export function PrivateSidebar({ open, onOpenChange }: PrivateSidebarProps) {
   const locale = useLocale();
   const { mutate: signOut, isPending: signOutPending } = useSignOut();
   const { data: profile } = useProfileMe();
+  const { data: barberProfile } = useBarberProfile();
 
   const role = profile?.role ?? "CLIENT";
   const isAdmin = role === "ADMIN";
   const flags = useFeatureFlags();
+  const primaryNavRole = resolvePrimaryNavRole({
+    role,
+    locale,
+    pathname,
+    hasBarberProfile: !!barberProfile,
+  });
 
-  const navItems = getNavItems(role, locale, flags);
+  const navItems = getNavItems(primaryNavRole, locale, flags);
   const adminItems = getAdminNavItems(locale);
 
   const handleNavigate = () => onOpenChange(false);

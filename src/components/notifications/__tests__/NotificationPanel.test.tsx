@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { NotificationPanel } from "../NotificationPanel";
 
 const mockMarkAsRead = vi.fn();
+const mockMarkAllAsRead = vi.fn();
 const mockOnNewNotification = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/useNotifications", () => ({
@@ -29,6 +30,7 @@ vi.mock("@/hooks/useNotifications", () => ({
       unreadCount: 1,
       isLoading: false,
       markAsRead: mockMarkAsRead,
+      markAllAsRead: mockMarkAllAsRead,
     };
   },
 }));
@@ -49,6 +51,7 @@ vi.mock("@/utils/datetime", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mockMarkAsRead.mockResolvedValue(undefined);
+  mockMarkAllAsRead.mockResolvedValue(undefined);
 });
 
 describe("NotificationPanel", () => {

@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockGetServices = vi.fn();
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({
+    success: true,
+    remaining: 10,
+    reset: Date.now(),
+  }),
+  getClientIdentifier: vi.fn().mockReturnValue("test-client"),
+}));
+
 vi.mock("@/services/booking", () => ({
   getServices: (...args: unknown[]) => mockGetServices(...args),
 }));

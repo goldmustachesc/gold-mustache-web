@@ -58,6 +58,7 @@ const client = {
   type: "guest" as const,
   appointmentCount: 2,
   lastAppointment: "2026-03-10",
+  isBanned: false,
 };
 
 describe("BanClientDialog", () => {

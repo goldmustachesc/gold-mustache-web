@@ -24,20 +24,22 @@ export function ServiceBreakdown({
     return (
       <div
         className={cn(
-          "bg-zinc-800/30 rounded-xl border border-zinc-700/50 p-8 text-center",
+          "bg-muted rounded-xl border border-border p-8 text-center",
           className,
         )}
       >
-        <Scissors className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
-        <p className="text-zinc-400">Nenhum serviço realizado no período</p>
+        <Scissors className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground">
+          Nenhum serviço realizado no período
+        </p>
       </div>
     );
   }
 
   return (
     <div className={cn("space-y-3", className)}>
-      <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wide flex items-center gap-2">
-        <Scissors className="h-4 w-4 text-amber-500" />
+      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+        <Scissors className="h-4 w-4 text-primary" />
         Serviços Realizados
       </h3>
 
@@ -47,25 +49,25 @@ export function ServiceBreakdown({
             key={service.serviceId}
             className={cn(
               "flex-shrink-0 w-44 p-4 rounded-xl transition-all duration-200",
-              "bg-zinc-800/50 border border-zinc-700/50",
-              "hover:border-amber-500/30 hover:bg-zinc-800/80",
+              "bg-muted border border-border",
+              "hover:border-primary/30 hover:bg-accent",
             )}
           >
             {/* Count - large number */}
-            <div className="text-4xl font-bold text-amber-400 mb-2">
+            <div className="text-4xl font-bold text-primary mb-2">
               {service.count}
             </div>
 
             {/* Service name - truncated */}
             <p
-              className="text-sm text-white font-medium truncate"
+              className="text-sm text-foreground font-medium truncate"
               title={service.name}
             >
               {service.name}
             </p>
 
             {/* Revenue */}
-            <p className="text-xs text-zinc-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {formatCurrency(service.revenue)}
             </p>
           </div>

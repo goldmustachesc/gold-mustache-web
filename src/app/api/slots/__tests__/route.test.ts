@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockGetAvailableSlots = vi.fn();
+const mockGetBookingAvailability = vi.fn();
 const mockCheckRateLimit = vi.fn();
 const mockGetClientIdentifier = vi.fn();
 
 vi.mock("@/services/booking", () => ({
-  getAvailableSlots: (...args: unknown[]) => mockGetAvailableSlots(...args),
+  getBookingAvailability: (...args: unknown[]) =>
+    mockGetBookingAvailability(...args),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -36,8 +37,12 @@ describe("GET /api/slots", () => {
   });
 
   it("returns slots when query params are valid", async () => {
-    const slots = [{ time: "10:00", available: true }];
-    mockGetAvailableSlots.mockResolvedValue(slots);
+    const availability = {
+      barberId: "b450f113-be42-4648-af5f-70893d137c19",
+      serviceDuration: 30,
+      windows: [{ startTime: "10:00", endTime: "12:00" }],
+    };
+    mockGetBookingAvailability.mockResolvedValue(availability);
 
     const barberId = "b450f113-be42-4648-af5f-70893d137c19";
     const serviceId = "83ec4540-5bf9-4661-a133-97a6275eb303";
@@ -49,18 +54,18 @@ describe("GET /api/slots", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(mockGetAvailableSlots).toHaveBeenCalledWith(
+    expect(mockGetBookingAvailability).toHaveBeenCalledWith(
       expect.any(Date),
       barberId,
       serviceId,
       { applyLeadTime: true },
     );
-    expect(body.data).toEqual(slots);
+    expect(body.data).toEqual(availability);
   });
 
   it("returns 500 when service throws", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetAvailableSlots.mockRejectedValue(new Error("boom"));
+    mockGetBookingAvailability.mockRejectedValue(new Error("boom"));
 
     const barberId = "b450f113-be42-4648-af5f-70893d137c19";
     const serviceId = "83ec4540-5bf9-4661-a133-97a6275eb303";

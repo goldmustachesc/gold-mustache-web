@@ -2,7 +2,7 @@
 
 import type {
   ServiceData,
-  TimeSlot,
+  BookingAvailability,
   CreateAppointmentInput,
   CreateGuestAppointmentInput,
   AppointmentWithDetails,
@@ -20,7 +20,7 @@ import { apiGet, apiMutate, ApiError } from "@/lib/api/client";
 const SLOT_ERROR_MESSAGES: Record<string, string> = {
   SLOT_IN_PAST: "Este horário já passou. Por favor, escolha outro horário.",
   SLOT_TOO_SOON:
-    "Agendamento deve ser feito com pelo menos 1 hora de antecedência.",
+    "Agendamento deve ser feito com pelo menos 60 minutos de antecedência.",
   SHOP_CLOSED:
     "A barbearia não atende neste horário. Por favor, escolha outro.",
   BARBER_UNAVAILABLE:
@@ -28,6 +28,8 @@ const SLOT_ERROR_MESSAGES: Record<string, string> = {
   SLOT_UNAVAILABLE:
     "Este horário não está disponível. Por favor, escolha outro.",
   SLOT_OCCUPIED: "Este horário já foi reservado. Por favor, escolha outro.",
+  CLIENT_OVERLAPPING_APPOINTMENT:
+    "Você já possui um agendamento neste horário. Escolha outro horário.",
   BOOKING_DISABLED: "Agendamento online indisponível no momento.",
 };
 
@@ -57,6 +59,7 @@ export function useBarbers() {
 }
 
 export function useServices(barberId?: string) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["services", barberId],
     queryFn: () =>
@@ -64,6 +67,15 @@ export function useServices(barberId?: string) {
         barberId ? `/api/services?barberId=${barberId}` : "/api/services",
       ),
     staleTime: 5 * 60 * 1000,
+    placeholderData: () => {
+      if (!barberId) return undefined;
+      const cached = queryClient.getQueryData<ServiceData[]>([
+        "services",
+        undefined,
+      ]);
+      if (!cached?.length || cached[0]?.price === undefined) return undefined;
+      return cached;
+    },
   });
 }
 
@@ -75,7 +87,7 @@ export function useSlots(
   return useQuery({
     queryKey: ["slots", date, barberId, serviceId],
     queryFn: () =>
-      apiGet<TimeSlot[]>(
+      apiGet<BookingAvailability>(
         `/api/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
       ),
     enabled: !!date && !!barberId && !!serviceId,
@@ -90,7 +102,7 @@ export function useBarberSlots(
   return useQuery({
     queryKey: ["barberSlots", date, barberId, serviceId],
     queryFn: () =>
-      apiGet<TimeSlot[]>(
+      apiGet<BookingAvailability>(
         `/api/barbers/me/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
       ),
     enabled: !!date && !!barberId && !!serviceId,
@@ -228,6 +240,7 @@ export function useBarberAppointments(
         `/api/appointments?barberId=${barberId}&startDate=${formatDateToString(startDate as Date)}&endDate=${formatDateToString(endDate as Date)}`,
       ),
     enabled: !!barberId && !!startDate && !!endDate,
+    placeholderData: (previousData) => previousData,
   });
 }
 

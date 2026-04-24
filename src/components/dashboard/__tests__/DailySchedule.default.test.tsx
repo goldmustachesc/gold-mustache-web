@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -7,8 +7,13 @@ import type {
 } from "@/types/booking";
 import { DailySchedule } from "../DailySchedule";
 
-const mockGetMinutesUntilAppointment = vi.hoisted(() => vi.fn(() => 30));
-const mockPrompt = vi.hoisted(() => vi.fn());
+const mockGetMinutesUntilAppointment = vi.hoisted(() =>
+  vi.fn((_dateStr: string, _time: string, _ref?: Date) => 30),
+);
+
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useIsDesktop: () => false,
+}));
 
 vi.mock("@/utils/time-slots", async () => {
   const actual =
@@ -18,7 +23,7 @@ vi.mock("@/utils/time-slots", async () => {
 
   return {
     ...actual,
-    getMinutesUntilAppointment: (...args: unknown[]) =>
+    getMinutesUntilAppointment: (...args: [string, string, Date?]) =>
       mockGetMinutesUntilAppointment(...args),
   };
 });
@@ -26,8 +31,6 @@ vi.mock("@/utils/time-slots", async () => {
 vi.mock("@/components/barber/AppointmentDetailSheet", () => ({
   AppointmentDetailSheet: () => null,
 }));
-
-vi.stubGlobal("prompt", mockPrompt);
 
 function buildAppointment(
   overrides: Partial<AppointmentWithDetails> = {},
@@ -86,7 +89,6 @@ describe("DailySchedule default", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetMinutesUntilAppointment.mockReturnValue(30);
-    mockPrompt.mockReset();
   });
 
   it("mostra dia livre quando nao ha agendamentos nem ausencia", () => {
@@ -124,8 +126,7 @@ describe("DailySchedule default", () => {
 
   it("permite cancelar um agendamento futuro no layout default", async () => {
     const user = userEvent.setup();
-    const onCancelAppointment = vi.fn();
-    mockPrompt.mockReturnValue("Cliente pediu cancelamento");
+    const onCancelAppointment = vi.fn().mockResolvedValue(true);
 
     render(
       <DailySchedule
@@ -137,7 +138,15 @@ describe("DailySchedule default", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(mockPrompt).toHaveBeenCalledWith("Motivo do cancelamento:");
+    expect(screen.getByText("Cancelar atendimento")).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "Cliente pediu cancelamento" } },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    );
+
     expect(onCancelAppointment).toHaveBeenCalledWith(
       "apt-1",
       "Cliente pediu cancelamento",
@@ -162,6 +171,12 @@ describe("DailySchedule default", () => {
     );
 
     expect(screen.getByText("R$ ***,**")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Concluir" }).className,
+    ).toContain("border-success/30");
+    expect(
+      screen.getByRole("button", { name: "Não compareceu" }).className,
+    ).toContain("border-warning/30");
 
     await user.click(screen.getByRole("button", { name: "Concluir" }));
     await user.click(screen.getByRole("button", { name: "Não compareceu" }));
@@ -191,9 +206,65 @@ describe("DailySchedule default", () => {
       />,
     );
 
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
     expect(screen.getByRole("link", { name: /ligar/i })).toHaveAttribute(
       "href",
       "tel:11888888888",
     );
+  });
+
+  it("mostra labels de status para completed e no-show no layout default", () => {
+    mockGetMinutesUntilAppointment.mockReturnValue(-5);
+
+    render(
+      <DailySchedule
+        date={new Date("2026-03-19T12:00:00.000Z")}
+        appointments={[
+          buildAppointment({
+            id: "apt-completed",
+            status: "COMPLETED",
+            client: {
+              id: "client-completed",
+              fullName: "Leo test 0104",
+              phone: "11999999999",
+            },
+          }),
+          buildAppointment({
+            id: "apt-no-show",
+            startTime: "10:00",
+            endTime: "10:30",
+            status: "NO_SHOW",
+            client: {
+              id: "client-no-show",
+              fullName: "Cliente Faltou",
+              phone: "11888888888",
+            },
+          }),
+        ]}
+        onCancelAppointment={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Concluído").className).toContain("bg-success/15");
+    expect(screen.getByText("Concluído").className).toContain(
+      "text-foreground",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Concluir" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Não compareceu" }),
+    ).not.toBeInTheDocument();
   });
 });

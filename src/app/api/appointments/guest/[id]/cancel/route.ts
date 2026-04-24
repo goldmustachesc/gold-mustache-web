@@ -3,17 +3,16 @@ import { cancelAppointmentByGuestToken } from "@/services/booking";
 import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
-/**
- * PATCH /api/appointments/guest/[id]/cancel
- * Cancels a guest appointment using the X-Guest-Token header for authentication.
- * This is more secure than the old phone-based cancellation.
- */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {

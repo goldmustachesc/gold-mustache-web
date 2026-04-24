@@ -12,6 +12,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/image", () => ({
   default: ({ alt, src }: { alt: string; src: string }) => (
+    // biome-ignore lint/performance/noImgElement: mock stub for tests
     <img data-testid="blog-img" alt={alt} src={src} />
   ),
 }));

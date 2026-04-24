@@ -22,13 +22,20 @@ function getPathnameWithoutLocale(pathname: string): string {
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
+  if (pathname.startsWith("/_next") || pathname.startsWith("/_vercel")) {
+    return NextResponse.next({ request });
+  }
+
+  if (!pathname.startsWith("/api") && /\.[^/]+$/.test(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   if (pathname.startsWith("/api") && isPublicApiRoute(pathname)) {
     return NextResponse.next({ request });
   }
 
-  const { supabaseResponse, user } = await updateSession(request);
-
   if (pathname.startsWith("/api")) {
+    const { supabaseResponse } = await updateSession(request);
     return supabaseResponse;
   }
 
@@ -41,6 +48,14 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.some((route) =>
     pathnameWithoutLocale.startsWith(route),
   );
+
+  const needsSession = isProtectedRoute || isAuthRoute;
+
+  if (!needsSession) {
+    return intlMiddleware(request);
+  }
+
+  const { supabaseResponse, user } = await updateSession(request);
 
   if (isProtectedRoute && !user) {
     const locale = pathname.split("/")[1] || defaultLocale;

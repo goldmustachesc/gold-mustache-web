@@ -39,8 +39,21 @@ vi.mock("@/hooks/useAuth", () => ({
 const mockProfile = vi.hoisted(() => ({
   value: null as { role: string; fullName: string | null } | null,
 }));
+
+const mockBarberProfile = vi.hoisted(() => ({
+  value: null as { id: string; name: string } | null,
+}));
+
+const mockPathname = vi.hoisted(() => ({
+  value: "/pt-BR/barbeiro",
+}));
+
 vi.mock("@/hooks/useProfileMe", () => ({
   useProfileMe: () => ({ data: mockProfile.value }),
+}));
+
+vi.mock("@/hooks/useBarberProfile", () => ({
+  useBarberProfile: () => ({ data: mockBarberProfile.value }),
 }));
 
 vi.mock("@/hooks/useBookingSettings", () => ({
@@ -53,7 +66,7 @@ vi.mock("@/hooks/useBookingSettings", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/pt-BR/barbeiro",
+  usePathname: () => mockPathname.value,
   useParams: () => ({ locale: "pt-BR" }),
 }));
 
@@ -92,6 +105,8 @@ describe("PrivateSidebar", () => {
 
   beforeEach(() => {
     mockProfile.value = null;
+    mockBarberProfile.value = null;
+    mockPathname.value = "/pt-BR/barbeiro";
     mockSignOutPending.value = false;
     mockSignOut.mockClear();
     defaultProps.onOpenChange.mockClear();
@@ -107,7 +122,7 @@ describe("PrivateSidebar", () => {
     render(<PrivateSidebar {...defaultProps} />);
 
     expect(screen.getByText("Início")).toBeInTheDocument();
-    expect(screen.getByText("Minha Agenda")).toBeInTheDocument();
+    expect(screen.queryByText("Minha Agenda")).not.toBeInTheDocument();
     expect(screen.getByText("Meus Horários")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
   });
@@ -129,6 +144,19 @@ describe("PrivateSidebar", () => {
     expect(screen.getByText("Administração")).toBeInTheDocument();
     expect(screen.getByText("Dados da Barbearia")).toBeInTheDocument();
     expect(screen.getByText("Serviços")).toBeInTheDocument();
+  });
+
+  it("usa navegação primária de barbeiro quando ADMIN também tem barberProfile no dashboard", () => {
+    mockProfile.value = { role: "ADMIN", fullName: "Admin User" };
+    mockBarberProfile.value = { id: "barber-1", name: "Carlos" };
+    mockPathname.value = "/pt-BR/dashboard";
+
+    render(<PrivateSidebar {...defaultProps} />);
+
+    expect(screen.getByText("Agendar para Cliente")).toBeInTheDocument();
+    expect(screen.getByText("Meus Horários")).toBeInTheDocument();
+    expect(screen.getByText("Administração")).toBeInTheDocument();
+    expect(screen.getByText("Dados da Barbearia")).toBeInTheDocument();
   });
 
   it("hides admin section for non-admin roles", () => {

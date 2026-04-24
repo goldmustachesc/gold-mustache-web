@@ -23,13 +23,13 @@ function createKnownError(
 }
 
 describe("handlePrismaError", () => {
-  it("handles P2002 with target field", async () => {
+  it("handles P2002 without leaking field names", async () => {
     const error = createKnownError("P2002", { target: ["email"] });
     const res = handlePrismaError(error);
     const body = await res.json();
     expect(res.status).toBe(409);
     expect(body.error).toBe("PRISMA_P2002");
-    expect(body.message).toContain("email");
+    expect(body.message).not.toContain("email");
   });
 
   it("handles P2002 without target", async () => {

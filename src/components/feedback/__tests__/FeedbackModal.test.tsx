@@ -65,14 +65,14 @@ describe("FeedbackModal", () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const onOpenChange = vi.fn();
     let closeCallback: (() => void) | undefined;
-    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      callback: TimerHandler,
-    ) => {
-      if (typeof callback === "function") {
-        closeCallback = callback;
-      }
-      return 0 as ReturnType<typeof setTimeout>;
-    }) as typeof setTimeout);
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(
+      (callback: TimerHandler, ..._args: unknown[]) => {
+        if (typeof callback === "function") {
+          closeCallback = callback as () => void;
+        }
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      },
+    );
 
     render(
       <FeedbackModal

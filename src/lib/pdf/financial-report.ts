@@ -1,8 +1,4 @@
-"use client";
-
 import type { FinancialStats } from "@/types/financial";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 
 function formatCurrency(value: number): string {
   return value.toLocaleString("pt-BR", {
@@ -38,6 +34,10 @@ export async function generateFinancialPDF(
   year: number,
   barberName: string,
 ): Promise<void> {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -100,7 +100,7 @@ export async function generateFinancialPDF(
   });
 
   yPosition =
-    (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
       .finalY + 15;
 
   // Hours breakdown
@@ -132,7 +132,7 @@ export async function generateFinancialPDF(
   });
 
   yPosition =
-    (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
       .finalY + 15;
 
   // Services breakdown
@@ -170,7 +170,7 @@ export async function generateFinancialPDF(
     });
 
     yPosition =
-      (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+      (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 15;
   }
 

@@ -18,7 +18,7 @@ vi.mock("@/lib/api/verify-origin", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    $queryRawUnsafe: vi.fn(),
+    $queryRaw: vi.fn(),
     barbershopSettings: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -205,7 +205,7 @@ describe("GET /api/admin/settings", () => {
         column: "barbershop_settings.featured_enabled",
       },
     } as never);
-    vi.mocked(prisma.$queryRawUnsafe).mockResolvedValue([
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
       LEGACY_SETTINGS_FIXTURE,
     ] as never);
 
@@ -213,7 +213,7 @@ describe("GET /api/admin/settings", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(prisma.$queryRawUnsafe).toHaveBeenCalledOnce();
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
     expect(json.data.name).toBe("Gold Mustache");
     expect(json.data.featuredEnabled).toBe(true);
     expect(json.data.featuredBadge).toBe("Mais Popular");

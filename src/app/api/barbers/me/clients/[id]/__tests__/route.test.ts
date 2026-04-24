@@ -21,6 +21,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       findFirst: vi.fn(),
     },
+    appointment: {
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -117,11 +120,31 @@ describe("PATCH /api/barbers/me/clients/[id]", () => {
     expect(json.error).toBe("CANNOT_EDIT_REGISTERED");
   });
 
+  it("returns 403 when barber has no relationship with guest", async () => {
+    barberAuthenticated();
+    vi.mocked(prisma.guestClient.findUnique).mockResolvedValue(
+      GUEST_FIXTURE as never,
+    );
+    vi.mocked(prisma.appointment.findFirst).mockResolvedValue(null as never);
+
+    const response = await PATCH(
+      createPatchRequest({ fullName: "Test", phone: "11999999999" }),
+      routeParams("guest-1"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(json.error).toBe("FORBIDDEN");
+  });
+
   it("returns 400 for invalid body", async () => {
     barberAuthenticated();
     vi.mocked(prisma.guestClient.findUnique).mockResolvedValue(
       GUEST_FIXTURE as never,
     );
+    vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-1",
+    } as never);
 
     const response = await PATCH(
       createPatchRequest({ fullName: "A", phone: "123" }),
@@ -138,6 +161,9 @@ describe("PATCH /api/barbers/me/clients/[id]", () => {
     vi.mocked(prisma.guestClient.findUnique).mockResolvedValue(
       GUEST_FIXTURE as never,
     );
+    vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-1",
+    } as never);
     vi.mocked(prisma.guestClient.update).mockResolvedValue({
       ...GUEST_FIXTURE,
       fullName: "Carlos Atualizado",
@@ -162,6 +188,9 @@ describe("PATCH /api/barbers/me/clients/[id]", () => {
     vi.mocked(prisma.guestClient.findUnique).mockResolvedValue(
       GUEST_FIXTURE as never,
     );
+    vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-1",
+    } as never);
     vi.mocked(prisma.guestClient.update).mockResolvedValue(
       GUEST_FIXTURE as never,
     );
@@ -183,6 +212,9 @@ describe("PATCH /api/barbers/me/clients/[id]", () => {
     vi.mocked(prisma.guestClient.findUnique).mockResolvedValue(
       GUEST_FIXTURE as never,
     );
+    vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-1",
+    } as never);
     vi.mocked(prisma.guestClient.findFirst).mockResolvedValue({
       id: "other-guest",
     } as never);
@@ -205,6 +237,9 @@ describe("PATCH /api/barbers/me/clients/[id]", () => {
     vi.mocked(prisma.guestClient.findUnique).mockResolvedValue(
       GUEST_FIXTURE as never,
     );
+    vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-1",
+    } as never);
     vi.mocked(prisma.guestClient.findFirst).mockResolvedValue(null as never);
     vi.mocked(prisma.profile.findFirst).mockResolvedValue({
       id: "existing-profile",

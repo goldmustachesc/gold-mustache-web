@@ -7,19 +7,19 @@ describe("Button", () => {
     render(<Button>Click</Button>);
     const btn = screen.getByRole("button", { name: "Click" });
     expect(btn).toBeInTheDocument();
-    expect(btn.className).toContain("h-9");
+    expect(btn.className).toContain("h-10");
   });
 
   it("renders with sm size", () => {
     render(<Button size="sm">Small</Button>);
     const btn = screen.getByRole("button", { name: "Small" });
-    expect(btn.className).toContain("h-8");
+    expect(btn.className).toContain("h-9");
   });
 
   it("renders with lg size", () => {
     render(<Button size="lg">Large</Button>);
     const btn = screen.getByRole("button", { name: "Large" });
-    expect(btn.className).toContain("h-10");
+    expect(btn.className).toContain("h-11");
   });
 
   it("renders icon size with 44px minimum touch target", () => {

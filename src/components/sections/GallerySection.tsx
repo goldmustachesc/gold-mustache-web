@@ -80,7 +80,7 @@ export function GallerySection() {
         </div>
       </RevealOnScroll>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredItems.map((item, index) => {
           const isActive = activeItem === item.id;
           return (
@@ -103,6 +103,7 @@ export function GallerySection() {
                       src={item.before}
                       alt={`${t("beforeAlt")} - ${item.service}`}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover absolute inset-0 transition-opacity duration-300"
                       style={{ opacity: isActive ? 0 : 1 }}
                     />
@@ -110,6 +111,7 @@ export function GallerySection() {
                       src={item.after}
                       alt={`${t("afterAlt")} - ${item.service}`}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover absolute inset-0 transition-opacity duration-300"
                       style={{ opacity: isActive ? 1 : 0 }}
                     />

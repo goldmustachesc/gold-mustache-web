@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockUseBarberFinancialStats = vi.fn();
@@ -143,11 +143,13 @@ describe("FinancialPage", () => {
     const pdfButtons = screen.getAllByText("Gerar PDF");
     await user.click(pdfButtons[0]);
 
-    expect(mockGenerateFinancialPDF).toHaveBeenCalledWith(
-      MOCK_STATS,
-      3,
-      2026,
-      "Carlos",
-    );
+    await waitFor(() => {
+      expect(mockGenerateFinancialPDF).toHaveBeenCalledWith(
+        MOCK_STATS,
+        3,
+        2026,
+        "Carlos",
+      );
+    });
   });
 });

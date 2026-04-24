@@ -48,7 +48,12 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    return apiCollection(transactions, paginationMeta(total, page, limit));
+    const response = apiCollection(
+      transactions,
+      paginationMeta(total, page, limit),
+    );
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar transações de fidelidade");
   }

@@ -1,28 +1,33 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type {
   AppointmentWithDetails,
   BarberAbsenceData,
   BarberWorkingHoursDay,
 } from "@/types/booking";
+import { buildAbsenceRecurrenceSummary } from "@/lib/barber-absence-recurrence";
 import { Calendar, CalendarOff, Clock, Phone } from "lucide-react";
-import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
 import {
-  getMinutesUntilAppointment,
-  generateTimeSlots,
-  parseTimeToMinutes,
-  addMinutesToTime,
-} from "@/utils/time-slots";
+  formatDateDdMmYyyyInSaoPaulo,
+  formatIsoDateYyyyMmDdInSaoPaulo,
+  formatTimeHHmmInSaoPaulo,
+} from "@/utils/datetime";
+import { getMinutesUntilAppointment } from "@/utils/time-slots";
 import { ApiError, apiMutate } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AppointmentDetailSheet } from "@/components/barber/AppointmentDetailSheet";
+import { getDashboardAppointmentStatusUi } from "@/components/barber/appointment-status-ui";
 import { BarberChairIcon } from "./BarberChairIcon";
 import { AppointmentCard } from "./AppointmentCard";
 import { EmptySlot } from "./EmptySlot";
 import { SlotActionSheet } from "./SlotActionSheet";
+import { AppointmentCancelSheet } from "./AppointmentCancelSheet";
+import { buildDailyOperationalModel } from "./buildDailyOperationalModel";
 
 interface DailyScheduleProps {
   date: Date;
@@ -30,7 +35,10 @@ interface DailyScheduleProps {
   absences?: BarberAbsenceData[];
   onCreateAppointmentFromSlot?: (startTime: string) => void;
   onCreateAbsenceFromSlot?: (startTime: string, endTime: string) => void;
-  onCancelAppointment: (id: string, reason: string) => void;
+  onCancelAppointment: (
+    id: string,
+    reason: string,
+  ) => boolean | Promise<boolean>;
   isCancelling?: boolean;
   cancellingId?: string | null;
   onMarkNoShow?: (id: string) => void;
@@ -42,19 +50,11 @@ interface DailyScheduleProps {
   variant?: "default" | "compact";
   hideValues?: boolean;
   workingHours?: BarberWorkingHoursDay | null;
-}
-
-// Slot duration in minutes for generating timeline
-const SLOT_DURATION = 30;
-
-// Represents a time slot in the schedule (either empty or with an appointment)
-interface ScheduleSlot {
-  time: string;
-  endTime: string;
-  appointment: AppointmentWithDetails | null;
-  isAvailable: boolean;
-  isBlockedByAbsence: boolean;
-  absenceReason: string | null;
+  /**
+   * Relógio operacional compartilhado com o cockpit (ex.: `operationalNow` do `BarberDashboard`).
+   * Se omitido, usa `new Date()` local — útil para testes e usos fora do dashboard.
+   */
+  operationalNow?: Date;
 }
 
 function formatCurrency(value: number): string {
@@ -62,10 +62,6 @@ function formatCurrency(value: number): string {
     style: "currency",
     currency: "BRL",
   }).format(value);
-}
-
-function isFullDayAbsence(absence: BarberAbsenceData): boolean {
-  return !absence.startTime || !absence.endTime;
 }
 
 export function DailySchedule({
@@ -86,7 +82,10 @@ export function DailySchedule({
   variant = "default",
   hideValues = false,
   workingHours,
+  operationalNow,
 }: DailyScheduleProps) {
+  const completedUi = getDashboardAppointmentStatusUi("COMPLETED");
+  const noShowUi = getDashboardAppointmentStatusUi("NO_SHOW");
   const maskedValue = "R$ ***,**";
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(
     null,
@@ -98,160 +97,86 @@ export function DailySchedule({
     start: string;
     end: string;
   } | null>(null);
-  const fullDayAbsence = useMemo(
-    () => absences.find(isFullDayAbsence) ?? null,
-    [absences],
-  );
-  const partialDayAbsences = useMemo(
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+
+  const cancelTargetAppointment = useMemo(
     () =>
-      absences.filter(
-        (
-          absence,
-        ): absence is BarberAbsenceData & {
-          startTime: string;
-          endTime: string;
-        } => Boolean(absence.startTime && absence.endTime),
-      ),
-    [absences],
+      cancelTargetId
+        ? (appointments.find((a) => a.id === cancelTargetId) ?? null)
+        : null,
+    [appointments, cancelTargetId],
   );
-  const hasFullDayAbsence = fullDayAbsence !== null;
+  const cancelContextLabel = cancelTargetAppointment
+    ? cancelTargetAppointment.client?.fullName ||
+      cancelTargetAppointment.guestClient?.fullName ||
+      "Cliente"
+    : undefined;
 
-  // Generate complete schedule with empty slots
-  const scheduleSlots = useMemo((): ScheduleSlot[] => {
-    if (hasFullDayAbsence) {
-      return [];
-    }
-
-    // If no working hours or not working, return empty
-    if (
-      !workingHours ||
-      !workingHours.isWorking ||
-      !workingHours.startTime ||
-      !workingHours.endTime
-    ) {
-      return [];
-    }
-
-    // Generate base time slots
-    const baseSlots = generateTimeSlots({
-      startTime: workingHours.startTime,
-      endTime: workingHours.endTime,
-      duration: SLOT_DURATION,
-      breakStart: workingHours.breakStart,
-      breakEnd: workingHours.breakEnd,
+  const operationalModel = useMemo(() => {
+    const now = operationalNow ?? new Date();
+    return buildDailyOperationalModel({
+      selectedDate: formatIsoDateYyyyMmDdInSaoPaulo(date),
+      currentDate: formatIsoDateYyyyMmDdInSaoPaulo(now),
+      currentTime: formatTimeHHmmInSaoPaulo(now),
+      appointments,
+      absences,
+      workingHours,
     });
+  }, [date, appointments, absences, workingHours, operationalNow]);
 
-    // Sort appointments by start time
-    const sortedAppointments = [...appointments].sort((a, b) =>
-      a.startTime.localeCompare(b.startTime),
-    );
+  const {
+    fullDayAbsence,
+    hasFullDayAbsence,
+    hasPartialAbsences,
+    isDayOff,
+    hasConfiguredWorkingHours,
+    sortedAppointments,
+    timelineItems,
+    timelineByHour,
+    timelineHours,
+    availableSlotCount,
+  } = operationalModel;
 
-    // Create a map of appointment start times for quick lookup
-    const appointmentMap = new Map<string, AppointmentWithDetails>();
-    for (const apt of sortedAppointments) {
-      appointmentMap.set(apt.startTime, apt);
-    }
+  const handleOpenAppointmentDetail = useCallback(
+    (appointment: AppointmentWithDetails) => {
+      setSelectedAppointment(appointment);
+      setSheetOpen(true);
+    },
+    [],
+  );
 
-    // Build the schedule: merge slots with appointments
-    const schedule: ScheduleSlot[] = [];
-    let slotIndex = 0;
-
-    while (slotIndex < baseSlots.length) {
-      const slot = baseSlots[slotIndex];
-      const slotMinutes = parseTimeToMinutes(slot.time);
-
-      // Check if there's an appointment starting at this slot
-      const appointment = appointmentMap.get(slot.time);
-
-      if (appointment) {
-        // This slot has an appointment
-        schedule.push({
-          time: appointment.startTime,
-          endTime: appointment.endTime,
-          appointment,
-          isAvailable: false,
-          isBlockedByAbsence: false,
-          absenceReason: null,
-        });
-
-        // Skip slots that are covered by this appointment's duration
-        const appointmentEndMinutes = parseTimeToMinutes(appointment.endTime);
-        while (
-          slotIndex < baseSlots.length &&
-          parseTimeToMinutes(baseSlots[slotIndex].time) < appointmentEndMinutes
-        ) {
-          slotIndex++;
-        }
-      } else {
-        // Check if this slot is within any appointment's duration
-        const overlappingAppointment = sortedAppointments.find((apt) => {
-          const aptStart = parseTimeToMinutes(apt.startTime);
-          const aptEnd = parseTimeToMinutes(apt.endTime);
-          return slotMinutes >= aptStart && slotMinutes < aptEnd;
-        });
-
-        if (!overlappingAppointment) {
-          const slotEndTime = addMinutesToTime(slot.time, SLOT_DURATION);
-          const slotStartMinutes = parseTimeToMinutes(slot.time);
-          const slotEndMinutes = parseTimeToMinutes(slotEndTime);
-          const blockingAbsence =
-            partialDayAbsences.find((absence) => {
-              const absenceStart = parseTimeToMinutes(absence.startTime);
-              const absenceEnd = parseTimeToMinutes(absence.endTime);
-              return (
-                slotStartMinutes < absenceEnd && absenceStart < slotEndMinutes
-              );
-            }) ?? null;
-
-          // Empty slot
-          schedule.push({
-            time: slot.time,
-            endTime: slotEndTime,
-            appointment: null,
-            isAvailable: !blockingAbsence,
-            isBlockedByAbsence: Boolean(blockingAbsence),
-            absenceReason: blockingAbsence?.reason ?? null,
-          });
-        }
-        slotIndex++;
-      }
-    }
-
-    return schedule;
-  }, [workingHours, appointments, hasFullDayAbsence, partialDayAbsences]);
-
-  const handleOpenAppointmentDetail = (appointment: AppointmentWithDetails) => {
-    setSelectedAppointment(appointment);
-    setSheetOpen(true);
-  };
-
-  const handleOpenSlotSheet = (start: string, end: string) => {
+  const handleOpenSlotSheet = useCallback((start: string, end: string) => {
     setSlotSheetSlot({ start, end });
-  };
+  }, []);
 
-  const handleSelectTimeFromSlotSheet = (time: string) => {
-    setSlotSheetSlot(null);
-    onCreateAppointmentFromSlot?.(time);
-  };
+  const handleSelectTimeFromSlotSheet = useCallback(
+    (time: string) => {
+      setSlotSheetSlot(null);
+      onCreateAppointmentFromSlot?.(time);
+    },
+    [onCreateAppointmentFromSlot],
+  );
 
-  const handleAbsenceFromSlotSheet = (startTime: string, endTime: string) => {
-    setSlotSheetSlot(null);
-    onCreateAbsenceFromSlot?.(startTime, endTime);
-  };
+  const handleAbsenceFromSlotSheet = useCallback(
+    (startTime: string, endTime: string) => {
+      setSlotSheetSlot(null);
+      onCreateAbsenceFromSlot?.(startTime, endTime);
+    },
+    [onCreateAbsenceFromSlot],
+  );
 
-  const handleCloseSheet = (open: boolean) => {
+  const handleCloseSheet = useCallback((open: boolean) => {
     setSheetOpen(open);
     if (!open) {
-      // Limpa o appointment selecionado após a animação de fechamento
       setTimeout(() => setSelectedAppointment(null), 300);
     }
-  };
+  }, []);
 
   const formatDate = (d: Date) => {
     return formatDateDdMmYyyyInSaoPaulo(d);
   };
 
-  const handleSendReminder = async (appointmentId: string) => {
+  const handleSendReminder = useCallback(async (appointmentId: string) => {
     setSendingReminderId(appointmentId);
     try {
       const payload = await apiMutate<{
@@ -276,12 +201,7 @@ export function DailySchedule({
     } finally {
       setSendingReminderId(null);
     }
-  };
-
-  // Sort appointments by start time
-  const sortedAppointments = [...appointments].sort((a, b) => {
-    return a.startTime.localeCompare(b.startTime);
-  });
+  }, []);
 
   // Group appointments by hour for timeline view
   const appointmentsByHour = sortedAppointments.reduce(
@@ -298,195 +218,155 @@ export function DailySchedule({
     (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
   );
 
+  const compactAppointmentCardProps = useMemo(
+    () => ({
+      onOpenDetail: handleOpenAppointmentDetail,
+      onSendReminder: handleSendReminder,
+      sendingReminderId,
+      onCancelAppointment,
+      isCancelling,
+      cancellingId,
+      onMarkNoShow,
+      isMarkingNoShow,
+      markingNoShowId,
+      onMarkComplete,
+      isMarkingComplete,
+      markingCompleteId,
+      hideValues,
+      maskedValue,
+      operationalNow,
+    }),
+    [
+      handleOpenAppointmentDetail,
+      handleSendReminder,
+      sendingReminderId,
+      onCancelAppointment,
+      isCancelling,
+      cancellingId,
+      onMarkNoShow,
+      isMarkingNoShow,
+      markingNoShowId,
+      onMarkComplete,
+      isMarkingComplete,
+      markingCompleteId,
+      hideValues,
+      operationalNow,
+    ],
+  );
+
   if (variant === "compact") {
-    // Check if it's a day off (not working)
-    const isDayOff = workingHours && !workingHours.isWorking;
-    const hasPartialAbsences = partialDayAbsences.length > 0;
     const fullDayAbsenceReason = fullDayAbsence?.reason?.trim() ?? null;
-
-    // Group schedule slots by hour
-    const slotsByHour = scheduleSlots.reduce(
-      (acc, slot) => {
-        const hour = slot.time.split(":")[0];
-        if (!acc[hour]) acc[hour] = [];
-        acc[hour].push(slot);
-        return acc;
-      },
-      {} as Record<string, ScheduleSlot[]>,
+    const fullDayAbsenceRecurrence = buildAbsenceRecurrenceSummary(
+      fullDayAbsence?.recurrence ?? null,
     );
-
-    const scheduleHours = Object.keys(slotsByHour).sort(
-      (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
-    );
-
-    // Check if we should show the full schedule (has working hours)
-    const hasWorkingHours = workingHours?.isWorking && scheduleSlots.length > 0;
+    const hasAppointments = appointments.length > 0;
 
     return (
-      <div className="space-y-3">
-        {hasFullDayAbsence ? (
-          <>
-            <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-4">
-              <div className="flex items-start gap-3">
-                <CalendarOff className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-medium text-foreground">
-                    Agenda bloqueada por ausência
+      <div className="space-y-4">
+        {hasFullDayAbsence && (
+          <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <CalendarOff className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">
+                  Agenda bloqueada por ausência
+                </p>
+                <p className="mt-1 text-sm text-foreground/80">
+                  Nenhum horário ficará disponível para este dia.
+                </p>
+                {fullDayAbsenceReason && (
+                  <p className="mt-2 text-sm text-foreground/80">
+                    Motivo: {fullDayAbsenceReason}
                   </p>
-                  <p className="text-sm mt-1 text-foreground/80">
-                    Nenhum horário ficará disponível para este dia.
+                )}
+                {fullDayAbsenceRecurrence && (
+                  <p className="mt-1 text-sm text-foreground/70">
+                    {fullDayAbsenceRecurrence}
                   </p>
-                  {fullDayAbsenceReason && (
-                    <p className="text-sm mt-2 text-foreground/80">
-                      Motivo: {fullDayAbsenceReason}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
             </div>
-            {appointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg font-medium">
-                  Dia bloqueado
-                </p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Ausência de dia inteiro registrada.
+          </div>
+        )}
+
+        {isDayOff && (
+          <div className="rounded-xl border border-border/70 bg-card/40 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <Calendar className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">Dia de folga</p>
+                <p className="mt-1 text-sm text-foreground/80">
+                  Você não trabalha neste dia, mas os atendimentos agendados
+                  continuam listados abaixo.
                 </p>
               </div>
-            ) : (
-              hours.map((hour) => (
-                <div key={hour} className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <span>{hour}:00</span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                  {appointmentsByHour[hour].map((appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      onOpenDetail={handleOpenAppointmentDetail}
-                      onSendReminder={handleSendReminder}
-                      sendingReminderId={sendingReminderId}
-                      onCancelAppointment={onCancelAppointment}
-                      isCancelling={isCancelling}
-                      cancellingId={cancellingId}
-                      onMarkNoShow={onMarkNoShow}
-                      isMarkingNoShow={isMarkingNoShow}
-                      markingNoShowId={markingNoShowId}
-                      onMarkComplete={onMarkComplete}
-                      isMarkingComplete={isMarkingComplete}
-                      markingCompleteId={markingCompleteId}
-                      hideValues={hideValues}
-                      maskedValue={maskedValue}
-                    />
-                  ))}
-                </div>
-              ))
-            )}
-          </>
-        ) : isDayOff ? (
-          // Day off state
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg font-medium">
-              Dia de folga
-            </p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Você não trabalha neste dia
-            </p>
-          </div>
-        ) : !hasWorkingHours && appointments.length === 0 ? (
-          // No working hours configured and no appointments
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <BarberChairIcon className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg font-medium">
-              Dia livre!
-            </p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Nenhum agendamento para este dia
-            </p>
-          </div>
-        ) : !hasWorkingHours ? (
-          // Fallback: show only appointments (old behavior)
-          hours.map((hour) => (
-            <div key={hour} className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <span>{hour}:00</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-              {appointmentsByHour[hour].map((appointment) => (
-                <AppointmentCard
-                  key={appointment.id}
-                  appointment={appointment}
-                  onOpenDetail={handleOpenAppointmentDetail}
-                  onSendReminder={handleSendReminder}
-                  sendingReminderId={sendingReminderId}
-                  onCancelAppointment={onCancelAppointment}
-                  isCancelling={isCancelling}
-                  cancellingId={cancellingId}
-                  onMarkNoShow={onMarkNoShow}
-                  isMarkingNoShow={isMarkingNoShow}
-                  markingNoShowId={markingNoShowId}
-                  onMarkComplete={onMarkComplete}
-                  isMarkingComplete={isMarkingComplete}
-                  markingCompleteId={markingCompleteId}
-                  hideValues={hideValues}
-                  maskedValue={maskedValue}
-                />
-              ))}
             </div>
-          ))
-        ) : (
-          // Full schedule with empty slots
-          <>
-            {hasPartialAbsences && (
+          </div>
+        )}
+
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              Horários do dia
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {hasAppointments
+                ? `${appointments.length} atendimento${appointments.length > 1 ? "s" : ""} no dia`
+                : "Nenhum atendimento agendado para este dia."}
+              {!hasFullDayAbsence &&
+                !isDayOff &&
+                hasConfiguredWorkingHours &&
+                ` • ${availableSlotCount} intervalo${availableSlotCount === 1 ? "" : "s"} livre${availableSlotCount === 1 ? "" : "s"}`}
+            </p>
+          </div>
+
+          {!hasConfiguredWorkingHours && !hasFullDayAbsence && !isDayOff && (
+            <div className="rounded-xl border border-border/70 bg-card/30 px-4 py-3">
+              <p className="text-sm text-foreground">
+                Expediente não configurado para exibir os horários livres deste
+                dia.
+              </p>
+            </div>
+          )}
+
+          {hasPartialAbsences &&
+            hasConfiguredWorkingHours &&
+            !isDayOff &&
+            !hasFullDayAbsence && (
               <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
                 <p className="text-sm text-foreground">
                   Existem horários bloqueados por ausência neste dia.
                 </p>
               </div>
             )}
-            {scheduleHours.map((hour) => (
-              <div key={hour} className="space-y-2">
-                {/* Hour marker */}
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <span>{hour}:00</span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
 
-                {/* Slots for this hour */}
-                {slotsByHour[hour].map((slot) => {
-                  if (slot.appointment) {
+          {timelineItems.length > 0 ? (
+            timelineHours.map((hour) => (
+              <div key={hour} className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-mono tabular-nums">{hour}:00</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                {timelineByHour[hour].map((item) => {
+                  if (item.type === "appointment") {
                     return (
                       <AppointmentCard
-                        key={slot.appointment.id}
-                        appointment={slot.appointment}
-                        onOpenDetail={handleOpenAppointmentDetail}
-                        onSendReminder={handleSendReminder}
-                        sendingReminderId={sendingReminderId}
-                        onCancelAppointment={onCancelAppointment}
-                        isCancelling={isCancelling}
-                        cancellingId={cancellingId}
-                        onMarkNoShow={onMarkNoShow}
-                        isMarkingNoShow={isMarkingNoShow}
-                        markingNoShowId={markingNoShowId}
-                        onMarkComplete={onMarkComplete}
-                        isMarkingComplete={isMarkingComplete}
-                        markingCompleteId={markingCompleteId}
-                        hideValues={hideValues}
-                        maskedValue={maskedValue}
+                        key={item.appointment.id}
+                        appointment={item.appointment}
+                        {...compactAppointmentCardProps}
                       />
                     );
                   }
-
                   return (
                     <EmptySlot
-                      key={`empty-${slot.time}`}
-                      time={slot.time}
-                      endTime={slot.endTime}
-                      isBlockedByAbsence={slot.isBlockedByAbsence}
-                      absenceReason={slot.absenceReason}
+                      key={`empty-${item.slot.time}`}
+                      time={item.slot.time}
+                      endTime={item.slot.endTime}
+                      isBlockedByAbsence={item.slot.isBlockedByAbsence}
+                      absenceReason={item.slot.absenceReason}
+                      absenceRecurrenceSummary={
+                        item.slot.absenceRecurrenceSummary
+                      }
                       onOpenSheet={
                         onCreateAppointmentFromSlot || onCreateAbsenceFromSlot
                           ? handleOpenSlotSheet
@@ -496,9 +376,38 @@ export function DailySchedule({
                   );
                 })}
               </div>
-            ))}
-          </>
-        )}
+            ))
+          ) : !hasConfiguredWorkingHours && !hasFullDayAbsence && !isDayOff ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BarberChairIcon className="mb-4 h-16 w-16 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">
+                Expediente não configurado
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Configure o expediente para visualizar os horários livres deste
+                dia.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BarberChairIcon className="mb-4 h-16 w-16 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">
+                {hasFullDayAbsence
+                  ? "Dia bloqueado"
+                  : isDayOff
+                    ? "Dia de folga"
+                    : "Dia livre!"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {hasFullDayAbsence
+                  ? "Ausência de dia inteiro registrada."
+                  : isDayOff
+                    ? "Você não trabalha neste dia."
+                    : "Nenhum agendamento para este dia"}
+              </p>
+            </div>
+          )}
+        </section>
 
         {/* Appointment Detail Sheet */}
         <AppointmentDetailSheet
@@ -517,6 +426,7 @@ export function DailySchedule({
           isMarkingComplete={
             isMarkingComplete && markingCompleteId === selectedAppointment?.id
           }
+          operationalNow={operationalNow}
         />
 
         {/* Slot Action Sheet */}
@@ -536,151 +446,178 @@ export function DailySchedule({
 
   // Default variant (original design)
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          <CardTitle className="capitalize">{formatDate(date)}</CardTitle>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {hasFullDayAbsence
-            ? "Agenda bloqueada por ausência"
-            : appointments.length === 0
-              ? "Nenhum agendamento para este dia"
-              : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""}`}
-        </p>
-      </CardHeader>
-
-      <CardContent>
-        {appointments.length === 0 ? (
-          <div className="text-center py-8">
-            {hasFullDayAbsence ? (
-              <>
-                <CalendarOff className="h-12 w-12 mx-auto text-primary/60 mb-3" />
-                <p className="text-muted-foreground">
-                  Agenda bloqueada por ausência.
-                </p>
-              </>
-            ) : (
-              <>
-                <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">Dia livre!</p>
-              </>
-            )}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <CardTitle className="capitalize">{formatDate(date)}</CardTitle>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {hours.map((hour) => (
-              <div key={hour} className="relative">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="text-sm font-medium text-muted-foreground w-12">
-                    {hour}:00
-                  </div>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
-                <div className="ml-14 space-y-3">
-                  {appointmentsByHour[hour].map((appointment) => {
-                    const minutesUntil = getMinutesUntilAppointment(
-                      appointment.date,
-                      appointment.startTime,
-                    );
-                    const isConfirmed = appointment.status === "CONFIRMED";
-                    const isNoShow = appointment.status === "NO_SHOW";
-                    const isPast = minutesUntil <= 0;
+          <p className="text-sm text-muted-foreground">
+            {hasFullDayAbsence
+              ? "Agenda bloqueada por ausência"
+              : appointments.length === 0
+                ? "Nenhum agendamento para este dia"
+                : `${appointments.length} agendamento${appointments.length > 1 ? "s" : ""}`}
+          </p>
+        </CardHeader>
 
-                    return (
-                      <div
-                        key={appointment.id}
-                        className="p-3 rounded-lg border bg-card"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium">
-                              {appointment.client?.fullName ||
-                                appointment.guestClient?.fullName ||
-                                "Cliente"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.startTime} - {appointment.endTime} •{" "}
-                              {appointment.service.name}
-                            </p>
-                            <p className="text-sm font-medium mt-1">
-                              {hideValues
-                                ? maskedValue
-                                : formatCurrency(
-                                    Number(appointment.service.price),
-                                  )}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            {isConfirmed && !isPast && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const reason = prompt(
-                                    "Motivo do cancelamento:",
-                                  );
-                                  if (reason) {
-                                    onCancelAppointment(appointment.id, reason);
-                                  }
-                                }}
-                                disabled={
-                                  isCancelling &&
-                                  cancellingId === appointment.id
-                                }
-                              >
-                                Cancelar
-                              </Button>
-                            )}
-                            {isConfirmed && isPast && onMarkComplete && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
-                                onClick={() => onMarkComplete(appointment.id)}
-                                disabled={
-                                  isMarkingComplete &&
-                                  markingCompleteId === appointment.id
-                                }
-                              >
-                                Concluir
-                              </Button>
-                            )}
-                            {isConfirmed && isPast && onMarkNoShow && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onMarkNoShow(appointment.id)}
-                                disabled={
-                                  isMarkingNoShow &&
-                                  markingNoShowId === appointment.id
-                                }
-                              >
-                                Não compareceu
-                              </Button>
-                            )}
-                            {isNoShow && appointment.guestClient?.phone && (
-                              <Button variant="outline" size="sm" asChild>
-                                <a
-                                  href={`tel:${appointment.guestClient.phone}`}
+        <CardContent>
+          {appointments.length === 0 ? (
+            <div className="text-center py-8">
+              {hasFullDayAbsence ? (
+                <>
+                  <CalendarOff className="h-12 w-12 mx-auto text-primary/60 mb-3" />
+                  <p className="text-muted-foreground">
+                    Agenda bloqueada por ausência.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground">Dia livre!</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hours.map((hour) => (
+                <div key={hour} className="relative">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="text-sm font-medium text-muted-foreground w-12">
+                      {hour}:00
+                    </div>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <div className="ml-14 space-y-3">
+                    {appointmentsByHour[hour].map((appointment) => {
+                      const minutesUntil = getMinutesUntilAppointment(
+                        appointment.date,
+                        appointment.startTime,
+                        operationalNow,
+                      );
+                      const isConfirmed = appointment.status === "CONFIRMED";
+                      const isNoShow = appointment.status === "NO_SHOW";
+                      const statusUi = getDashboardAppointmentStatusUi(
+                        appointment.status,
+                      );
+                      const isPast = minutesUntil <= 0;
+
+                      return (
+                        <div
+                          key={appointment.id}
+                          className={cn(
+                            "p-3 rounded-lg border bg-card",
+                            statusUi?.surfaceClassName,
+                          )}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2">
+                              <p className="font-medium">
+                                {appointment.client?.fullName ||
+                                  appointment.guestClient?.fullName ||
+                                  "Cliente"}
+                              </p>
+                              {statusUi && (
+                                <Badge
+                                  className={["border", statusUi.badgeClassName]
+                                    .filter(Boolean)
+                                    .join(" ")}
                                 >
-                                  <Phone className="h-4 w-4 mr-1" />
-                                  Ligar
-                                </a>
-                              </Button>
-                            )}
+                                  {statusUi.label}
+                                </Badge>
+                              )}
+                              <p className="text-sm text-muted-foreground">
+                                {appointment.startTime} - {appointment.endTime}{" "}
+                                • {appointment.service.name}
+                              </p>
+                              <p className="text-sm font-medium mt-1">
+                                {hideValues
+                                  ? maskedValue
+                                  : formatCurrency(
+                                      Number(appointment.service.price),
+                                    )}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              {isConfirmed && !isPast && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setCancelTargetId(appointment.id);
+                                  }}
+                                  disabled={
+                                    isCancelling &&
+                                    cancellingId === appointment.id
+                                  }
+                                >
+                                  Cancelar
+                                </Button>
+                              )}
+                              {isConfirmed && isPast && onMarkComplete && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={completedUi?.actionClassName}
+                                  onClick={() => onMarkComplete(appointment.id)}
+                                  disabled={
+                                    isMarkingComplete &&
+                                    markingCompleteId === appointment.id
+                                  }
+                                >
+                                  Concluir
+                                </Button>
+                              )}
+                              {isConfirmed && isPast && onMarkNoShow && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={noShowUi?.actionClassName}
+                                  onClick={() => onMarkNoShow(appointment.id)}
+                                  disabled={
+                                    isMarkingNoShow &&
+                                    markingNoShowId === appointment.id
+                                  }
+                                >
+                                  Não compareceu
+                                </Button>
+                              )}
+                              {isNoShow && appointment.guestClient?.phone && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a
+                                    href={`tel:${appointment.guestClient.phone}`}
+                                  >
+                                    <Phone className="h-4 w-4 mr-1" />
+                                    Ligar
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AppointmentCancelSheet
+        open={cancelTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelTargetId(null);
+        }}
+        contextLabel={cancelContextLabel}
+        isPending={Boolean(isCancelling && cancellingId === cancelTargetId)}
+        onConfirm={(reason) => {
+          if (!cancelTargetId) return Promise.resolve(false);
+          return onCancelAppointment(cancelTargetId, reason);
+        }}
+      />
+    </>
   );
 }

@@ -32,6 +32,9 @@ const FLAG_TITLES: Record<FeatureFlagKey, string> = {
   loyaltyProgram: "Programa de fidelidade",
   referralProgram: "Programa de indicação",
   eventsSection: "Seção de eventos no site",
+  transactionalEmails: "Emails transacionais",
+  appointmentReminders: "Lembretes automáticos",
+  appointmentRemindersWhatsapp: "Lembretes via WhatsApp",
 };
 
 function sourceLabel(source: FeatureFlagSource): string {

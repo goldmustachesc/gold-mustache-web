@@ -101,21 +101,8 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/cron/sync-instagram
- * Endpoint para teste manual (apenas em desenvolvimento)
+ * Vercel Cron chama a rota via GET, então reaproveitamos a mesma lógica do POST.
  */
-export async function GET() {
-  if (process.env.NODE_ENV === "production") {
-    return apiError(
-      "METHOD_NOT_ALLOWED",
-      "Método não permitido em produção",
-      405,
-    );
-  }
-
-  // Em desenvolvimento, redireciona para POST
-  return apiSuccess({
-    message:
-      "Use POST com Authorization: Bearer {CRON_SECRET} para sincronizar",
-    dev: "Em dev, você pode testar: curl -X POST http://localhost:3001/api/cron/sync-instagram -H 'Authorization: Bearer {seu_cron_secret}'",
-  });
+export async function GET(request: Request) {
+  return POST(request);
 }

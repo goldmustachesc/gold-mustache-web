@@ -71,8 +71,12 @@ export async function GET(request: Request) {
       bannedClient: { select: { id: true } },
     };
 
-    const registeredWhere = { appointments: { some: {} }, ...searchFilter };
-    const guestWhere = { appointments: { some: {} }, ...searchFilter };
+    const barberFilter = {
+      appointments: { some: { barberId: auth.barberId } },
+    };
+
+    const registeredWhere = { ...barberFilter, ...searchFilter };
+    const guestWhere = { ...barberFilter, ...searchFilter };
 
     const [registeredClients, guestClients, registeredCount, guestCount] =
       await Promise.all([

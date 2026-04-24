@@ -13,6 +13,7 @@ const updateBarberSchema = z.object({
     .optional(),
   avatarUrl: z.string().url().nullable().optional(),
   active: z.boolean().optional(),
+  serviceIds: z.array(z.string().uuid()).optional(),
 });
 
 export type UpdateBarberInput = z.infer<typeof updateBarberSchema>;
@@ -34,6 +35,20 @@ export async function GET(
     const barber = await prisma.barber.findUnique({
       where: { id },
       include: {
+        services: {
+          select: {
+            serviceId: true,
+            service: {
+              select: {
+                id: true,
+                name: true,
+                duration: true,
+                price: true,
+                active: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             appointments: true,
@@ -89,9 +104,77 @@ export async function PUT(
       return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
+    const { serviceIds, ...barberData } = parsed.data;
+
+    if (serviceIds !== undefined) {
+      const uniqueServiceIds = Array.from(new Set(serviceIds));
+      const existingServices = await prisma.service.findMany({
+        where: { id: { in: uniqueServiceIds } },
+        select: { id: true },
+      });
+
+      if (existingServices.length !== uniqueServiceIds.length) {
+        return apiError(
+          "INVALID_SERVICES",
+          "Um ou mais serviços informados não existem",
+          400,
+        );
+      }
+
+      await prisma.$transaction(async (tx) => {
+        if (Object.keys(barberData).length > 0) {
+          await tx.barber.update({
+            where: { id },
+            data: barberData,
+          });
+        }
+
+        await tx.barberService.deleteMany({
+          where: { barberId: id },
+        });
+
+        if (uniqueServiceIds.length > 0) {
+          await tx.barberService.createMany({
+            data: uniqueServiceIds.map((serviceId) => ({
+              barberId: id,
+              serviceId,
+            })),
+          });
+        }
+      });
+
+      const updatedBarber = await prisma.barber.findUnique({
+        where: { id },
+        include: {
+          services: {
+            select: {
+              serviceId: true,
+              service: {
+                select: {
+                  id: true,
+                  name: true,
+                  duration: true,
+                  price: true,
+                  active: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              appointments: true,
+              workingHours: true,
+            },
+          },
+        },
+      });
+
+      return apiSuccess(updatedBarber);
+    }
+
     const barber = await prisma.barber.update({
       where: { id },
-      data: parsed.data,
+      data: barberData,
     });
 
     return apiSuccess(barber);

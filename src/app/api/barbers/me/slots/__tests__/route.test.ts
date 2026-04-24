@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockRequireBarber = vi.fn();
-const mockGetAvailableSlots = vi.fn();
+const mockGetBookingAvailability = vi.fn();
 const mockCheckRateLimit = vi.fn();
 const mockGetUserRateLimitIdentifier = vi.fn();
 
@@ -10,7 +10,8 @@ vi.mock("@/lib/auth/requireBarber", () => ({
 }));
 
 vi.mock("@/services/booking", () => ({
-  getAvailableSlots: (...args: unknown[]) => mockGetAvailableSlots(...args),
+  getBookingAvailability: (...args: unknown[]) =>
+    mockGetBookingAvailability(...args),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -56,7 +57,7 @@ describe("GET /api/barbers/me/slots", () => {
     const response = await GET(createRequest(validQuery()));
 
     expect(response.status).toBe(401);
-    expect(mockGetAvailableSlots).not.toHaveBeenCalled();
+    expect(mockGetBookingAvailability).not.toHaveBeenCalled();
   });
 
   it("returns 429 when rate limited", async () => {
@@ -77,7 +78,7 @@ describe("GET /api/barbers/me/slots", () => {
 
     expect(response.status).toBe(429);
     expect(body.error).toBe("RATE_LIMITED");
-    expect(mockGetAvailableSlots).not.toHaveBeenCalled();
+    expect(mockGetBookingAvailability).not.toHaveBeenCalled();
   });
 
   it("returns 422 when query params are missing", async () => {
@@ -108,28 +109,32 @@ describe("GET /api/barbers/me/slots", () => {
 
     expect(response.status).toBe(403);
     expect(body.error).toBe("UNAUTHORIZED");
-    expect(mockGetAvailableSlots).not.toHaveBeenCalled();
+    expect(mockGetBookingAvailability).not.toHaveBeenCalled();
   });
 
-  it("returns slots without applyLeadTime on success", async () => {
-    const slots = [
-      { time: "09:00", available: true },
-      { time: "09:30", available: true },
-    ];
+  it("returns availability windows without applyLeadTime on success", async () => {
+    const availability = {
+      barberId,
+      serviceDuration: 30,
+      windows: [
+        { startTime: "09:00", endTime: "09:30" },
+        { startTime: "10:00", endTime: "11:00" },
+      ],
+    };
     mockRequireBarber.mockResolvedValue({
       ok: true,
       userId: "user-1",
       barberId,
       barberName: "Carlos",
     });
-    mockGetAvailableSlots.mockResolvedValue(slots);
+    mockGetBookingAvailability.mockResolvedValue(availability);
 
     const response = await GET(createRequest(validQuery()));
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.data).toEqual(slots);
-    expect(mockGetAvailableSlots).toHaveBeenCalledWith(
+    expect(body.data).toEqual(availability);
+    expect(mockGetBookingAvailability).toHaveBeenCalledWith(
       expect.any(Date),
       barberId,
       serviceId,
@@ -144,7 +149,7 @@ describe("GET /api/barbers/me/slots", () => {
       barberId,
       barberName: "Carlos",
     });
-    mockGetAvailableSlots.mockRejectedValue(new Error("boom"));
+    mockGetBookingAvailability.mockRejectedValue(new Error("boom"));
 
     const response = await GET(createRequest(validQuery()));
     const body = await response.json();

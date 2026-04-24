@@ -8,13 +8,20 @@ import { addDays } from "date-fns";
 vi.mock("@/lib/prisma", () => {
   const prisma = {
     pointTransaction: { findMany: vi.fn(), create: vi.fn() },
-    loyaltyAccount: { findUnique: vi.fn(), update: vi.fn() },
+    loyaltyAccount: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     $transaction: vi.fn(),
   };
   return { prisma };
 });
 
+vi.mock("@/services/loyalty/notification.service", () => ({
+  LoyaltyNotificationService: {
+    notifyPointsExpiring: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { prisma } from "@/lib/prisma";
+import { LoyaltyNotificationService } from "../notification.service";
 import { ExpirationService } from "../expiration.service";
 
 function asMock(fn: unknown): MockInstance {
@@ -530,6 +537,154 @@ describe("services/loyalty/expiration.service", () => {
 
       const call = asMock(prisma.pointTransaction.findMany).mock.calls[0][0];
       expect(call.where.expiresAt.gt).toEqual(NOW);
+    });
+  });
+
+  describe("notifyExpiringPoints", () => {
+    it("should call notifyPointsExpiring for each affected profile", async () => {
+      const expiresAt1 = addDays(NOW, 5);
+      const expiresAt2 = addDays(NOW, 10);
+
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        createMockTransaction({
+          id: "tx-1",
+          loyaltyAccountId: "acc-1",
+          points: 80,
+          expiresAt: expiresAt1,
+        }),
+        createMockTransaction({
+          id: "tx-2",
+          loyaltyAccountId: "acc-1",
+          points: 20,
+          expiresAt: expiresAt2,
+        }),
+        createMockTransaction({
+          id: "tx-3",
+          loyaltyAccountId: "acc-2",
+          points: 50,
+          expiresAt: expiresAt1,
+        }),
+      ]);
+
+      asMock(prisma.loyaltyAccount.findMany).mockResolvedValue([
+        { id: "acc-1", profileId: "profile-1" },
+        { id: "acc-2", profileId: "profile-2" },
+      ]);
+
+      await ExpirationService.notifyExpiringPoints();
+
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).toHaveBeenCalledWith("profile-1", 100, expiresAt1);
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).toHaveBeenCalledWith("profile-2", 50, expiresAt1);
+    });
+
+    it("should do nothing when no transactions are expiring", async () => {
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
+
+      await ExpirationService.notifyExpiringPoints();
+
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should skip accounts that no longer exist", async () => {
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        createMockTransaction({
+          id: "tx-1",
+          loyaltyAccountId: "acc-1",
+          points: 100,
+          expiresAt: addDays(NOW, 5),
+        }),
+      ]);
+
+      asMock(prisma.loyaltyAccount.findMany).mockResolvedValue([]);
+
+      await ExpirationService.notifyExpiringPoints();
+
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should swallow notification errors (fire-and-forget)", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        createMockTransaction({
+          id: "tx-1",
+          loyaltyAccountId: "acc-1",
+          points: 100,
+          expiresAt: addDays(NOW, 5),
+        }),
+      ]);
+
+      asMock(prisma.loyaltyAccount.findMany).mockResolvedValue([
+        { id: "acc-1", profileId: "profile-1" },
+      ]);
+      asMock(LoyaltyNotificationService.notifyPointsExpiring).mockRejectedValue(
+        new Error("notification failed"),
+      );
+
+      await expect(
+        ExpirationService.notifyExpiringPoints(),
+      ).resolves.not.toThrow();
+    });
+
+    it("should fall back to per-account lookup when batch prefetch fails", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        createMockTransaction({
+          id: "tx-1",
+          loyaltyAccountId: "acc-1",
+          points: 100,
+          expiresAt: addDays(NOW, 5),
+        }),
+        createMockTransaction({
+          id: "tx-2",
+          loyaltyAccountId: "acc-2",
+          points: 50,
+          expiresAt: addDays(NOW, 10),
+        }),
+      ]);
+
+      asMock(prisma.loyaltyAccount.findMany).mockRejectedValue(
+        new Error("db unavailable"),
+      );
+      asMock(prisma.loyaltyAccount.findUnique).mockImplementation(
+        async ({ where }) =>
+          ({ profileId: where.id === "acc-1" ? "profile-1" : "profile-2" }) as {
+            profileId: string;
+          },
+      );
+
+      await expect(
+        ExpirationService.notifyExpiringPoints(),
+      ).resolves.not.toThrow();
+      expect(prisma.loyaltyAccount.findUnique).toHaveBeenCalledWith({
+        where: { id: "acc-1" },
+        select: { profileId: true },
+      });
+      expect(prisma.loyaltyAccount.findUnique).toHaveBeenCalledWith({
+        where: { id: "acc-2" },
+        select: { profileId: true },
+      });
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).toHaveBeenCalledWith("profile-1", 100, addDays(NOW, 5));
+      expect(
+        LoyaltyNotificationService.notifyPointsExpiring,
+      ).toHaveBeenCalledWith("profile-2", 50, addDays(NOW, 10));
     });
   });
 

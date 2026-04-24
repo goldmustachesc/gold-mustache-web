@@ -54,4 +54,25 @@ describe("LoyaltyHistoryPage", () => {
     expect(screen.getAllByText(EMPTY_MESSAGE)).toHaveLength(2);
     expect(screen.queryAllByText("loyalty.history.empty")).toHaveLength(0);
   });
+
+  it("renders translated labels for detailed transaction enum types", () => {
+    mockUseLoyaltyTransactions.mockReturnValue({
+      data: [
+        {
+          id: "tx-1",
+          createdAt: "2026-04-01T12:00:00.000Z",
+          description: "Agendamento concluído: Corte",
+          type: "EARNED_APPOINTMENT",
+          points: 50,
+        },
+      ],
+      isLoading: false,
+    });
+
+    render(<LoyaltyHistoryPage />);
+
+    expect(screen.getAllByText("Ganho por agendamento").length).toBeGreaterThan(
+      0,
+    );
+  });
 });

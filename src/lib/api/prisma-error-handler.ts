@@ -56,20 +56,8 @@ export function handlePrismaError(
 
   if (isPrismaLikeKnownRequestError(error)) {
     const errorConfig = PRISMA_ERROR_MESSAGES[error.code];
-    const meta = getPrismaLikeMeta(error);
 
     if (errorConfig) {
-      if (error.code === "P2002" && meta?.target) {
-        const field = Array.isArray(meta.target)
-          ? meta.target.join(", ")
-          : String(meta.target);
-        return apiError(
-          `PRISMA_${error.code}`,
-          `${errorConfig.message}: campo(s) ${field}`,
-          errorConfig.status,
-        );
-      }
-
       return apiError(
         `PRISMA_${error.code}`,
         errorConfig.message,

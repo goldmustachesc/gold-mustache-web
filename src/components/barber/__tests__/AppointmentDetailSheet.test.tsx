@@ -1,9 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { AppointmentDetailSheet } from "../AppointmentDetailSheet";
 import type { AppointmentWithDetails } from "@/types/booking";
 import type { ReactNode } from "react";
+
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useIsDesktop: () => false,
+}));
 
 vi.mock("@/utils/time-slots", () => ({
   getMinutesUntilAppointment: vi.fn().mockReturnValue(120),
@@ -33,6 +37,28 @@ vi.mock("@/components/ui/sheet", () => ({
     children: ReactNode;
     className?: string;
   }) => <h2 className={className}>{children}</h2>,
+  SheetDescription: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => <p className={className}>{children}</p>,
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children, open }: { children: ReactNode; open?: boolean }) =>
+    open ? <div role="dialog">{children}</div> : null,
+  DialogContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogHeader: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+  DialogDescription: ({ children }: { children: ReactNode }) => (
+    <p>{children}</p>
+  ),
 }));
 
 function buildAppointment(
@@ -101,6 +127,64 @@ describe("AppointmentDetailSheet", () => {
     expect(screen.getByText("Cancelar agendamento")).toBeInTheDocument();
   });
 
+  it("abre o fluxo de cancelamento e chama onCancelAppointment com o motivo", async () => {
+    const user = userEvent.setup();
+    const onCancelAppointment = vi.fn().mockResolvedValue(true);
+
+    render(
+      <AppointmentDetailSheet
+        appointment={buildAppointment()}
+        open={true}
+        onOpenChange={vi.fn()}
+        onCancelAppointment={onCancelAppointment}
+      />,
+    );
+
+    await user.click(screen.getByText("Cancelar agendamento"));
+
+    expect(screen.getByText("Cancelar atendimento")).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "Motivo informado pelo barbeiro" } },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    );
+
+    expect(onCancelAppointment).toHaveBeenCalledWith(
+      "apt-1",
+      "Motivo informado pelo barbeiro",
+    );
+  });
+
+  it("mantém o sheet de cancelamento aberto com o texto se a mutação falhar", async () => {
+    const user = userEvent.setup();
+    const onCancelAppointment = vi.fn().mockResolvedValue(false);
+
+    render(
+      <AppointmentDetailSheet
+        appointment={buildAppointment()}
+        open={true}
+        onOpenChange={vi.fn()}
+        onCancelAppointment={onCancelAppointment}
+      />,
+    );
+
+    await user.click(screen.getByText("Cancelar agendamento"));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+      { target: { value: "Tentar de novo depois" } },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /confirmar cancelamento/i }),
+    );
+
+    expect(screen.getByText("Cancelar atendimento")).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: "Motivo do cancelamento" }),
+    ).toHaveValue("Tentar de novo depois");
+  });
+
   it("shows cancel reason for cancelled appointments", () => {
     render(
       <AppointmentDetailSheet
@@ -125,6 +209,29 @@ describe("AppointmentDetailSheet", () => {
       />,
     );
     expect(screen.getByText("Não compareceu")).toBeInTheDocument();
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "bg-warning",
+    );
+    expect(screen.getByText("Não compareceu").className).toContain(
+      "text-warning-foreground",
+    );
+  });
+
+  it("shows Concluído badge for completed appointments", () => {
+    render(
+      <AppointmentDetailSheet
+        appointment={buildAppointment({ status: "COMPLETED" })}
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Concluído")).toBeInTheDocument();
+    expect(screen.getByText("Concluído").className).toContain("bg-success/15");
+    expect(screen.getByText("Concluído").className).toContain(
+      "text-foreground",
+    );
+    expect(screen.queryByText(/Lembrete/)).not.toBeInTheDocument();
   });
 
   it("shows reminder button for confirmed appointments", () => {

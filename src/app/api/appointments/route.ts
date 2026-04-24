@@ -20,6 +20,7 @@ import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { API_CONFIG } from "@/config/api";
+import { normalizePhoneOrNull } from "@/lib/booking/phone";
 
 export async function GET(request: Request) {
   try {
@@ -50,9 +51,9 @@ export async function GET(request: Request) {
 
     const { startDate, endDate, barberId } = queryValidation.data;
 
-    // Check if user is a barber
     const barber = await prisma.barber.findUnique({
       where: { userId: user.id },
+      select: { id: true },
     });
 
     if (barber && barberId === barber.id) {
@@ -72,7 +73,9 @@ export async function GET(request: Request) {
       };
 
       const appointments = await getBarberAppointments(barber.id, dateRange);
-      return apiSuccess(appointments);
+      const response = apiSuccess(appointments);
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
     }
 
     // Client viewing their appointments - get or create profile
@@ -89,12 +92,15 @@ export async function GET(request: Request) {
             user.user_metadata?.full_name ||
             user.email?.split("@")[0],
           phone: user.user_metadata?.phone || null,
+          phoneNormalized: normalizePhoneOrNull(user.user_metadata?.phone),
         },
       });
     }
 
     const appointments = await getClientAppointments(profile.id);
-    return apiSuccess(appointments);
+    const response = apiSuccess(appointments);
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar agendamentos");
   }
@@ -170,6 +176,7 @@ export async function POST(request: Request) {
             user.user_metadata?.full_name ||
             user.email?.split("@")[0],
           phone: user.user_metadata?.phone || null,
+          phoneNormalized: normalizePhoneOrNull(user.user_metadata?.phone),
         },
       });
     }
@@ -209,7 +216,7 @@ export async function POST(request: Request) {
           status: 400,
           error: "SLOT_TOO_SOON",
           message:
-            "Agendamento deve ser feito com pelo menos 1 hora de antecedência",
+            "Agendamento deve ser feito com pelo menos 60 minutos de antecedência",
         },
         SHOP_CLOSED: {
           status: 400,
@@ -230,6 +237,11 @@ export async function POST(request: Request) {
           status: 409,
           error: "SLOT_OCCUPIED",
           message: "Este horário já está ocupado",
+        },
+        CLIENT_OVERLAPPING_APPOINTMENT: {
+          status: 409,
+          error: "CLIENT_OVERLAPPING_APPOINTMENT",
+          message: "Você já possui um agendamento neste horário",
         },
       };
 

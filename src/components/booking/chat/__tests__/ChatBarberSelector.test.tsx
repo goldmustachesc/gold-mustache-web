@@ -1,13 +1,24 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ChatBarberSelector } from "../ChatBarberSelector";
+import { ChatBarberSelector, barberNameInitials } from "../ChatBarberSelector";
 import type { BarberData } from "@/types/booking";
 
 const barbers: BarberData[] = [
   { id: "b-1", name: "Carlos", avatarUrl: null },
   { id: "b-2", name: "João", avatarUrl: "https://example.com/joao.jpg" },
 ];
+
+describe("barberNameInitials", () => {
+  it("returns first two letters for a single name", () => {
+    expect(barberNameInitials("Carlos")).toBe("CA");
+    expect(barberNameInitials("leobrizolla")).toBe("LE");
+  });
+
+  it("returns first letter of first two words when multiple words", () => {
+    expect(barberNameInitials("David Trindade")).toBe("DT");
+  });
+});
 
 describe("ChatBarberSelector", () => {
   it("renders loading skeleton when isLoading", () => {
@@ -40,5 +51,11 @@ describe("ChatBarberSelector", () => {
   it("renders avatar image when avatarUrl provided", () => {
     render(<ChatBarberSelector barbers={barbers} onSelect={vi.fn()} />);
     expect(screen.getByAltText("João")).toBeInTheDocument();
+  });
+
+  it("shows initials fallback when avatarUrl is missing", () => {
+    render(<ChatBarberSelector barbers={barbers} onSelect={vi.fn()} />);
+    const carlosButton = screen.getByRole("button", { name: /Carlos/i });
+    expect(carlosButton).toHaveTextContent("CA");
   });
 });

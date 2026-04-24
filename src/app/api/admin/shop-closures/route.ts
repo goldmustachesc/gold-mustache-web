@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
@@ -7,11 +6,7 @@ import {
   shopClosureSchema,
   dateRangeQuerySchema,
 } from "@/lib/validations/booking";
-import {
-  formatPrismaDateToString,
-  parseDateStringToUTC,
-} from "@/utils/time-slots";
-import type { Prisma } from "@prisma/client";
+import { getShopClosures, createShopClosure } from "@/services/shop-closure";
 
 export async function GET(request: Request) {
   const admin = await requireAdmin();
@@ -33,39 +28,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const { startDate, endDate } = queryValidation.data;
-
-    const where: Prisma.ShopClosureWhereInput = {};
-
-    const gteDate = startDate ? parseDateStringToUTC(startDate) : undefined;
-    let ltDate: Date | undefined;
-    if (endDate) {
-      ltDate = parseDateStringToUTC(endDate);
-      ltDate.setUTCDate(ltDate.getUTCDate() + 1);
-    }
-    if (gteDate || ltDate) {
-      where.date = {
-        ...(gteDate && { gte: gteDate }),
-        ...(ltDate && { lt: ltDate }),
-      };
-    }
-
-    const closures = await prisma.shopClosure.findMany({
-      where,
-      orderBy: [{ date: "asc" }, { startTime: "asc" }],
-    });
-
-    return apiSuccess(
-      closures.map((c) => ({
-        id: c.id,
-        date: formatPrismaDateToString(c.date),
-        startTime: c.startTime,
-        endTime: c.endTime,
-        reason: c.reason,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-      })),
-    );
+    const closures = await getShopClosures(queryValidation.data);
+    return apiSuccess(closures);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar fechamentos");
   }
@@ -97,27 +61,13 @@ export async function POST(request: Request) {
       reason = null,
     } = validation.data;
 
-    const created = await prisma.shopClosure.create({
-      data: {
-        date: parseDateStringToUTC(date),
-        startTime,
-        endTime,
-        reason,
-      },
+    const created = await createShopClosure({
+      date,
+      startTime,
+      endTime,
+      reason,
     });
-
-    return apiSuccess(
-      {
-        id: created.id,
-        date: formatPrismaDateToString(created.date),
-        startTime: created.startTime,
-        endTime: created.endTime,
-        reason: created.reason,
-        createdAt: created.createdAt.toISOString(),
-        updatedAt: created.updatedAt.toISOString(),
-      },
-      201,
-    );
+    return apiSuccess(created, 201);
   } catch (error) {
     return handlePrismaError(error, "Erro ao criar fechamento");
   }

@@ -1,4 +1,4 @@
-import { getAvailableSlots } from "@/services/booking";
+import { getBookingAvailability } from "@/services/booking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { getSlotsQuerySchema } from "@/lib/validations/booking";
 import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
@@ -53,13 +53,13 @@ export async function GET(request: Request) {
       return apiError("UNAUTHORIZED", "Não autorizado", 403);
     }
 
-    const slots = await getAvailableSlots(
+    const availability = await getBookingAvailability(
       parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.date),
       validation.data.barberId,
       validation.data.serviceId,
     );
 
-    return apiSuccess(slots);
+    return apiSuccess(availability);
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar horários");
   }

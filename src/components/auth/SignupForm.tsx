@@ -51,19 +51,15 @@ export function SignupForm({ locale }: SignupFormProps) {
     [setValue],
   );
 
-  // Watch form values for conditional button styling
-  const fullNameValue = watch("fullName");
-  const phoneValue = watch("phone");
-  const emailValue = watch("email");
-  const passwordValue = watch("password");
-  const confirmPasswordValue = watch("confirmPassword");
+  const watchedFields = watch([
+    "fullName",
+    "phone",
+    "email",
+    "password",
+    "confirmPassword",
+  ]);
 
-  const isFormFilled =
-    fullNameValue?.length > 0 &&
-    phoneValue?.length > 0 &&
-    emailValue?.length > 0 &&
-    passwordValue?.length > 0 &&
-    confirmPasswordValue?.length > 0;
+  const isFormFilled = watchedFields.every((v) => v?.length > 0);
 
   const onSubmit = (data: SignupInput) => {
     signUp(data);

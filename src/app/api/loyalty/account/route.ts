@@ -49,7 +49,7 @@ export async function GET() {
       where: { referredById: account.id },
     });
 
-    return apiSuccess({
+    const response = apiSuccess({
       id: account.id,
       currentPoints: account.currentPoints,
       lifetimePoints: account.lifetimePoints,
@@ -60,6 +60,8 @@ export async function GET() {
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     });
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar conta de fidelidade");
   }

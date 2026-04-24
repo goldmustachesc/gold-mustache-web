@@ -65,9 +65,16 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("não encontrado")) {
-        return apiError("NOT_FOUND", error.message, 404);
+        return apiError("NOT_FOUND", "Código de indicação não encontrado", 404);
       }
-      return apiError("BAD_REQUEST", error.message, 400);
+      if (
+        error.message.includes("próprio") ||
+        error.message.includes("já utiliz") ||
+        error.message.includes("já foi indicad")
+      ) {
+        return apiError("BAD_REQUEST", error.message, 400);
+      }
+      return apiError("BAD_REQUEST", "Código de indicação inválido", 400);
     }
     return apiError("INTERNAL_ERROR", "Erro interno do servidor", 500);
   }

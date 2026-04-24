@@ -53,6 +53,43 @@ export function minutesToTime(minutes: number): string {
   return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
+export const BOOKING_START_TIME_STEP_MINUTES = 5;
+
+export function roundMinutesUpToSlotBoundary(
+  minutes: number,
+  stepMinutes = BOOKING_START_TIME_STEP_MINUTES,
+): number | null {
+  if (!Number.isFinite(minutes) || stepMinutes <= 0) {
+    return null;
+  }
+
+  const roundedMinutes = Math.ceil(minutes / stepMinutes) * stepMinutes;
+  if (roundedMinutes >= 24 * 60) {
+    return null;
+  }
+
+  return roundedMinutes;
+}
+
+export function roundTimeUpToSlotBoundary(
+  time: string,
+  stepMinutes = BOOKING_START_TIME_STEP_MINUTES,
+): string | null {
+  if (!time) {
+    return null;
+  }
+
+  const roundedMinutes = roundMinutesUpToSlotBoundary(
+    parseTimeToMinutes(time),
+    stepMinutes,
+  );
+  if (roundedMinutes === null) {
+    return null;
+  }
+
+  return minutesToTime(roundedMinutes);
+}
+
 /**
  * Adds duration in minutes to a time string
  */
@@ -201,10 +238,12 @@ export function getAvailableSlots(slots: TimeSlot[]): TimeSlot[] {
 const BRAZIL_TIMEZONE = "America/Sao_Paulo";
 
 /**
- * Gets current time in Brazil timezone
+ * Gets time in Brazil timezone for an instant (default: now).
  */
-function getBrazilTime(): { hours: number; minutes: number } {
-  const now = new Date();
+function getBrazilTime(reference: Date = new Date()): {
+  hours: number;
+  minutes: number;
+} {
   const formatter = new Intl.DateTimeFormat("pt-BR", {
     timeZone: BRAZIL_TIMEZONE,
     hour: "numeric",
@@ -212,7 +251,7 @@ function getBrazilTime(): { hours: number; minutes: number } {
     hour12: false,
   });
 
-  const parts = formatter.formatToParts(now);
+  const parts = formatter.formatToParts(reference);
   const hours = Number.parseInt(
     parts.find((p) => p.type === "hour")?.value || "0",
     10,
@@ -225,11 +264,19 @@ function getBrazilTime(): { hours: number; minutes: number } {
   return { hours, minutes };
 }
 
+export function getCurrentBrazilMinutes(): number {
+  const { hours, minutes } = getBrazilTime();
+  return hours * 60 + minutes;
+}
+
 /**
- * Gets current date components in Brazil timezone
+ * Gets date components in Brazil timezone for an instant (default: now).
  */
-function getBrazilDate(): { year: number; month: number; day: number } {
-  const now = new Date();
+function getBrazilDate(reference: Date = new Date()): {
+  year: number;
+  month: number;
+  day: number;
+} {
   const formatter = new Intl.DateTimeFormat("pt-BR", {
     timeZone: BRAZIL_TIMEZONE,
     year: "numeric",
@@ -237,7 +284,7 @@ function getBrazilDate(): { year: number; month: number; day: number } {
     day: "numeric",
   });
 
-  const parts = formatter.formatToParts(now);
+  const parts = formatter.formatToParts(reference);
   const year = Number.parseInt(
     parts.find((p) => p.type === "year")?.value || "0",
     10,
@@ -272,14 +319,17 @@ export function getBrazilDateString(): string {
  *
  * @param appointmentDateStr - Date string "YYYY-MM-DD" (from formatPrismaDateToString)
  * @param appointmentTime - Time string "HH:MM"
+ * @param referenceNow - Instante usado como “agora” (ex.: relógio do dashboard). Omite para usar o relógio real.
  * @returns Number of minutes until the appointment (negative if in the past)
  */
 export function getMinutesUntilAppointment(
   appointmentDateStr: string,
   appointmentTime: string,
+  referenceNow?: Date,
 ): number {
-  const brazilDate = getBrazilDate();
-  const brazilTime = getBrazilTime();
+  const ref = referenceNow ?? new Date();
+  const brazilDate = getBrazilDate(ref);
+  const brazilTime = getBrazilTime(ref);
 
   // Parse appointment date and time
   const [aptYear, aptMonth, aptDay] = appointmentDateStr.split("-").map(Number);

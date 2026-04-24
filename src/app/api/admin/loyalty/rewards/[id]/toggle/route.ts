@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { apiError, apiSuccess } from "@/lib/api/response";
+import { extractClientIp, logAdminAudit } from "@/services/admin-audit";
 import { z } from "zod";
 
 // Schema para validação do request body
@@ -79,10 +80,16 @@ export async function PUT(
       },
     });
 
-    // Log de auditoria (poderia ser salvo em uma tabela de auditoria)
-    console.info(
-      `[AUDIT] Reward ${id} toggled to ${active ? "ACTIVE" : "INACTIVE"} by admin`,
-    );
+    await logAdminAudit({
+      actorProfileId: admin.profileId,
+      action: "REWARD_TOGGLE",
+      resourceType: "reward",
+      resourceId: id,
+      ipAddress: extractClientIp(req),
+      metadata: {
+        active,
+      },
+    });
 
     return apiSuccess({
       id: updatedReward.id,

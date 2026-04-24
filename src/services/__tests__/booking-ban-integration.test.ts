@@ -3,7 +3,7 @@ import type { MockInstance } from "vitest";
 vi.mock("@/lib/prisma", () => {
   const prisma = {
     service: { findUnique: vi.fn() },
-    profile: { findMany: vi.fn() },
+    profile: { findFirst: vi.fn(), findMany: vi.fn() },
     shopHours: { findUnique: vi.fn() },
     shopClosure: { findMany: vi.fn() },
     barberAbsence: { findMany: vi.fn() },
@@ -31,6 +31,7 @@ describe("booking + ban integration", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+    asMock(prisma.profile.findFirst).mockResolvedValue(null);
     asMock(prisma.profile.findMany).mockResolvedValue([]);
   });
 

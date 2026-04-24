@@ -15,7 +15,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     profile: { findUnique: vi.fn(), count: vi.fn() },
     barber: { findUnique: vi.fn(), count: vi.fn() },
-    appointment: { findMany: vi.fn() },
+    appointment: { findMany: vi.fn(), count: vi.fn() },
   },
 }));
 
@@ -153,7 +153,7 @@ describe("GET /api/dashboard/stats", () => {
     expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });
 
-  it("includes barber stats when user has barber profile", async () => {
+  it("keeps client stats available for barber users by default", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
     });
@@ -174,12 +174,34 @@ describe("GET /api/dashboard/stats", () => {
     expect(json.data.client).not.toBeNull();
     expect(json.data.barber).not.toBeNull();
     expect(json.data.barber.todayAppointments).toBe(0);
+    expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledTimes(2);
   });
 
-  it("uses Sao Paulo business day for barber today stats near UTC midnight", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2025-01-15T02:30:00.000Z"));
+  it("ignores inactive barber profiles in dashboard stats", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+      ...PROFILE_FIXTURE,
+      role: "BARBER",
+    } as never);
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue({
+      ...BARBER_PROFILE_FIXTURE,
+      active: false,
+    } as never);
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([] as never);
 
+    const request = new Request("http://localhost:3001/api/dashboard/stats");
+    const response = await GET(request);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data.client).not.toBeNull();
+    expect(json.data.barber).toBeNull();
+    expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledTimes(1);
+  });
+
+  it("can skip client stats when requested for barber dashboard", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
     });
@@ -190,9 +212,36 @@ describe("GET /api/dashboard/stats", () => {
     vi.mocked(prisma.barber.findUnique).mockResolvedValue(
       BARBER_PROFILE_FIXTURE as never,
     );
-    vi.mocked(prisma.appointment.findMany)
-      .mockResolvedValueOnce([] as never)
-      .mockResolvedValueOnce([
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([] as never);
+
+    const request = new Request(
+      "http://localhost:3001/api/dashboard/stats?includeClientStats=false",
+    );
+    const response = await GET(request);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data.client).toBeNull();
+    expect(json.data.barber).not.toBeNull();
+    expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses Sao Paulo business day for barber today stats near UTC midnight", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T02:30:00.000Z"));
+
+    try {
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: "user-1" } },
+      });
+      vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+        ...PROFILE_FIXTURE,
+        role: "BARBER",
+      } as never);
+      vi.mocked(prisma.barber.findUnique).mockResolvedValue(
+        BARBER_PROFILE_FIXTURE as never,
+      );
+      vi.mocked(prisma.appointment.findMany).mockResolvedValue([
         {
           ...PAST_APPOINTMENT,
           id: "apt-late-today",
@@ -203,15 +252,16 @@ describe("GET /api/dashboard/stats", () => {
         },
       ] as never);
 
-    const request = new Request("http://localhost:3001/api/dashboard/stats");
-    const response = await GET(request);
-    const json = await response.json();
+      const request = new Request("http://localhost:3001/api/dashboard/stats");
+      const response = await GET(request);
+      const json = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(json.data.barber.todayAppointments).toBe(1);
-    expect(json.data.barber.nextClient.time).toBe("23:45");
-
-    vi.useRealTimers();
+      expect(response.status).toBe(200);
+      expect(json.data.barber.todayAppointments).toBe(1);
+      expect(json.data.barber.nextClient.time).toBe("23:45");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("ignores confirmed appointments that already started today in client upcoming stats", async () => {
@@ -330,6 +380,83 @@ describe("GET /api/dashboard/stats", () => {
     expect(response.headers.get("Cache-Control")).toBe(
       "private, s-maxage=30, stale-while-revalidate=60",
     );
+  });
+
+  describe("pagination", () => {
+    beforeEach(() => {
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: "user-1" } },
+      });
+      vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+        PROFILE_FIXTURE as never,
+      );
+      vi.mocked(prisma.barber.findUnique).mockResolvedValue(null as never);
+      vi.mocked(prisma.appointment.findMany).mockResolvedValue([
+        PAST_APPOINTMENT,
+      ] as never);
+      vi.mocked(prisma.appointment.count).mockResolvedValue(42 as never);
+    });
+
+    it("returns meta with pagination info", async () => {
+      const request = new Request(
+        "http://localhost:3001/api/dashboard/stats?page=1&limit=10",
+      );
+      const response = await GET(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json.data.meta).toEqual({
+        total: 42,
+        page: 1,
+        limit: 10,
+        totalPages: 5,
+      });
+    });
+
+    it("applies skip and take to client appointments query", async () => {
+      const request = new Request(
+        "http://localhost:3001/api/dashboard/stats?page=2&limit=10",
+      );
+      await GET(request);
+
+      expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: "profile-1" },
+          skip: 10,
+          take: 10,
+        }),
+      );
+    });
+
+    it("uses MAX_CLIENT_HISTORY as default limit when no params", async () => {
+      const request = new Request("http://localhost:3001/api/dashboard/stats");
+      const response = await GET(request);
+      const json = await response.json();
+
+      expect(json.data.meta).toEqual({
+        total: 42,
+        page: 1,
+        limit: 200,
+        totalPages: 1,
+      });
+
+      expect(vi.mocked(prisma.appointment.findMany)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 200,
+        }),
+      );
+    });
+
+    it("runs count query in parallel with findMany", async () => {
+      const request = new Request(
+        "http://localhost:3001/api/dashboard/stats?page=1&limit=10",
+      );
+      await GET(request);
+
+      expect(vi.mocked(prisma.appointment.count)).toHaveBeenCalledWith({
+        where: { clientId: "profile-1" },
+      });
+    });
   });
 
   it("returns 500 on Prisma failure", async () => {

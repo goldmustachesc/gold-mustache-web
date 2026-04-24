@@ -16,6 +16,11 @@ vi.mock("@/lib/api/verify-origin", () => ({
   requireValidOrigin: () => null,
 }));
 
+vi.mock("@/services/admin-audit", () => ({
+  extractClientIp: () => "127.0.0.1",
+  logAdminAudit: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     reward: {

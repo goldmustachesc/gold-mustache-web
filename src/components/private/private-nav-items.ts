@@ -10,14 +10,16 @@ export interface NavItemDef {
   iconName: string;
 }
 
+interface ResolvePrimaryNavRoleOptions {
+  role: UserRole;
+  locale: string;
+  pathname: string;
+  hasBarberProfile: boolean;
+}
+
 function barberNavItems(locale: string): NavItemDef[] {
   return [
-    { href: `/${locale}/barbeiro`, label: "Início", iconName: "Scissors" },
-    {
-      href: `/${locale}/dashboard`,
-      label: "Minha Agenda",
-      iconName: "Calendar",
-    },
+    { href: `/${locale}/dashboard`, label: "Início", iconName: "Scissors" },
     {
       href: `/${locale}/barbeiro/meu-link`,
       label: "Meu Link",
@@ -138,6 +140,30 @@ export function getNavItems(
   return items;
 }
 
+export function resolvePrimaryNavRole({
+  role,
+  locale,
+  pathname,
+  hasBarberProfile,
+}: ResolvePrimaryNavRoleOptions): UserRole {
+  if (!hasBarberProfile) {
+    return role;
+  }
+
+  const dashboardPath = `/${locale}/dashboard`;
+  const barberBasePath = `/${locale}/barbeiro`;
+
+  if (
+    pathname === dashboardPath ||
+    pathname === barberBasePath ||
+    pathname.startsWith(`${barberBasePath}/`)
+  ) {
+    return "BARBER";
+  }
+
+  return role;
+}
+
 export function getAdminNavItems(locale: string): NavItemDef[] {
   return [
     {
@@ -166,9 +192,24 @@ export function getAdminNavItems(locale: string): NavItemDef[] {
       iconName: "Users",
     },
     {
+      href: `/${locale}/admin/clientes`,
+      label: "Clientes",
+      iconName: "Users",
+    },
+    {
+      href: `/${locale}/admin/agendamentos`,
+      label: "Agendamentos",
+      iconName: "Calendar",
+    },
+    {
       href: `/${locale}/admin/faturamento`,
       label: "Faturamento Geral",
       iconName: "DollarSign",
+    },
+    {
+      href: `/${locale}/admin/relatorios`,
+      label: "Relatórios Operacionais",
+      iconName: "BarChart3",
     },
     {
       href: `/${locale}/admin/feedbacks`,
@@ -179,6 +220,11 @@ export function getAdminNavItems(locale: string): NavItemDef[] {
       href: `/${locale}/admin/loyalty`,
       label: "Fidelidade",
       iconName: "Gift",
+    },
+    {
+      href: `/${locale}/admin/auditoria`,
+      label: "Auditoria",
+      iconName: "ShieldCheck",
     },
   ];
 }

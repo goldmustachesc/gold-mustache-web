@@ -80,7 +80,7 @@ export function MobileNavOverlay({
       role="dialog"
       aria-modal="true"
       aria-label={tCommon("aria.openMenu")}
-      className="mobile-nav-overlay fixed inset-0 z-50 bg-background/98 backdrop-blur-md"
+      className="mobile-nav-overlay fixed inset-0 z-50 bg-background/90 backdrop-blur-xl"
     >
       <div className="flex h-full flex-col px-6 py-6">
         <div className="flex items-center justify-between">
@@ -100,7 +100,7 @@ export function MobileNavOverlay({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label={tCommon("aria.closeMenu")}
           >
             <X className="h-5 w-5" />
@@ -162,14 +162,14 @@ export function MobileNavOverlay({
           )}
         </nav>
 
-        <div className="space-y-4 border-t border-border pt-6">
+        <div className="space-y-4 border-t border-border pt-6 pb-[env(safe-area-inset-bottom)]">
           <div className="flex items-center justify-between">
             <LanguageSwitcher variant="mobile" />
             <ThemeToggle />
           </div>
 
           {shouldShowBooking && bookingHref && (
-            <Button className="w-full gap-2 shadow-md" asChild>
+            <Button size="lg" className="w-full gap-2 shadow-md" asChild>
               <Link href={bookingHref} onClick={onClose} {...bookingLinkProps}>
                 <Calendar className="h-4 w-4" />
                 {tCommon("buttons.bookAppointment")}

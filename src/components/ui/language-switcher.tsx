@@ -3,7 +3,7 @@
 import { localeNames, locales, type Locale } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 import { ChevronDown, Check, Languages } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -14,6 +14,7 @@ interface LanguageSwitcherProps {
 export function LanguageSwitcher({
   variant = "desktop",
 }: LanguageSwitcherProps) {
+  const t = useTranslations("common");
   const [isOpen, setIsOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const currentLocale = useLocale() as Locale;
@@ -95,7 +96,7 @@ export function LanguageSwitcher({
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between px-4 py-3 text-lg font-medium hover:text-primary transition-colors rounded-lg hover:bg-accent"
-          aria-label="Change language"
+          aria-label={t("changeLanguage")}
           aria-expanded={isOpen}
           aria-haspopup="menu"
         >
@@ -161,7 +162,7 @@ export function LanguageSwitcher({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 h-8 px-3 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:ring-offset-2"
-        aria-label="Change language"
+        aria-label={t("changeLanguage")}
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >

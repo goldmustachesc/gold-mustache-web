@@ -42,9 +42,12 @@ export async function GET(
     }
 
     const appointments = await prisma.appointment.findMany({
-      where: profile
-        ? { clientId: profile.id }
-        : { guestClientId: guestClient?.id },
+      where: {
+        barberId: auth.barberId,
+        ...(profile
+          ? { clientId: profile.id }
+          : { guestClientId: guestClient?.id }),
+      },
       include: {
         service: {
           select: {

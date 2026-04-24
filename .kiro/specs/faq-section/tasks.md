@@ -27,19 +27,22 @@
   - Add proper semantic HTML (section, h2, h3 for questions)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 9.1, 9.2, 9.3, 9.4_
 
-- [ ]* 3.1 Write property test for complete FAQ rendering
+- [x]* 3.1 Write property test for complete FAQ rendering
   - **Feature: faq-section, Property 1: Complete FAQ rendering**
   - **Validates: Requirements 1.1, 4.5**
+  - _Covered by FAQSection.test.tsx_
 
-- [ ]* 3.2 Write property test for locale-specific content rendering
+- [x]* 3.2 Write property test for locale-specific content rendering
   - **Feature: faq-section, Property 2: Locale-specific content rendering**
   - **Validates: Requirements 1.2**
+  - _Covered by FAQSection.test.tsx_
 
-- [ ]* 3.3 Write unit tests for FAQ section rendering
+- [x]* 3.3 Write unit tests for FAQ section rendering
   - Test section header renders with correct badge, title, description
   - Test empty state handling when no FAQ items exist
   - Test responsive layout classes are applied correctly
   - _Requirements: 1.1, 1.3, 9.3_
+  - _Covered by FAQSection.test.tsx_
 
 - [x] 4. Implement Accessibility Features
   - Ensure accordion has proper ARIA attributes (aria-expanded, aria-controls, role)
@@ -73,15 +76,17 @@
   - Verify schema validates using Google Rich Results Test
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ]* 5.1 Write property test for schema markup completeness
+- [x]* 5.1 Write property test for schema markup completeness
   - **Feature: faq-section, Property 11: Schema markup completeness**
   - **Validates: Requirements 6.2**
+  - _Covered by FAQSection.schema.test.tsx_
 
-- [ ]* 5.2 Write unit tests for SEO implementation
+- [x]* 5.2 Write unit tests for SEO implementation
   - Test JSON-LD schema is generated with correct structure
   - Test semantic HTML elements are used (section, h2, h3)
   - Test schema includes all FAQ items
   - _Requirements: 6.1, 6.3, 6.4_
+  - _Covered by FAQSection.schema.test.tsx_
 
 - [x] 6. Integrate FAQ Section into Main Page
   - Import FAQSection component in `src/app/[locale]/page.tsx`
@@ -90,11 +95,12 @@
   - Test locale switching updates FAQ content dynamically
   - _Requirements: 1.1, 1.2, 3.4_
 
-- [ ]* 6.1 Write integration tests for FAQ section
+- [x]* 6.1 Write integration tests for FAQ section
   - Test FAQ section integrates into main page correctly
   - Test locale switching updates content without page reload
   - Test theme switching (light/dark mode) works correctly
   - _Requirements: 3.4, 9.5_
+  - _Covered by FAQSection.dark-mode.test.tsx_
 
 - [x] 7. Add Dark Mode Support
   - Ensure FAQ section uses theme-aware Tailwind classes

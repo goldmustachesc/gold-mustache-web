@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Star } from "lucide-react";
+import { useState } from "react";
 
 interface StarRatingProps {
   /** Current rating value (1-5) */
@@ -75,9 +75,13 @@ export function StarRating({
   };
 
   return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: role="img" supports aria-label per WAI-ARIA spec; biome false positive
     <div
       className={cn("flex items-center", gapClasses[size], className)}
-      role={isInteractive ? "group" : undefined}
+      role={isInteractive ? "group" : "img"}
+      aria-label={
+        isInteractive ? undefined : (ariaLabel ?? `${value} de 5 estrelas`)
+      }
       title={ariaLabel || `Avaliação: ${value} de 5 estrelas`}
     >
       {[1, 2, 3, 4, 5].map((star) => {
@@ -161,7 +165,9 @@ export function StarRatingDisplay({
   return (
     <div
       className={cn("flex items-center", gapClasses[size], className)}
-      title={`Avaliação: ${value.toFixed(1)} de 5 estrelas`}
+      role="img"
+      aria-label={`${value.toFixed(1)} de 5 estrelas`}
+      title={`${value.toFixed(1)} de 5 estrelas`}
     >
       {[1, 2, 3, 4, 5].map((star) => {
         const isFull = star <= fullStars;

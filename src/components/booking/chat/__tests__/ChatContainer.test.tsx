@@ -22,6 +22,19 @@ describe("ChatContainer", () => {
     );
     expect(container.firstChild).toHaveClass("custom-class");
   });
+
+  it("renders a flex spacer before children to bottom-align short threads", () => {
+    const { container } = render(
+      <ChatContainer>
+        <p>Content</p>
+      </ChatContainer>,
+    );
+    const root = container.firstElementChild;
+    expect(root).toBeTruthy();
+    const spacer = root?.firstElementChild;
+    expect(spacer).toHaveAttribute("aria-hidden", "true");
+    expect(spacer).toHaveClass("shrink");
+  });
 });
 
 describe("ChatInputArea", () => {

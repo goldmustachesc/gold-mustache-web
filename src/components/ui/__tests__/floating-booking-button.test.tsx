@@ -15,6 +15,16 @@ const bookingMocks = vi.hoisted(() => ({
 
 const trackBookingClick = vi.hoisted(() => vi.fn());
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => {
+    const messages: Record<string, string> = {
+      schedule: "Agendar",
+      scheduleAtBarbershop: "Agendar horário na barbearia",
+    };
+    return messages[key] ?? key;
+  },
+}));
+
 vi.mock("@/hooks/useScrollPosition", () => ({
   useScrollPosition: () => ({
     isScrolledPastThreshold: scrollMocks.isScrolledPastThreshold,

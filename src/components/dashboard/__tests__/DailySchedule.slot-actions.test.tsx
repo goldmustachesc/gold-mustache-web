@@ -77,18 +77,19 @@ describe("DailySchedule - ações em horário disponível", () => {
     });
     await user.click(firstAddButton);
 
-    // Sheet abre mostrando o título com o intervalo
-    expect(screen.getByText(/Adicionar em 09:00/)).toBeInTheDocument();
+    expect(screen.getByText("Adicionar em 09:00 - 10:00")).toBeInTheDocument();
 
-    // Chips de 15 min estão presentes
-    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "09:15" })).toBeInTheDocument();
+    const exactTimeInput = screen.getByLabelText(
+      "Horário de início",
+    ) as HTMLInputElement;
+    expect(exactTimeInput.value).toBe("09:00");
 
-    // Clicar no chip chama onCreateAppointmentFromSlot
-    await user.click(screen.getByRole("button", { name: "09:00" }));
+    await user.clear(exactTimeInput);
+    await user.type(exactTimeInput, "09:22");
+    await user.click(screen.getByRole("button", { name: /usar horário/i }));
 
     await waitFor(() => {
-      expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:00");
+      expect(onCreateAppointmentFromSlot).toHaveBeenCalledWith("09:22");
     });
     expect(onCreateAbsenceFromSlot).not.toHaveBeenCalled();
   });
@@ -121,7 +122,7 @@ describe("DailySchedule - ações em horário disponível", () => {
     );
 
     await waitFor(() => {
-      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "09:30");
+      expect(onCreateAbsenceFromSlot).toHaveBeenCalledWith("09:00", "10:00");
     });
     expect(onCreateAppointmentFromSlot).not.toHaveBeenCalled();
   });
@@ -146,10 +147,7 @@ describe("DailySchedule - ações em horário disponível", () => {
       />,
     );
 
-    expect(screen.getByText("Bloqueado por ausência")).toBeInTheDocument();
-    // O slot bloqueado não deve ter botão Adicionar
-    // (pode haver outros slots disponíveis com botão Adicionar)
     const blockedSlotTexts = screen.getAllByText("Bloqueado por ausência");
-    expect(blockedSlotTexts.length).toBeGreaterThan(0);
+    expect(blockedSlotTexts).toHaveLength(1);
   });
 });

@@ -1,0 +1,13 @@
+{
+  "feature_name": "admin-barber-services",
+  "language": "pt",
+  "created_at": "2026-04-16T14:21:00Z",
+  "updated_at": "2026-04-16T14:21:00Z",
+  "status": "draft",
+  "priority": "P1",
+  "backlog_refs": ["audit-2026-04-15/P1-#8"],
+  "related_specs": ["booking-system", "admin-appointment-management"],
+  "area": "admin",
+  "owners": ["admin", "services"],
+  "summary": "Painel admin para associar barbeiros aos servicos que realizam. Inclui visao em matriz (barbeiros x servicos), edicao por barbeiro, edicao por servico, integracao automatica com a disponibilidade do booking (filtrar servicos pelo barbeiro e vice-versa) e estrategia explicita de bootstrap da tabela BarberService (hoje vazia) para garantir compatibilidade retroativa com o booking atual."
+}

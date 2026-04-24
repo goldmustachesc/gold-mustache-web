@@ -36,7 +36,12 @@ export async function GET(request: Request) {
     const { month, year } = query.data;
     const stats = await calculateFinancialStats(auth.barberId, month, year);
 
-    return apiSuccess({ stats, barberName: auth.barberName });
+    const response = apiSuccess({ stats, barberName: auth.barberName });
+    response.headers.set(
+      "Cache-Control",
+      "private, max-age=60, stale-while-revalidate=120",
+    );
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar estatísticas");
   }

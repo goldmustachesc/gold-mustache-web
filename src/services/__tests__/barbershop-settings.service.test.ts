@@ -25,6 +25,7 @@ describe("services/barbershop-settings", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.resetAllMocks();
   });
 
@@ -180,5 +181,17 @@ describe("services/barbershop-settings", () => {
     expect(result.updatedAt).toBeNull();
 
     consoleSpy.mockRestore();
+  });
+
+  it("does not query DB when DATABASE_URL is missing outside tests", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VITEST", "false");
+
+    const result = await getBarbershopSettings();
+
+    expect(prisma.barbershopSettings.findUnique).not.toHaveBeenCalled();
+    expect(result.name).toBe(barbershopConfig.name);
+    expect(result.address.full).toBe(barbershopConfig.address.full);
   });
 });

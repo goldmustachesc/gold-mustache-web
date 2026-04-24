@@ -30,6 +30,7 @@ vi.mock("../loyalty/loyalty.service", () => {
     LoyaltyService: {
       getOrCreateAccount: vi.fn(),
       creditPoints: vi.fn(),
+      hasExistingTransaction: vi.fn(),
     },
   };
 });
@@ -40,6 +41,10 @@ vi.mock("../loyalty/points.calculator", () => {
     calculateAppointmentPoints: vi.fn(),
   };
 });
+
+vi.mock("../feature-flags", () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
 
 vi.mock("../loyalty/referral.service", () => {
   return {
@@ -56,8 +61,10 @@ vi.mock("../loyalty/notification.service", () => ({
 }));
 
 describe("services/booking/completion", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.useFakeTimers();
+    const { isFeatureEnabled } = await import("../feature-flags");
+    asMock(isFeatureEnabled).mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -243,6 +250,7 @@ describe("services/booking/completion", () => {
       tier: "BRONZE",
       referredById: "acc-referrer",
     });
+    asMock(LoyaltyService.hasExistingTransaction).mockResolvedValue(false);
     asMock(prisma.appointment.count).mockResolvedValue(1);
     asMock(calculateAppointmentPoints).mockReturnValue({
       base: 50,
@@ -258,6 +266,209 @@ describe("services/booking/completion", () => {
 
     expect(ReferralService.creditReferralBonus).toHaveBeenCalledWith(
       "acc-referred",
+    );
+  });
+
+  it("should credit CHECKIN_BONUS when completing authenticated client appointment", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
+
+    asMock(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-checkin",
+      barberId: "barber-1",
+      status: AppointmentStatus.CONFIRMED,
+      startTime: "18:00",
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-checkin",
+      clientId: "client-1",
+      client: { id: "client-1" },
+      service: { price: 50, name: "Corte" },
+      status: AppointmentStatus.COMPLETED,
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      startTime: "18:00",
+      endTime: "18:30",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const { LoyaltyService } = await import("../loyalty/loyalty.service");
+    const { calculateAppointmentPoints } = await import(
+      "../loyalty/points.calculator"
+    );
+
+    asMock(LoyaltyService.getOrCreateAccount).mockResolvedValue({
+      id: "acc-1",
+      tier: "BRONZE",
+      referredById: null,
+    });
+    asMock(LoyaltyService.hasExistingTransaction).mockResolvedValue(false);
+    asMock(calculateAppointmentPoints).mockReturnValue({
+      base: 50,
+      bonus: 0,
+      total: 50,
+    });
+
+    await markAppointmentAsCompleted("apt-checkin", "barber-1");
+
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(LoyaltyService.creditPoints).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "acc-1",
+        type: "EARNED_CHECKIN",
+        points: 20,
+        description: "Check-in: Corte",
+        referenceId: "apt-checkin",
+      }),
+    );
+  });
+
+  it("should NOT credit CHECKIN_BONUS for guest appointments", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
+
+    asMock(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-guest",
+      barberId: "barber-1",
+      status: AppointmentStatus.CONFIRMED,
+      startTime: "18:00",
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-guest",
+      clientId: null,
+      client: null,
+      service: { price: 50, name: "Corte" },
+      status: AppointmentStatus.COMPLETED,
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      startTime: "18:00",
+      endTime: "18:30",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const { LoyaltyService } = await import("../loyalty/loyalty.service");
+
+    await markAppointmentAsCompleted("apt-guest", "barber-1");
+
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1);
+
+    const checkinCalls = asMock(LoyaltyService.creditPoints).mock.calls.filter(
+      (call) => call[0]?.type === "EARNED_CHECKIN",
+    );
+    expect(checkinCalls).toHaveLength(0);
+    expect(LoyaltyService.hasExistingTransaction).not.toHaveBeenCalled();
+  });
+
+  it("should NOT credit duplicate CHECKIN_BONUS when already checked in (idempotency)", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
+
+    asMock(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-dup",
+      barberId: "barber-1",
+      status: AppointmentStatus.CONFIRMED,
+      startTime: "18:00",
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-dup",
+      clientId: "client-1",
+      client: { id: "client-1" },
+      service: { price: 50, name: "Corte" },
+      status: AppointmentStatus.COMPLETED,
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      startTime: "18:00",
+      endTime: "18:30",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const { LoyaltyService } = await import("../loyalty/loyalty.service");
+    const { calculateAppointmentPoints } = await import(
+      "../loyalty/points.calculator"
+    );
+
+    asMock(LoyaltyService.getOrCreateAccount).mockResolvedValue({
+      id: "acc-1",
+      tier: "BRONZE",
+      referredById: null,
+    });
+    // Simulate already checked in
+    asMock(LoyaltyService.hasExistingTransaction).mockResolvedValue(true);
+    asMock(calculateAppointmentPoints).mockReturnValue({
+      base: 50,
+      bonus: 0,
+      total: 50,
+    });
+
+    await markAppointmentAsCompleted("apt-dup", "barber-1");
+
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1);
+
+    const checkinCalls = asMock(LoyaltyService.creditPoints).mock.calls.filter(
+      (call) => call[0]?.type === "EARNED_CHECKIN",
+    );
+    expect(checkinCalls).toHaveLength(0);
+  });
+
+  it("should credit both EARNED_APPOINTMENT and EARNED_CHECKIN on completion", async () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
+
+    asMock(prisma.appointment.findFirst).mockResolvedValue({
+      id: "apt-both",
+      barberId: "barber-1",
+      status: AppointmentStatus.CONFIRMED,
+      startTime: "18:00",
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+    });
+
+    asMock(prisma.appointment.update).mockResolvedValue({
+      id: "apt-both",
+      clientId: "client-1",
+      client: { id: "client-1" },
+      service: { price: 50, name: "Barba" },
+      status: AppointmentStatus.COMPLETED,
+      date: new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+      startTime: "18:00",
+      endTime: "18:30",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const { LoyaltyService } = await import("../loyalty/loyalty.service");
+    const { calculateAppointmentPoints } = await import(
+      "../loyalty/points.calculator"
+    );
+
+    asMock(LoyaltyService.getOrCreateAccount).mockResolvedValue({
+      id: "acc-1",
+      tier: "BRONZE",
+      referredById: null,
+    });
+    asMock(LoyaltyService.hasExistingTransaction).mockResolvedValue(false);
+    asMock(calculateAppointmentPoints).mockReturnValue({
+      base: 50,
+      bonus: 0,
+      total: 50,
+    });
+
+    await markAppointmentAsCompleted("apt-both", "barber-1");
+
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(LoyaltyService.creditPoints).toHaveBeenCalledTimes(2);
+    expect(LoyaltyService.creditPoints).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "EARNED_APPOINTMENT" }),
+    );
+    expect(LoyaltyService.creditPoints).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "EARNED_CHECKIN", points: 20 }),
     );
   });
 });

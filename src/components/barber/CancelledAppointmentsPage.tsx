@@ -15,14 +15,14 @@ export function CancelledAppointmentsPage() {
   const meta = response?.meta;
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-950">
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
       <div className="px-6 pt-8 pb-6">
-        <p className="text-zinc-500 text-sm">Agendamentos</p>
-        <h1 className="text-4xl font-bold text-white tracking-tight">
+        <p className="text-muted-foreground text-sm">Agendamentos</p>
+        <h1 className="text-4xl font-bold text-foreground tracking-tight">
           Cancelados
           {meta && meta.total > 0 && (
-            <span className="text-lg font-normal text-zinc-500 ml-3">
+            <span className="text-lg font-normal text-muted-foreground ml-3">
               ({meta.total})
             </span>
           )}
@@ -33,20 +33,22 @@ export function CancelledAppointmentsPage() {
       <div className="flex-1 px-6 pb-8 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-red-400">Erro ao carregar cancelamentos</p>
-            <p className="text-zinc-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Tente novamente mais tarde
             </p>
           </div>
         ) : appointments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <XCircle className="h-12 w-12 text-zinc-700 mb-4" />
-            <p className="text-zinc-400">Nenhum agendamento cancelado</p>
-            <p className="text-zinc-500 text-sm mt-1">
+            <XCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">
+              Nenhum agendamento cancelado
+            </p>
+            <p className="text-muted-foreground text-sm mt-1">
               Os cancelamentos aparecerão aqui
             </p>
           </div>
@@ -67,19 +69,19 @@ export function CancelledAppointmentsPage() {
                   variant="outline"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="border-zinc-700 hover:bg-zinc-800"
+                  className="border-border hover:bg-accent"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Anterior
                 </Button>
-                <span className="text-sm text-zinc-400">
+                <span className="text-sm text-muted-foreground">
                   Página {page} de {meta.totalPages}
                 </span>
                 <Button
                   variant="outline"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= meta.totalPages}
-                  className="border-zinc-700 hover:bg-zinc-800"
+                  className="border-border hover:bg-accent"
                 >
                   Próxima
                   <ChevronRight className="h-4 w-4 ml-1" />

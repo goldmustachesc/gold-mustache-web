@@ -6,9 +6,13 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const settings = await getBarbershopSettings();
     const mode = resolveBookingMode(settings);
     if (mode !== "internal") {
@@ -19,7 +23,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Rate limiting check - stricter for guest appointments
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
           status: 400,
           error: "SLOT_TOO_SOON",
           message:
-            "Agendamento deve ser feito com pelo menos 1 hora de antecedência",
+            "Agendamento deve ser feito com pelo menos 60 minutos de antecedência",
         },
         SHOP_CLOSED: {
           status: 400,
@@ -99,6 +102,11 @@ export async function POST(request: Request) {
           status: 409,
           error: "SLOT_OCCUPIED",
           message: "Este horário já está ocupado",
+        },
+        CLIENT_OVERLAPPING_APPOINTMENT: {
+          status: 409,
+          error: "CLIENT_OVERLAPPING_APPOINTMENT",
+          message: "Você já possui um agendamento neste horário",
         },
       };
 

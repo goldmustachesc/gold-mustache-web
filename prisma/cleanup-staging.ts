@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
  * Script para limpar o banco de staging
  * Mantém: Services, Barbers, BarberServices, WorkingHours, ShopHours
  * Remove: Appointments, Notifications, GuestClients, Profiles (exceto barbeiros),
- *         CookieConsent, ShopClosures, BarberAbsences
+ *         CookieConsent, ShopClosures, BarberAbsences, BarberAbsenceRecurrences
  *
  * Rode: npx tsx prisma/cleanup-staging.ts
  */
@@ -27,6 +27,7 @@ async function main() {
     cookieConsents: 0,
     shopClosures: 0,
     absences: 0,
+    recurrences: 0,
     profiles: 0,
   };
 
@@ -54,7 +55,11 @@ async function main() {
   const absencesDeleted = await prisma.barberAbsence.deleteMany();
   results.absences = absencesDeleted.count;
 
-  // 7. Deletar Profiles que não são de barbeiros
+  // 7. Deletar recorrências de ausência
+  const recurrencesDeleted = await prisma.barberAbsenceRecurrence.deleteMany();
+  results.recurrences = recurrencesDeleted.count;
+
+  // 8. Deletar Profiles que não são de barbeiros
   const barbers = await prisma.barber.findMany({ select: { userId: true } });
   const barberUserIds = barbers.map((b) => b.userId);
 
@@ -65,7 +70,7 @@ async function main() {
   });
   results.profiles = profilesDeleted.count;
 
-  // 8. Atualizar avatars dos barbeiros
+  // 9. Atualizar avatars dos barbeiros
   for (const barber of BARBERS_DATA) {
     const updateResult = await prisma.barber.updateMany({
       where: { name: barber.name },

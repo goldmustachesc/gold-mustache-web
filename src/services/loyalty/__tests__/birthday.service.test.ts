@@ -9,7 +9,7 @@ const mockCreditPoints = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/prisma", () => {
   const prisma = {
     profile: { findMany: vi.fn() },
-    pointTransaction: { findFirst: vi.fn() },
+    pointTransaction: { findFirst: vi.fn(), findMany: vi.fn() },
   };
   return { prisma };
 });
@@ -134,11 +134,11 @@ describe("services/loyalty/birthday.service", () => {
 
   describe("hasBirthdayBonusThisYear", () => {
     it("should return true when EARNED_BIRTHDAY transaction exists for the given year", async () => {
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue({
-        id: "tx-1",
-        type: PointTransactionType.EARNED_BIRTHDAY,
-        referenceId: "birthday-2026",
-      });
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        {
+          loyaltyAccountId: "acc-1",
+        },
+      ]);
 
       const result = await BirthdayService.hasBirthdayBonusThisYear(
         "acc-1",
@@ -146,17 +146,20 @@ describe("services/loyalty/birthday.service", () => {
       );
 
       expect(result).toBe(true);
-      expect(prisma.pointTransaction.findFirst).toHaveBeenCalledWith({
+      expect(prisma.pointTransaction.findMany).toHaveBeenCalledWith({
         where: {
-          loyaltyAccountId: "acc-1",
+          loyaltyAccountId: { in: ["acc-1"] },
           type: PointTransactionType.EARNED_BIRTHDAY,
           referenceId: "birthday-2026",
+        },
+        select: {
+          loyaltyAccountId: true,
         },
       });
     });
 
     it("should return false when no EARNED_BIRTHDAY transaction exists", async () => {
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
 
       const result = await BirthdayService.hasBirthdayBonusThisYear(
         "acc-1",
@@ -167,7 +170,7 @@ describe("services/loyalty/birthday.service", () => {
     });
 
     it("should distinguish between different years (2025 bonus does not block 2026)", async () => {
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
 
       const result = await BirthdayService.hasBirthdayBonusThisYear(
         "acc-1",
@@ -175,11 +178,42 @@ describe("services/loyalty/birthday.service", () => {
       );
 
       expect(result).toBe(false);
-      expect(prisma.pointTransaction.findFirst).toHaveBeenCalledWith({
+      expect(prisma.pointTransaction.findMany).toHaveBeenCalledWith({
         where: {
-          loyaltyAccountId: "acc-1",
+          loyaltyAccountId: { in: ["acc-1"] },
           type: PointTransactionType.EARNED_BIRTHDAY,
           referenceId: "birthday-2026",
+        },
+        select: {
+          loyaltyAccountId: true,
+        },
+      });
+    });
+  });
+
+  describe("getBirthdayBonusAccountIdsForYear", () => {
+    it("should return the set of credited account ids using the same criteria", async () => {
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        { loyaltyAccountId: "acc-1" },
+        { loyaltyAccountId: "acc-2" },
+      ]);
+
+      const result = await BirthdayService.getBirthdayBonusAccountIdsForYear(
+        ["acc-1", "acc-2", "acc-3"],
+        2026,
+      );
+
+      expect(result.has("acc-1")).toBe(true);
+      expect(result.has("acc-2")).toBe(true);
+      expect(result.has("acc-3")).toBe(false);
+      expect(prisma.pointTransaction.findMany).toHaveBeenCalledWith({
+        where: {
+          loyaltyAccountId: { in: ["acc-1", "acc-2", "acc-3"] },
+          type: PointTransactionType.EARNED_BIRTHDAY,
+          referenceId: "birthday-2026",
+        },
+        select: {
+          loyaltyAccountId: true,
         },
       });
     });
@@ -192,7 +226,7 @@ describe("services/loyalty/birthday.service", () => {
         birthDate: new Date("1990-03-15"),
       });
       asMock(prisma.profile.findMany).mockResolvedValue([profile]);
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
       mockCreditPoints.mockResolvedValue(undefined);
       return profile;
     }
@@ -248,11 +282,9 @@ describe("services/loyalty/birthday.service", () => {
         birthDate: new Date("1990-03-15"),
       });
       asMock(prisma.profile.findMany).mockResolvedValue([profile]);
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue({
-        id: "tx-existing",
-        type: PointTransactionType.EARNED_BIRTHDAY,
-        referenceId: "birthday-2026",
-      });
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([
+        { loyaltyAccountId: "acc-1" },
+      ]);
 
       const result = await BirthdayService.creditBirthdayBonuses(NOW);
 
@@ -295,7 +327,7 @@ describe("services/loyalty/birthday.service", () => {
       });
 
       asMock(prisma.profile.findMany).mockResolvedValue([profile1, profile2]);
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
       mockCreditPoints.mockResolvedValue(undefined);
 
       const result = await BirthdayService.creditBirthdayBonuses(NOW);
@@ -347,7 +379,7 @@ describe("services/loyalty/birthday.service", () => {
       });
 
       asMock(prisma.profile.findMany).mockResolvedValue([profile1, profile2]);
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
       mockCreditPoints
         .mockRejectedValueOnce(new Error("DB connection lost"))
         .mockResolvedValueOnce(undefined);
@@ -388,7 +420,7 @@ describe("services/loyalty/birthday.service", () => {
       });
 
       asMock(prisma.profile.findMany).mockResolvedValue([profile1, profile2]);
-      asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+      asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
       mockCreditPoints
         .mockRejectedValueOnce(new Error("DB connection lost"))
         .mockResolvedValueOnce(undefined);
@@ -429,7 +461,7 @@ describe("services/loyalty/birthday.service", () => {
             );
 
             asMock(prisma.profile.findMany).mockResolvedValue(profiles);
-            asMock(prisma.pointTransaction.findFirst).mockResolvedValue(null);
+            asMock(prisma.pointTransaction.findMany).mockResolvedValue([]);
             mockCreditPoints.mockResolvedValue(undefined);
 
             const result = await BirthdayService.creditBirthdayBonuses(NOW);

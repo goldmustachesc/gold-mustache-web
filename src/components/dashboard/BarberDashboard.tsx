@@ -6,17 +6,18 @@ import { Button } from "@/components/ui/button";
 import { BarberStatsCards } from "./BarberStatsCards";
 import { WeeklyCalendar } from "./WeeklyCalendar";
 import { DailySchedule } from "./DailySchedule";
+import { BarberDashboardHero } from "./BarberDashboardHero";
+import { BarberDashboardDesktopSidebar } from "./BarberDashboardDesktopSidebar";
+import { buildDailyOperationalModel } from "./buildDailyOperationalModel";
 import {
   useBarberAppointments,
   useCancelAppointmentByBarber,
   useMarkNoShow,
   useMarkCompleted,
 } from "@/hooks/useBooking";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
-import { useUser } from "@/hooks/useAuth";
-import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useMyWorkingHours } from "@/hooks/useBarberWorkingHours";
 import { useBarberAbsences } from "@/hooks/useBarberAbsences";
+import { useRealtimeAppointments } from "@/hooks/useRealtimeAppointments";
 import {
   usePrivateHeader,
   PrivateHeaderActions,
@@ -27,24 +28,31 @@ import {
   EyeOff,
   Plus,
   Calendar,
-  MoreVertical,
+  CalendarPlus,
+  Users,
+  Clock,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import {
   formatDateToString,
   getBrazilDateString,
   parseDateString,
 } from "@/utils/time-slots";
+import {
+  formatIsoDateYyyyMmDdInSaoPaulo,
+  formatTimeHHmmInSaoPaulo,
+} from "@/utils/datetime";
 import Link from "next/link";
+import { consolidateOperationalAppointments } from "@/lib/booking/operational-appointments";
+import { QuickAction } from "./QuickAction";
 
 interface BarberDashboardProps {
   locale: string;
+  barberProfile: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+  };
 }
 
 // Helper to get start of week (Sunday)
@@ -65,46 +73,168 @@ function getWeekEnd(date: Date): Date {
   return d;
 }
 
-export function BarberDashboard({ locale }: BarberDashboardProps) {
+function isDateInRange(date: string, start: string, end: string): boolean {
+  return date >= start && date <= end;
+}
+
+function appointmentsMatchWeekRange(
+  appointments: Array<{ date: string }>,
+  weekStart: string,
+  weekEnd: string,
+): boolean {
+  return appointments.every((appointment) =>
+    isDateInRange(appointment.date, weekStart, weekEnd),
+  );
+}
+
+function BarberStatsCardsSkeleton() {
+  return (
+    <div
+      data-testid="stats-cards-loading"
+      className="grid grid-cols-2 gap-2 sm:gap-3"
+    >
+      {[0, 1].map((index) => (
+        <div
+          key={index}
+          className="rounded-xl border border-border bg-card/60 p-3"
+        >
+          <div className="space-y-2 animate-pulse">
+            <div className="h-3 w-16 rounded bg-muted/70" />
+            <div className="h-3 w-20 rounded bg-muted/60" />
+            <div className="h-8 w-12 rounded bg-muted/70" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DailyScheduleSkeleton() {
+  return (
+    <div
+      data-testid="daily-schedule-loading"
+      className="space-y-3 rounded-2xl border border-border bg-card/30 p-4"
+    >
+      {[0, 1, 2].map((index) => (
+        <div
+          key={index}
+          className="rounded-xl border border-border/70 bg-card/50 p-4"
+        >
+          <div className="space-y-3 animate-pulse">
+            <div className="h-4 w-24 rounded bg-muted/70" />
+            <div className="h-5 w-40 rounded bg-muted/60" />
+            <div className="h-3 w-32 rounded bg-muted/50" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DesktopSidebarSkeleton() {
+  return (
+    <div
+      data-testid="barber-dashboard-desktop-sidebar-skeleton"
+      className="rounded-2xl border border-border/70 bg-card/40 p-4"
+    >
+      <div className="animate-pulse space-y-4">
+        <div className="space-y-2">
+          <div className="h-3 w-28 rounded bg-muted/70" />
+          <div className="h-5 w-36 rounded bg-muted/60" />
+          <div className="h-4 w-full rounded bg-muted/50" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[0, 1, 2, 3].map((index) => (
+            <div
+              key={index}
+              className="rounded-xl border border-border/60 bg-background/70 p-3"
+            >
+              <div className="h-3 w-20 rounded bg-muted/60" />
+              <div className="mt-3 h-7 w-16 rounded bg-muted/70" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {[0, 1, 2].map((index) => (
+            <div
+              key={index}
+              className="h-14 rounded-xl border border-border/60 bg-background/70"
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BarberDashboard({
+  locale,
+  barberProfile,
+}: BarberDashboardProps) {
   const router = useRouter();
-  const { data: user, isLoading: userLoading } = useUser();
-  const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
-  const { data: stats } = useDashboardStats();
   const { data: workingHours } = useMyWorkingHours();
 
   const [hideValues, setHideValues] = useState(false);
+  /** Atualiza ~1/min para o cockpit não congelar o “agora”. */
+  const [operationalNowEpoch, setOperationalNowEpoch] = useState(() =>
+    Date.now(),
+  );
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setOperationalNowEpoch(Date.now());
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const operationalNow = useMemo(
+    () => new Date(operationalNowEpoch),
+    [operationalNowEpoch],
+  );
+
   const [selectedDate, setSelectedDate] = useState<Date>(() =>
     parseDateString(getBrazilDateString()),
+  );
+  /** Semana civil “atual” acompanha o mesmo relógio do cockpit (`operationalNow`). */
+  const currentWeekReferenceDate = useMemo(
+    () => parseDateString(formatIsoDateYyyyMmDdInSaoPaulo(operationalNow)),
+    [operationalNow],
   );
   const [weekStart, setWeekStart] = useState<Date>(() =>
     getWeekStart(selectedDate),
   );
+  const currentWeekStart = useMemo(
+    () => getWeekStart(currentWeekReferenceDate),
+    [currentWeekReferenceDate],
+  );
 
-  // Redirect non-barbers
-  useEffect(() => {
-    if (!userLoading && !user) {
-      router.push(`/${locale}/login`);
-    }
-  }, [user, userLoading, router, locale]);
-
-  useEffect(() => {
-    if (!barberLoading && user && !barberProfile) {
-      toast.error("Acesso restrito a barbeiros");
-      router.push(`/${locale}/dashboard`);
-    }
-  }, [barberProfile, barberLoading, user, router, locale]);
-
-  const barberId = barberProfile?.id ?? null;
+  const barberId = barberProfile.id;
+  useRealtimeAppointments(barberId);
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
+  const currentWeekEnd = useMemo(
+    () => getWeekEnd(currentWeekStart),
+    [currentWeekStart],
+  );
   const weekStartStr = formatDateToString(weekStart);
   const weekEndStr = formatDateToString(weekEnd);
+  const currentWeekStartStr = formatDateToString(currentWeekStart);
+  const currentWeekEndStr = formatDateToString(currentWeekEnd);
+  const isViewingCurrentWeek = weekStartStr === currentWeekStartStr;
 
-  const { data: appointments = [], isLoading: appointmentsLoading } =
-    useBarberAppointments(barberId, weekStart, weekEnd);
-  const { data: absences = [], isLoading: absencesLoading } = useBarberAbsences(
-    weekStartStr,
-    weekEndStr,
-  );
+  const {
+    data: appointments = [],
+    isLoading: appointmentsLoading,
+    isFetching: appointmentsFetching,
+  } = useBarberAppointments(barberId, weekStart, weekEnd);
+  const {
+    data: currentWeekAppointments = [],
+    isLoading: currentWeekAppointmentsLoading,
+    isFetching: currentWeekAppointmentsFetching,
+  } = useBarberAppointments(barberId, currentWeekStart, currentWeekEnd);
+  const {
+    data: absences = [],
+    isLoading: absencesLoading,
+    isFetching: absencesFetching,
+  } = useBarberAbsences(weekStartStr, weekEndStr);
 
   const cancelAppointment = useCancelAppointmentByBarber();
   const markNoShow = useMarkNoShow();
@@ -118,13 +248,15 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
   const handleCancelAppointment = async (
     appointmentId: string,
     reason: string,
-  ) => {
+  ): Promise<boolean> => {
     setCancellingId(appointmentId);
     try {
       await cancelAppointment.mutateAsync({ appointmentId, reason });
       toast.success("Agendamento cancelado com sucesso!");
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao cancelar");
+      return false;
     } finally {
       setCancellingId(null);
     }
@@ -181,8 +313,16 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
 
   // Filter appointments for selected date
   const selectedDateStr = formatDateToString(selectedDate);
-  const dailyAppointments = appointments.filter(
-    (apt) => apt.date === selectedDateStr,
+  const weeklyOperationalAppointments = useMemo(
+    () => consolidateOperationalAppointments(appointments),
+    [appointments],
+  );
+  const dailyAppointments = useMemo(
+    () =>
+      consolidateOperationalAppointments(
+        appointments.filter((apt) => apt.date === selectedDateStr),
+      ),
+    [appointments, selectedDateStr],
   );
   const absencesPageHref = `/${locale}/barbeiro/ausencias?date=${selectedDateStr}`;
   const selectedDateAbsences = useMemo(
@@ -200,6 +340,95 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
     const dayOfWeek = selectedDate.getDay();
     return workingHours.find((wh) => wh.dayOfWeek === dayOfWeek) ?? null;
   }, [workingHours, selectedDate]);
+  const areSelectedWeekAppointmentsStale =
+    appointments.length > 0 &&
+    !appointmentsMatchWeekRange(appointments, weekStartStr, weekEndStr);
+  const areSelectedWeekAbsencesStale =
+    absences.length > 0 &&
+    !appointmentsMatchWeekRange(absences, weekStartStr, weekEndStr);
+  const areCurrentWeekAppointmentsStale =
+    currentWeekAppointments.length > 0 &&
+    !appointmentsMatchWeekRange(
+      currentWeekAppointments,
+      currentWeekStartStr,
+      currentWeekEndStr,
+    );
+  const isInitialAppointmentsLoading =
+    appointmentsLoading && appointments.length === 0;
+  const isInitialAbsencesLoading = absencesLoading && absences.length === 0;
+  const isSelectedWeekDataStale =
+    (appointmentsFetching && areSelectedWeekAppointmentsStale) ||
+    (absencesFetching && areSelectedWeekAbsencesStale);
+  const statsAppointments = isViewingCurrentWeek
+    ? appointments
+    : currentWeekAppointments;
+  const isStatsLoading = isViewingCurrentWeek
+    ? isInitialAppointmentsLoading || isSelectedWeekDataStale
+    : (currentWeekAppointmentsLoading &&
+        currentWeekAppointments.length === 0) ||
+      (currentWeekAppointmentsFetching && areCurrentWeekAppointmentsStale);
+  const isScheduleLoading =
+    isInitialAppointmentsLoading ||
+    isInitialAbsencesLoading ||
+    isSelectedWeekDataStale;
+  const calendarAppointments = areSelectedWeekAppointmentsStale
+    ? []
+    : appointments;
+  const calendarAbsenceDates = areSelectedWeekAbsencesStale
+    ? []
+    : weekAbsenceDates;
+  const barberStats = useMemo(() => {
+    const todayStr = formatIsoDateYyyyMmDdInSaoPaulo(operationalNow);
+    const confirmedAppointments = statsAppointments.filter(
+      (appointment) => appointment.status === "CONFIRMED",
+    );
+    const todayConfirmedAppointments = confirmedAppointments.filter(
+      (appointment) => appointment.date === todayStr,
+    );
+
+    return {
+      todayCount: todayConfirmedAppointments.length,
+      todayRevenue: todayConfirmedAppointments.reduce(
+        (sum, appointment) => sum + Number(appointment.service.price),
+        0,
+      ),
+      weekCount: confirmedAppointments.length,
+      weekRevenue: confirmedAppointments.reduce(
+        (sum, appointment) => sum + Number(appointment.service.price),
+        0,
+      ),
+    };
+  }, [statsAppointments, operationalNow]);
+  const confirmedDailyOperationalAppointments = useMemo(
+    () =>
+      dailyAppointments.filter(
+        (appointment) => appointment.status === "CONFIRMED",
+      ),
+    [dailyAppointments],
+  );
+  const confirmedWeeklyOperationalAppointments = useMemo(
+    () =>
+      weeklyOperationalAppointments.filter(
+        (appointment) => appointment.status === "CONFIRMED",
+      ),
+    [weeklyOperationalAppointments],
+  );
+  const desktopSidebarMetrics = useMemo(
+    () => ({
+      dayRevenue: confirmedDailyOperationalAppointments.reduce(
+        (sum, appointment) => sum + Number(appointment.service.price),
+        0,
+      ),
+      weekRevenue: confirmedWeeklyOperationalAppointments.reduce(
+        (sum, appointment) => sum + Number(appointment.service.price),
+        0,
+      ),
+    }),
+    [
+      confirmedDailyOperationalAppointments,
+      confirmedWeeklyOperationalAppointments,
+    ],
+  );
   const handleCreateAppointmentFromSlot = (startTime: string) => {
     const params = new URLSearchParams({
       date: selectedDateStr,
@@ -217,78 +446,46 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
     router.push(`/${locale}/barbeiro/ausencias?${params.toString()}`);
   };
 
-  const isLoading =
-    userLoading || barberLoading || appointmentsLoading || absencesLoading;
+  const dashboardOperationalModel = useMemo(() => {
+    return buildDailyOperationalModel({
+      selectedDate: selectedDateStr,
+      currentDate: formatIsoDateYyyyMmDdInSaoPaulo(operationalNow),
+      currentTime: formatTimeHHmmInSaoPaulo(operationalNow),
+      appointments: dailyAppointments,
+      absences: selectedDateAbsences,
+      workingHours: selectedDayWorkingHours,
+    });
+  }, [
+    selectedDateStr,
+    operationalNow,
+    dailyAppointments,
+    selectedDateAbsences,
+    selectedDayWorkingHours,
+  ]);
 
-  const firstName = barberProfile?.name?.split(" ")[0] || "Barbeiro";
+  const heroFocusedAppointment =
+    dashboardOperationalModel.hero.appointmentId !== null
+      ? (dailyAppointments.find(
+          (a) => a.id === dashboardOperationalModel.hero.appointmentId,
+        ) ?? null)
+      : null;
+
+  const viewingToday =
+    selectedDateStr === formatIsoDateYyyyMmDdInSaoPaulo(operationalNow);
+
+  const firstName = barberProfile.name.split(" ")[0] || "Barbeiro";
 
   usePrivateHeader({
     title: `Olá, ${firstName}`,
     icon: Calendar,
   });
 
-  if (isLoading || !user || !barberProfile) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <PrivateHeaderActions>
-        {/* Mobile: CTA + Dropdown para ações secundárias */}
-        <div className="flex items-center gap-1 lg:hidden">
-          <Link href={`/${locale}/barbeiro/agendar`}>
-            <Button
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Agendar
-            </Button>
-          </Link>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground hover:bg-accent"
-                aria-label="Mais ações"
-              >
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link
-                  href={absencesPageHref}
-                  className="flex items-center gap-2"
-                >
-                  <CalendarOff className="h-4 w-4" />
-                  Nova Ausência
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setHideValues((prev) => !prev)}
-                className="flex items-center gap-2"
-              >
-                {hideValues ? (
-                  <Eye className="h-4 w-4" />
-                ) : (
-                  <EyeOff className="h-4 w-4" />
-                )}
-                {hideValues ? "Mostrar Valores" : "Ocultar Valores"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
         {/* Desktop: CTAs completos */}
         <Link href={`/${locale}/barbeiro/agendar`} className="hidden lg:block">
-          <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold">
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
             <Plus className="h-4 w-4 mr-2" />
             Novo Agendamento
           </Button>
@@ -320,117 +517,165 @@ export function BarberDashboard({ locale }: BarberDashboardProps) {
         </Button>
       </PrivateHeaderActions>
       <main className="pb-6 lg:pb-8">
-        {/* Mobile Layout */}
-        <div className="lg:hidden">
-          {/* Weekly Calendar */}
-          <div className="px-4 pt-4">
-            <WeeklyCalendar
-              weekStart={weekStart}
-              appointments={appointments}
-              absenceDates={weekAbsenceDates}
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              onWeekChange={handleWeekChange}
-              variant="compact"
-            />
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 pt-4 ipad:grid ipad:grid-cols-8 ipad:items-start ipad:gap-5 ipad:px-5 ipad:py-5 lg:grid lg:grid-cols-10 lg:items-start lg:gap-5 lg:px-6 lg:py-5 xl:grid-cols-12 xl:gap-6 xl:px-8 xl:py-6">
+          <div className="space-y-4 ipad:col-span-5 lg:col-span-6 xl:col-span-8">
+            {isScheduleLoading ? (
+              <div
+                className="h-36 animate-pulse rounded-2xl border border-border/60 bg-muted/30 ipad:h-44 lg:h-44 xl:h-48"
+                data-testid="barber-dashboard-hero-skeleton"
+                aria-hidden
+              />
+            ) : (
+              <BarberDashboardHero
+                hideValues={hideValues}
+                hero={dashboardOperationalModel.hero}
+                firstAvailableSlot={
+                  dashboardOperationalModel.firstAvailableSlot
+                }
+                focusedAppointment={heroFocusedAppointment}
+                locale={locale}
+                selectedDateStr={selectedDateStr}
+                viewingToday={viewingToday}
+                hasConfiguredWorkingHours={
+                  dashboardOperationalModel.hasConfiguredWorkingHours
+                }
+                absencesHref={absencesPageHref}
+                onToggleHideValues={() => setHideValues((prev) => !prev)}
+              />
+            )}
+            <div
+              id="agenda-do-dia"
+              className="scroll-mt-24 pt-2 ipad:min-h-[440px] ipad:rounded-2xl ipad:border ipad:border-border/80 ipad:bg-card/40 ipad:p-4 ipad:pt-4 ipad:dark:border-border/90 ipad:dark:bg-card/55 lg:min-h-[460px] lg:rounded-2xl lg:border lg:border-border/80 lg:bg-card/40 lg:p-5 lg:pt-5 lg:dark:border-border/90 lg:dark:bg-card/55 xl:min-h-[500px] xl:p-6 xl:pt-6"
+            >
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
+                Agenda do dia
+              </h2>
+              {isScheduleLoading ? (
+                <DailyScheduleSkeleton />
+              ) : (
+                <DailySchedule
+                  date={selectedDate}
+                  operationalNow={operationalNow}
+                  appointments={dailyAppointments}
+                  onCancelAppointment={handleCancelAppointment}
+                  isCancelling={cancelAppointment.isPending}
+                  cancellingId={cancellingId}
+                  onMarkNoShow={handleMarkNoShow}
+                  isMarkingNoShow={markNoShow.isPending}
+                  markingNoShowId={markingNoShowId}
+                  onMarkComplete={handleMarkComplete}
+                  isMarkingComplete={markCompleted.isPending}
+                  markingCompleteId={markingCompleteId}
+                  variant="compact"
+                  hideValues={hideValues}
+                  workingHours={selectedDayWorkingHours}
+                  absences={selectedDateAbsences}
+                  onCreateAppointmentFromSlot={handleCreateAppointmentFromSlot}
+                  onCreateAbsenceFromSlot={handleCreateAbsenceFromSlot}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="px-4 pt-4">
-            <BarberStatsCards
-              todayCount={stats?.barber?.todayAppointments ?? 0}
-              todayRevenue={stats?.barber?.todayEarnings ?? 0}
-              weekCount={stats?.barber?.weekAppointments ?? 0}
-              weekRevenue={stats?.barber?.weekEarnings ?? 0}
-              hideValues={hideValues}
-            />
+          <div className="ipad:col-span-3 lg:col-span-4 xl:row-span-2">
+            <div className="space-y-4 ipad:sticky ipad:top-20 lg:sticky lg:top-20 xl:top-24">
+              <div className="ipad:rounded-2xl ipad:border ipad:border-border/80 ipad:bg-card/60 ipad:p-3 ipad:dark:border-border/90 ipad:dark:bg-card/70 lg:rounded-2xl lg:border lg:border-border/80 lg:bg-card/60 lg:p-4 lg:dark:border-border/90 lg:dark:bg-card/70">
+                <WeeklyCalendar
+                  weekStart={weekStart}
+                  appointments={calendarAppointments}
+                  absenceDates={calendarAbsenceDates}
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  onWeekChange={handleWeekChange}
+                  variant="compact"
+                  operationalNow={operationalNow}
+                />
+              </div>
+
+              <div className="hidden ipad:block lg:block">
+                {isScheduleLoading ? (
+                  <DesktopSidebarSkeleton />
+                ) : (
+                  <BarberDashboardDesktopSidebar
+                    locale={locale}
+                    absencesPageHref={absencesPageHref}
+                    dailyAppointmentsCount={dailyAppointments.length}
+                    availableSlotCount={
+                      dashboardOperationalModel.availableSlotCount
+                    }
+                    dayRevenue={desktopSidebarMetrics.dayRevenue}
+                    weekRevenue={desktopSidebarMetrics.weekRevenue}
+                    hideValues={hideValues}
+                    hasPartialAbsences={
+                      dashboardOperationalModel.hasPartialAbsences
+                    }
+                    hasFullDayAbsence={
+                      dashboardOperationalModel.hasFullDayAbsence
+                    }
+                    isDayOff={dashboardOperationalModel.isDayOff}
+                    hasConfiguredWorkingHours={
+                      dashboardOperationalModel.hasConfiguredWorkingHours
+                    }
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Daily Schedule */}
-          <div className="px-4 pt-6">
-            <DailySchedule
-              date={selectedDate}
-              appointments={dailyAppointments}
-              onCancelAppointment={handleCancelAppointment}
-              isCancelling={cancelAppointment.isPending}
-              cancellingId={cancellingId}
-              onMarkNoShow={handleMarkNoShow}
-              isMarkingNoShow={markNoShow.isPending}
-              markingNoShowId={markingNoShowId}
-              onMarkComplete={handleMarkComplete}
-              isMarkingComplete={markCompleted.isPending}
-              markingCompleteId={markingCompleteId}
-              variant="compact"
-              hideValues={hideValues}
-              workingHours={selectedDayWorkingHours}
-              absences={selectedDateAbsences}
-              onCreateAppointmentFromSlot={handleCreateAppointmentFromSlot}
-              onCreateAbsenceFromSlot={handleCreateAbsenceFromSlot}
-            />
-          </div>
-        </div>
-
-        {/* Desktop Layout - Two Column */}
-        <div className="hidden lg:block">
-          <div className="max-w-7xl mx-auto px-8 py-6">
-            {/* Stats Cards - Full Width */}
-            <div className="mb-6">
+          <div
+            data-testid="barber-dashboard-mobile-secondary"
+            className="space-y-5 ipad:hidden lg:hidden"
+          >
+            {isStatsLoading ? (
+              <BarberStatsCardsSkeleton />
+            ) : (
               <BarberStatsCards
-                todayCount={stats?.barber?.todayAppointments ?? 0}
-                todayRevenue={stats?.barber?.todayEarnings ?? 0}
-                weekCount={stats?.barber?.weekAppointments ?? 0}
-                weekRevenue={stats?.barber?.weekEarnings ?? 0}
+                todayCount={barberStats.todayCount}
+                todayRevenue={barberStats.todayRevenue}
+                weekCount={barberStats.weekCount}
+                weekRevenue={barberStats.weekRevenue}
                 hideValues={hideValues}
               />
-            </div>
+            )}
 
-            {/* Two Column Grid */}
-            <div className="grid grid-cols-12 gap-6">
-              {/* Left Column - Calendar */}
-              <div className="col-span-4">
-                <div className="sticky top-24 bg-card/50 rounded-2xl p-4 border border-border/70">
-                  <WeeklyCalendar
-                    weekStart={weekStart}
-                    appointments={appointments}
-                    absenceDates={weekAbsenceDates}
-                    selectedDate={selectedDate}
-                    onDateSelect={handleDateSelect}
-                    onWeekChange={handleWeekChange}
-                    variant="compact"
-                  />
-                </div>
+            <section
+              data-testid="barber-dashboard-secondary"
+              aria-labelledby="dashboard-quick-links-heading"
+              className="rounded-2xl border border-border/60 bg-muted/20 p-3 lg:p-4"
+            >
+              <h2
+                id="dashboard-quick-links-heading"
+                className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Atalhos
+              </h2>
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+                <QuickAction
+                  href={`/${locale}/barbeiro/agendar`}
+                  label="Agendar cliente"
+                  icon={
+                    <CalendarPlus className="h-5 w-5 text-muted-foreground" />
+                  }
+                />
+                <QuickAction
+                  href={`/${locale}/barbeiro/clientes`}
+                  label="Clientes"
+                  icon={<Users className="h-5 w-5 text-muted-foreground" />}
+                />
+                <QuickAction
+                  href={absencesPageHref}
+                  label="Ausências"
+                  icon={
+                    <CalendarOff className="h-5 w-5 text-muted-foreground" />
+                  }
+                />
+                <QuickAction
+                  href={`/${locale}/barbeiro/horarios`}
+                  label="Horários"
+                  icon={<Clock className="h-5 w-5 text-muted-foreground" />}
+                />
               </div>
-
-              {/* Right Column - Schedule */}
-              <div className="col-span-8">
-                <div className="bg-card/30 rounded-2xl p-6 border border-border/70 min-h-[500px]">
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
-                    Agendamentos do dia
-                  </h2>
-                  <DailySchedule
-                    date={selectedDate}
-                    appointments={dailyAppointments}
-                    onCancelAppointment={handleCancelAppointment}
-                    isCancelling={cancelAppointment.isPending}
-                    cancellingId={cancellingId}
-                    onMarkNoShow={handleMarkNoShow}
-                    isMarkingNoShow={markNoShow.isPending}
-                    markingNoShowId={markingNoShowId}
-                    onMarkComplete={handleMarkComplete}
-                    isMarkingComplete={markCompleted.isPending}
-                    markingCompleteId={markingCompleteId}
-                    variant="compact"
-                    hideValues={hideValues}
-                    workingHours={selectedDayWorkingHours}
-                    absences={selectedDateAbsences}
-                    onCreateAppointmentFromSlot={
-                      handleCreateAppointmentFromSlot
-                    }
-                    onCreateAbsenceFromSlot={handleCreateAbsenceFromSlot}
-                  />
-                </div>
-              </div>
-            </div>
+            </section>
           </div>
         </div>
       </main>

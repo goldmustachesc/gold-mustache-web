@@ -47,5 +47,8 @@ next-env.d.ts
 # Claude local overrides (keep .claude/ and CLAUDE.md versioned)
 .claude/settings.local.json
 CLAUDE.local.md
+.worktrees/
+.omc/
 
 /src/generated/prisma
+.env*.local

@@ -180,7 +180,7 @@ describe("/api/loyalty/rewards", () => {
     });
 
     it("should return error response when database query fails", async () => {
-      const consoleSpy = vi
+      const _consoleSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
 

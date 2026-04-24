@@ -9,24 +9,59 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RewardForm, type CreateRewardData } from "./RewardForm";
-import { useAdminCreateReward } from "@/hooks/useAdminRewards";
-import { CheckCircle, X } from "lucide-react";
+import {
+  useAdminCreateReward,
+  useAdminReward,
+  useAdminUpdateReward,
+  type AdminReward,
+} from "@/hooks/useAdminRewards";
+import { CheckCircle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import type { Reward } from "./RewardCard";
 
 interface RewardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Quando definido, o modal carrega a recompensa e opera em modo edição. */
+  rewardId?: string | null;
 }
 
-export function RewardModal({ open, onOpenChange }: RewardModalProps) {
+function mapRewardToFormData(reward: AdminReward): Partial<CreateRewardData> {
+  return {
+    name: reward.name,
+    description: reward.description ?? "",
+    pointsCost: reward.costInPoints,
+    type: reward.type ?? "FREE_SERVICE",
+    value: reward.value,
+    imageUrl: reward.imageUrl ?? "",
+    stock: reward.stock ?? undefined,
+    active: reward.active ?? true,
+  };
+}
+
+export function RewardModal({
+  open,
+  onOpenChange,
+  rewardId = null,
+}: RewardModalProps) {
+  const t = useTranslations("loyalty.admin.rewardModal");
   const [submitted, setSubmitted] = useState(false);
   const createRewardMut = useAdminCreateReward();
+  const updateRewardMut = useAdminUpdateReward();
   const queryClient = useQueryClient();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
   const tempRewardIdRef = useRef<string | null>(null);
+
+  const isEditMode = Boolean(rewardId);
+
+  const {
+    data: rewardDetail,
+    isLoading: rewardLoading,
+    isError: rewardError,
+  } = useAdminReward(rewardId ?? "", { enabled: open && isEditMode });
 
   const clearAutoCloseTimeout = useCallback(() => {
     if (timeoutRef.current) {
@@ -35,7 +70,6 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
     }
   }, []);
 
-  // Cleanup timeout and mounted state on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -43,16 +77,44 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
     };
   }, [clearAutoCloseTimeout]);
 
+  useEffect(() => {
+    if (!open) {
+      setSubmitted(false);
+      tempRewardIdRef.current = null;
+    }
+  }, [open]);
+
+  const mutationPending =
+    createRewardMut.isPending || updateRewardMut.isPending;
+  const mutationError = isEditMode
+    ? updateRewardMut.error
+    : createRewardMut.error;
+
   const handleSubmit = async (data: CreateRewardData) => {
-    // Prevent multiple submissions
-    if (createRewardMut.isPending) {
+    if (mutationPending) {
+      return;
+    }
+
+    if (isEditMode && rewardId) {
+      try {
+        await updateRewardMut.mutateAsync({ id: rewardId, data });
+        setSubmitted(true);
+        timeoutRef.current = setTimeout(() => {
+          if (mountedRef.current) {
+            onOpenChange(false);
+            setSubmitted(false);
+          }
+          timeoutRef.current = null;
+        }, 2000);
+      } catch (error) {
+        console.error("Error updating reward:", error);
+      }
       return;
     }
 
     try {
-      // Optimistic update: adicionar o novo item à lista imediatamente
       const tempId = `temp-${Date.now()}`;
-      tempRewardIdRef.current = tempId; // Store for potential rollback
+      tempRewardIdRef.current = tempId;
       const newReward = {
         id: tempId,
         name: data.name,
@@ -67,7 +129,6 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
         updatedAt: new Date().toISOString(),
       };
 
-      // Update both public and admin query keys for consistency
       queryClient.setQueryData(
         ["loyalty", "rewards"],
         (old: Reward[] | undefined) => {
@@ -86,7 +147,6 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
       await createRewardMut.mutateAsync(data);
       setSubmitted(true);
 
-      // Auto close after success with proper cleanup
       timeoutRef.current = setTimeout(() => {
         if (mountedRef.current) {
           onOpenChange(false);
@@ -97,7 +157,6 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
     } catch (error) {
       console.error("Error creating reward:", error);
 
-      // Remove specific temporary optimistic update from both caches
       const tempIdToRemove = tempRewardIdRef.current;
       if (tempIdToRemove) {
         queryClient.setQueryData(
@@ -117,79 +176,100 @@ export function RewardModal({ open, onOpenChange }: RewardModalProps) {
         tempRewardIdRef.current = null;
       }
 
-      // Invalidate cache to ensure fresh data on retry
       queryClient.invalidateQueries({ queryKey: ["loyalty", "rewards"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "rewards"],
       });
-
-      // Don't close modal on error, let user try again
     }
   };
 
   const handleClose = () => {
-    // Clear any pending timeout to prevent state updates on unmounted component
     clearAutoCloseTimeout();
 
-    if (!createRewardMut.isPending) {
+    if (!mutationPending) {
       onOpenChange(false);
       setSubmitted(false);
-      tempRewardIdRef.current = null; // Clean up temp ID reference
+      tempRewardIdRef.current = null;
     }
   };
 
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      handleClose();
+    }
+  };
+
+  const errorTitle = isEditMode ? t("errorUpdateTitle") : t("errorCreateTitle");
+
+  const showFormLoader = isEditMode && rewardLoading;
+  const showFormError = isEditMode && rewardError && !rewardLoading;
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Nova Recompensa
+            {isEditMode ? t("editTitle") : t("createTitle")}
             <Button
               variant="ghost"
               size="sm"
               onClick={handleClose}
-              disabled={createRewardMut.isPending}
+              disabled={mutationPending}
             >
               <X className="h-4 w-4" />
             </Button>
           </DialogTitle>
           <DialogDescription>
-            Crie uma nova recompensa para o catálogo de fidelidade.
+            {isEditMode ? t("editDescription") : t("createDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[60vh] overflow-y-auto pr-2">
-          {submitted ? (
+          {showFormLoader ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">{t("loading")}</p>
+            </div>
+          ) : showFormError ? (
+            <div className="py-8 text-center text-sm text-destructive">
+              {t("loadError")}
+            </div>
+          ) : submitted ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
               <CheckCircle className="h-16 w-16 text-green-500" />
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">
-                  Recompensa Criada!
+                  {isEditMode ? t("editSuccess") : t("createSuccess")}
                 </h3>
                 <p className="text-muted-foreground">
-                  A nova recompensa foi adicionada ao catálogo com sucesso.
+                  {isEditMode ? t("editSuccessDesc") : t("createSuccessDesc")}
                 </p>
               </div>
             </div>
-          ) : (
+          ) : !isEditMode || rewardDetail ? (
             <RewardForm
+              key={rewardId ?? "create"}
+              mode={isEditMode ? "edit" : "create"}
+              initialData={
+                isEditMode && rewardDetail
+                  ? mapRewardToFormData(rewardDetail)
+                  : undefined
+              }
               onSubmit={handleSubmit}
-              isLoading={createRewardMut.isPending}
+              onCancel={handleClose}
+              isLoading={mutationPending}
             />
-          )}
+          ) : null}
         </div>
 
-        {createRewardMut.error && (
+        {mutationError && (
           <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
             <div className="flex items-center space-x-2">
               <X className="h-4 w-4 text-destructive" />
               <div>
-                <h4 className="font-semibold text-destructive">
-                  Erro ao criar recompensa
-                </h4>
+                <h4 className="font-semibold text-destructive">{errorTitle}</h4>
                 <p className="text-sm text-destructive/80 mt-1">
-                  {createRewardMut.error.message ||
-                    "Ocorreu um erro inesperado. Tente novamente."}
+                  {mutationError.message || t("errorGeneric")}
                 </p>
               </div>
             </div>

@@ -69,6 +69,7 @@ export async function banClient(params: BanClientParams) {
     await tx.appointment.updateMany({
       where: {
         ...appointmentFilter,
+        barberId: bannedByBarberId,
         status: AppointmentStatus.CONFIRMED,
         date: { gte: getTodayUTCMidnight() },
       },
