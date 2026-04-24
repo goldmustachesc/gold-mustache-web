@@ -17,6 +17,8 @@ async function hasMigrationBeenApplied(prisma, migrationName) {
     SELECT migration_name
     FROM "_prisma_migrations"
     WHERE migration_name = ${migrationName}
+      AND finished_at IS NOT NULL
+      AND rolled_back_at IS NULL
     LIMIT 1
   `;
 
@@ -56,4 +58,12 @@ async function main() {
   }
 }
 
-void main();
+if (require.main === module) {
+  void main();
+}
+
+module.exports = {
+  hasMigrationBeenApplied,
+  isProductionEnvironment,
+  main,
+};

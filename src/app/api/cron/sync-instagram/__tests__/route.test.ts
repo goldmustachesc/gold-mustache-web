@@ -208,24 +208,34 @@ describe("POST /api/cron/sync-instagram", () => {
 });
 
 describe("GET /api/cron/sync-instagram", () => {
-  it("returns 405 in production", async () => {
-    const original = process.env.NODE_ENV;
-    vi.stubEnv("NODE_ENV", "production");
-
-    const response = await GET();
-    const body = await response.json();
-
-    expect(response.status).toBe(405);
-    expect(body.error).toBe("METHOD_NOT_ALLOWED");
-
-    vi.stubEnv("NODE_ENV", original ?? "test");
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("CRON_SECRET", CRON_SECRET);
   });
 
-  it("returns usage instructions in development", async () => {
-    const response = await GET();
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 401 when authorization header is missing", async () => {
+    const response = await GET(createRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("UNAUTHORIZED");
+  });
+
+  it("executes the sync flow when authorized", async () => {
+    validInstagramConfig();
+    mockFetchInstagramPosts.mockResolvedValue(mockPosts);
+    mockIsRedisConfigured.mockReturnValue(true);
+    mockSetInstagramCache.mockResolvedValue(undefined);
+
+    const response = await GET(createRequest(CRON_SECRET));
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.data.message).toContain("POST");
+    expect(body.data.postsCount).toBe(2);
+    expect(mockFetchInstagramPosts).toHaveBeenCalledOnce();
   });
 });

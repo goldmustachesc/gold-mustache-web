@@ -12,6 +12,34 @@ export interface AdminClientData {
   type: "registered" | "guest";
 }
 
+type ClientFilterType = "all" | "registered" | "guest";
+
+function mapRegisteredClientData(profile: {
+  id: string;
+  fullName: string | null;
+  phone: string | null;
+}): AdminClientData {
+  return {
+    id: profile.id,
+    fullName: profile.fullName || "Cliente",
+    phone: profile.phone || "",
+    type: "registered",
+  };
+}
+
+function mapGuestClientData(guest: {
+  id: string;
+  fullName: string;
+  phone: string;
+}): AdminClientData {
+  return {
+    id: guest.id,
+    fullName: guest.fullName || "Cliente",
+    phone: guest.phone || "",
+    type: "guest",
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const auth = await requireAdmin();
@@ -28,7 +56,11 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.trim() ?? "";
-    const type = searchParams.get("type") ?? "all";
+    const typeParam = searchParams.get("type") ?? "all";
+    if (!["all", "registered", "guest"].includes(typeParam)) {
+      return apiError("VALIDATION_ERROR", "Tipo de cliente inválido", 400);
+    }
+    const type = typeParam as ClientFilterType;
     const { page, limit, skip } = parsePagination(searchParams);
 
     const searchFilter = search
@@ -54,14 +86,28 @@ export async function GET(request: Request) {
         prisma.profile.count({ where: searchFilter }),
       ]);
 
-      const data: AdminClientData[] = profiles.map((p) => ({
-        id: p.id,
-        fullName: p.fullName || "Cliente",
-        phone: p.phone || "",
-        type: "registered",
-      }));
+      return apiCollection(
+        profiles.map(mapRegisteredClientData),
+        paginationMeta(total, page, limit),
+      );
+    }
 
-      return apiCollection(data, paginationMeta(total, page, limit));
+    if (type === "guest") {
+      const [guests, total] = await Promise.all([
+        prisma.guestClient.findMany({
+          where: searchFilter,
+          select: selectFields,
+          orderBy: { fullName: "asc" },
+          skip,
+          take: limit,
+        }),
+        prisma.guestClient.count({ where: searchFilter }),
+      ]);
+
+      return apiCollection(
+        guests.map(mapGuestClientData),
+        paginationMeta(total, page, limit),
+      );
     }
 
     const [profiles, guests, profilesTotal, guestsTotal] = await Promise.all([
@@ -82,18 +128,8 @@ export async function GET(request: Request) {
     ]);
 
     const all: AdminClientData[] = [
-      ...profiles.map((p) => ({
-        id: p.id,
-        fullName: p.fullName || "Cliente",
-        phone: p.phone || "",
-        type: "registered" as const,
-      })),
-      ...guests.map((g) => ({
-        id: g.id,
-        fullName: g.fullName,
-        phone: g.phone,
-        type: "guest" as const,
-      })),
+      ...profiles.map(mapRegisteredClientData),
+      ...guests.map(mapGuestClientData),
     ];
 
     all.sort((a, b) => a.fullName.localeCompare(b.fullName));

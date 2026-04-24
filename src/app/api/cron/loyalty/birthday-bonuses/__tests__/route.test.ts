@@ -19,13 +19,13 @@ const CRON_SECRET = "test-secret";
 
 describe("POST /api/cron/loyalty/birthday-bonuses", () => {
   beforeEach(() => {
-    process.env.CRON_SECRET = CRON_SECRET;
     vi.clearAllMocks();
+    vi.stubEnv("CRON_SECRET", CRON_SECRET);
     vi.mocked(isFeatureEnabled).mockResolvedValue(true);
   });
 
   afterEach(() => {
-    delete process.env.CRON_SECRET;
+    vi.unstubAllEnvs();
   });
 
   it("calls creditBirthdayBonuses when authorized", async () => {
@@ -63,21 +63,31 @@ describe("POST /api/cron/loyalty/birthday-bonuses", () => {
 });
 
 describe("GET /api/cron/loyalty/birthday-bonuses", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("CRON_SECRET", CRON_SECRET);
+  });
+
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 405 in production", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    const res = await GET();
-    expect(res.status).toBe(405);
+  it("returns 401 when authorization header is missing", async () => {
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(401);
   });
 
-  it("returns usage info in development", async () => {
-    vi.stubEnv("NODE_ENV", "development");
-    const res = await GET();
+  it("executes the cron when authorized", async () => {
+    vi.mocked(BirthdayService.creditBirthdayBonuses).mockResolvedValue({
+      processedCount: 3,
+      totalPointsCredited: 300,
+      failedCount: 0,
+    });
+
+    const res = await GET(makeRequest(CRON_SECRET));
     const body = await res.json();
+
     expect(res.status).toBe(200);
-    expect(body.data.message).toBeDefined();
+    expect(body.data.processedCount).toBe(3);
   });
 });
