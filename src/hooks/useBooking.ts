@@ -20,7 +20,7 @@ import { apiGet, apiMutate, ApiError } from "@/lib/api/client";
 const SLOT_ERROR_MESSAGES: Record<string, string> = {
   SLOT_IN_PAST: "Este horário já passou. Por favor, escolha outro horário.",
   SLOT_TOO_SOON:
-    "Agendamento deve ser feito com pelo menos 90 minutos de antecedência.",
+    "Agendamento deve ser feito com pelo menos 60 minutos de antecedência.",
   SHOP_CLOSED:
     "A barbearia não atende neste horário. Por favor, escolha outro.",
   BARBER_UNAVAILABLE:

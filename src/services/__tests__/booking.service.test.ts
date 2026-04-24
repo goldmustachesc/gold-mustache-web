@@ -425,7 +425,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     expect(availability).toEqual({
       barberId: "barber-1",
       serviceDuration: 30,
-      windows: [{ startTime: "10:35", endTime: "12:00" }],
+      windows: [{ startTime: "10:05", endTime: "12:00" }],
     });
   });
 
@@ -2726,8 +2726,8 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("BARBER_UNAVAILABLE");
   });
 
-  describe("client booking lead time (90 min rule)", () => {
-    it("createAppointment rejects when slot is less than 90 minutes away", async () => {
+  describe("client booking lead time (60 min rule)", () => {
+    it("createAppointment rejects when slot is less than 60 minutes away", async () => {
       // Now: 2025-01-02 09:05 BRT => 12:05Z; slot at 10:00 => 55 min away
       vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 5, 0, 0)));
 
@@ -2765,9 +2765,9 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       ).rejects.toThrow("SLOT_TOO_SOON");
     });
 
-    it("createAppointment allows when slot is exactly 90 minutes away", async () => {
-      // Now: 2025-01-02 08:30 BRT => 11:30Z; slot at 10:00 => 90 min away
-      vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 11, 30, 0, 0)));
+    it("createAppointment allows when slot is exactly 60 minutes away", async () => {
+      // Now: 2025-01-02 09:00 BRT => 12:00Z; slot at 10:00 => 60 min away
+      vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
 
       asMock(prisma.service.findUnique).mockResolvedValue({
         id: "service-1",
@@ -2837,7 +2837,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       expect(apt.status).toBe(AppointmentStatus.CONFIRMED);
     });
 
-    it("createGuestAppointment rejects when slot is less than 90 minutes away", async () => {
+    it("createGuestAppointment rejects when slot is less than 60 minutes away", async () => {
       // Now: 2025-01-02 09:05 BRT => 12:05Z; slot at 10:00 => 55 min away
       vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 5, 0, 0)));
 
@@ -2874,9 +2874,9 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       ).rejects.toThrow("SLOT_TOO_SOON");
     });
 
-    it("createAppointmentByBarber allows when slot is less than 90 minutes away", async () => {
+    it("createAppointmentByBarber allows when slot is less than 60 minutes away", async () => {
       // Now: 2025-01-02 09:05 BRT => 12:05Z; slot at 10:00 => 55 min away
-      // Barber should NOT be restricted by the 90-min lead time rule
+      // Barber should NOT be restricted by the client lead time rule
       vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 5, 0, 0)));
 
       asMock(prisma.service.findUnique).mockResolvedValue({
