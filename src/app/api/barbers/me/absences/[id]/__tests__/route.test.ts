@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
     barberAbsence: {
       findUnique: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }));
@@ -45,10 +46,13 @@ function routeParams(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
-function createDeleteRequest(): Request {
-  return new Request("http://localhost:3001/api/barbers/me/absences/abs-1", {
-    method: "DELETE",
-  });
+function createDeleteRequest(scope?: "occurrence" | "series"): Request {
+  return new Request(
+    `http://localhost:3001/api/barbers/me/absences/abs-1${scope ? `?scope=${scope}` : ""}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 describe("DELETE /api/barbers/me/absences/[id]", () => {
@@ -108,6 +112,33 @@ describe("DELETE /api/barbers/me/absences/[id]", () => {
     expect(response.status).toBe(200);
     expect(prisma.barberAbsence.delete).toHaveBeenCalledWith({
       where: { id: "abs-1" },
+    });
+  });
+
+  it("deletes the remaining series occurrences when requested", async () => {
+    barberAuthenticated();
+    vi.mocked(prisma.barberAbsence.findUnique).mockResolvedValue({
+      id: "abs-1",
+      barberId: "barber-1",
+      recurrenceId: "rec-1",
+      date: new Date("2026-03-15T00:00:00.000Z"),
+    } as never);
+    vi.mocked(prisma.barberAbsence.deleteMany).mockResolvedValue({
+      count: 3,
+    } as never);
+
+    const response = await DELETE(
+      createDeleteRequest("series"),
+      routeParams("abs-1"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(prisma.barberAbsence.deleteMany).toHaveBeenCalledWith({
+      where: {
+        barberId: "barber-1",
+        recurrenceId: "rec-1",
+        date: { gte: expect.any(Date) },
+      },
     });
   });
 

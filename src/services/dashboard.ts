@@ -8,6 +8,7 @@ import type { PaginationMeta } from "@/types/api";
 import type { ProfileMeData, UserRole } from "@/types/profile";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { mapPrismaBarberAbsence } from "@/lib/barber-absence-mapper";
 import { buildWorkingHoursResponse } from "@/lib/working-hours";
 import { normalizePhoneOrNull } from "@/lib/booking/phone";
 import { getBarberAppointments } from "@/services/booking";
@@ -504,6 +505,7 @@ export async function getBarberDashboardInitialData({
           lt: endExclusive,
         },
       },
+      include: { recurrence: true },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     }),
   ]);
@@ -511,15 +513,10 @@ export async function getBarberDashboardInitialData({
   return {
     workingHours: buildWorkingHoursResponse(workingHours),
     appointments,
-    absences: absences.map((absence) => ({
-      id: absence.id,
-      barberId: absence.barberId,
-      date: formatPrismaDateToString(absence.date),
-      startTime: absence.startTime,
-      endTime: absence.endTime,
-      reason: absence.reason,
-      createdAt: absence.createdAt.toISOString(),
-      updatedAt: absence.updatedAt.toISOString(),
-    })),
+    absences: absences.map((absence) =>
+      mapPrismaBarberAbsence(
+        absence as Parameters<typeof mapPrismaBarberAbsence>[0],
+      ),
+    ),
   };
 }

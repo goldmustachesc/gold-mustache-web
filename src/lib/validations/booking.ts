@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  isAbsenceRecurrenceWithinSupportedHorizon,
+  MAX_RECURRENCE_HORIZON_MONTHS,
+} from "@/lib/barber-absence-recurrence";
+import { parseDateStringToUTC } from "@/utils/time-slots";
 
 // ============================================
 // Appointment Schemas
@@ -82,6 +87,44 @@ const timeStringSchema = z
   .string()
   .regex(/^\d{2}:\d{2}$/, "Horário deve estar no formato HH:MM");
 
+export const barberAbsenceRecurrenceSchema = z
+  .object({
+    frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
+    interval: z
+      .number()
+      .int()
+      .min(1, "Intervalo deve ser de pelo menos 1")
+      .max(365, "Intervalo deve ser de no máximo 365"),
+    endsAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD")
+      .nullable()
+      .optional(),
+    occurrenceCount: z
+      .number()
+      .int()
+      .min(1, "Quantidade deve ser de pelo menos 1")
+      .max(365, "Quantidade deve ser de no máximo 365")
+      .nullable()
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasEndsAt = typeof data.endsAt === "string";
+    const hasOccurrenceCount = typeof data.occurrenceCount === "number";
+
+    if (hasEndsAt === hasOccurrenceCount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["endsAt"],
+        message: "Informe apenas data final ou quantidade de ocorrências.",
+      });
+    }
+  });
+
+export type BarberAbsenceRecurrenceInput = z.infer<
+  typeof barberAbsenceRecurrenceSchema
+>;
+
 export const workingHoursSchema = z
   .object({
     barberId: z.string().uuid("ID do barbeiro inválido"),
@@ -162,6 +205,7 @@ export const barberAbsenceSchema = z
     startTime: timeStringSchema.nullable().optional(),
     endTime: timeStringSchema.nullable().optional(),
     autoCancelConflicts: z.boolean().optional().default(false),
+    recurrence: barberAbsenceRecurrenceSchema.nullable().optional(),
     reason: z
       .string()
       .max(500, "Motivo deve ter no máximo 500 caracteres")
@@ -186,7 +230,58 @@ export const barberAbsenceSchema = z
     },
   );
 
+export const barberAbsenceCreateSchema = barberAbsenceSchema.superRefine(
+  (data, ctx) => {
+    if (data.recurrence?.endsAt && data.recurrence.endsAt < data.date) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["recurrence", "endsAt"],
+        message: "A recorrência deve terminar em uma data igual ou posterior.",
+      });
+    }
+
+    if (
+      data.recurrence?.endsAt &&
+      !isAbsenceRecurrenceWithinSupportedHorizon(
+        data.date,
+        data.recurrence.endsAt,
+      )
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["recurrence", "endsAt"],
+        message: `A recorrência não pode ultrapassar ${MAX_RECURRENCE_HORIZON_MONTHS} meses.`,
+      });
+    }
+
+    if (
+      data.recurrence?.frequency === "DAILY" &&
+      data.recurrence.endsAt &&
+      data.recurrence.interval > 0
+    ) {
+      const startDate = parseDateStringToUTC(data.date);
+      const endDate = parseDateStringToUTC(data.recurrence.endsAt);
+      const inclusiveDays =
+        Math.floor(
+          (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+        ) + 1;
+
+      if (inclusiveDays > 365) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["recurrence", "endsAt"],
+          message:
+            "A recorrência diária com data final não pode ultrapassar 365 ocorrências.",
+        });
+      }
+    }
+  },
+);
+
 export type BarberAbsenceInput = z.infer<typeof barberAbsenceSchema>;
+export type BarberAbsenceCreateInput = z.infer<
+  typeof barberAbsenceCreateSchema
+>;
 
 // ============================================
 // Shop Hours / Closures Schemas

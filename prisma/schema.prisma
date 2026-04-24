@@ -123,6 +123,7 @@ model Barber {
   services      BarberService[]
   workingHours  WorkingHours[]
   absences      BarberAbsence[]
+  absenceRecurrences BarberAbsenceRecurrence[]
   feedbacks     Feedback[]
   bannedClients BannedClient[]
 
@@ -192,19 +193,49 @@ model ShopClosure {
 // Barber absences
 // ============================================
 
-model BarberAbsence {
-  id        String   @id @default(uuid())
-  barberId  String   @map("barber_id")
-  date      DateTime @db.Date
-  startTime String?  @map("start_time")
-  endTime   String?  @map("end_time")
-  reason    String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+enum AbsenceRecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
 
-  barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+model BarberAbsenceRecurrence {
+  id              String                     @id @default(uuid())
+  barberId        String                     @map("barber_id")
+  startDate       DateTime                   @map("start_date") @db.Date
+  frequency       AbsenceRecurrenceFrequency
+  interval        Int                        @default(1)
+  endsAt          DateTime?                  @map("ends_at") @db.Date
+  occurrenceCount Int?                       @map("occurrence_count")
+  startTime       String?                    @map("start_time")
+  endTime         String?                    @map("end_time")
+  reason          String?
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  updatedAt       DateTime                   @updatedAt @map("updated_at")
+
+  barber   Barber          @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  absences BarberAbsence[]
+
+  @@index([barberId, startDate])
+  @@map("barber_absence_recurrences")
+}
+
+model BarberAbsence {
+  id           String                   @id @default(uuid())
+  barberId     String                   @map("barber_id")
+  date         DateTime                 @db.Date
+  startTime    String?                  @map("start_time")
+  endTime      String?                  @map("end_time")
+  reason       String?
+  recurrenceId String?                  @map("recurrence_id")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @updatedAt @map("updated_at")
+
+  barber     Barber                  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  recurrence BarberAbsenceRecurrence? @relation(fields: [recurrenceId], references: [id], onDelete: Cascade)
 
   @@index([barberId, date])
+  @@index([recurrenceId, date])
   @@map("barber_absences")
 }
 

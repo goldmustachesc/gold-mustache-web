@@ -178,6 +178,34 @@ describe("useCreateBarberAbsence", () => {
     );
   });
 
+  it("sends recurrence payload when provided", async () => {
+    stubFetch(MOCK_ABSENCE);
+
+    const { result } = renderHook(() => useCreateBarberAbsence(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "WEEKLY",
+          interval: 2,
+          endsAt: "2026-04-12",
+        },
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/barbers/me/absences",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"frequency":"WEEKLY"'),
+      }),
+    );
+  });
+
   it("translates ABSENCE_CONFLICT error", async () => {
     stubFetchError(
       "ABSENCE_CONFLICT",
@@ -232,12 +260,30 @@ describe("useDeleteBarberAbsence", () => {
     });
 
     await act(async () => {
-      result.current.mutate("a-1");
+      result.current.mutate({ id: "a-1" });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetch).toHaveBeenCalledWith(
       "/api/barbers/me/absences/a-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("calls DELETE /api/barbers/me/absences/:id?scope=series", async () => {
+    stubFetchMessage();
+
+    const { result } = renderHook(() => useDeleteBarberAbsence(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: "a-1", scope: "series" });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/barbers/me/absences/a-1?scope=series",
       expect.objectContaining({ method: "DELETE" }),
     );
   });
@@ -251,7 +297,7 @@ describe("useDeleteBarberAbsence", () => {
     });
 
     await act(async () => {
-      result.current.mutate("a-1");
+      result.current.mutate({ id: "a-1" });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

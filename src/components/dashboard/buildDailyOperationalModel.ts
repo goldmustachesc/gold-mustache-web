@@ -3,6 +3,7 @@ import type {
   BarberAbsenceData,
   BarberWorkingHoursDay,
 } from "@/types/booking";
+import { buildAbsenceRecurrenceSummary } from "@/lib/barber-absence-recurrence";
 import { minutesToTime, parseTimeToMinutes } from "@/utils/time-slots";
 
 function isFullDayAbsence(absence: BarberAbsenceData): boolean {
@@ -38,6 +39,7 @@ export type OperationalScheduleSlot = {
   isAvailable: boolean;
   isBlockedByAbsence: boolean;
   absenceReason: string | null;
+  absenceRecurrenceSummary: string | null;
 };
 
 export type CompactTimelineItem =
@@ -218,6 +220,9 @@ function buildAvailabilitySlots(params: {
       isAvailable: !blockingAbsence,
       isBlockedByAbsence: Boolean(blockingAbsence),
       absenceReason: blockingAbsence?.reason ?? null,
+      absenceRecurrenceSummary: buildAbsenceRecurrenceSummary(
+        blockingAbsence?.recurrence ?? null,
+      ),
     });
   }
 

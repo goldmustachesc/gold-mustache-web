@@ -9,6 +9,7 @@ import type {
   BarberAbsenceData,
   BarberWorkingHoursDay,
 } from "@/types/booking";
+import { buildAbsenceRecurrenceSummary } from "@/lib/barber-absence-recurrence";
 import { Calendar, CalendarOff, Clock, Phone } from "lucide-react";
 import {
   formatDateDdMmYyyyInSaoPaulo,
@@ -255,6 +256,9 @@ export function DailySchedule({
 
   if (variant === "compact") {
     const fullDayAbsenceReason = fullDayAbsence?.reason?.trim() ?? null;
+    const fullDayAbsenceRecurrence = buildAbsenceRecurrenceSummary(
+      fullDayAbsence?.recurrence ?? null,
+    );
     const hasAppointments = appointments.length > 0;
 
     return (
@@ -273,6 +277,11 @@ export function DailySchedule({
                 {fullDayAbsenceReason && (
                   <p className="mt-2 text-sm text-foreground/80">
                     Motivo: {fullDayAbsenceReason}
+                  </p>
+                )}
+                {fullDayAbsenceRecurrence && (
+                  <p className="mt-1 text-sm text-foreground/70">
+                    {fullDayAbsenceRecurrence}
                   </p>
                 )}
               </div>
@@ -355,6 +364,9 @@ export function DailySchedule({
                       endTime={item.slot.endTime}
                       isBlockedByAbsence={item.slot.isBlockedByAbsence}
                       absenceReason={item.slot.absenceReason}
+                      absenceRecurrenceSummary={
+                        item.slot.absenceRecurrenceSummary
+                      }
                       onOpenSheet={
                         onCreateAppointmentFromSlot || onCreateAbsenceFromSlot
                           ? handleOpenSlotSheet

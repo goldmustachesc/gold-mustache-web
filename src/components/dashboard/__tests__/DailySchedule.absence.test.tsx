@@ -52,6 +52,41 @@ describe("DailySchedule - vínculo com ausências", () => {
     expect(screen.queryByText("Disponível")).not.toBeInTheDocument();
   });
 
+  it("exibe resumo de recorrência na ausência de dia inteiro", () => {
+    render(
+      <DailySchedule
+        date={new Date("2026-02-23T12:00:00.000Z")}
+        appointments={[]}
+        absences={[
+          buildAbsence({
+            reason: "Férias",
+            recurrence: {
+              id: "rec-1",
+              barberId: "barber-1",
+              startDate: "2026-02-23",
+              frequency: "WEEKLY",
+              interval: 2,
+              endsAt: "2026-03-23",
+              occurrenceCount: null,
+              startTime: null,
+              endTime: null,
+              reason: "Férias",
+              createdAt: "2026-02-20T10:00:00.000Z",
+              updatedAt: "2026-02-20T10:00:00.000Z",
+            },
+          }),
+        ]}
+        onCancelAppointment={vi.fn()}
+        variant="compact"
+        workingHours={workingHours}
+      />,
+    );
+
+    expect(
+      screen.getByText("a cada 2 semanas até 23-03-2026"),
+    ).toBeInTheDocument();
+  });
+
   it("marca slots como bloqueados quando há ausência parcial", () => {
     render(
       <DailySchedule

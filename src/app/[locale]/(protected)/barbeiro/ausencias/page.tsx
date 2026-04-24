@@ -3,24 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useUser } from "@/hooks/useAuth";
-import { useBarberProfile } from "@/hooks/useBarberProfile";
-import {
-  useBarberAbsences,
-  useCreateBarberAbsence,
-  useDeleteBarberAbsence,
-} from "@/hooks/useBarberAbsences";
-import {
-  formatDateToString,
-  getBrazilDateString,
-  parseDateString,
-} from "@/utils/time-slots";
-import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
-import { cn } from "@/lib/utils";
-import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 import {
   CalendarOff,
   Trash2,
@@ -32,6 +14,49 @@ import {
   CheckCircle2,
   Info,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  buildAbsenceRecurrenceSummary,
+  isAbsenceRecurrenceWithinSupportedHorizon,
+} from "@/lib/barber-absence-recurrence";
+import { useUser } from "@/hooks/useAuth";
+import { useBarberProfile } from "@/hooks/useBarberProfile";
+import {
+  useBarberAbsences,
+  useCreateBarberAbsence,
+  useDeleteBarberAbsence,
+} from "@/hooks/useBarberAbsences";
+import type {
+  BarberAbsenceData,
+  BarberAbsenceRecurrenceFrequency,
+} from "@/types/booking";
+import {
+  formatDateToString,
+  getBrazilDateString,
+  parseDateString,
+} from "@/utils/time-slots";
+import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
+import { cn } from "@/lib/utils";
+import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
@@ -52,6 +77,13 @@ function parseAllDayParam(value: string | null): boolean | null {
   if (value === "false" || value === "0") return false;
   return null;
 }
+
+function isIsoDateOnOrAfter(left: string, right: string): boolean {
+  return left >= right;
+}
+
+type RecurrenceMode = "count" | "date";
+type DeleteScope = "occurrence" | "series";
 
 export default function BarberAbsencesPage() {
   const router = useRouter();
@@ -101,6 +133,18 @@ export default function BarberAbsencesPage() {
   const [endTime, setEndTime] = useState<string>("18:00");
   const [autoCancelConflicts, setAutoCancelConflicts] = useState(false);
   const [reason, setReason] = useState<string>("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] =
+    useState<BarberAbsenceRecurrenceFrequency>("WEEKLY");
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
+  const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>("date");
+  const [recurrenceEndsAt, setRecurrenceEndsAt] = useState<string>(() =>
+    formatDateToString(addDays(parseDateString(startDate), 30)),
+  );
+  const [recurrenceOccurrenceCount, setRecurrenceOccurrenceCount] = useState(4);
+  const [deleteTarget, setDeleteTarget] = useState<BarberAbsenceData | null>(
+    null,
+  );
   const prefillAppliedRef = useRef(false);
 
   useEffect(() => {
@@ -143,7 +187,31 @@ export default function BarberAbsencesPage() {
     );
   }
 
+  const recurrencePayload = isRecurring
+    ? {
+        frequency: recurrenceFrequency,
+        interval: recurrenceInterval,
+        ...(recurrenceMode === "date"
+          ? { endsAt: recurrenceEndsAt }
+          : { occurrenceCount: recurrenceOccurrenceCount }),
+      }
+    : null;
+
+  const canSubmitRecurrence =
+    !isRecurring ||
+    ((recurrenceMode === "date"
+      ? /^\d{4}-\d{2}-\d{2}$/.test(recurrenceEndsAt) &&
+        isIsoDateOnOrAfter(recurrenceEndsAt, date) &&
+        isAbsenceRecurrenceWithinSupportedHorizon(date, recurrenceEndsAt)
+      : Number.isInteger(recurrenceOccurrenceCount) &&
+        recurrenceOccurrenceCount >= 1 &&
+        recurrenceOccurrenceCount <= 365) &&
+      recurrenceInterval >= 1 &&
+      recurrenceInterval <= 365);
+
   const handleCreate = async () => {
+    if (!canSubmitRecurrence) return;
+
     try {
       await createAbsence.mutateAsync({
         date,
@@ -151,12 +219,31 @@ export default function BarberAbsencesPage() {
         endTime: allDay ? null : endTime,
         autoCancelConflicts,
         reason: reason.trim().length ? reason.trim() : null,
+        recurrence: recurrencePayload,
       });
       toast.success("Ausência cadastrada");
       setReason("");
+      setIsRecurring(false);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Erro ao cadastrar ausência",
+      );
+    }
+  };
+
+  const handleDeleteAbsence = async (scope: DeleteScope) => {
+    if (!deleteTarget) return;
+
+    try {
+      await deleteAbsence.mutateAsync({
+        id: deleteTarget.id,
+        scope,
+      });
+      toast.success("Ausência removida");
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao remover ausência",
       );
     }
   };
@@ -276,29 +363,153 @@ export default function BarberAbsencesPage() {
                   />
                 </div>
 
-                <label className="flex items-center gap-3 text-sm cursor-pointer p-3 rounded-xl bg-background/50 border border-border hover:border-border transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={autoCancelConflicts}
-                    onChange={(event) =>
-                      setAutoCancelConflicts(event.target.checked)
-                    }
-                    className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
-                  />
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background/50 p-3">
                   <div>
                     <span className="text-foreground font-medium">
-                      Cancelar agendamentos conflitantes
+                      Repetir ausência
                     </span>
                     <p className="text-xs text-muted-foreground">
-                      Se ativo, conflitos no período serão cancelados
-                      automaticamente.
+                      Cria uma série com a mesma regra e bloqueia conflitos.
                     </p>
                   </div>
-                </label>
+                  <Switch
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                  />
+                </div>
+
+                {isRecurring && (
+                  <div className="space-y-4 rounded-xl border border-border bg-background/50 p-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-2">
+                        <Label className="text-foreground">Frequência</Label>
+                        <Select
+                          value={recurrenceFrequency}
+                          onValueChange={(value) =>
+                            setRecurrenceFrequency(
+                              value as BarberAbsenceRecurrenceFrequency,
+                            )
+                          }
+                        >
+                          <SelectTrigger className="bg-background border-border text-foreground">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DAILY">Diária</SelectItem>
+                            <SelectItem value="WEEKLY">Semanal</SelectItem>
+                            <SelectItem value="MONTHLY">Mensal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label className="text-foreground">
+                          Repetir a cada
+                        </Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={recurrenceInterval}
+                          onChange={(event) =>
+                            setRecurrenceInterval(
+                              Number(event.target.value) || 1,
+                            )
+                          }
+                          className="bg-background border-border text-foreground focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-2">
+                        <Label className="text-foreground">
+                          Encerrar recorrência
+                        </Label>
+                        <Select
+                          value={recurrenceMode}
+                          onValueChange={(value) =>
+                            setRecurrenceMode(value as RecurrenceMode)
+                          }
+                        >
+                          <SelectTrigger className="bg-background border-border text-foreground">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="date">Data final</SelectItem>
+                            <SelectItem value="count">
+                              Quantidade de ocorrências
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {recurrenceMode === "date" ? (
+                        <div className="grid gap-2">
+                          <Label className="text-foreground">Até</Label>
+                          <Input
+                            type="date"
+                            min={date}
+                            value={recurrenceEndsAt}
+                            onChange={(event) =>
+                              setRecurrenceEndsAt(event.target.value)
+                            }
+                            className="bg-background border-border text-foreground focus:border-primary"
+                          />
+                        </div>
+                      ) : (
+                        <div className="grid gap-2">
+                          <Label className="text-foreground">
+                            Quantidade de ocorrências
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={recurrenceOccurrenceCount}
+                            onChange={(event) =>
+                              setRecurrenceOccurrenceCount(
+                                Number(event.target.value) || 1,
+                              )
+                            }
+                            className="bg-background border-border text-foreground focus:border-primary"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Nesta versão, recorrências bloqueiam conflitos na criação
+                      e não cancelam automaticamente agendamentos existentes.
+                    </p>
+                  </div>
+                )}
+
+                {!isRecurring && (
+                  <label className="flex items-center gap-3 text-sm cursor-pointer p-3 rounded-xl bg-background/50 border border-border hover:border-border transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={autoCancelConflicts}
+                      onChange={(event) =>
+                        setAutoCancelConflicts(event.target.checked)
+                      }
+                      className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                    />
+                    <div>
+                      <span className="text-foreground font-medium">
+                        Cancelar agendamentos conflitantes
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        Se ativo, conflitos no período serão cancelados
+                        automaticamente.
+                      </p>
+                    </div>
+                  </label>
+                )}
 
                 <Button
                   onClick={handleCreate}
-                  disabled={createAbsence.isPending}
+                  disabled={createAbsence.isPending || !canSubmitRecurrence}
                   className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-foreground font-semibold h-12"
                 >
                   {createAbsence.isPending ? (
@@ -445,13 +656,21 @@ export default function BarberAbsencesPage() {
                                 {a.reason}
                               </div>
                             )}
+                            {a.recurrence && (
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <Badge variant="info">Recorrente</Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {buildAbsenceRecurrenceSummary(a.recurrence)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteAbsence.mutate(a.id)}
+                          onClick={() => setDeleteTarget(a)}
                           disabled={deleteAbsence.isPending}
                           className="text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0 sm:w-auto sm:px-3 sm:gap-2"
                           aria-label="Remover ausência"
@@ -468,6 +687,71 @@ export default function BarberAbsencesPage() {
           </div>
         </div>
       </main>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent className="border-border bg-background text-foreground sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover ausência</DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.recurrence
+                ? "Esta ausência faz parte de uma recorrência. Escolha se quer remover só este dia ou todas as ocorrências futuras."
+                : "Confirme a remoção desta ausência."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteTarget?.recurrence ? (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full"
+                disabled={deleteAbsence.isPending}
+                onClick={() => handleDeleteAbsence("occurrence")}
+              >
+                Remover apenas este dia
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-border text-foreground"
+                disabled={deleteAbsence.isPending}
+                onClick={() => handleDeleteAbsence("series")}
+              >
+                Remover recorrência futura
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full"
+                disabled={deleteAbsence.isPending}
+                onClick={() => handleDeleteAbsence("occurrence")}
+              >
+                Remover ausência
+              </Button>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-border text-foreground"
+              disabled={deleteAbsence.isPending}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

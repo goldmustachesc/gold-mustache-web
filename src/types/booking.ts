@@ -161,6 +161,23 @@ export interface BarberWorkingHoursDay {
 // Barber Absence Types
 // ============================================
 
+export type BarberAbsenceRecurrenceFrequency = "DAILY" | "WEEKLY" | "MONTHLY";
+
+export interface BarberAbsenceRecurrenceData {
+  id: string;
+  barberId: string;
+  startDate: string;
+  frequency: BarberAbsenceRecurrenceFrequency;
+  interval: number;
+  endsAt: string | null;
+  occurrenceCount: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BarberAbsenceData {
   id: string;
   barberId: string;
@@ -168,6 +185,8 @@ export interface BarberAbsenceData {
   startTime: string | null; // null => all day
   endTime: string | null; // null => all day
   reason: string | null;
+  recurrenceId?: string | null;
+  recurrence?: BarberAbsenceRecurrenceData | null;
   createdAt: string;
   updatedAt: string;
 }

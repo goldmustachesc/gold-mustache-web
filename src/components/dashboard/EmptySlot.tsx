@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { BarberChairIcon } from "./BarberChairIcon";
 
 export interface EmptySlotProps {
@@ -9,6 +10,7 @@ export interface EmptySlotProps {
   endTime: string;
   isBlockedByAbsence: boolean;
   absenceReason: string | null;
+  absenceRecurrenceSummary?: string | null;
   onOpenSheet?: (startTime: string, endTime: string) => void;
 }
 
@@ -17,6 +19,7 @@ export function EmptySlot({
   endTime,
   isBlockedByAbsence,
   absenceReason,
+  absenceRecurrenceSummary,
   onOpenSheet,
 }: EmptySlotProps) {
   const hasAction = !isBlockedByAbsence && Boolean(onOpenSheet);
@@ -52,6 +55,14 @@ export function EmptySlot({
           </p>
           {isBlockedByAbsence && absenceReason && (
             <p className="text-xs mt-1 text-foreground/80">{absenceReason}</p>
+          )}
+          {isBlockedByAbsence && absenceRecurrenceSummary && (
+            <div className="mt-2 space-y-1">
+              <Badge variant="info">Recorrente</Badge>
+              <p className="text-xs text-foreground/70">
+                {absenceRecurrenceSummary}
+              </p>
+            </div>
           )}
         </div>
 
