@@ -54,7 +54,7 @@ describe("GET /api/admin/clients", () => {
 
   it("returns registered clients when requested", async () => {
     vi.mocked(prisma.profile.findMany).mockResolvedValue([
-      { id: "p-1", fullName: "Ana", phone: "47999999999" },
+      { id: "p-1", fullName: "Ana", phone: "47999999999" } as never,
     ]);
     vi.mocked(prisma.profile.count).mockResolvedValue(1);
 
@@ -77,7 +77,7 @@ describe("GET /api/admin/clients", () => {
 
   it("returns guest clients when requested", async () => {
     vi.mocked(prisma.guestClient.findMany).mockResolvedValue([
-      { id: "g-1", fullName: "Bia", phone: "47988888888" },
+      { id: "g-1", fullName: "Bia", phone: "47988888888" } as never,
     ]);
     vi.mocked(prisma.guestClient.count).mockResolvedValue(1);
 
@@ -100,10 +100,10 @@ describe("GET /api/admin/clients", () => {
 
   it("returns merged clients for all", async () => {
     vi.mocked(prisma.profile.findMany).mockResolvedValue([
-      { id: "p-1", fullName: "Ana", phone: "47999999999" },
+      { id: "p-1", fullName: "Ana", phone: "47999999999" } as never,
     ]);
     vi.mocked(prisma.guestClient.findMany).mockResolvedValue([
-      { id: "g-1", fullName: "Bia", phone: "47988888888" },
+      { id: "g-1", fullName: "Bia", phone: "47988888888" } as never,
     ]);
     vi.mocked(prisma.profile.count).mockResolvedValue(1);
     vi.mocked(prisma.guestClient.count).mockResolvedValue(1);
