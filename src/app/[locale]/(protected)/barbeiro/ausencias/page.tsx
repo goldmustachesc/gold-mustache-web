@@ -209,6 +209,20 @@ export default function BarberAbsencesPage() {
       recurrenceInterval >= 1 &&
       recurrenceInterval <= 365);
 
+  const recurrenceIntervalUnitLabel =
+    recurrenceFrequency === "DAILY"
+      ? "dias"
+      : recurrenceFrequency === "WEEKLY"
+        ? "semanas"
+        : "meses";
+
+  const recurrenceIntervalSummary =
+    recurrenceFrequency === "DAILY"
+      ? `${recurrenceInterval} dia${recurrenceInterval === 1 ? "" : "s"}`
+      : recurrenceFrequency === "WEEKLY"
+        ? `${recurrenceInterval} semana${recurrenceInterval === 1 ? "" : "s"}`
+        : `${recurrenceInterval} mês${recurrenceInterval === 1 ? "" : "es"}`;
+
   const handleCreate = async () => {
     if (!canSubmitRecurrence) return;
 
@@ -404,7 +418,7 @@ export default function BarberAbsencesPage() {
 
                       <div className="grid gap-2">
                         <Label className="text-foreground">
-                          Repetir a cada
+                          A cada ({recurrenceIntervalUnitLabel})
                         </Label>
                         <Input
                           type="number"
@@ -418,6 +432,9 @@ export default function BarberAbsencesPage() {
                           }
                           className="bg-background border-border text-foreground focus:border-primary"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          A regra atual ficará em "{recurrenceIntervalSummary}".
+                        </p>
                       </div>
                     </div>
 
