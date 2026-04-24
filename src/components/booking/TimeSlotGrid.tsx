@@ -8,6 +8,10 @@ import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability
 import { cn } from "@/lib/utils";
 import { Clock } from "lucide-react";
 import type { BookingAvailability, TimeSlot } from "@/types/booking";
+import {
+  BOOKING_START_TIME_STEP_MINUTES,
+  roundTimeUpToSlotBoundary,
+} from "@/utils/time-slots";
 
 interface TimeSlotGridProps {
   availability: BookingAvailability | null;
@@ -101,9 +105,13 @@ export function TimeSlotGrid({
             id="booking-exact-time"
             aria-label="Escolha o início exato"
             type="time"
-            step={60}
+            step={BOOKING_START_TIME_STEP_MINUTES * 60}
             value={selectedTime}
-            onChange={(event) => setSelectedTime(event.target.value)}
+            onChange={(event) =>
+              setSelectedTime(
+                roundTimeUpToSlotBoundary(event.target.value) ?? "",
+              )
+            }
             className={cn(
               "font-mono",
               selectedTimeError &&
@@ -111,8 +119,8 @@ export function TimeSlotGrid({
             )}
           />
           <p className="text-xs text-muted-foreground">
-            Escolha qualquer minuto que caiba integralmente em uma das janelas
-            acima.
+            Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro
+            das janelas acima.
           </p>
           {selectedTimeError && (
             <p className="text-sm text-destructive">{selectedTimeError}</p>

@@ -21,11 +21,14 @@ vi.mock("@/utils/datetime", () => ({
 }));
 
 vi.mock("@/utils/time-slots", () => ({
+  BOOKING_START_TIME_STEP_MINUTES: 5,
   formatDateToString: vi.fn().mockReturnValue("2026-03-10"),
   parseTimeToMinutes: (time: string) => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
   },
+  roundMinutesUpToSlotBoundary: (minutes: number) => minutes,
+  roundTimeUpToSlotBoundary: (time: string) => time,
 }));
 
 vi.mock("@/hooks/useBrazilToday", () => ({

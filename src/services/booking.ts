@@ -35,6 +35,7 @@ import {
   getCurrentBrazilMinutes,
   getTodayUTCMidnight,
   getMinutesUntilAppointment,
+  roundTimeUpToSlotBoundary,
 } from "@/utils/time-slots";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 import type {
@@ -700,7 +701,11 @@ export async function createAppointment(
   input: CreateAppointmentInput,
   clientId: string,
 ): Promise<AppointmentWithDetails> {
-  const { serviceId, barberId, date, startTime } = input;
+  const { serviceId, barberId, date } = input;
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
@@ -856,8 +861,11 @@ export interface GuestAppointmentResult {
 export async function createGuestAppointment(
   input: CreateGuestAppointmentInput,
 ): Promise<GuestAppointmentResult> {
-  const { serviceId, barberId, date, startTime, clientName, clientPhone } =
-    input;
+  const { serviceId, barberId, date, clientName, clientPhone } = input;
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
@@ -1045,7 +1053,11 @@ export async function createAppointmentByBarber(
   input: CreateAppointmentByBarberInput,
   barberId: string,
 ): Promise<AppointmentWithDetails> {
-  const { serviceId, date, startTime, clientName, clientPhone } = input;
+  const { serviceId, date, clientName, clientPhone } = input;
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },

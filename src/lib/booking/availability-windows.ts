@@ -1,4 +1,8 @@
-import { minutesToTime, parseTimeToMinutes } from "@/utils/time-slots";
+import {
+  roundMinutesUpToSlotBoundary,
+  minutesToTime,
+  parseTimeToMinutes,
+} from "@/utils/time-slots";
 import type { TimeWindow } from "./availability-policy";
 import type { TimeRangeMinutes } from "./time-ranges";
 
@@ -36,6 +40,18 @@ function toWindow(range: TimeRangeMinutes): AvailabilityWindow {
   return {
     startTime: minutesToTime(range.start),
     endTime: minutesToTime(range.end),
+  };
+}
+
+function roundRangeStart(range: TimeRangeMinutes): TimeRangeMinutes {
+  const roundedStart = roundMinutesUpToSlotBoundary(range.start);
+  if (roundedStart === null) {
+    return range;
+  }
+
+  return {
+    ...range,
+    start: roundedStart,
   };
 }
 
@@ -158,6 +174,7 @@ export function buildAvailabilityWindows(
   );
 
   return availableRanges
+    .map(roundRangeStart)
     .filter(
       (windowRange) =>
         windowRange.end - windowRange.start >= serviceDurationMinutes,
@@ -172,6 +189,11 @@ export function isStartTimeWithinAvailabilityWindows(params: {
 }): boolean {
   const { windows, startTime, durationMinutes } = params;
   const startMinutes = parseTimeToMinutes(startTime);
+  const roundedMinutes = roundMinutesUpToSlotBoundary(startMinutes);
+  if (roundedMinutes === null || roundedMinutes !== startMinutes) {
+    return false;
+  }
+
   const endMinutes = startMinutes + durationMinutes;
 
   return windows.some((windowRange) => {

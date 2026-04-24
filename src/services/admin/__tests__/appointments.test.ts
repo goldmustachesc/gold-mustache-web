@@ -23,6 +23,8 @@ vi.mock("@/utils/time-slots", () => ({
     const [h, m] = time.split(":").map(Number);
     return h * 60 + m;
   }),
+  roundMinutesUpToSlotBoundary: vi.fn((minutes: number) => minutes),
+  roundTimeUpToSlotBoundary: vi.fn((time: string) => time),
   addMinutesToTime: vi.fn((time: string, minutes: number) => {
     const [h, m] = time.split(":").map(Number);
     const total = h * 60 + m + minutes;
@@ -45,7 +47,7 @@ const mockCreateAppointment = vi.fn();
 const mockCreateAppointmentByBarber = vi.fn();
 const mockCancelAppointmentInternal = vi.fn();
 const mockGetActiveBarbers = vi.fn();
-const mockGetAvailableSlots = vi.fn();
+const mockGetBookingAvailability = vi.fn();
 
 vi.mock("@/services/booking", () => ({
   createAppointment: (...args: unknown[]) => mockCreateAppointment(...args),
@@ -54,7 +56,8 @@ vi.mock("@/services/booking", () => ({
   cancelAppointmentInternal: (...args: unknown[]) =>
     mockCancelAppointmentInternal(...args),
   getActiveBarbers: () => mockGetActiveBarbers(),
-  getAvailableSlots: (...args: unknown[]) => mockGetAvailableSlots(...args),
+  getBookingAvailability: (...args: unknown[]) =>
+    mockGetBookingAvailability(...args),
 }));
 
 import { prisma } from "@/lib/prisma";
@@ -118,9 +121,9 @@ beforeEach(() => {
   vi.mocked(prisma.profile.findMany).mockResolvedValue([]);
   vi.mocked(prisma.guestClient.findMany).mockResolvedValue([]);
   vi.mocked(prisma.barberAbsence.findMany).mockResolvedValue([]);
-  mockGetAvailableSlots.mockResolvedValue([
-    { time: "10:30", available: true, barberId: "barber-1" },
-  ]);
+  mockGetBookingAvailability.mockResolvedValue({
+    windows: [{ startTime: "10:30", endTime: "11:30" }],
+  });
   mockGetActiveBarbers.mockResolvedValue([{ id: "barber-1", name: "João" }]);
   mockCreateAppointment.mockResolvedValue(mockAppointmentWithDetails);
   mockCreateAppointmentByBarber.mockResolvedValue({
@@ -391,14 +394,24 @@ describe("rescheduleAppointmentAsAdmin", () => {
   });
 
   it("throws when slot is unavailable", async () => {
-    mockGetAvailableSlots.mockResolvedValue([
-      { time: "10:30", available: false, barberId: "barber-1" },
-    ]);
+    mockGetBookingAvailability.mockResolvedValue({
+      windows: [{ startTime: "11:00", endTime: "11:30" }],
+    });
 
     await expect(
       rescheduleAppointmentAsAdmin(
         "apt-1",
         { date: "2026-04-25", startTime: "10:30" },
+        "admin-1",
+      ),
+    ).rejects.toThrow("SLOT_UNAVAILABLE");
+  });
+
+  it("throws when rounded slot crosses day boundary", async () => {
+    await expect(
+      rescheduleAppointmentAsAdmin(
+        "apt-1",
+        { date: "2026-04-25", startTime: "23:56" },
         "admin-1",
       ),
     ).rejects.toThrow("SLOT_UNAVAILABLE");

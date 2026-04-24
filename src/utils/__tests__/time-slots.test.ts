@@ -7,6 +7,7 @@ import {
   parseTimeToMinutes,
   minutesToTime,
   addMinutesToTime,
+  roundTimeUpToSlotBoundary,
   isInBreakPeriod,
   generateTimeSlots,
   filterAvailableSlots,
@@ -37,6 +38,16 @@ describe("utils/time-slots (deterministic unit tests)", () => {
     expect(minutesToTime(0)).toBe("00:00");
     expect(minutesToTime(75)).toBe("01:15");
     expect(addMinutesToTime("09:30", 45)).toBe("10:15");
+  });
+
+  it("rounds broken appointment start times up to the next clean slot", () => {
+    expect(roundTimeUpToSlotBoundary("09:53")).toBe("09:55");
+    expect(roundTimeUpToSlotBoundary("09:55")).toBe("09:55");
+    expect(roundTimeUpToSlotBoundary("09:56")).toBe("10:00");
+    expect(roundTimeUpToSlotBoundary("09:01")).toBe("09:05");
+    expect(roundTimeUpToSlotBoundary("09:00")).toBe("09:00");
+    expect(roundTimeUpToSlotBoundary("")).toBeNull();
+    expect(roundTimeUpToSlotBoundary("23:56")).toBeNull();
   });
 
   it("isInBreakPeriod handles nulls and boundaries", () => {

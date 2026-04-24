@@ -55,6 +55,33 @@ describe("lib/booking/availability-windows", () => {
     ).toEqual([{ startTime: "10:15", endTime: "11:00" }]);
   });
 
+  it("rounds broken window starts up to the next 5-minute slot", () => {
+    expect(
+      buildAvailabilityWindows({
+        workingStartTime: "09:00",
+        workingEndTime: "12:00",
+        serviceDurationMinutes: 30,
+        closures: [],
+        absences: [],
+        appointments: [],
+        minimumStartTime: "09:53",
+      }),
+    ).toEqual([{ startTime: "09:55", endTime: "12:00" }]);
+
+    expect(
+      buildAvailabilityWindows({
+        workingStartTime: "09:00",
+        workingEndTime: "12:00",
+        serviceDurationMinutes: 30,
+        closures: [],
+        absences: [],
+        appointments: [
+          { startTime: "09:26", endTime: "09:53", status: "CONFIRMED" },
+        ],
+      }),
+    ).toEqual([{ startTime: "09:55", endTime: "12:00" }]);
+  });
+
   it("checks whether a selected time fits completely inside an availability window", () => {
     const windows = [
       { startTime: "09:00", endTime: "10:30" },
@@ -68,6 +95,14 @@ describe("lib/booking/availability-windows", () => {
         durationMinutes: 30,
       }),
     ).toBe(true);
+
+    expect(
+      isStartTimeWithinAvailabilityWindows({
+        windows,
+        startTime: "09:46",
+        durationMinutes: 30,
+      }),
+    ).toBe(false);
 
     expect(
       isStartTimeWithinAvailabilityWindows({

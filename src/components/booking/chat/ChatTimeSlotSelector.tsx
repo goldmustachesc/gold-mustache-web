@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
+import {
+  BOOKING_START_TIME_STEP_MINUTES,
+  roundTimeUpToSlotBoundary,
+} from "@/utils/time-slots";
 
 interface ChatTimeSlotSelectorProps {
   availability: BookingAvailability | null;
@@ -146,9 +150,11 @@ export function ChatTimeSlotSelector({
           id="chat-exact-time"
           aria-label="Escolha o início exato"
           type="time"
-          step={60}
+          step={BOOKING_START_TIME_STEP_MINUTES * 60}
           value={selectedTime}
-          onChange={(event) => setSelectedTime(event.target.value)}
+          onChange={(event) =>
+            setSelectedTime(roundTimeUpToSlotBoundary(event.target.value) ?? "")
+          }
           className={cn(
             "mt-2 text-lg font-semibold tabular-nums",
             "bg-white/80 border-zinc-300/60 dark:bg-zinc-900/60 dark:border-zinc-700/60",
@@ -157,7 +163,8 @@ export function ChatTimeSlotSelector({
           )}
         />
         <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-          Qualquer minuto dentro das janelas acima.
+          Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro das
+          janelas acima.
         </p>
         {selectedTimeError && (
           <p className="mt-1 text-sm text-destructive">{selectedTimeError}</p>

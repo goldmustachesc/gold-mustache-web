@@ -90,7 +90,7 @@ describe("TimeSlotsSection", () => {
     expect(screen.getByText("10:30 - 12:00")).toBeInTheDocument();
   });
 
-  it("calls onSelect when exact time input changes", async () => {
+  it("rounds broken exact time input changes", async () => {
     const onSelect = vi.fn();
     render(
       <TimeSlotsSection
@@ -104,7 +104,7 @@ describe("TimeSlotsSection", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
-      target: { value: "09:45" },
+      target: { value: "09:43" },
     });
     expect(onSelect).toHaveBeenLastCalledWith("09:45");
   });

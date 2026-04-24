@@ -7,15 +7,17 @@ import {
   parseDateString,
   parseDateStringToUTC,
   parseTimeToMinutes,
+  roundTimeUpToSlotBoundary,
 } from "@/utils/time-slots";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 import {
-  getAvailableSlots,
   cancelAppointmentInternal,
   createAppointment,
   createAppointmentByBarber,
   getActiveBarbers,
+  getBookingAvailability,
 } from "@/services/booking";
+import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
 import type { AppointmentWithDetails } from "@/types/booking";
 import type { AdminCreateAppointmentInput } from "@/lib/validations/admin-appointments";
 import { notifyAppointmentCancelledByBarber } from "@/services/notification";
@@ -303,6 +305,10 @@ export async function rescheduleAppointmentAsAdmin(
   input: AdminRescheduleAppointmentInput,
   adminProfileId: string,
 ): Promise<AppointmentAdminItem> {
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
@@ -324,36 +330,36 @@ export async function rescheduleAppointmentAsAdmin(
   }
 
   const currentDate = formatPrismaDateToString(appointment.date);
-  if (currentDate === input.date && appointment.startTime === input.startTime) {
+  if (currentDate === input.date && appointment.startTime === startTime) {
     return mapPrismaToAdminItem(appointment);
   }
 
   const requestedDateLocal = parseDateString(input.date);
-  if (isDateTimeInPast(requestedDateLocal, input.startTime)) {
+  if (isDateTimeInPast(requestedDateLocal, startTime)) {
     throw new Error("SLOT_IN_PAST");
   }
 
   const requestedDateDb = parseDateStringToUTC(input.date);
 
-  const availableSlots = await getAvailableSlots(
+  const availability = await getBookingAvailability(
     requestedDateLocal,
     appointment.barberId,
     appointment.serviceId,
     { applyLeadTime: false },
   );
-  const selectedSlot = availableSlots.find(
-    (slot) => slot.time === input.startTime,
-  );
 
-  if (!selectedSlot || !selectedSlot.available) {
+  const fitsAvailability = isStartTimeWithinAvailabilityWindows({
+    windows: availability.windows,
+    startTime,
+    durationMinutes: appointment.service.duration,
+  });
+
+  if (!fitsAvailability) {
     throw new Error("SLOT_UNAVAILABLE");
   }
 
-  const newEndTime = calculateEndTime(
-    input.startTime,
-    appointment.service.duration,
-  );
-  const newStartMinutes = parseTimeToMinutes(input.startTime);
+  const newEndTime = calculateEndTime(startTime, appointment.service.duration);
+  const newStartMinutes = parseTimeToMinutes(startTime);
   const newEndMinutes = parseTimeToMinutes(newEndTime);
 
   if (appointment.clientId || appointment.guestClientId) {
@@ -395,7 +401,7 @@ export async function rescheduleAppointmentAsAdmin(
     where: { id: appointment.id },
     data: {
       date: requestedDateDb,
-      startTime: input.startTime,
+      startTime,
       endTime: newEndTime,
       source: "ADMIN",
       rescheduledBy: adminProfileId,

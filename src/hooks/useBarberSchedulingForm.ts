@@ -18,7 +18,10 @@ import {
   useCreateAppointmentByBarber,
 } from "@/hooks/useBooking";
 import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
-import { getBrazilDateString } from "@/utils/time-slots";
+import {
+  getBrazilDateString,
+  roundTimeUpToSlotBoundary,
+} from "@/utils/time-slots";
 import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
 import {
   isValidDateParam,
@@ -45,13 +48,16 @@ export function useBarberSchedulingForm() {
     ? prefilledDate
     : getBrazilDateString();
   const initialTime = isValidTimeParam(prefilledTime) ? prefilledTime : "";
+  const normalizedInitialTime = initialTime
+    ? (roundTimeUpToSlotBoundary(initialTime) ?? "")
+    : "";
 
   const { data: user, isLoading: userLoading } = useUser();
   const { data: barberProfile, isLoading: barberLoading } = useBarberProfile();
 
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [selectedDate, setSelectedDate] = useState(initialDate);
-  const [selectedTime, setSelectedTime] = useState(initialTime);
+  const [selectedTime, setSelectedTime] = useState(normalizedInitialTime);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const hasMounted = useRef(false);
@@ -137,6 +143,10 @@ export function useBarberSchedulingForm() {
       setSelectedClient(null);
       setClientName("");
     }
+  }, []);
+
+  const onTimeChange = useCallback((time: string) => {
+    setSelectedTime(time ? (roundTimeUpToSlotBoundary(time) ?? "") : "");
   }, []);
 
   const onSelectClient = useCallback((client: ClientData) => {
@@ -320,7 +330,7 @@ export function useBarberSchedulingForm() {
       onPhoneChange,
       onServiceChange: setSelectedServiceId,
       onDateChange: setSelectedDate,
-      onTimeChange: setSelectedTime,
+      onTimeChange,
       onSelectClient,
       onClearSelection,
       onPhoneFocus,

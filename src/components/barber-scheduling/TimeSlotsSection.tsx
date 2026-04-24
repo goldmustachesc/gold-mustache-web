@@ -3,6 +3,10 @@ import { cn } from "@/lib/utils";
 import type { BookingAvailability } from "@/types/booking";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  BOOKING_START_TIME_STEP_MINUTES,
+  roundTimeUpToSlotBoundary,
+} from "@/utils/time-slots";
 
 interface TimeSlotsSectionProps {
   availability: BookingAvailability | null;
@@ -82,16 +86,19 @@ export function TimeSlotsSection({
               id="barber-exact-time"
               aria-label="Escolha o início exato"
               type="time"
-              step={60}
+              step={BOOKING_START_TIME_STEP_MINUTES * 60}
               value={selectedTime}
-              onChange={(event) => onSelect(event.target.value)}
+              onChange={(event) =>
+                onSelect(roundTimeUpToSlotBoundary(event.target.value) ?? "")
+              }
               className={cn(
                 selectedTimeError &&
                   "border-destructive focus-visible:ring-destructive/30",
               )}
             />
             <p className="text-xs text-muted-foreground">
-              Digite qualquer minuto dentro das janelas acima.
+              Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro
+              das janelas acima.
             </p>
             {selectedTimeError && (
               <p className="text-sm text-destructive">{selectedTimeError}</p>

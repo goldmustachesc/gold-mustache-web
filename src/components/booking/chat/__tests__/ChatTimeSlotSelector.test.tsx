@@ -47,7 +47,7 @@ describe("ChatTimeSlotSelector", () => {
     );
   });
 
-  it("calls onSelect when exact time is confirmed", async () => {
+  it("rounds and confirms a broken exact time", async () => {
     const onSelect = vi.fn();
     render(
       <ChatTimeSlotSelector availability={availability} onSelect={onSelect} />,
@@ -60,7 +60,7 @@ describe("ChatTimeSlotSelector", () => {
       screen.getByRole("button", { name: "Confirmar horário" }),
     );
     expect(onSelect).toHaveBeenCalledWith({
-      time: "09:17",
+      time: "09:20",
       available: true,
       barberId: "barber-1",
     });

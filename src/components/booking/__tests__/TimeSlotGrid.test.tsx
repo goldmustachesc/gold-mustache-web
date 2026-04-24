@@ -68,7 +68,7 @@ describe("TimeSlotGrid", () => {
     );
   });
 
-  it("calls onSelect when a valid exact time is confirmed", async () => {
+  it("rounds and confirms a broken exact time", async () => {
     const onSelect = vi.fn();
 
     render(
@@ -86,7 +86,7 @@ describe("TimeSlotGrid", () => {
       screen.getByRole("button", { name: "Confirmar horário" }),
     );
     expect(onSelect).toHaveBeenCalledWith({
-      time: "09:17",
+      time: "09:20",
       available: true,
       barberId: "barber-1",
     });

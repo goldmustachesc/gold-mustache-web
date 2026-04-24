@@ -53,6 +53,43 @@ export function minutesToTime(minutes: number): string {
   return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
+export const BOOKING_START_TIME_STEP_MINUTES = 5;
+
+export function roundMinutesUpToSlotBoundary(
+  minutes: number,
+  stepMinutes = BOOKING_START_TIME_STEP_MINUTES,
+): number | null {
+  if (!Number.isFinite(minutes) || stepMinutes <= 0) {
+    return null;
+  }
+
+  const roundedMinutes = Math.ceil(minutes / stepMinutes) * stepMinutes;
+  if (roundedMinutes >= 24 * 60) {
+    return null;
+  }
+
+  return roundedMinutes;
+}
+
+export function roundTimeUpToSlotBoundary(
+  time: string,
+  stepMinutes = BOOKING_START_TIME_STEP_MINUTES,
+): string | null {
+  if (!time) {
+    return null;
+  }
+
+  const roundedMinutes = roundMinutesUpToSlotBoundary(
+    parseTimeToMinutes(time),
+    stepMinutes,
+  );
+  if (roundedMinutes === null) {
+    return null;
+  }
+
+  return minutesToTime(roundedMinutes);
+}
+
 /**
  * Adds duration in minutes to a time string
  */

@@ -348,6 +348,18 @@ describe("useBarberSchedulingForm", () => {
       expect(result.current.formState.selectedTime).toBe("09:30");
     });
 
+    it("rounds broken selected times up to the next 5-minute slot", () => {
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handlers.onTimeChange("09:53");
+      });
+
+      expect(result.current.formState.selectedTime).toBe("09:55");
+    });
+
     it("exposes the continuous availability windows", () => {
       const { result } = renderHook(() => useBarberSchedulingForm(), {
         wrapper: createWrapper(),
