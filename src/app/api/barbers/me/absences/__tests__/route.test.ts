@@ -21,6 +21,7 @@ vi.mock("@/lib/prisma", () => ({
     barberAbsence: {
       findMany: vi.fn(),
       create: vi.fn(),
+      createMany: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
       findUnique: vi.fn(),
@@ -239,24 +240,14 @@ describe("POST /api/barbers/me/absences", () => {
       createdAt: new Date("2025-01-01"),
       updatedAt: new Date("2025-01-01"),
     } as never);
-    vi.mocked(prisma.barberAbsence.create)
-      .mockResolvedValueOnce({
-        ...ABSENCE_FIXTURE,
-        id: "abs-1",
-        recurrenceId: "rec-1",
-      } as never)
-      .mockResolvedValueOnce({
-        ...ABSENCE_FIXTURE,
-        id: "abs-2",
-        date: new Date("2026-03-29T00:00:00.000Z"),
-        recurrenceId: "rec-1",
-      } as never)
-      .mockResolvedValueOnce({
-        ...ABSENCE_FIXTURE,
-        id: "abs-3",
-        date: new Date("2026-04-12T00:00:00.000Z"),
-        recurrenceId: "rec-1",
-      } as never);
+    vi.mocked(prisma.barberAbsence.create).mockResolvedValueOnce({
+      ...ABSENCE_FIXTURE,
+      id: "abs-1",
+      recurrenceId: "rec-1",
+    } as never);
+    vi.mocked(prisma.barberAbsence.createMany).mockResolvedValue({
+      count: 2,
+    } as never);
 
     const response = await POST(
       createPostRequest({
@@ -279,7 +270,15 @@ describe("POST /api/barbers/me/absences", () => {
         interval: 2,
       }),
     });
-    expect(prisma.barberAbsence.create).toHaveBeenCalledTimes(3);
+    expect(prisma.barberAbsence.create).toHaveBeenCalledTimes(1);
+    expect(prisma.barberAbsence.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          barberId: "barber-1",
+          recurrenceId: "rec-1",
+        }),
+      ]),
+    });
     expect(json.data.createdAbsenceCount).toBe(3);
     expect(json.data.recurrence.frequency).toBe("WEEKLY");
   });

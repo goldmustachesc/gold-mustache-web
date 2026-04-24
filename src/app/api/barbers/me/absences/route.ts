@@ -385,7 +385,16 @@ export async function POST(request: Request) {
             })
           : null;
 
-        const createdAbsences: Array<{
+        const createAbsenceData = (absenceDate: string) => ({
+          barberId: auth.barberId,
+          date: parseDateStringToUTC(absenceDate),
+          startTime,
+          endTime,
+          reason,
+          ...(recurrenceRecord ? { recurrenceId: recurrenceRecord.id } : {}),
+        });
+
+        let firstAbsence: {
           barberId: string;
           createdAt: Date;
           date: Date;
@@ -396,28 +405,28 @@ export async function POST(request: Request) {
           recurrenceId: string | null;
           startTime: string | null;
           updatedAt: Date;
-        }> = [];
-        for (const absenceDate of absenceDates.dates) {
-          const createdAbsence = await tx.barberAbsence.create({
-            data: {
-              barberId: auth.barberId,
-              date: parseDateStringToUTC(absenceDate),
-              startTime,
-              endTime,
-              reason,
-              ...(recurrenceRecord
-                ? { recurrenceId: recurrenceRecord.id }
-                : {}),
-            },
+        } | null = null;
+
+        if (recurrence && absenceDates.dates.length > 1) {
+          firstAbsence = await tx.barberAbsence.create({
+            data: createAbsenceData(absenceDates.dates[0]),
             include: { recurrence: true },
           });
-          createdAbsences.push(createdAbsence);
+
+          await tx.barberAbsence.createMany({
+            data: absenceDates.dates.slice(1).map(createAbsenceData),
+          });
+        } else {
+          firstAbsence = await tx.barberAbsence.create({
+            data: createAbsenceData(absenceDates.dates[0]),
+            include: { recurrence: true },
+          });
         }
 
         return {
           recurrence: recurrenceRecord,
-          firstAbsence: createdAbsences[0],
-          createdAbsenceCount: createdAbsences.length,
+          firstAbsence,
+          createdAbsenceCount: absenceDates.dates.length,
         };
       },
     );
