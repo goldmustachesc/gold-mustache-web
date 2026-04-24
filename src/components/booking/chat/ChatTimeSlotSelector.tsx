@@ -156,7 +156,7 @@ export function ChatTimeSlotSelector({
             setSelectedTime(roundTimeUpToSlotBoundary(event.target.value) ?? "")
           }
           className={cn(
-            "mt-2 text-lg font-semibold tabular-nums",
+            "mt-2 min-w-0 max-w-full appearance-none text-lg font-semibold tabular-nums",
             "bg-white/80 border-zinc-300/60 dark:bg-zinc-900/60 dark:border-zinc-700/60",
             selectedTimeError &&
               "border-destructive focus-visible:ring-destructive/30",

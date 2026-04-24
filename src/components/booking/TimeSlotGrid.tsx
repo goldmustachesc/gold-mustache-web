@@ -113,7 +113,7 @@ export function TimeSlotGrid({
               )
             }
             className={cn(
-              "font-mono",
+              "font-mono min-w-0 max-w-full appearance-none",
               selectedTimeError &&
                 "border-destructive focus-visible:ring-destructive/30",
             )}

@@ -92,6 +92,7 @@ export function TimeSlotsSection({
                 onSelect(roundTimeUpToSlotBoundary(event.target.value) ?? "")
               }
               className={cn(
+                "min-w-0 max-w-full appearance-none",
                 selectedTimeError &&
                   "border-destructive focus-visible:ring-destructive/30",
               )}
