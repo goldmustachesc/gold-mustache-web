@@ -11,6 +11,7 @@ const baseSlot: OperationalScheduleSlot = {
   isAvailable: true,
   isBlockedByAbsence: false,
   absenceReason: null,
+  absenceRecurrenceSummary: null,
 };
 
 const mockAppointment = {
