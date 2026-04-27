@@ -17,12 +17,17 @@ export function KpiCard({
     typeof value === "number" ? value.toLocaleString(locale) : value;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex h-full flex-col bg-card border border-border rounded-xl p-3 shadow-sm sm:p-5">
+      <div className="mb-1.5 flex min-h-[2.25rem] items-center gap-1.5 sm:mb-2 sm:min-h-0 sm:gap-2">
+        <span className="shrink-0">{icon}</span>
+        <span className="line-clamp-2 text-[10px] leading-tight text-muted-foreground sm:text-xs">
+          {label}
+        </span>
       </div>
-      <p data-testid={testId} className="text-2xl font-bold text-foreground">
+      <p
+        data-testid={testId}
+        className="mt-auto text-xl font-bold tabular-nums text-foreground sm:text-2xl"
+      >
         {formatted}
       </p>
     </div>

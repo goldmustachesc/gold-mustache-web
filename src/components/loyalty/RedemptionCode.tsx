@@ -57,7 +57,7 @@ export function RedemptionCode({
           size="icon"
           onClick={() => copy(code)}
           aria-label={t("copyCode")}
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground"
         >
           {copied ? (
             <Check className="h-4 w-4" />

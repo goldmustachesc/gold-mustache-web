@@ -100,8 +100,8 @@ export function HeroSection() {
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80 dark:from-black/80 dark:via-black/60 dark:to-black/90" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/65 dark:from-black/65 dark:via-black/45 dark:to-black/75" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)]" />
 
       <div className="container relative z-10 px-4 py-12 md:py-16 lg:py-20">
         <div className="max-w-2xl mx-auto text-center space-y-6 md:space-y-8">
@@ -115,6 +115,7 @@ export function HeroSection() {
                 alt="Gold Mustache Logo"
                 width={140}
                 height={140}
+                priority
                 className="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-full object-cover ring-2 ring-primary/40 shadow-2xl"
                 sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, 176px"
               />

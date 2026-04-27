@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api/response";
-import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { getConsentsByUserId } from "@/services/cookie-consent";
+import {
+  getProfileByUserId,
+  getAppointmentsForExport,
+} from "@/services/profile";
 
 /**
  * GET /api/profile/export
@@ -40,39 +44,17 @@ export async function GET(request: Request) {
     }
 
     // Fetch profile
-    const profile = await prisma.profile.findUnique({
-      where: { userId: user.id },
-    });
+    const profile = await getProfileByUserId(user.id);
 
     if (!profile) {
       return apiError("NOT_FOUND", "Perfil não encontrado", 404);
     }
 
     // Fetch all appointments (including past ones)
-    const appointments = await prisma.appointment.findMany({
-      where: { clientId: profile.id },
-      include: {
-        barber: {
-          select: {
-            name: true,
-          },
-        },
-        service: {
-          select: {
-            name: true,
-            price: true,
-            duration: true,
-          },
-        },
-      },
-      orderBy: { date: "desc" },
-    });
+    const appointments = await getAppointmentsForExport(profile.id);
 
     // Fetch cookie consents
-    const cookieConsents = await prisma.cookieConsent.findMany({
-      where: { userId: user.id },
-      orderBy: { consentDate: "desc" },
-    });
+    const cookieConsents = await getConsentsByUserId(user.id);
 
     // Build export data structure
     const exportData = {
@@ -127,8 +109,8 @@ export async function GET(request: Request) {
         id: consent.id,
         analyticsConsent: consent.analyticsConsent,
         marketingConsent: consent.marketingConsent,
-        consentDate: consent.consentDate.toISOString(),
-        updatedAt: consent.updatedAt.toISOString(),
+        consentDate: consent.consentDate,
+        updatedAt: consent.updatedAt,
       })),
       summary: {
         totalAppointments: appointments.length,

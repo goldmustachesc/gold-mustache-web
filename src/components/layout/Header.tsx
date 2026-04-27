@@ -63,7 +63,7 @@ export function Header() {
               height={28}
               className="rounded-md object-cover"
             />
-            <span className="font-playfair text-lg font-bold text-primary hidden min-[400px]:inline">
+            <span className="font-playfair text-lg font-bold text-primary hidden xs:inline">
               Gold Mustache
             </span>
           </Link>
@@ -118,7 +118,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
             aria-label={tCommon("aria.openMenu")}
           >
             <Menu className="h-5 w-5" />

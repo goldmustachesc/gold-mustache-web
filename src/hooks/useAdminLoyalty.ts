@@ -18,10 +18,130 @@ export interface AdminLoyaltyAccount {
   tier: LoyaltyTier;
 }
 
-export function useAdminLoyaltyAccounts() {
+/** Conta admin com campos extras retornados pela API de listagem. */
+export interface AdminLoyaltyAccountExtended extends AdminLoyaltyAccount {
+  lifetimePoints: number;
+  memberSince: string;
+  redemptionCount: number;
+}
+
+export type AccountsSortBy =
+  | "lifetimePoints"
+  | "currentPoints"
+  | "memberSince"
+  | "createdAt"
+  | "tier"
+  | "fullName";
+
+export interface AccountsParams {
+  search?: string;
+  tier?: LoyaltyTier;
+  sortBy?: AccountsSortBy;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface AdminLoyaltyAccountsPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+interface PaginatedAccountsResponse {
+  data: AdminLoyaltyAccountExtended[];
+  meta: AdminLoyaltyAccountsPageMeta;
+}
+
+function buildAdminAccountsQuery(
+  page: number,
+  limit: number,
+  params?: AccountsParams,
+): string {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.tier) searchParams.set("tier", params.tier);
+  if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+  if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+  return `/api/admin/loyalty/accounts?${searchParams.toString()}`;
+}
+
+export function useAdminLoyaltyAccounts(
+  page = 1,
+  limit = 50,
+  params?: AccountsParams,
+) {
   return useQuery({
-    queryKey: ["admin", "loyalty", "accounts"],
-    queryFn: () => apiGet<AdminLoyaltyAccount[]>("/api/admin/loyalty/accounts"),
+    queryKey: ["admin", "loyalty", "accounts", { page, limit, params }],
+    queryFn: () =>
+      apiGet<PaginatedAccountsResponse>(
+        buildAdminAccountsQuery(page, limit, params),
+      ),
+    staleTime: 60 * 1000,
+    select: (response) => ({
+      accounts: response.data,
+      meta: response.meta,
+    }),
+  });
+}
+
+export interface AdminAccountTransaction {
+  id: string;
+  loyaltyAccountId: string;
+  type: string;
+  points: number;
+  description: string | null;
+  referenceId: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+interface PaginatedTransactionsResponse {
+  data: AdminAccountTransaction[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export function useAdminAccountTransactions(
+  accountId: string,
+  page = 1,
+  limit = 50,
+  enabled = false,
+) {
+  return useQuery({
+    queryKey: [
+      "admin",
+      "loyalty",
+      "accounts",
+      accountId,
+      "transactions",
+      { page, limit },
+    ],
+    queryFn: () =>
+      apiGet<PaginatedTransactionsResponse>(
+        `/api/admin/loyalty/accounts/${encodeURIComponent(accountId)}/transactions?page=${page}&limit=${limit}`,
+      ),
+    select: (response) => response.data,
+    enabled: enabled && Boolean(accountId),
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Transação com expiração próxima (formato do GET expiring-points). */
+export interface AdminExpiringPointTransaction {
+  id: string;
+  points: number;
+  expiresAt: string | null;
+}
+
+export function useAdminExpiringPoints() {
+  return useQuery({
+    queryKey: ["admin", "loyalty", "expiring-points"],
+    queryFn: () =>
+      apiGet<AdminExpiringPointTransaction[]>(
+        "/api/admin/loyalty/expiring-points",
+      ),
     staleTime: 60 * 1000,
   });
 }
@@ -46,38 +166,47 @@ export function useAdminAdjustPoints() {
     onMutate: async ({ accountId, points }) => {
       await queryClient.cancelQueries({
         queryKey: ["admin", "loyalty", "accounts"],
+        exact: false,
       });
-      const previousAccounts = queryClient.getQueryData([
-        "admin",
-        "loyalty",
-        "accounts",
-      ]);
+      const previousQueries = queryClient.getQueriesData({
+        queryKey: ["admin", "loyalty", "accounts"],
+      });
 
-      queryClient.setQueryData(
-        ["admin", "loyalty", "accounts"],
-        (old: AdminLoyaltyAccount[] | undefined) => {
-          if (!old) return old;
-          return old.map((acc: AdminLoyaltyAccount) =>
-            acc.id === accountId
-              ? { ...acc, points: Math.max(0, acc.points + points) }
-              : acc,
-          );
+      queryClient.setQueriesData(
+        { queryKey: ["admin", "loyalty", "accounts"] },
+        (
+          old:
+            | {
+                accounts: AdminLoyaltyAccountExtended[];
+                meta: AdminLoyaltyAccountsPageMeta;
+              }
+            | undefined,
+        ) => {
+          if (!old?.accounts) return old;
+          return {
+            ...old,
+            accounts: old.accounts.map((acc) =>
+              acc.id === accountId
+                ? { ...acc, points: Math.max(0, acc.points + points) }
+                : acc,
+            ),
+          };
         },
       );
 
-      return { previousAccounts };
+      return { previousQueries };
     },
     onError: (_err, _variables, context) => {
-      if (context?.previousAccounts) {
-        queryClient.setQueryData(
-          ["admin", "loyalty", "accounts"],
-          context.previousAccounts,
-        );
+      if (context?.previousQueries) {
+        for (const [key, data] of context.previousQueries) {
+          queryClient.setQueryData(key, data);
+        }
       }
     },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["admin", "loyalty", "accounts"],
+        exact: false,
       });
     },
   });

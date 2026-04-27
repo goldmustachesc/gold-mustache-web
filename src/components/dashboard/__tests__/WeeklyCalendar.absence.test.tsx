@@ -76,6 +76,24 @@ describe("WeeklyCalendar - indicador de ausência", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("mostra uma faixa semanal curta e continua sinalizando agendamentos e ausências", () => {
+    render(
+      <WeeklyCalendar
+        weekStart={new Date("2026-02-22T12:00:00.000Z")}
+        appointments={[buildAppointment()]}
+        absenceDates={["2026-02-23"]}
+        selectedDate={new Date("2026-02-23T12:00:00.000Z")}
+        onDateSelect={vi.fn()}
+        onWeekChange={vi.fn()}
+        variant="compact"
+      />,
+    );
+
+    expect(screen.getByText("22 fev a 28 fev")).toBeInTheDocument();
+    expect(screen.getAllByTestId("has-appointments-indicator")).toHaveLength(1);
+    expect(screen.getAllByTestId("has-absence-indicator")).toHaveLength(1);
+  });
+
   it("mostra range compacto, indicador de agendamento e dispara callbacks", async () => {
     const user = userEvent.setup();
     const onDateSelect = vi.fn();
@@ -93,8 +111,14 @@ describe("WeeklyCalendar - indicador de ausência", () => {
       />,
     );
 
-    expect(screen.getByText("22 fev 2026 à 28 fev 2026")).toBeInTheDocument();
+    expect(screen.getByText("22 fev a 28 fev")).toBeInTheDocument();
     expect(screen.getAllByTestId("has-appointments-indicator")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "Semana anterior" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Próxima semana" }),
+    ).toBeInTheDocument();
 
     const compactButtons = screen.getAllByRole("button");
     const firstDayButton = screen.getByText("DOM").closest("button");

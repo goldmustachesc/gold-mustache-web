@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/lib/prisma";
 import {
   saveConsentSchema,
   getConsentQuerySchema,
@@ -7,6 +6,8 @@ import {
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { getConsent, saveConsent } from "@/services/cookie-consent";
 
 /**
  * GET /api/consent
@@ -38,7 +39,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const anonymousId = searchParams.get("anonymousId");
 
-    // Validate query params
     const validation = getConsentQuerySchema.safeParse({ anonymousId });
     if (!validation.success) {
       return apiError(
@@ -49,57 +49,28 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check if user is authenticated
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Build query conditions
-    const whereConditions = [];
-
-    if (user) {
-      whereConditions.push({ userId: user.id });
-    }
-
-    if (anonymousId) {
-      whereConditions.push({ anonymousId });
-    }
-
-    if (whereConditions.length === 0) {
+    if (!user && !anonymousId) {
       return apiSuccess({
         consent: null,
         message: "Nenhum identificador fornecido",
       });
     }
 
-    // Find consent record
-    const consent = await prisma.cookieConsent.findFirst({
-      where: {
-        OR: whereConditions,
-      },
-      orderBy: {
-        consentDate: "desc",
-      },
+    const consent = await getConsent({
+      userId: user?.id,
+      anonymousId: anonymousId ?? undefined,
     });
 
     if (!consent) {
-      return apiSuccess({
-        consent: null,
-        hasConsent: false,
-      });
+      return apiSuccess({ consent: null, hasConsent: false });
     }
 
-    return apiSuccess({
-      consent: {
-        id: consent.id,
-        analyticsConsent: consent.analyticsConsent,
-        marketingConsent: consent.marketingConsent,
-        consentDate: consent.consentDate.toISOString(),
-        updatedAt: consent.updatedAt.toISOString(),
-      },
-      hasConsent: true,
-    });
+    return apiSuccess({ consent, hasConsent: true });
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar consentimento");
   }
@@ -119,6 +90,9 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("api", clientId);
     if (!rateLimitResult.success) {
@@ -136,8 +110,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
-    // Validate input
     const validation = saveConsentSchema.safeParse(body);
     if (!validation.success) {
       return apiError(
@@ -150,13 +122,11 @@ export async function POST(request: Request) {
 
     const { analyticsConsent, marketingConsent, anonymousId } = validation.data;
 
-    // Check if user is authenticated
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Ensure we have at least one identifier
     if (!user && !anonymousId) {
       return apiError(
         "MISSING_IDENTIFIER",
@@ -165,54 +135,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get client metadata
     const ipAddress = getClientIdentifier(request);
     const userAgent = request.headers.get("user-agent") || null;
 
-    // Use transaction to prevent race conditions
-    const consent = await prisma.$transaction(async (tx) => {
-      // Find existing consent
-      const existing = await tx.cookieConsent.findFirst({
-        where: user ? { userId: user.id } : { anonymousId: anonymousId },
-      });
-
-      if (existing) {
-        // Update existing record
-        return tx.cookieConsent.update({
-          where: { id: existing.id },
-          data: {
-            analyticsConsent,
-            marketingConsent,
-            ipAddress,
-            userAgent,
-            // If user is now authenticated, link to their account
-            userId: user?.id ?? existing.userId,
-          },
-        });
-      }
-
-      // Create new record
-      return tx.cookieConsent.create({
-        data: {
-          userId: user?.id ?? null,
-          anonymousId: user ? null : anonymousId,
-          analyticsConsent,
-          marketingConsent,
-          ipAddress,
-          userAgent,
-        },
-      });
+    const consent = await saveConsent({
+      analyticsConsent,
+      marketingConsent,
+      userId: user?.id ?? null,
+      anonymousId: anonymousId ?? null,
+      ipAddress,
+      userAgent,
     });
 
     return apiSuccess(
       {
-        consent: {
-          id: consent.id,
-          analyticsConsent: consent.analyticsConsent,
-          marketingConsent: consent.marketingConsent,
-          consentDate: consent.consentDate.toISOString(),
-          updatedAt: consent.updatedAt.toISOString(),
-        },
+        consent,
         message: "Preferências de cookies salvas com sucesso",
       },
       201,

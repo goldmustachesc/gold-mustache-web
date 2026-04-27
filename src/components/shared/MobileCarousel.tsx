@@ -1,7 +1,7 @@
 "use client";
 
 import useEmblaCarousel from "embla-carousel-react";
-import { Children, type ReactNode } from "react";
+import { Children, useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface MobileCarouselProps {
@@ -14,7 +14,7 @@ export function MobileCarousel({ children, className }: MobileCarouselProps) {
   const itemCount = childArray.length;
   const shouldLoop = itemCount >= 2;
 
-  const [emblaRef] = useEmblaCarousel({
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: shouldLoop,
     align: "start",
     slidesToScroll: 1,
@@ -22,32 +22,70 @@ export function MobileCarousel({ children, className }: MobileCarouselProps) {
     dragFree: false,
   });
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+    };
+
+    emblaApi.on("select", onSelect);
+    onSelect();
+
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
   if (itemCount === 0) {
     return null;
   }
 
   return (
-    <section
-      aria-roledescription="carousel"
-      aria-label="Galeria de cards"
-      className={cn("overflow-hidden", className)}
-      ref={emblaRef}
-      data-testid="mobile-carousel"
-    >
-      <div className="flex pl-4 gap-4">
-        {childArray.map((child, index) => (
-          <fieldset
+    <>
+      <section
+        aria-roledescription="carousel"
+        aria-label="Galeria de cards"
+        className={cn("overflow-hidden", className)}
+        ref={emblaRef}
+        data-testid="mobile-carousel"
+      >
+        <div className="flex pl-4 gap-4">
+          {childArray.map((child, index) => (
+            <fieldset
+              // biome-ignore lint/suspicious/noArrayIndexKey: slides are stable and not reordered
+              key={index}
+              aria-roledescription="slide"
+              aria-label={`Item ${index + 1} de ${itemCount}`}
+              className="min-w-0 shrink-0 w-[85%] sm:w-[70%] border-none p-0 m-0"
+            >
+              {child}
+            </fieldset>
+          ))}
+          {shouldLoop && <div className="shrink-0 w-4" aria-hidden="true" />}
+        </div>
+      </section>
+      <nav
+        className="flex justify-center gap-1.5 pt-3"
+        aria-label="Paginação do carrossel"
+      >
+        {childArray.map((_, index) => (
+          <button
             // biome-ignore lint/suspicious/noArrayIndexKey: slides are stable and not reordered
             key={index}
-            aria-roledescription="slide"
-            aria-label={`Item ${index + 1} de ${itemCount}`}
-            className="min-w-0 shrink-0 w-[85%] sm:w-[70%] border-none p-0 m-0"
-          >
-            {child}
-          </fieldset>
+            type="button"
+            aria-label={`Ir para o item ${index + 1} de ${itemCount}`}
+            aria-current={index === selectedIndex ? "true" : undefined}
+            className={cn(
+              "h-1.5 w-1.5 rounded-full transition-colors",
+              index === selectedIndex ? "bg-primary" : "bg-muted-foreground/30",
+            )}
+            onClick={() => emblaApi?.scrollTo(index)}
+          />
         ))}
-        {shouldLoop && <div className="shrink-0 w-4" aria-hidden="true" />}
-      </div>
-    </section>
+      </nav>
+    </>
   );
 }

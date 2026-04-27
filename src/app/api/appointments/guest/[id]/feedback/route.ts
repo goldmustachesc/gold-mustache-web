@@ -9,6 +9,7 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { feedbackSchema } from "@/lib/validations/feedback";
+import { requireValidOrigin } from "@/lib/api/verify-origin";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -108,6 +109,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const originError = requireValidOrigin(request);
+    if (originError) return originError;
+
     const clientId = getClientIdentifier(request);
     const rateLimitResult = await checkRateLimit("guestAppointments", clientId);
     if (!rateLimitResult.success) {

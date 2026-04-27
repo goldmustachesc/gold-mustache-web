@@ -85,11 +85,20 @@ describe("useSlots", () => {
   });
 
   it("fetches slots when all parameters are provided", async () => {
-    stubFetch([{ time: "09:00", available: true }]);
+    stubFetch({
+      barberId: "b-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "09:00", endTime: "12:00" }],
+    });
     const { result } = renderHook(() => useSlots("2026-03-10", "b-1", "s-1"), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({
+      barberId: "b-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "09:00", endTime: "12:00" }],
+    });
     expect(fetch).toHaveBeenCalledWith(
       "/api/slots?date=2026-03-10&barberId=b-1&serviceId=s-1",
       undefined,
@@ -138,6 +147,58 @@ describe("useBarberAppointments", () => {
       expect.stringContaining("/api/appointments?barberId=b-1"),
       undefined,
     );
+  });
+
+  it("keeps previous barber appointments while fetching a new range", async () => {
+    let resolveSecondFetch: (() => void) | undefined;
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ data: [{ id: "apt-1" }] }),
+        })
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecondFetch = () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ data: [{ id: "apt-2" }] }),
+                });
+            }),
+        ),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ startDate, endDate }: { startDate: Date; endDate: Date }) =>
+        useBarberAppointments("b-1", startDate, endDate),
+      {
+        wrapper: createWrapper(),
+        initialProps: {
+          startDate: new Date("2026-03-01"),
+          endDate: new Date("2026-03-31"),
+        },
+      },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ id: "apt-1" }]);
+
+    rerender({
+      startDate: new Date("2026-04-01"),
+      endDate: new Date("2026-04-30"),
+    });
+
+    expect(result.current.data).toEqual([{ id: "apt-1" }]);
+
+    resolveSecondFetch?.();
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([{ id: "apt-2" }]);
+    });
   });
 });
 

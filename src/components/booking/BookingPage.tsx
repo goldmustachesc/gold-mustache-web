@@ -104,11 +104,8 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
   // Use formatDateToString to ensure correct local timezone
   const dateStr = selectedDate ? formatDateToString(selectedDate) : null;
   // Pass serviceId to generate slots based on service duration
-  const { data: slots = [], isLoading: slotsLoading } = useSlots(
-    dateStr,
-    selectedBarber?.id ?? null,
-    selectedService?.id ?? null,
-  );
+  const { data: bookingAvailability = null, isLoading: slotsLoading } =
+    useSlots(dateStr, selectedBarber?.id ?? null, selectedService?.id ?? null);
 
   const createAppointment = useCreateAppointment();
   const createGuestAppointment = useCreateGuestAppointment();
@@ -346,7 +343,7 @@ export function BookingPage({ onViewAppointments }: BookingPageProps) {
           {step === "time" && (
             <div className="space-y-6">
               <TimeSlotGrid
-                slots={slots}
+                availability={bookingAvailability}
                 selectedSlot={selectedSlot}
                 onSelect={handleSlotSelect}
                 isLoading={slotsLoading}

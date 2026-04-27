@@ -148,7 +148,7 @@ Token de autenticação do Upstash Redis.
 
 ### `CRON_SECRET`
 
-Token secreto para autenticar chamadas de cron jobs (ex: limpeza de dados de guests).
+Token secreto para autenticar chamadas de cron jobs e automações externas (ex: GitHub Actions de lembretes).
 
 ```
 CRON_SECRET=seu-token-secreto-aqui
@@ -157,6 +157,33 @@ CRON_SECRET=seu-token-secreto-aqui
 **Como gerar:** `openssl rand -base64 32`
 
 **Uso:** Enviar no header `Authorization: Bearer {CRON_SECRET}`
+
+### `APPOINTMENT_REMINDERS_URL`
+
+URL do endpoint de produção chamado pelo workflow de GitHub Actions para enviar lembretes automáticos.
+
+```bash
+APPOINTMENT_REMINDERS_URL=https://www.goldmustachebarbearia.com.br/api/cron/appointment-reminders
+```
+
+**Observação:** esse valor é usado apenas na automação de lembretes; não é lido pela aplicação em runtime.
+
+---
+
+## Ferramentas de Desenvolvimento Local
+
+### `SNYK_TOKEN`
+
+Token opcional para autenticação não interativa do Snyk CLI.
+
+```
+SNYK_TOKEN=seu-token-da-snyk
+```
+
+- Use apenas no ambiente local/CI
+- Para uso no Codex, prefira exportar em `.envrc.local` ou no shell, não em `.env.local`
+- Alternativamente, autentique com OAuth via `pnpm snyk:auth`
+- No GitHub Actions, configure o valor como secret do repositório com o nome `SNYK_TOKEN`; sem ele, a etapa de Snyk no CI será pulada
 
 ---
 
@@ -213,4 +240,3 @@ NEXT_PUBLIC_GTM_ID=GTM-MFC2V74P
 ```
 
 4. Selecione "Production" como o ambiente de destino
-

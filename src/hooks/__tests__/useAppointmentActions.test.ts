@@ -38,13 +38,33 @@ function buildAppointment(
 }
 
 describe("useAppointmentActions", () => {
-  let mockCancelMutateAsync: ReturnType<typeof vi.fn>;
-  let mockFeedbackMutateAsync: ReturnType<typeof vi.fn>;
+  let mockCancelMutateAsync: ReturnType<
+    typeof vi.fn<(params: { appointmentId: string }) => Promise<unknown>>
+  >;
+  let mockFeedbackMutateAsync: ReturnType<
+    typeof vi.fn<
+      (params: {
+        appointmentId: string;
+        rating: number;
+        comment?: string;
+      }) => Promise<unknown>
+    >
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCancelMutateAsync = vi.fn().mockResolvedValue(undefined);
-    mockFeedbackMutateAsync = vi.fn().mockResolvedValue(undefined);
+    mockCancelMutateAsync = vi
+      .fn<(params: { appointmentId: string }) => Promise<unknown>>()
+      .mockResolvedValue(undefined);
+    mockFeedbackMutateAsync = vi
+      .fn<
+        (params: {
+          appointmentId: string;
+          rating: number;
+          comment?: string;
+        }) => Promise<unknown>
+      >()
+      .mockResolvedValue(undefined);
   });
 
   describe("cancellation", () => {

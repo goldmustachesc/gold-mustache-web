@@ -18,5 +18,9 @@
     "system": "Sistema",
     "light": "Claro",
     "dark": "Escuro"
-  }
+  },
+  "schedule": "Agendar",
+  "scheduleAtBarbershop": "Agendar horário na barbearia",
+  "share": "Compartilhar",
+  "changeLanguage": "Mudar idioma"
 }

@@ -14,6 +14,8 @@ interface WeeklyCalendarProps {
   onDateSelect: (date: Date) => void;
   onWeekChange: (direction: "prev" | "next") => void;
   variant?: "default" | "compact";
+  /** Relógio alinhado ao cockpit do dashboard; default `new Date()`. */
+  operationalNow?: Date;
 }
 
 const WEEKDAYS_SHORT = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
@@ -22,16 +24,16 @@ function formatWeekRangeCompact(weekStart: Date): string {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
 
-  const formatDate = (d: Date) => {
-    const day = d.getDate().toString().padStart(2, "0");
+  const formatDayMonth = (d: Date) => {
+    const day = d.getDate();
     const month = d
       .toLocaleDateString("pt-BR", { month: "short" })
-      .replace(".", "");
-    const year = d.getFullYear();
-    return `${day} ${month} ${year}`;
+      .replace(".", "")
+      .toLowerCase();
+    return `${day} ${month}`;
   };
 
-  return `${formatDate(weekStart)} à ${formatDate(weekEnd)}`;
+  return `${formatDayMonth(weekStart)} a ${formatDayMonth(weekEnd)}`;
 }
 
 export function WeeklyCalendar({
@@ -42,6 +44,7 @@ export function WeeklyCalendar({
   onDateSelect,
   onWeekChange,
   variant = "default",
+  operationalNow,
 }: WeeklyCalendarProps) {
   // Generate array of 7 days starting from weekStart
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -58,17 +61,20 @@ export function WeeklyCalendar({
   );
   const daysWithAbsences = new Set(absenceDates);
 
-  const todayStr = formatDateToString(new Date());
+  const todayStr = formatDateToString(operationalNow ?? new Date());
   const selectedDateStr = formatDateToString(selectedDate);
 
   if (variant === "compact") {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Week Range Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <CalendarDays className="h-5 w-5" />
-            <span className="text-lg font-medium text-foreground">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+            <CalendarDays
+              className="h-4 w-4 shrink-0 text-muted-foreground"
+              aria-hidden
+            />
+            <span className="truncate text-sm font-medium text-foreground">
               {formatWeekRangeCompact(weekStart)}
             </span>
           </div>
@@ -78,22 +84,24 @@ export function WeeklyCalendar({
               size="icon"
               onClick={() => onWeekChange("prev")}
               className="text-muted-foreground hover:text-foreground hover:bg-accent"
+              aria-label="Semana anterior"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-5 w-5" aria-hidden />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onWeekChange("next")}
               className="text-muted-foreground hover:text-foreground hover:bg-accent"
+              aria-label="Próxima semana"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-5 w-5" aria-hidden />
             </Button>
           </div>
         </div>
 
         {/* Weekday Pills */}
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-1">
           {weekDays.map((date, index) => {
             const dateStr = formatDateToString(date);
             const hasAppointments = daysWithAppointments.has(dateStr);
@@ -107,16 +115,16 @@ export function WeeklyCalendar({
                 key={dateStr}
                 onClick={() => onDateSelect(date)}
                 className={cn(
-                  "flex flex-col items-center py-2.5 px-1 rounded-xl transition-all min-h-11",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                  "flex flex-col items-center rounded-xl px-0.5 py-2 transition-all min-h-[3.25rem]",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                   isSelected
-                    ? "bg-muted text-foreground"
+                    ? "bg-primary/10 text-foreground ring-2 ring-primary/60 ring-offset-2 ring-offset-background"
                     : "hover:bg-accent/50 text-muted-foreground hover:text-foreground",
                 )}
               >
                 <span
                   className={cn(
-                    "text-xs font-semibold tracking-wide",
+                    "text-[10px] font-semibold uppercase tracking-wide",
                     isSelected ? "text-primary" : "text-muted-foreground",
                   )}
                 >
@@ -124,9 +132,10 @@ export function WeeklyCalendar({
                 </span>
                 <span
                   className={cn(
-                    "text-lg font-bold mt-0.5",
-                    isSelected ? "text-foreground" : "text-foreground",
-                    isToday && !isSelected && "text-primary",
+                    "mt-0.5 text-base font-bold tabular-nums",
+                    isSelected && "text-foreground",
+                    !isSelected && isToday && "text-primary",
+                    !isSelected && !isToday && "text-foreground/90",
                   )}
                 >
                   {date.getDate().toString().padStart(2, "0")}
@@ -189,8 +198,9 @@ export function WeeklyCalendar({
           variant="ghost"
           size="icon"
           onClick={() => onWeekChange("prev")}
+          aria-label="Semana anterior"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" aria-hidden />
         </Button>
         <span className="text-base font-semibold capitalize">
           {formatWeekRange()}
@@ -199,8 +209,9 @@ export function WeeklyCalendar({
           variant="ghost"
           size="icon"
           onClick={() => onWeekChange("next")}
+          aria-label="Próxima semana"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" aria-hidden />
         </Button>
       </div>
 

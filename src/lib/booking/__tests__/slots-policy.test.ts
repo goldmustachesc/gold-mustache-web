@@ -13,7 +13,7 @@ describe("lib/booking/slots-policy", () => {
     ).toBe("BARBER_UNAVAILABLE");
   });
 
-  it("returns SLOT_UNAVAILABLE when startTime is not aligned to generated slots", () => {
+  it("accepts exact-minute startTime when the full interval fits inside working hours", () => {
     expect(
       getWorkingHoursSlotError({
         workingStartTime: "09:00",
@@ -21,7 +21,7 @@ describe("lib/booking/slots-policy", () => {
         startTime: "09:10",
         durationMinutes: 30,
       }),
-    ).toBe("SLOT_UNAVAILABLE");
+    ).toBe(null);
   });
 
   it("returns null for a valid boundary within working hours", () => {

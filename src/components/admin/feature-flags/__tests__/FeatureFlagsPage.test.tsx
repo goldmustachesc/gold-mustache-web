@@ -11,7 +11,7 @@ const mockUseParams = vi.fn(() => ({ locale: "pt-BR" }));
 
 const mockUseProfileMe = vi.hoisted(() =>
   vi.fn(() => ({
-    data: { role: "ADMIN" as const },
+    data: { role: "ADMIN" as import("@/types/profile").UserRole },
     isLoading: false,
     error: null,
   })),
@@ -107,7 +107,7 @@ describe("FeatureFlagsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseProfileMe.mockReturnValue({
-      data: { role: "ADMIN" },
+      data: { role: "ADMIN" as import("@/types/profile").UserRole },
       isLoading: false,
       error: null,
     });
@@ -118,7 +118,7 @@ describe("FeatureFlagsPage", () => {
       error: null,
       refetch: vi.fn(),
       dataUpdatedAt: Date.now(),
-    } as ReturnType<typeof useAdminFeatureFlags>);
+    } as unknown as ReturnType<typeof useAdminFeatureFlags>);
   });
 
   it("renderiza lista de flags e contagem ativa", () => {
@@ -153,7 +153,7 @@ describe("FeatureFlagsPage", () => {
       error: null,
       refetch: vi.fn(),
       dataUpdatedAt: Date.now(),
-    } as ReturnType<typeof useAdminFeatureFlags>);
+    } as unknown as ReturnType<typeof useAdminFeatureFlags>);
 
     renderPage();
 
@@ -192,7 +192,8 @@ describe("FeatureFlagsPage", () => {
       isError: true,
       error: new Error("Falha na rede"),
       refetch: mockRefetch,
-    } as ReturnType<typeof useAdminFeatureFlags>);
+      dataUpdatedAt: Date.now(),
+    } as unknown as ReturnType<typeof useAdminFeatureFlags>);
 
     const user = userEvent.setup();
     renderPage();
@@ -215,7 +216,7 @@ describe("FeatureFlagsPage", () => {
       error: null,
       refetch: vi.fn(),
       dataUpdatedAt: Date.now(),
-    } as ReturnType<typeof useAdminFeatureFlags>);
+    } as unknown as ReturnType<typeof useAdminFeatureFlags>);
 
     renderPage();
 
@@ -232,7 +233,7 @@ describe("FeatureFlagsPage", () => {
 
   it("redireciona não-admin e exibe toast de acesso restrito", async () => {
     mockUseProfileMe.mockReturnValue({
-      data: { role: "BARBER" },
+      data: { role: "BARBER" as import("@/types/profile").UserRole },
       isLoading: false,
       error: null,
     });

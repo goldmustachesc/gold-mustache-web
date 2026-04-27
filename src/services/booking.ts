@@ -6,18 +6,25 @@ import {
   CANCELLATION_BLOCK_WINDOW_MINUTES,
   shouldWarnLateCancellation as shouldWarnLateCancellationCore,
 } from "@/lib/booking/cancellation";
-import { normalizePhoneDigits } from "@/lib/booking/phone";
+import {
+  normalizePhoneDigits,
+  normalizePhoneOrNull,
+} from "@/lib/booking/phone";
 import { calculateEndTime } from "@/lib/booking/time";
 import { getWorkingHoursSlotError } from "@/lib/booking/slots-policy";
 import {
   getAbsenceSlotError,
   getShopSlotError,
 } from "@/lib/booking/availability-policy";
-import { isSlotTooSoonForClient } from "@/lib/booking/lead-time";
+import {
+  CLIENT_BOOKING_LEAD_MINUTES,
+  isSlotTooSoonForClient,
+} from "@/lib/booking/lead-time";
 import {
   generateTimeSlots,
   filterAvailableSlots,
   filterPastSlots,
+  minutesToTime,
   parseDateString,
   parseDateStringToUTC,
   parseTimeToMinutes,
@@ -25,11 +32,14 @@ import {
   formatPrismaDateToString,
   isDateTimeInPast,
   getBrazilDateString,
+  getCurrentBrazilMinutes,
   getTodayUTCMidnight,
   getMinutesUntilAppointment,
+  roundTimeUpToSlotBoundary,
 } from "@/utils/time-slots";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 import type {
+  BookingAvailability,
   ServiceData,
   TimeSlot,
   CreateAppointmentInput,
@@ -40,6 +50,8 @@ import type {
 } from "@/types/booking";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
 import { isClientBanned } from "@/services/banned-client";
+import { consolidateOperationalAppointments } from "@/lib/booking/operational-appointments";
+import { buildAvailabilityWindows } from "@/lib/booking/availability-windows";
 
 // ============================================
 // Helper Functions
@@ -62,10 +74,28 @@ async function getBookingPolicyError(params: {
 
   const dayOfWeek = appointmentDateLocal.getDay();
 
+  const shopHoursSelect = {
+    isOpen: true,
+    startTime: true,
+    endTime: true,
+    breakStart: true,
+    breakEnd: true,
+  } as const;
+  const workingHoursSelect = {
+    startTime: true,
+    endTime: true,
+    breakStart: true,
+    breakEnd: true,
+  } as const;
+
   const [shopHours, workingHours, shopClosures, absences] = await Promise.all([
-    prisma.shopHours.findUnique({ where: { dayOfWeek } }),
+    prisma.shopHours.findUnique({
+      where: { dayOfWeek },
+      select: shopHoursSelect,
+    }),
     prisma.workingHours.findUnique({
       where: { barberId_dayOfWeek: { barberId, dayOfWeek } },
+      select: workingHoursSelect,
     }),
     prisma.shopClosure.findMany({
       where: { date: appointmentDateDb },
@@ -152,22 +182,37 @@ function isServiceAvailableForBarber(
 }
 
 async function isPhoneLinkedToBannedProfile(phone: string): Promise<boolean> {
-  const normalizedPhone = normalizePhoneDigits(phone);
+  const normalizedPhone = normalizePhoneOrNull(phone);
 
   if (!normalizedPhone) {
     return false;
   }
 
-  const bannedProfiles = await prisma.profile.findMany({
+  const bannedProfile = await prisma.profile.findFirst({
     where: {
+      phoneNormalized: normalizedPhone,
+      bannedClient: { isNot: null },
+    },
+    select: { id: true },
+  });
+
+  if (bannedProfile) {
+    return true;
+  }
+
+  // Defensive fallback for legacy or manually edited rows where
+  // phoneNormalized may still be null while the profile is banned.
+  const legacyBannedProfiles = await prisma.profile.findMany({
+    where: {
+      phoneNormalized: null,
       phone: { not: null },
       bannedClient: { isNot: null },
     },
     select: { phone: true },
   });
 
-  return bannedProfiles.some(
-    (profile) => normalizePhoneDigits(profile.phone ?? "") === normalizedPhone,
+  return legacyBannedProfiles.some(
+    (profile) => normalizePhoneOrNull(profile.phone) === normalizedPhone,
   );
 }
 
@@ -182,6 +227,17 @@ async function lockBarberDateForBooking(
   const dateKey = formatPrismaDateToString(appointmentDateDb);
   await tx.$executeRaw`
     SELECT pg_advisory_xact_lock(hashtext(${barberId}), hashtext(${dateKey}))
+  `;
+}
+
+async function lockClientDateForBooking(
+  tx: Pick<Prisma.TransactionClient, "$executeRaw">,
+  clientLockKey: string,
+  appointmentDateDb: Date,
+): Promise<void> {
+  const dateKey = formatPrismaDateToString(appointmentDateDb);
+  await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(hashtext(${clientLockKey}), hashtext(${dateKey}))
   `;
 }
 
@@ -203,6 +259,7 @@ async function hasOverlappingAppointment(
   appointmentDate: Date,
   newStartTime: string,
   newEndTime: string,
+  excludeAppointmentId?: string,
 ): Promise<boolean> {
   // Fetch all confirmed appointments for this barber on this date
   const existingAppointments = await db.appointment.findMany({
@@ -210,6 +267,7 @@ async function hasOverlappingAppointment(
       barberId,
       date: appointmentDate,
       status: AppointmentStatus.CONFIRMED,
+      ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
     },
     select: {
       startTime: true,
@@ -226,6 +284,55 @@ async function hasOverlappingAppointment(
     const aptEndMinutes = parseTimeToMinutes(apt.endTime);
 
     // Two intervals [A, B) and [C, D) overlap if A < D AND C < B
+    return newStartMinutes < aptEndMinutes && aptStartMinutes < newEndMinutes;
+  });
+}
+
+async function hasOverlappingAppointmentForClient(
+  db: Pick<Prisma.TransactionClient, "appointment">,
+  appointmentDate: Date,
+  newStartTime: string,
+  newEndTime: string,
+  identifiers: {
+    clientId?: string | null;
+    guestClientId?: string | null;
+  },
+  excludeAppointmentId?: string,
+): Promise<boolean> {
+  const clientFilters: Prisma.AppointmentWhereInput[] = [];
+
+  if (identifiers.clientId) {
+    clientFilters.push({ clientId: identifiers.clientId });
+  }
+
+  if (identifiers.guestClientId) {
+    clientFilters.push({ guestClientId: identifiers.guestClientId });
+  }
+
+  if (clientFilters.length === 0) {
+    return false;
+  }
+
+  const existingAppointments = await db.appointment.findMany({
+    where: {
+      date: appointmentDate,
+      status: AppointmentStatus.CONFIRMED,
+      OR: clientFilters,
+      ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+    },
+    select: {
+      startTime: true,
+      endTime: true,
+    },
+  });
+
+  const newStartMinutes = parseTimeToMinutes(newStartTime);
+  const newEndMinutes = parseTimeToMinutes(newEndTime);
+
+  return existingAppointments.some((apt) => {
+    const aptStartMinutes = parseTimeToMinutes(apt.startTime);
+    const aptEndMinutes = parseTimeToMinutes(apt.endTime);
+
     return newStartMinutes < aptEndMinutes && aptStartMinutes < newEndMinutes;
   });
 }
@@ -252,6 +359,15 @@ export async function getServices(barberId?: string): Promise<ServiceData[]> {
   const services = await prisma.service.findMany({
     where,
     orderBy: { name: "asc" },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      duration: true,
+      price: true,
+      active: true,
+    },
   });
 
   return services.map((service) => ({
@@ -278,13 +394,41 @@ export interface GetAvailableSlotsOptions {
   applyLeadTime?: boolean;
 }
 
-export async function getAvailableSlots(
+type BookingAvailabilityContext = {
+  dateStr: string;
+  businessDate: Date;
+  service: {
+    duration: number;
+    active?: boolean;
+    barbers?: Array<{ barberId: string }>;
+  } | null;
+  shopHours: {
+    isOpen: boolean;
+    startTime: string | null;
+    endTime: string | null;
+    breakStart?: string | null;
+    breakEnd?: string | null;
+  } | null;
+  shopClosures: Array<{ startTime: string | null; endTime: string | null }>;
+  absences: Array<{ startTime: string | null; endTime: string | null }>;
+  workingHours: {
+    startTime: string;
+    endTime: string;
+    breakStart: string | null;
+    breakEnd: string | null;
+  } | null;
+  existingAppointments: Array<{
+    startTime: string;
+    endTime: string;
+    status: AppointmentStatus;
+  }>;
+};
+
+async function loadBookingAvailabilityContext(
   date: Date,
   barberId: string,
   serviceId: string,
-  options: GetAvailableSlotsOptions = {},
-): Promise<TimeSlot[]> {
-  const { applyLeadTime = false } = options;
+): Promise<BookingAvailabilityContext> {
   const dateStr = formatDateToString(date);
   const businessDate = parseIsoDateYyyyMmDdAsSaoPauloDate(dateStr);
   const dayOfWeek = businessDate.getUTCDay();
@@ -306,7 +450,16 @@ export async function getAvailableSlots(
         barbers: { select: { barberId: true } },
       },
     }),
-    prisma.shopHours.findUnique({ where: { dayOfWeek } }),
+    prisma.shopHours.findUnique({
+      where: { dayOfWeek },
+      select: {
+        isOpen: true,
+        startTime: true,
+        endTime: true,
+        breakStart: true,
+        breakEnd: true,
+      },
+    }),
     prisma.shopClosure.findMany({
       where: { date: dateForDb },
       select: { startTime: true, endTime: true },
@@ -317,6 +470,12 @@ export async function getAvailableSlots(
     }),
     prisma.workingHours.findUnique({
       where: { barberId_dayOfWeek: { barberId, dayOfWeek } },
+      select: {
+        startTime: true,
+        endTime: true,
+        breakStart: true,
+        breakEnd: true,
+      },
     }),
     prisma.appointment.findMany({
       where: {
@@ -327,6 +486,121 @@ export async function getAvailableSlots(
       select: { startTime: true, endTime: true, status: true },
     }),
   ]);
+
+  return {
+    dateStr,
+    businessDate,
+    service,
+    shopHours,
+    shopClosures,
+    absences,
+    workingHours,
+    existingAppointments,
+  };
+}
+
+function getEmptyBookingAvailability(
+  barberId: string,
+  serviceDuration = 0,
+): BookingAvailability {
+  return {
+    barberId,
+    serviceDuration,
+    windows: [],
+  };
+}
+
+export async function getBookingAvailability(
+  date: Date,
+  barberId: string,
+  serviceId: string,
+  options: GetAvailableSlotsOptions = {},
+): Promise<BookingAvailability> {
+  const { applyLeadTime = false } = options;
+  const {
+    dateStr,
+    service,
+    shopHours,
+    shopClosures,
+    absences,
+    workingHours,
+    existingAppointments,
+  } = await loadBookingAvailabilityContext(date, barberId, serviceId);
+
+  if (!isServiceAvailableForBarber(service, barberId)) {
+    return getEmptyBookingAvailability(barberId);
+  }
+
+  if (
+    !shopHours ||
+    !shopHours.isOpen ||
+    !shopHours.startTime ||
+    !shopHours.endTime
+  ) {
+    return getEmptyBookingAvailability(barberId, service.duration);
+  }
+
+  const effectiveHours = workingHours
+    ? {
+        startTime: workingHours.startTime,
+        endTime: workingHours.endTime,
+        breakStart: workingHours.breakStart,
+        breakEnd: workingHours.breakEnd,
+      }
+    : {
+        startTime: shopHours.startTime,
+        endTime: shopHours.endTime,
+        breakStart: shopHours.breakStart,
+        breakEnd: shopHours.breakEnd,
+      };
+
+  const minimumStartMinutes =
+    dateStr === getBrazilDateString()
+      ? getCurrentBrazilMinutes() +
+        (applyLeadTime ? CLIENT_BOOKING_LEAD_MINUTES : 0)
+      : null;
+
+  if (minimumStartMinutes !== null && minimumStartMinutes >= 24 * 60) {
+    return getEmptyBookingAvailability(barberId, service.duration);
+  }
+
+  return {
+    barberId,
+    serviceDuration: service.duration,
+    windows: buildAvailabilityWindows({
+      workingStartTime: effectiveHours.startTime,
+      workingEndTime: effectiveHours.endTime,
+      breakStart: effectiveHours.breakStart,
+      breakEnd: effectiveHours.breakEnd,
+      serviceDurationMinutes: service.duration,
+      closures: shopClosures,
+      absences,
+      appointments: existingAppointments,
+      minimumStartTime:
+        minimumStartMinutes === null
+          ? null
+          : minutesToTime(minimumStartMinutes),
+    }),
+  };
+}
+
+export async function getAvailableSlots(
+  date: Date,
+  barberId: string,
+  serviceId: string,
+  options: GetAvailableSlotsOptions = {},
+): Promise<TimeSlot[]> {
+  const { applyLeadTime = false } = options;
+  const {
+    dateStr,
+    businessDate,
+    service,
+    shopHours,
+    shopClosures,
+    absences,
+    workingHours,
+    existingAppointments,
+  } = await loadBookingAvailabilityContext(date, barberId, serviceId);
 
   if (!isServiceAvailableForBarber(service, barberId)) return [];
 
@@ -427,7 +701,11 @@ export async function createAppointment(
   input: CreateAppointmentInput,
   clientId: string,
 ): Promise<AppointmentWithDetails> {
-  const { serviceId, barberId, date, startTime } = input;
+  const { serviceId, barberId, date } = input;
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
@@ -475,6 +753,7 @@ export async function createAppointment(
   // serialize overlap-check + create via an advisory lock (barber+date) in a transaction.
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+    await lockClientDateForBooking(tx, `client:${clientId}`, appointmentDateDb);
 
     const hasOverlap = await hasOverlappingAppointment(
       tx,
@@ -486,6 +765,18 @@ export async function createAppointment(
 
     if (hasOverlap) {
       throw new Error("SLOT_OCCUPIED");
+    }
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClient(
+      tx,
+      appointmentDateDb,
+      startTime,
+      endTime,
+      { clientId },
+    );
+
+    if (hasClientOverlap) {
+      throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
     }
 
     return tx.appointment.create({
@@ -570,8 +861,11 @@ export interface GuestAppointmentResult {
 export async function createGuestAppointment(
   input: CreateGuestAppointmentInput,
 ): Promise<GuestAppointmentResult> {
-  const { serviceId, barberId, date, startTime, clientName, clientPhone } =
-    input;
+  const { serviceId, barberId, date, clientName, clientPhone } = input;
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
@@ -629,6 +923,11 @@ export async function createGuestAppointment(
 
   const result = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+    await lockClientDateForBooking(
+      tx,
+      `guest-phone:${normalizedPhone}`,
+      appointmentDateDb,
+    );
 
     const hasOverlap = await hasOverlappingAppointment(
       tx,
@@ -660,6 +959,18 @@ export async function createGuestAppointment(
         accessTokenConsumedAt: null,
       },
     });
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClient(
+      tx,
+      appointmentDateDb,
+      startTime,
+      endTime,
+      { guestClientId: guestClient.id },
+    );
+
+    if (hasClientOverlap) {
+      throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
+    }
 
     const appointment = await tx.appointment.create({
       data: {
@@ -742,7 +1053,11 @@ export async function createAppointmentByBarber(
   input: CreateAppointmentByBarberInput,
   barberId: string,
 ): Promise<AppointmentWithDetails> {
-  const { serviceId, date, startTime, clientName, clientPhone } = input;
+  const { serviceId, date, clientName, clientPhone } = input;
+  const startTime = roundTimeUpToSlotBoundary(input.startTime);
+  if (!startTime) {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
@@ -795,6 +1110,11 @@ export async function createAppointmentByBarber(
   }
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBarberDateForBooking(tx, barberId, appointmentDateDb);
+    await lockClientDateForBooking(
+      tx,
+      `guest-phone:${normalizedPhone}`,
+      appointmentDateDb,
+    );
 
     const hasOverlap = await hasOverlappingAppointment(
       tx,
@@ -821,6 +1141,18 @@ export async function createAppointmentByBarber(
         // No accessToken for barber-created bookings
       },
     });
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClient(
+      tx,
+      appointmentDateDb,
+      startTime,
+      endTime,
+      { guestClientId: guestClient.id },
+    );
+
+    if (hasClientOverlap) {
+      throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
+    }
 
     return tx.appointment.create({
       data: {
@@ -1017,7 +1349,7 @@ export async function getBarberAppointments(
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  return appointments.map((apt) => ({
+  const mappedAppointments = appointments.map((apt) => ({
     id: apt.id,
     clientId: apt.clientId,
     guestClientId: apt.guestClientId,
@@ -1038,6 +1370,8 @@ export async function getBarberAppointments(
       price: Number(apt.service.price),
     },
   }));
+
+  return consolidateOperationalAppointments(mappedAppointments);
 }
 
 // ============================================
@@ -1128,76 +1462,62 @@ export function shouldWarnLateCancellation(
   );
 }
 
-/**
- * Cancel an appointment by client
- * Cancellation is BLOCKED when within 2 hours of the appointment.
- */
-export async function cancelAppointmentByClient(
+export interface CancelAppointmentInternalOpts {
+  /** Caller is responsible for passing a valid cancellation status (e.g. CANCELLED_BY_CLIENT, CANCELLED_BY_BARBER). */
+  newStatus: AppointmentStatus;
+  cancelReason?: string;
+  bypassCancelWindow: boolean;
+  preloaded?: {
+    id: string;
+    status: AppointmentStatus;
+    date: Date;
+    startTime: string;
+  };
+}
+
+export async function cancelAppointmentInternal(
   appointmentId: string,
-  clientId: string,
+  opts: CancelAppointmentInternalOpts,
 ): Promise<AppointmentWithDetails> {
-  // Get the appointment
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-  });
+  const appointment =
+    opts.preloaded ??
+    (await prisma.appointment.findUnique({ where: { id: appointmentId } }));
 
-  if (!appointment) {
-    throw new Error("APPOINTMENT_NOT_FOUND");
-  }
-
-  if (appointment.clientId !== clientId) {
-    throw new Error("UNAUTHORIZED");
-  }
+  if (!appointment) throw new Error("APPOINTMENT_NOT_FOUND");
 
   if (appointment.status !== AppointmentStatus.CONFIRMED) {
     throw new Error("APPOINTMENT_NOT_CANCELLABLE");
   }
 
-  // Check if cancellation is blocked (within 2h window)
-  if (isClientCancellationBlocked(appointment.date, appointment.startTime)) {
+  if (
+    !opts.bypassCancelWindow &&
+    isClientCancellationBlocked(appointment.date, appointment.startTime)
+  ) {
     throw new Error("CANCELLATION_BLOCKED");
   }
 
-  // Check if appointment is in the past
-  if (!canClientCancel(appointment.date, appointment.startTime)) {
+  const minutesUntil = getMinutesUntilAppointmentFromPrisma(
+    appointment.date,
+    appointment.startTime,
+  );
+  if (!canCancelBeforeStart(minutesUntil)) {
     throw new Error("APPOINTMENT_IN_PAST");
   }
 
-  // Update the appointment
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
-      status: AppointmentStatus.CANCELLED_BY_CLIENT,
+      status: opts.newStatus,
+      ...(opts.cancelReason !== undefined
+        ? { cancelReason: opts.cancelReason }
+        : {}),
     },
     include: {
-      client: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      guestClient: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      barber: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
+      client: { select: { id: true, fullName: true, phone: true } },
+      guestClient: { select: { id: true, fullName: true, phone: true } },
+      barber: { select: { id: true, name: true, avatarUrl: true } },
       service: {
-        select: {
-          id: true,
-          name: true,
-          duration: true,
-          price: true,
-        },
+        select: { id: true, name: true, duration: true, price: true },
       },
     },
   });
@@ -1218,114 +1538,50 @@ export async function cancelAppointmentByClient(
     client: updated.client,
     guestClient: updated.guestClient,
     barber: updated.barber,
-    service: {
-      ...updated.service,
-      price: Number(updated.service.price),
-    },
+    service: { ...updated.service, price: Number(updated.service.price) },
   };
 }
 
-/**
- * Cancel an appointment by barber
- * Requires a cancellation reason
- */
+export async function cancelAppointmentByClient(
+  appointmentId: string,
+  clientId: string,
+): Promise<AppointmentWithDetails> {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+
+  if (!appointment) throw new Error("APPOINTMENT_NOT_FOUND");
+  if (appointment.clientId !== clientId) throw new Error("UNAUTHORIZED");
+
+  return cancelAppointmentInternal(appointmentId, {
+    newStatus: AppointmentStatus.CANCELLED_BY_CLIENT,
+    bypassCancelWindow: false,
+    preloaded: appointment,
+  });
+}
+
 export async function cancelAppointmentByBarber(
   appointmentId: string,
   barberId: string,
   reason: string,
 ): Promise<AppointmentWithDetails> {
-  // Validate reason is provided
   if (!reason || reason.trim().length === 0) {
     throw new Error("CANCELLATION_REASON_REQUIRED");
   }
 
-  // Get the appointment
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
   });
 
-  if (!appointment) {
-    throw new Error("APPOINTMENT_NOT_FOUND");
-  }
+  if (!appointment) throw new Error("APPOINTMENT_NOT_FOUND");
+  if (appointment.barberId !== barberId) throw new Error("UNAUTHORIZED");
 
-  if (appointment.barberId !== barberId) {
-    throw new Error("UNAUTHORIZED");
-  }
-
-  if (appointment.status !== AppointmentStatus.CONFIRMED) {
-    throw new Error("APPOINTMENT_NOT_CANCELLABLE");
-  }
-
-  // Barber can cancel until the appointment starts.
-  const minutesUntilAppointment = getMinutesUntilAppointmentFromPrisma(
-    appointment.date,
-    appointment.startTime,
-  );
-  if (!canCancelBeforeStart(minutesUntilAppointment)) {
-    throw new Error("APPOINTMENT_IN_PAST");
-  }
-
-  // Update the appointment
-  const updated = await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: {
-      status: AppointmentStatus.CANCELLED_BY_BARBER,
-      cancelReason: reason.trim(),
-    },
-    include: {
-      client: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      guestClient: {
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-        },
-      },
-      barber: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          duration: true,
-          price: true,
-        },
-      },
-    },
+  return cancelAppointmentInternal(appointmentId, {
+    newStatus: AppointmentStatus.CANCELLED_BY_BARBER,
+    cancelReason: reason.trim(),
+    bypassCancelWindow: true,
+    preloaded: appointment,
   });
-
-  return {
-    id: updated.id,
-    clientId: updated.clientId,
-    guestClientId: updated.guestClientId,
-    barberId: updated.barberId,
-    serviceId: updated.serviceId,
-    date: formatPrismaDateToString(updated.date),
-    startTime: updated.startTime,
-    endTime: updated.endTime,
-    status: updated.status,
-    cancelReason: updated.cancelReason,
-    createdAt: updated.createdAt.toISOString(),
-    updatedAt: updated.updatedAt.toISOString(),
-    client: updated.client,
-    guestClient: updated.guestClient,
-    barber: updated.barber,
-    service: {
-      ...updated.service,
-      price: Number(updated.service.price),
-    },
-  };
 }
 
 /**
@@ -1404,23 +1660,29 @@ export async function markAppointmentAsNoShow(
 
   if (updated.clientId && updated.client) {
     try {
-      const { LoyaltyService } = await import("./loyalty/loyalty.service");
-      const { calculateAppointmentPoints } = await import(
-        "./loyalty/points.calculator"
-      );
+      const { isFeatureEnabled } = await import("./feature-flags");
+      const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+      if (loyaltyEnabled) {
+        const { LoyaltyService } = await import("./loyalty/loyalty.service");
+        const { calculateAppointmentPoints } = await import(
+          "./loyalty/points.calculator"
+        );
 
-      const account = await LoyaltyService.getOrCreateAccount(updated.clientId);
-      const pointsData = calculateAppointmentPoints(
-        Number(updated.service.price),
-        account.tier,
-      );
+        const account = await LoyaltyService.getOrCreateAccount(
+          updated.clientId,
+        );
+        const pointsData = calculateAppointmentPoints(
+          Number(updated.service.price),
+          account.tier,
+        );
 
-      await LoyaltyService.penalizePoints({
-        accountId: account.id,
-        points: pointsData.total,
-        description: `Não compareceu: ${updated.service.name}`,
-        referenceId: updated.id,
-      });
+        await LoyaltyService.penalizePoints({
+          accountId: account.id,
+          points: pointsData.total,
+          description: `Não compareceu: ${updated.service.name}`,
+          referenceId: updated.id,
+        });
+      }
     } catch (error) {
       console.error("Falha ao aplicar penalidade de pontos", error);
     }
@@ -1526,50 +1788,74 @@ export async function markAppointmentAsCompleted(
   // Integrar pontuação do sistema de fidelidade para clientes cadastrados
   if (updated.clientId && updated.client) {
     try {
-      // Import dinâmico para evitar circular dependency
-      const { LoyaltyService } = await import("./loyalty/loyalty.service");
-      const { calculateAppointmentPoints } = await import(
-        "./loyalty/points.calculator"
-      );
+      const { isFeatureEnabled } = await import("./feature-flags");
+      const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
 
-      const account = await LoyaltyService.getOrCreateAccount(updated.clientId);
-      const pointsData = calculateAppointmentPoints(
-        Number(updated.service.price),
-        account.tier,
-      );
+      if (loyaltyEnabled) {
+        // Import dinâmico para evitar circular dependency
+        const { LoyaltyService } = await import("./loyalty/loyalty.service");
+        const { calculateAppointmentPoints } = await import(
+          "./loyalty/points.calculator"
+        );
+        const { LOYALTY_CONFIG } = await import("@/config/loyalty.config");
 
-      const pointsDescription = `Agendamento concluído: ${updated.service.name}`;
+        const account = await LoyaltyService.getOrCreateAccount(
+          updated.clientId,
+        );
+        const pointsData = calculateAppointmentPoints(
+          Number(updated.service.price),
+          account.tier,
+        );
 
-      await LoyaltyService.creditPoints({
-        accountId: account.id,
-        type: "EARNED_APPOINTMENT",
-        points: pointsData.total,
-        description: pointsDescription,
-        referenceId: updated.id,
-      });
+        const pointsDescription = `Agendamento concluído: ${updated.service.name}`;
 
-      const { LoyaltyNotificationService } = await import(
-        "./loyalty/notification.service"
-      );
-      await LoyaltyNotificationService.notifyPointsEarned(
-        updated.clientId,
-        pointsData.total,
-        pointsDescription,
-      );
-
-      if (account.referredById) {
-        const completedCount = await prisma.appointment.count({
-          where: {
-            clientId: updated.clientId,
-            status: AppointmentStatus.COMPLETED,
-          },
+        await LoyaltyService.creditPoints({
+          accountId: account.id,
+          type: "EARNED_APPOINTMENT",
+          points: pointsData.total,
+          description: pointsDescription,
+          referenceId: updated.id,
         });
 
-        if (completedCount === 1) {
-          const { ReferralService } = await import(
-            "./loyalty/referral.service"
-          );
-          await ReferralService.creditReferralBonus(account.id);
+        // Bônus de check-in por presença
+        const alreadyCheckedIn = await LoyaltyService.hasExistingTransaction(
+          updated.id,
+          "EARNED_CHECKIN",
+        );
+
+        if (!alreadyCheckedIn) {
+          await LoyaltyService.creditPoints({
+            accountId: account.id,
+            type: "EARNED_CHECKIN",
+            points: LOYALTY_CONFIG.CHECKIN_BONUS,
+            description: `Check-in: ${updated.service.name}`,
+            referenceId: updated.id,
+          });
+        }
+
+        const { LoyaltyNotificationService } = await import(
+          "./loyalty/notification.service"
+        );
+        await LoyaltyNotificationService.notifyPointsEarned(
+          updated.clientId,
+          pointsData.total,
+          pointsDescription,
+        );
+
+        if (account.referredById) {
+          const completedCount = await prisma.appointment.count({
+            where: {
+              clientId: updated.clientId,
+              status: AppointmentStatus.COMPLETED,
+            },
+          });
+
+          if (completedCount === 1) {
+            const { ReferralService } = await import(
+              "./loyalty/referral.service"
+            );
+            await ReferralService.creditReferralBonus(account.id);
+          }
         }
       }
     } catch (error) {

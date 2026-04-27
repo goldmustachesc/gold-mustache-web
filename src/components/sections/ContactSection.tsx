@@ -169,7 +169,6 @@ export function ContactSection() {
                       }
                       className="w-full cursor-pointer"
                       variant="default"
-                      size="sm"
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       {t("phone.cta")}
@@ -222,12 +221,7 @@ export function ContactSection() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col space-y-2">
-                  <Button
-                    asChild
-                    variant="default"
-                    size="sm"
-                    className="cursor-pointer"
-                  >
+                  <Button asChild variant="default" className="cursor-pointer">
                     <a
                       href={BRAND.instagram.mainUrl}
                       target="_blank"
@@ -241,7 +235,6 @@ export function ContactSection() {
                   <Button
                     asChild
                     variant="default"
-                    size="sm"
                     className="cursor-pointer bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     <a

@@ -66,8 +66,8 @@
 
 ## 5. Checkpoint
 
-- [ ] 5. Checkpoint - Garantir que todos os testes passam
-  - Ensure all tests pass, ask the user if questions arise.
+- [x] 5. Checkpoint - Garantir que todos os testes passam
+  - _Verificado: auth implementado e funcional, testes passam_
 
 ## 6. Componentes UI de Auth
 
@@ -134,5 +134,5 @@
 
 ## 10. Final Checkpoint
 
-- [ ] 10. Final Checkpoint - Garantir que todos os testes passam
-  - Ensure all tests pass, ask the user if questions arise.
+- [x] 10. Final Checkpoint - Garantir que todos os testes passam
+  - _Verificado: auth completo e em produção, testes passam_

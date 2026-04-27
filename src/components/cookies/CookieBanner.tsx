@@ -8,10 +8,6 @@ import { Cookie, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 
-/**
- * Cookie consent banner component for LGPD compliance.
- * Shows on first visit and allows users to accept, reject, or customize preferences.
- */
 export function CookieBanner() {
   const locale = useLocale();
   const { hasDecided, acceptAll, rejectNonEssential, isLoading } = useConsent();
@@ -19,10 +15,8 @@ export function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  // Show banner only after checking consent status
   useEffect(() => {
     if (!isLoading && !hasDecided) {
-      // Small delay for smooth animation
       const timer = setTimeout(() => setIsVisible(true), 500);
       return () => clearTimeout(timer);
     }
@@ -55,9 +49,7 @@ export function CookieBanner() {
     handleClose();
   };
 
-  // Don't render if already decided or still loading
   if (isLoading || hasDecided || !isVisible) {
-    // Still render preferences modal if open
     if (showPreferences) {
       return (
         <CookiePreferences
@@ -71,15 +63,13 @@ export function CookieBanner() {
 
   return (
     <>
-      {/* Cookie Preferences Modal */}
       <CookiePreferences
         isOpen={showPreferences}
         onClose={handleClosePreferences}
       />
 
-      {/* Cookie Banner */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 p-4 transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] transition-transform duration-300 ${
           isClosing ? "translate-y-full" : "translate-y-0"
         }`}
         role="dialog"
@@ -87,7 +77,7 @@ export function CookieBanner() {
         aria-describedby="cookie-banner-description"
       >
         <div className="mx-auto max-w-4xl">
-          <div className="rounded-lg border border-border bg-card p-6 shadow-lg">
+          <div className="rounded-lg border border-border bg-card/95 backdrop-blur-lg p-6 shadow-lg">
             <div className="flex items-start gap-4">
               <div className="hidden sm:block">
                 <Cookie className="h-8 w-8 text-primary" />
@@ -122,7 +112,6 @@ export function CookieBanner() {
                   <Button
                     onClick={handleAcceptAll}
                     className="w-full sm:w-auto"
-                    size="sm"
                   >
                     Aceitar todos
                   </Button>
@@ -130,7 +119,6 @@ export function CookieBanner() {
                     onClick={handleRejectNonEssential}
                     variant="outline"
                     className="w-full sm:w-auto"
-                    size="sm"
                   >
                     Apenas essenciais
                   </Button>
@@ -138,7 +126,6 @@ export function CookieBanner() {
                     onClick={handleOpenPreferences}
                     variant="ghost"
                     className="w-full sm:w-auto"
-                    size="sm"
                   >
                     <Settings className="mr-2 h-4 w-4" />
                     Personalizar
@@ -149,7 +136,7 @@ export function CookieBanner() {
               <button
                 type="button"
                 onClick={handleRejectNonEssential}
-                className="text-muted-foreground hover:text-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Fechar e aceitar apenas essenciais"
               >
                 <X className="h-5 w-5" />

@@ -1,0 +1,42 @@
+{
+  "title": "Agendamentos",
+  "tabs": {
+    "list": "Lista",
+    "calendar": "Calendário"
+  },
+  "filters": {
+    "startDate": "Data inicial",
+    "endDate": "Data final",
+    "barber": "Barbeiro",
+    "status": "Status",
+    "search": "Buscar cliente...",
+    "all": "Todos"
+  },
+  "table": {
+    "date": "Data",
+    "time": "Horário",
+    "client": "Cliente",
+    "service": "Serviço",
+    "barber": "Barbeiro",
+    "status": "Status",
+    "actions": "Ações",
+    "empty": "Nenhum agendamento encontrado.",
+    "guest": "Convidado",
+    "loading": "Carregando..."
+  },
+  "status": {
+    "CONFIRMED": "Confirmado",
+    "CANCELLED_BY_CLIENT": "Cancelado pelo cliente",
+    "CANCELLED_BY_BARBER": "Cancelado pelo barbeiro",
+    "COMPLETED": "Concluído",
+    "NO_SHOW": "Não compareceu"
+  },
+  "calendar": {
+    "comingSoon": "Calendário em breve"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Próximo",
+    "page": "Página {page} de {total}"
+  }
+}

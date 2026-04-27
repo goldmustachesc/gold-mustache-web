@@ -19,38 +19,6 @@ const FEATURED_SETTINGS_DEFAULTS = {
   discountedPrice: "100",
 } as const;
 
-const LEGACY_BARBERSHOP_SETTINGS_QUERY = `
-  SELECT
-    id,
-    name,
-    short_name AS "shortName",
-    tagline,
-    description,
-    street,
-    number,
-    neighborhood,
-    city,
-    state,
-    zip_code AS "zipCode",
-    country,
-    latitude::text AS "latitude",
-    longitude::text AS "longitude",
-    phone,
-    whatsapp,
-    email,
-    instagram_main AS "instagramMain",
-    instagram_store AS "instagramStore",
-    google_maps_url AS "googleMapsUrl",
-    booking_enabled AS "bookingEnabled",
-    external_booking_url AS "externalBookingUrl",
-    founding_year AS "foundingYear",
-    created_at AS "createdAt",
-    updated_at AS "updatedAt"
-  FROM "barbershop_settings"
-  WHERE id = 'default'
-  LIMIT 1
-`;
-
 interface PrismaLikeMissingColumnError {
   code: string;
   meta?: {
@@ -192,9 +160,37 @@ function buildCompatibleSettingsResponse(
 
 async function getLegacyCompatibleSettings(): Promise<CompatibleBarbershopSettingsResponse> {
   try {
-    const rows = await prisma.$queryRawUnsafe<LegacyBarbershopSettingsRow[]>(
-      LEGACY_BARBERSHOP_SETTINGS_QUERY,
-    );
+    const rows = await prisma.$queryRaw<LegacyBarbershopSettingsRow[]>`
+  SELECT
+    id,
+    name,
+    short_name AS "shortName",
+    tagline,
+    description,
+    street,
+    number,
+    neighborhood,
+    city,
+    state,
+    zip_code AS "zipCode",
+    country,
+    latitude::text AS "latitude",
+    longitude::text AS "longitude",
+    phone,
+    whatsapp,
+    email,
+    instagram_main AS "instagramMain",
+    instagram_store AS "instagramStore",
+    google_maps_url AS "googleMapsUrl",
+    booking_enabled AS "bookingEnabled",
+    external_booking_url AS "externalBookingUrl",
+    founding_year AS "foundingYear",
+    created_at AS "createdAt",
+    updated_at AS "updatedAt"
+  FROM "barbershop_settings"
+  WHERE id = 'default'
+  LIMIT 1
+`;
 
     return buildCompatibleSettingsResponse(rows[0] ?? null);
   } catch (error) {

@@ -18,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({
-  getAuthUserEmailMap: vi.fn().mockResolvedValue(
+  getAuthUserEmailsByIds: vi.fn().mockResolvedValue(
     new Map([
       ["user-1", "john@example.com"],
       ["user-2", "jane@example.com"],
@@ -94,6 +94,7 @@ describe("GET /api/admin/loyalty/redemptions", () => {
   it("should return 200 with paginated list of all redemptions", async () => {
     adminAuthenticated();
     const { prisma } = await import("@/lib/prisma");
+    const { getAuthUserEmailsByIds } = await import("@/lib/supabase/admin");
 
     const redemptions = [
       mockRedemption(),
@@ -117,6 +118,7 @@ describe("GET /api/admin/loyalty/redemptions", () => {
     expect(response.status).toBe(200);
     expect(json.data).toHaveLength(2);
     expect(json.meta).toEqual({ total: 2, page: 1, limit: 20, totalPages: 1 });
+    expect(getAuthUserEmailsByIds).toHaveBeenCalledWith(["user-1", "user-2"]);
   });
 
   it("should include client name, email and reward data in each item", async () => {
@@ -229,6 +231,7 @@ describe("GET /api/admin/loyalty/redemptions", () => {
   it("should return single redemption when code query param is present", async () => {
     adminAuthenticated();
     const { prisma } = await import("@/lib/prisma");
+    const { getAuthUserEmailsByIds } = await import("@/lib/supabase/admin");
 
     vi.mocked(prisma.redemption.findUnique).mockResolvedValue(mockRedemption());
 
@@ -242,6 +245,7 @@ describe("GET /api/admin/loyalty/redemptions", () => {
     expect(prisma.redemption.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { code: "ABC123" } }),
     );
+    expect(getAuthUserEmailsByIds).toHaveBeenCalledWith(["user-1"]);
   });
 
   it("should return 400 when status param is invalid", async () => {

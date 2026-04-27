@@ -10,15 +10,30 @@ vi.mock("@/lib/api/verify-origin", () => ({
   requireValidOrigin: () => null,
 }));
 
+const mockNotifyAppointmentCancelledByBarber = vi.fn();
+vi.mock("@/services/notification", () => ({
+  notifyAppointmentCancelledByBarber: (...args: unknown[]) =>
+    mockNotifyAppointmentCancelledByBarber(...args),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     barberAbsence: {
       findMany: vi.fn(),
       create: vi.fn(),
+      createMany: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     appointment: {
       findMany: vi.fn(),
+      updateMany: vi.fn(),
     },
+    barberAbsenceRecurrence: {
+      create: vi.fn(),
+    },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -41,7 +56,7 @@ const APPOINTMENT_FIXTURE = {
   startTime: "10:00",
   endTime: "11:00",
   service: { name: "Corte Masculino" },
-  client: { fullName: "João Silva" },
+  client: { fullName: "João Silva", userId: "client-user-1" },
   guestClient: null,
 };
 
@@ -80,7 +95,12 @@ function createPostRequest(body: unknown): Request {
 
 describe("GET /api/barbers/me/absences", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockNotifyAppointmentCancelledByBarber.mockResolvedValue({});
+    vi.mocked(prisma.$transaction).mockImplementation(
+      async (callback: Parameters<typeof prisma.$transaction>[0]) =>
+        callback(prisma as never),
+    );
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -136,7 +156,17 @@ describe("GET /api/barbers/me/absences", () => {
 
 describe("POST /api/barbers/me/absences", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockNotifyAppointmentCancelledByBarber.mockResolvedValue({});
+    vi.mocked(prisma.$transaction).mockImplementation(
+      async (callback: Parameters<typeof prisma.$transaction>[0]) =>
+        callback(prisma as never),
+    );
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.barberAbsence.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.barberAbsence.create).mockResolvedValue(
+      ABSENCE_FIXTURE as never,
+    );
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -162,10 +192,6 @@ describe("POST /api/barbers/me/absences", () => {
 
   it("creates full-day absence when no conflicts", async () => {
     barberAuthenticated();
-    vi.mocked(prisma.appointment.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.barberAbsence.create).mockResolvedValue(
-      ABSENCE_FIXTURE as never,
-    );
 
     const response = await POST(
       createPostRequest({ date: "2026-03-15", reason: "Consulta médica" }),
@@ -179,13 +205,13 @@ describe("POST /api/barbers/me/absences", () => {
   it("creates partial-day absence when no time conflicts", async () => {
     barberAuthenticated();
     vi.mocked(prisma.appointment.findMany).mockResolvedValue([
-      { ...APPOINTMENT_FIXTURE, startTime: "14:00", endTime: "15:00" },
+      {
+        ...APPOINTMENT_FIXTURE,
+        date: new Date("2026-03-15T00:00:00.000Z"),
+        startTime: "14:00",
+        endTime: "15:00",
+      },
     ] as never);
-    vi.mocked(prisma.barberAbsence.create).mockResolvedValue({
-      ...ABSENCE_FIXTURE,
-      startTime: "09:00",
-      endTime: "12:00",
-    } as never);
 
     const response = await POST(
       createPostRequest({
@@ -198,10 +224,89 @@ describe("POST /api/barbers/me/absences", () => {
     expect(response.status).toBe(201);
   });
 
+  it("creates recurring absence series when requested", async () => {
+    barberAuthenticated();
+    vi.mocked(prisma.barberAbsenceRecurrence.create).mockResolvedValue({
+      id: "rec-1",
+      barberId: "barber-1",
+      startDate: new Date("2026-03-15T00:00:00.000Z"),
+      frequency: "WEEKLY",
+      interval: 2,
+      endsAt: new Date("2026-04-12T00:00:00.000Z"),
+      occurrenceCount: null,
+      startTime: null,
+      endTime: null,
+      reason: "Férias",
+      createdAt: new Date("2025-01-01"),
+      updatedAt: new Date("2025-01-01"),
+    } as never);
+    vi.mocked(prisma.barberAbsence.create).mockResolvedValueOnce({
+      ...ABSENCE_FIXTURE,
+      id: "abs-1",
+      recurrenceId: "rec-1",
+    } as never);
+    vi.mocked(prisma.barberAbsence.createMany).mockResolvedValue({
+      count: 2,
+    } as never);
+
+    const response = await POST(
+      createPostRequest({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "WEEKLY",
+          interval: 2,
+          endsAt: "2026-04-12",
+        },
+        reason: "Férias",
+      }),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(prisma.barberAbsenceRecurrence.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        barberId: "barber-1",
+        frequency: "WEEKLY",
+        interval: 2,
+      }),
+    });
+    expect(prisma.barberAbsence.create).toHaveBeenCalledTimes(1);
+    expect(prisma.barberAbsence.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          barberId: "barber-1",
+          recurrenceId: "rec-1",
+        }),
+      ]),
+    });
+    expect(json.data.createdAbsenceCount).toBe(3);
+    expect(json.data.recurrence.frequency).toBe("WEEKLY");
+  });
+
+  it("rejects recurring absence that exceeds the supported horizon", async () => {
+    barberAuthenticated();
+
+    const response = await POST(
+      createPostRequest({
+        date: "2026-01-01",
+        recurrence: {
+          frequency: "DAILY",
+          interval: 1,
+          endsAt: "2027-02-01",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(422);
+  });
+
   it("returns 409 when full-day absence conflicts with appointments", async () => {
     barberAuthenticated();
     vi.mocked(prisma.appointment.findMany).mockResolvedValue([
-      APPOINTMENT_FIXTURE,
+      {
+        ...APPOINTMENT_FIXTURE,
+        date: new Date("2026-03-15T00:00:00.000Z"),
+      },
     ] as never);
 
     const response = await POST(createPostRequest({ date: "2026-03-15" }));
@@ -216,7 +321,10 @@ describe("POST /api/barbers/me/absences", () => {
   it("returns 409 when partial absence overlaps with appointment", async () => {
     barberAuthenticated();
     vi.mocked(prisma.appointment.findMany).mockResolvedValue([
-      APPOINTMENT_FIXTURE,
+      {
+        ...APPOINTMENT_FIXTURE,
+        date: new Date("2026-03-15T00:00:00.000Z"),
+      },
     ] as never);
 
     const response = await POST(
@@ -230,6 +338,43 @@ describe("POST /api/barbers/me/absences", () => {
 
     expect(response.status).toBe(409);
     expect(json.error).toBe("ABSENCE_CONFLICT");
+  });
+
+  it("auto-cancels conflicting appointments when requested", async () => {
+    barberAuthenticated();
+    vi.mocked(prisma.appointment.findMany).mockResolvedValue([
+      {
+        ...APPOINTMENT_FIXTURE,
+        date: new Date("2026-03-15T00:00:00.000Z"),
+      },
+    ] as never);
+    vi.mocked(prisma.appointment.updateMany).mockResolvedValue({
+      count: 1,
+    } as never);
+
+    const response = await POST(
+      createPostRequest({
+        date: "2026-03-15",
+        autoCancelConflicts: true,
+      }),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(prisma.appointment.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["apt-1"] },
+        status: "CONFIRMED",
+      },
+      data: {
+        status: "CANCELLED_BY_BARBER",
+        cancelReason: "Cancelado automaticamente por ausência do barbeiro",
+        cancelledBy: "barber-1",
+        updatedAt: expect.any(Date),
+      },
+    });
+    expect(mockNotifyAppointmentCancelledByBarber).toHaveBeenCalledTimes(1);
+    expect(json.data.autoCancelledAppointments).toBe(1);
   });
 
   it("returns 500 on Prisma failure", async () => {

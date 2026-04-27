@@ -98,6 +98,65 @@ describe("useBarberAbsences", () => {
       expect(fetch).toHaveBeenCalledWith("/api/barbers/me/absences", undefined);
     });
   });
+
+  it("keeps previous absences while fetching a new date range", async () => {
+    let resolveSecondFetch: (() => void) | undefined;
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ data: [MOCK_ABSENCE] }),
+        })
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecondFetch = () =>
+                resolve({
+                  ok: true,
+                  json: () =>
+                    Promise.resolve({
+                      data: [
+                        { ...MOCK_ABSENCE, id: "a-2", date: "2026-04-12" },
+                      ],
+                    }),
+                });
+            }),
+        ),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ startDate, endDate }: { startDate: string; endDate: string }) =>
+        useBarberAbsences(startDate, endDate),
+      {
+        wrapper: createWrapper(),
+        initialProps: {
+          startDate: "2026-03-01",
+          endDate: "2026-03-31",
+        },
+      },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([MOCK_ABSENCE]);
+
+    rerender({
+      startDate: "2026-04-01",
+      endDate: "2026-04-30",
+    });
+
+    expect(result.current.data).toEqual([MOCK_ABSENCE]);
+
+    resolveSecondFetch?.();
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        { ...MOCK_ABSENCE, id: "a-2", date: "2026-04-12" },
+      ]);
+    });
+  });
 });
 
 describe("useCreateBarberAbsence", () => {
@@ -116,6 +175,34 @@ describe("useCreateBarberAbsence", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/api/barbers/me/absences",
       expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("sends recurrence payload when provided", async () => {
+    stubFetch(MOCK_ABSENCE);
+
+    const { result } = renderHook(() => useCreateBarberAbsence(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "WEEKLY",
+          interval: 2,
+          endsAt: "2026-04-12",
+        },
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/barbers/me/absences",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"frequency":"WEEKLY"'),
+      }),
     );
   });
 
@@ -173,12 +260,30 @@ describe("useDeleteBarberAbsence", () => {
     });
 
     await act(async () => {
-      result.current.mutate("a-1");
+      result.current.mutate({ id: "a-1" });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetch).toHaveBeenCalledWith(
       "/api/barbers/me/absences/a-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("calls DELETE /api/barbers/me/absences/:id?scope=series", async () => {
+    stubFetchMessage();
+
+    const { result } = renderHook(() => useDeleteBarberAbsence(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: "a-1", scope: "series" });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/barbers/me/absences/a-1?scope=series",
       expect.objectContaining({ method: "DELETE" }),
     );
   });
@@ -192,7 +297,7 @@ describe("useDeleteBarberAbsence", () => {
     });
 
     await act(async () => {
-      result.current.mutate("a-1");
+      result.current.mutate({ id: "a-1" });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockFindMany = vi.fn();
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({
+    success: true,
+    remaining: 10,
+    reset: Date.now(),
+  }),
+  getClientIdentifier: vi.fn().mockReturnValue("test-client"),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     barber: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useProfileMe } from "@/hooks/useProfileMe";
+import { useBarberProfile } from "@/hooks/useBarberProfile";
 import { useBookingSettings } from "@/hooks/useBookingSettings";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
 import { usePrivateSidebarState } from "./PrivateHeaderContext";
+import { resolvePrimaryNavRole } from "./private-nav-items";
 import { mobileBottomNavHeightClassName } from "./mobile-nav-layout";
 
 interface BottomNavItem {
@@ -65,16 +67,16 @@ function getBottomNavItems(
   if (role === "BARBER") {
     return [
       {
-        href: `/${locale}/barbeiro`,
+        href: `/${locale}/dashboard`,
         label: "Início",
         icon: Scissors,
         matchMode: "exact",
       },
       {
-        href: `/${locale}/dashboard`,
-        label: "Agenda",
+        href: `/${locale}/barbeiro/agendar`,
+        label: "Agendar",
         icon: Calendar,
-        matchMode: "exact",
+        matchMode: "prefix",
       },
       {
         href: `/${locale}/barbeiro/clientes`,
@@ -159,6 +161,8 @@ function isActive(pathname: string, item: BottomNavItem): boolean {
 
 export function BottomNav() {
   const { data: profile } = useProfileMe();
+  const { data: barberProfile, isLoading: barberProfileLoading } =
+    useBarberProfile();
   const { bookingHref, shouldShowBooking, isExternal } = useBookingSettings();
   const pathname = usePathname();
   const locale = useLocale();
@@ -167,8 +171,31 @@ export function BottomNav() {
 
   if (!profile) return null;
 
+  const dashboardPath = `/${locale}/dashboard`;
+  const barberBasePath = `/${locale}/barbeiro`;
+  const isBarberContext =
+    pathname === dashboardPath ||
+    pathname === barberBasePath ||
+    pathname.startsWith(`${barberBasePath}/`);
+  const shouldWaitForBarberContext =
+    profile.role === "ADMIN" &&
+    isBarberContext &&
+    barberProfileLoading &&
+    !barberProfile;
+
+  if (shouldWaitForBarberContext) {
+    return null;
+  }
+
+  const primaryNavRole = resolvePrimaryNavRole({
+    role: profile.role,
+    locale,
+    pathname,
+    hasBarberProfile: !!barberProfile,
+  });
+
   const items = getBottomNavItems(
-    profile.role,
+    primaryNavRole,
     locale,
     { bookingHref, shouldShowBooking, isExternal },
     flags,

@@ -1,7 +1,16 @@
+export const dynamic = "force-dynamic";
+
 import { AppToaster } from "@/components/ui/app-toaster";
 import { PrivateShell } from "@/components/private/PrivateShell";
-import { QueryProvider } from "@/providers/query-provider";
-import { QueryClient, dehydrate } from "@tanstack/react-query";
+import { PROTECTED_NS } from "@/i18n/namespace-groups";
+import { pickMessages } from "@/i18n/pick-messages";
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from "@tanstack/react-query";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({
@@ -9,8 +18,11 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const queryClient = new QueryClient();
-  const supabase = await createClient();
+  const [queryClient, supabase, messages] = await Promise.all([
+    Promise.resolve(new QueryClient()),
+    createClient(),
+    getMessages(),
+  ]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -18,9 +30,11 @@ export default async function ProtectedLayout({
   queryClient.setQueryData(["user"], user ?? null);
 
   return (
-    <QueryProvider dehydratedState={dehydrate(queryClient)}>
-      <PrivateShell>{children}</PrivateShell>
-      <AppToaster />
-    </QueryProvider>
+    <NextIntlClientProvider messages={pickMessages(messages, PROTECTED_NS)}>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <PrivateShell>{children}</PrivateShell>
+        <AppToaster />
+      </HydrationBoundary>
+    </NextIntlClientProvider>
   );
 }

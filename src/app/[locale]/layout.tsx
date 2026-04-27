@@ -3,11 +3,15 @@ import {
   GoogleTagManager,
   GoogleTagManagerNoScript,
 } from "@/components/analytics/GoogleTagManager";
+import { StagingBanner } from "@/components/layout/StagingBanner";
+import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SchemaMarkup } from "@/components/seo/SchemaMarkup";
 import { LoadingElevatorWrapper } from "@/components/ui/loading-elevator-wrapper";
 import { barbershopConfig } from "@/config/barbershop";
 import { locales } from "@/i18n/config";
+import { SHARED_NS } from "@/i18n/namespace-groups";
+import { pickMessages } from "@/i18n/pick-messages";
 import { QueryProvider } from "@/providers/query-provider";
 import { FeatureFlagsProvider } from "@/providers/feature-flags-provider";
 import { BookingSettingsProvider } from "@/providers/booking-settings-provider";
@@ -214,11 +218,12 @@ export default async function LocaleLayout({
         <GoogleTagManagerNoScript
           gtmId={barbershopConfig.analytics.googleTagManagerId || ""}
         />
+        <ServiceWorkerRegistrar />
         <GoogleAnalytics
           trackingId={barbershopConfig.analytics.googleAnalyticsId}
         />
         <LoadingElevatorWrapper />
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={pickMessages(messages, SHARED_NS)}>
           <QueryProvider>
             <ThemeProvider
               attribute="class"
@@ -232,6 +237,7 @@ export default async function LocaleLayout({
                   externalBookingUrl={settings.externalBookingUrl}
                   locale={locale}
                 >
+                  <StagingBanner />
                   {children}
                 </BookingSettingsProvider>
               </FeatureFlagsProvider>

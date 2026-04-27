@@ -133,8 +133,8 @@ describe("POST /api/guest/delete-request", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.message).toContain("processada para exclusão");
+    expect(body.data.message).toContain("processada para exclusão");
+    expect(body.data.immediate).toBe(false);
   });
 
   it("returns 403 for invalid access token", async () => {

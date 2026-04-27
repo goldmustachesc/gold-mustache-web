@@ -23,7 +23,27 @@ vi.mock("@/utils/time-slots", () => ({
   formatPrismaDateToString: (date: Date) => date.toISOString().split("T")[0],
 }));
 
+vi.mock("../feature-flags", () => ({
+  isFeatureEnabled: vi.fn(),
+}));
+
+vi.mock("../loyalty/loyalty.service", () => ({
+  LoyaltyService: {
+    getOrCreateAccount: vi.fn(),
+    creditPoints: vi.fn(),
+    hasExistingTransaction: vi.fn(),
+  },
+}));
+
+vi.mock("@/config/loyalty.config", () => ({
+  LOYALTY_CONFIG: {
+    REVIEW_BONUS: 30,
+  },
+}));
+
 import { prisma } from "@/lib/prisma";
+import { isFeatureEnabled } from "../feature-flags";
+import { LoyaltyService } from "../loyalty/loyalty.service";
 import {
   createFeedback,
   createGuestFeedback,
@@ -229,6 +249,72 @@ describe("services/feedback", () => {
         }),
       );
     });
+
+    it("should credit REVIEW_BONUS when loyaltyProgram is enabled", async () => {
+      asMock(prisma.appointment.findUnique).mockResolvedValue({
+        id: "appt-1",
+        clientId: "client-1",
+        barberId: "barber-1",
+        status: AppointmentStatus.COMPLETED,
+        date: new Date("2025-01-20"),
+        startTime: "10:00",
+        feedback: null,
+      });
+      asMock(prisma.feedback.create).mockResolvedValue(mockFeedbackData);
+      asMock(isFeatureEnabled).mockResolvedValue(true);
+      asMock(LoyaltyService.hasExistingTransaction).mockResolvedValue(false);
+      asMock(LoyaltyService.getOrCreateAccount).mockResolvedValue({
+        id: "account-1",
+      });
+      asMock(LoyaltyService.creditPoints).mockResolvedValue(undefined);
+
+      await createFeedback({ appointmentId: "appt-1", rating: 5 }, "client-1");
+
+      expect(LoyaltyService.creditPoints).toHaveBeenCalledWith({
+        accountId: "account-1",
+        type: "EARNED_REVIEW",
+        points: 30,
+        description: "Bônus por avaliação",
+        referenceId: "feedback-1",
+      });
+    });
+
+    it("should NOT credit points when loyaltyProgram is disabled", async () => {
+      asMock(prisma.appointment.findUnique).mockResolvedValue({
+        id: "appt-1",
+        clientId: "client-1",
+        barberId: "barber-1",
+        status: AppointmentStatus.COMPLETED,
+        date: new Date("2025-01-20"),
+        startTime: "10:00",
+        feedback: null,
+      });
+      asMock(prisma.feedback.create).mockResolvedValue(mockFeedbackData);
+      asMock(isFeatureEnabled).mockResolvedValue(false);
+
+      await createFeedback({ appointmentId: "appt-1", rating: 5 }, "client-1");
+
+      expect(LoyaltyService.creditPoints).not.toHaveBeenCalled();
+    });
+
+    it("should NOT credit duplicate points (idempotency)", async () => {
+      asMock(prisma.appointment.findUnique).mockResolvedValue({
+        id: "appt-1",
+        clientId: "client-1",
+        barberId: "barber-1",
+        status: AppointmentStatus.COMPLETED,
+        date: new Date("2025-01-20"),
+        startTime: "10:00",
+        feedback: null,
+      });
+      asMock(prisma.feedback.create).mockResolvedValue(mockFeedbackData);
+      asMock(isFeatureEnabled).mockResolvedValue(true);
+      asMock(LoyaltyService.hasExistingTransaction).mockResolvedValue(true);
+
+      await createFeedback({ appointmentId: "appt-1", rating: 5 }, "client-1");
+
+      expect(LoyaltyService.creditPoints).not.toHaveBeenCalled();
+    });
   });
 
   describe("createGuestFeedback", () => {
@@ -383,6 +469,38 @@ describe("services/feedback", () => {
       });
 
       expect(result.guestClientId).toBe("guest-1");
+    });
+
+    it("should NOT credit points in createGuestFeedback", async () => {
+      asMock(prisma.guestClient.findUnique).mockResolvedValue({
+        id: "guest-1",
+        accessToken: "token-1",
+      });
+      asMock(prisma.appointment.findUnique).mockResolvedValue({
+        id: "appt-1",
+        guestClientId: "guest-1",
+        barberId: "barber-1",
+        status: AppointmentStatus.COMPLETED,
+        date: new Date("2025-01-20"),
+        startTime: "10:00",
+        feedback: null,
+      });
+      asMock(prisma.feedback.create).mockResolvedValue({
+        ...mockFeedbackData,
+        clientId: null,
+        guestClientId: "guest-1",
+        guestClient: { id: "guest-1", fullName: "Guest User" },
+        client: null,
+      });
+      asMock(isFeatureEnabled).mockResolvedValue(true);
+
+      await createGuestFeedback(
+        { appointmentId: "appt-1", rating: 5 },
+        "token-1",
+      );
+
+      expect(LoyaltyService.getOrCreateAccount).not.toHaveBeenCalled();
+      expect(LoyaltyService.creditPoints).not.toHaveBeenCalled();
     });
   });
 

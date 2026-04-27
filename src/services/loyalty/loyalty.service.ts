@@ -213,6 +213,20 @@ async function penalizePoints({
   });
 }
 
+/**
+ * Checks if a transaction with the given referenceId and type already exists (idempotency guard)
+ */
+async function hasExistingTransaction(
+  referenceId: string,
+  type: PointTransactionType,
+): Promise<boolean> {
+  const existing = await prisma.pointTransaction.findFirst({
+    where: { referenceId, type },
+    select: { id: true },
+  });
+  return existing !== null;
+}
+
 export const LoyaltyService = {
   createAccount,
   getOrCreateAccount,
@@ -220,4 +234,5 @@ export const LoyaltyService = {
   creditPoints,
   debitPoints,
   penalizePoints,
+  hasExistingTransaction,
 };

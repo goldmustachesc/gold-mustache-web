@@ -10,6 +10,7 @@ import footer from "./footer.json";
 import gallery from "./gallery.json";
 import hero from "./hero.json";
 import instagram from "./instagram.json";
+import adminAppointments from "./admin-appointments.json";
 import loyalty from "./loyalty.json";
 import metadata from "./metadata.json";
 import navigation from "./navigation.json";
@@ -21,6 +22,7 @@ import team from "./team.json";
 import testimonials from "./testimonials.json";
 
 export default {
+  adminAppointments,
   auth,
   blog,
   booking,

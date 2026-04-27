@@ -2,13 +2,33 @@
 
 import { cn } from "@/lib/utils";
 import type { BarberData } from "@/types/booking";
-import { User } from "lucide-react";
 import Image from "next/image";
 
 interface ChatBarberSelectorProps {
   barbers: BarberData[];
   onSelect: (barber: BarberData) => void;
   isLoading?: boolean;
+}
+
+/** Initials for avatar fallback: first letter of first two words, or first two letters of a single name. */
+export function barberNameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  if (parts.length === 1) {
+    const w = parts[0];
+    if (!w) return "?";
+    const upper = w.toLocaleUpperCase();
+    return upper.length <= 2 ? upper : upper.slice(0, 2);
+  }
+  const a = parts[0]?.[0];
+  const b = parts[1]?.[0];
+  if (!a || !b) {
+    const w = parts[0];
+    return w ? w.toLocaleUpperCase().slice(0, 2) : "?";
+  }
+  return `${a}${b}`.toLocaleUpperCase();
 }
 
 export function ChatBarberSelector({
@@ -45,12 +65,13 @@ export function ChatBarberSelector({
           type="button"
           onClick={() => onSelect(barber)}
           className={cn(
-            "flex items-center gap-3 px-3 py-3 rounded-xl",
+            "flex w-full cursor-pointer items-center gap-2 px-3 py-3 text-left rounded-xl",
             "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50",
             "hover:border-primary/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800",
             "transition-all duration-200",
             "active:scale-[0.97]",
             "shadow-sm",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900",
           )}
         >
           {barber.avatarUrl ? (
@@ -59,14 +80,19 @@ export function ChatBarberSelector({
               alt={barber.name}
               width={40}
               height={40}
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-zinc-300 dark:ring-zinc-700"
+              className="w-10 h-10 shrink-0 rounded-full object-cover ring-2 ring-zinc-300 dark:ring-zinc-700"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-zinc-300 dark:ring-zinc-700">
-              <User className="h-5 w-5 text-primary" />
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-2 ring-zinc-300 dark:ring-zinc-700"
+              aria-hidden
+            >
+              <span className="text-xs font-bold text-primary">
+                {barberNameInitials(barber.name)}
+              </span>
             </div>
           )}
-          <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+          <span className="min-w-0 flex-1 truncate font-medium text-sm text-zinc-900 dark:text-zinc-100">
             {barber.name}
           </span>
         </button>

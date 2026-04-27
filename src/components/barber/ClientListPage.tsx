@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState, useDeferredValue } from "react";
+import { useState, useDeferredValue, useCallback } from "react";
 import { AddClientDialog } from "./AddClientDialog";
 import { BanClientDialog } from "./BanClientDialog";
 import { ClientCard } from "./ClientCard";
@@ -58,30 +58,30 @@ export function ClientListPage() {
   const clients = response?.data ?? [];
   const meta = response?.meta;
 
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     setPage(1);
-  };
+  }, []);
 
-  const handleViewHistory = (client: ClientData) => {
+  const handleViewHistory = useCallback((client: ClientData) => {
     setSelectedClient(client);
     setHistoryDialogOpen(true);
-  };
+  }, []);
 
-  const handleEdit = (client: ClientData) => {
+  const handleEdit = useCallback((client: ClientData) => {
     setSelectedClient(client);
     setEditDialogOpen(true);
-  };
+  }, []);
 
-  const handleBan = (client: ClientData) => {
+  const handleBan = useCallback((client: ClientData) => {
     setSelectedClient(client);
     setBanDialogOpen(true);
-  };
+  }, []);
 
-  const handleUnban = (client: ClientData) => {
+  const handleUnban = useCallback((client: ClientData) => {
     setSelectedClient(client);
     setUnbanDialogOpen(true);
-  };
+  }, []);
 
   const registeredClients = clients.filter((c) => c.type === "registered");
   const guestClients = clients.filter((c) => c.type === "guest");

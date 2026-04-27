@@ -34,7 +34,6 @@ describe("BarberLayout", () => {
 
     const view = await BarberLayout({
       children: <div>Area do barbeiro</div>,
-      params: Promise.resolve({ locale: "pt-BR" }),
     });
 
     render(view);

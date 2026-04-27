@@ -11,6 +11,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const revalidate = 3600;
+
 export function generateStaticParams() {
   const params: { locale: string; slug: string }[] = [];
   for (const locale of locales) {
@@ -156,7 +158,9 @@ export default async function BlogPostPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(articleSchema).replace(/</g, "\\u003c"),
+        }}
       />
 
       <main className="min-h-screen bg-background">

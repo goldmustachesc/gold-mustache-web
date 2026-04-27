@@ -54,8 +54,8 @@ describe("GET /api/profile/me", () => {
       reset: Date.now() + 60_000,
     });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const _request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(429);
@@ -65,8 +65,8 @@ describe("GET /api/profile/me", () => {
   it("returns 401 when not authenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const _request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -97,8 +97,8 @@ describe("GET /api/profile/me", () => {
       updatedAt: new Date("2025-01-02T00:00:00.000Z"),
     });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const _request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -138,8 +138,8 @@ describe("GET /api/profile/me", () => {
       updatedAt: new Date("2025-01-02T00:00:00.000Z"),
     });
 
-    const request = new Request("http://localhost:3001/api/profile/me");
-    const response = await GET(request);
+    const _request = new Request("http://localhost:3001/api/profile/me");
+    const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -244,7 +244,7 @@ describe("PUT /api/profile/me", () => {
     expect(body.data.profile.id).toBe("profile-1");
     expect(mockProfileUpdate).toHaveBeenCalledWith({
       where: { userId: "user-1" },
-      data: { phone: "11999998888" },
+      data: { phone: "11999998888", phoneNormalized: "11999998888" },
     });
     expect(mockCheckRateLimit).toHaveBeenCalledWith("api", "auth:user-1");
   });

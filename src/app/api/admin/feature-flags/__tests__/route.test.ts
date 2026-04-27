@@ -82,7 +82,7 @@ describe("GET /api/admin/feature-flags", () => {
 
     expect(response.status).toBe(200);
     expect(json.data.persistenceAvailable).toBe(true);
-    expect(json.data.flags).toHaveLength(3);
+    expect(json.data.flags).toHaveLength(6);
     expect(
       json.data.flags.find((f: { key: string }) => f.key === "loyaltyProgram")
         .enabled,

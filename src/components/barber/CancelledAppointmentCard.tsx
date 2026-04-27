@@ -32,8 +32,8 @@ export function CancelledAppointmentCard({
     <div
       className={cn(
         "p-4 lg:p-5 rounded-xl h-full",
-        "bg-zinc-800/50 border border-zinc-700/50",
-        "hover:bg-zinc-800/70 hover:border-zinc-600/50 transition-all duration-200",
+        "bg-card/50 border border-border",
+        "hover:bg-accent hover:border-border transition-all duration-200",
       )}
     >
       {/* Header: Badge */}
@@ -54,36 +54,36 @@ export function CancelledAppointmentCard({
 
       {/* Client Name */}
       <div className="flex items-center gap-2 mb-3">
-        <User className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-        <h3 className="text-white font-semibold text-base lg:text-lg truncate">
+        <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <h3 className="text-foreground font-semibold text-base lg:text-lg truncate">
           {appointment.clientName}
         </h3>
       </div>
 
       {/* Service */}
       <div className="flex items-center gap-2 mb-4">
-        <Scissors className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-        <span className="text-zinc-400 text-sm truncate">
+        <Scissors className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-muted-foreground text-sm truncate">
           {appointment.serviceName}
         </span>
       </div>
 
       {/* Divider */}
-      <div className="border-t border-zinc-700/50 my-3" />
+      <div className="border-t border-border my-3" />
 
       {/* Footer: Date, Time, Price */}
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-zinc-400">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <Calendar className="h-3.5 w-3.5" />
             <span>{formatDate(appointment.date)}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-zinc-400">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             <span>{appointment.startTime}</span>
           </div>
         </div>
-        <span className="text-amber-500 font-semibold">
+        <span className="text-primary font-semibold">
           {formatCurrency(appointment.servicePrice)}
         </span>
       </div>

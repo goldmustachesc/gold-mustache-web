@@ -4,6 +4,41 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { RewardForm } from "../RewardForm";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => {
+    const pt: Record<string, string> = {
+      nameLabel: "Nome da Recompensa *",
+      namePlaceholder: "Ex: Corte de Cabelo Grátis",
+      descriptionLabel: "Descrição",
+      descriptionPlaceholder: "Descreva detalhes da recompensa...",
+      pointsCostLabel: "Custo em Pontos *",
+      typeLabel: "Tipo *",
+      typePlaceholder: "Selecione o tipo",
+      typeFreeService: "Serviço Grátis",
+      typeDiscount: "Desconto",
+      typeProduct: "Produto",
+      discountValueLabel: "Valor do Desconto *",
+      discountValueHint: "Valor percentual do desconto (ex: 20 para 20%)",
+      imageUrlLabel: "URL da Imagem",
+      imageUrlPlaceholder: "https://exemplo.com/imagem.jpg",
+      imageUrlHint: "URL opcional para imagem da recompensa",
+      stockLabel: "Estoque",
+      stockPlaceholder: "Deixe em branco para ilimitado",
+      stockHint: "Quantidade disponível. Deixe em branco para ilimitado.",
+      activeLabel: "Ativo",
+      activeHint: "Recompensa estará visível para os clientes",
+      cancel: "Cancelar",
+      saving: "Salvando...",
+      saveChanges: "Salvar Alterações",
+      createReward: "Criar Recompensa",
+      "validation.nameRequired": "Nome é obrigatório",
+      "validation.nameMaxLength": "Nome deve ter no máximo 100 caracteres",
+      "validation.pointsCostPositive": "Custo em pontos deve ser positivo",
+    };
+    return pt[key] ?? key;
+  },
+}));
+
 vi.mock("@/components/ui/select", () => ({
   Select: ({
     value,

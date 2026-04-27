@@ -14,15 +14,15 @@ let storage: Record<string, string>;
 
 beforeEach(() => {
   storage = {};
-  vi.spyOn(Storage.prototype, "getItem").mockImplementation(
+  vi.spyOn(window.localStorage, "getItem").mockImplementation(
     (key: string) => storage[key] ?? null,
   );
-  vi.spyOn(Storage.prototype, "setItem").mockImplementation(
+  vi.spyOn(window.localStorage, "setItem").mockImplementation(
     (key: string, value: string) => {
       storage[key] = value;
     },
   );
-  vi.spyOn(Storage.prototype, "removeItem").mockImplementation(
+  vi.spyOn(window.localStorage, "removeItem").mockImplementation(
     (key: string) => {
       delete storage[key];
     },

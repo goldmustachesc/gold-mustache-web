@@ -45,7 +45,10 @@ export default function BarberAgendarPage() {
     },
     { label: "Serviço selecionado", completed: !!formState.selectedServiceId },
     { label: "Data selecionada", completed: !!formState.selectedDate },
-    { label: "Horário selecionado", completed: !!formState.selectedTime },
+    {
+      label: "Horário selecionado",
+      completed: !!formState.selectedTime && !computed.selectedTimeError,
+    },
   ];
 
   return (
@@ -100,12 +103,13 @@ export default function BarberAgendarPage() {
                 />
 
                 <TimeSlotsSection
-                  slots={computed.availableSlots}
+                  availability={computed.bookingAvailability}
                   selectedTime={formState.selectedTime}
                   loading={loading.slots}
                   serviceSelected={!!formState.selectedServiceId}
                   serviceDuration={computed.selectedService?.duration ?? null}
                   onSelect={handlers.onTimeChange}
+                  selectedTimeError={computed.selectedTimeError}
                 />
               </div>
 
@@ -126,15 +130,17 @@ export default function BarberAgendarPage() {
               completedSteps={computed.completedSteps}
             />
 
-            {computed.selectedService && formState.selectedTime && (
-              <BookingSummary
-                service={computed.selectedService}
-                date={formState.selectedDate}
-                time={formState.selectedTime}
-                clientName={formState.clientName}
-                clientPhone={formState.clientPhone}
-              />
-            )}
+            {computed.selectedService &&
+              formState.selectedTime &&
+              !computed.selectedTimeError && (
+                <BookingSummary
+                  service={computed.selectedService}
+                  date={formState.selectedDate}
+                  time={formState.selectedTime}
+                  clientName={formState.clientName}
+                  clientPhone={formState.clientPhone}
+                />
+              )}
 
             <div className="sticky top-24">
               <SubmitButton

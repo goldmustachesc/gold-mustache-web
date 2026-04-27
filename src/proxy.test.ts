@@ -83,7 +83,7 @@ describe("proxy", () => {
     expect(res.headers.get("location")).toContain("/pt-BR/dashboard");
   });
 
-  it("aplica intl e repassa cookies da sessão", async () => {
+  it("aplica intl e repassa cookies da sessão para rotas auth", async () => {
     const supabaseResponse = NextResponse.next();
     supabaseResponse.cookies.set("sb-test", "cookie-value", { path: "/" });
     mockUpdateSession.mockResolvedValue({
@@ -94,11 +94,23 @@ describe("proxy", () => {
     const intlResponse = NextResponse.next();
     intlHandler.mockReturnValueOnce(intlResponse);
 
-    const req = requestTo("http://localhost:3000/pt-BR/agendar");
+    const req = requestTo("http://localhost:3000/pt-BR/login");
 
     const res = await proxy(req);
 
     expect(res).toBe(intlResponse);
     expect(res.cookies.get("sb-test")?.value).toBe("cookie-value");
+  });
+
+  it("pula sessão Supabase em rotas públicas de página", async () => {
+    const intlResponse = NextResponse.next();
+    intlHandler.mockReturnValueOnce(intlResponse);
+
+    const req = requestTo("http://localhost:3000/pt-BR/agendar");
+
+    const res = await proxy(req);
+
+    expect(mockUpdateSession).not.toHaveBeenCalled();
+    expect(res).toBe(intlResponse);
   });
 });

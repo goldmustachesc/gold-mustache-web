@@ -22,6 +22,7 @@ vi.mock("@/lib/prisma", () => ({
     profile: { findUnique: vi.fn() },
     guestClient: { findUnique: vi.fn() },
     bannedClient: { findFirst: vi.fn() },
+    appointment: { findFirst: vi.fn() },
   },
 }));
 
@@ -81,6 +82,26 @@ describe("POST /api/barbers/me/clients/[id]/ban", () => {
     expect(response.status).toBe(401);
   });
 
+  it("returns 403 when barber has no relationship with client", async () => {
+    barberAuthenticated();
+
+    (prisma.profile.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "client-1",
+    });
+    (
+      prisma.guestClient.findUnique as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(null);
+    (
+      prisma.appointment.findFirst as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(null);
+
+    const response = await POST(createPostRequest({}), routeParams("client-1"));
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("FORBIDDEN");
+  });
+
   it("bans a registered client successfully", async () => {
     barberAuthenticated();
 
@@ -91,6 +112,9 @@ describe("POST /api/barbers/me/clients/[id]/ban", () => {
     (
       prisma.guestClient.findUnique as ReturnType<typeof vi.fn>
     ).mockResolvedValue(null);
+    (
+      prisma.appointment.findFirst as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({ id: "apt-1" });
 
     const banResult = {
       id: "ban-1",
@@ -130,6 +154,9 @@ describe("POST /api/barbers/me/clients/[id]/ban", () => {
       id: "guest-1",
       fullName: "João",
     });
+    (
+      prisma.appointment.findFirst as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({ id: "apt-2" });
 
     const banResult = {
       id: "ban-2",
@@ -177,6 +204,9 @@ describe("POST /api/barbers/me/clients/[id]/ban", () => {
     (prisma.profile.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: "client-1",
     });
+    (
+      prisma.appointment.findFirst as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({ id: "apt-1" });
 
     mockBanClient.mockRejectedValue(new Error("CLIENT_ALREADY_BANNED"));
 

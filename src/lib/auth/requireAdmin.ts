@@ -29,24 +29,11 @@ export async function requireAdmin(): Promise<RequireAdminResult> {
     };
   }
 
-  let profile = await prisma.profile.findUnique({
+  const profile = await prisma.profile.findUnique({
     where: { userId: user.id },
   });
 
-  if (!profile) {
-    profile = await prisma.profile.create({
-      data: {
-        userId: user.id,
-        fullName:
-          user.user_metadata?.name ||
-          user.user_metadata?.full_name ||
-          user.email?.split("@")[0],
-        phone: user.user_metadata?.phone || null,
-      },
-    });
-  }
-
-  if (profile.role !== UserRole.ADMIN) {
+  if (!profile || profile.role !== UserRole.ADMIN) {
     return {
       ok: false,
       response: apiError("FORBIDDEN", "Acesso restrito a administradores", 403),

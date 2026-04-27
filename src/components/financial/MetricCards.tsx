@@ -27,38 +27,32 @@ export function MetricCards({
       <div
         className={cn(
           "p-5 rounded-xl",
-          "bg-gradient-to-br from-amber-500/20 to-yellow-600/10",
-          "border border-amber-500/30",
+          "bg-gradient-to-br from-primary/20 to-primary/10",
+          "border border-primary/30",
         )}
       >
         <div className="flex items-center gap-2 mb-2">
-          <TrendingUp className="h-4 w-4 text-amber-500" />
-          <span className="text-xs text-amber-400 uppercase tracking-wide">
+          <TrendingUp className="h-4 w-4 text-primary" />
+          <span className="text-xs text-primary uppercase tracking-wide">
             Ticket Médio
           </span>
         </div>
-        <div className="text-2xl font-bold text-amber-400">
+        <div className="text-2xl font-bold text-primary">
           {formatCurrency(ticketMedio)}
         </div>
       </div>
 
       {/* Taxa de Ocupação */}
-      <div
-        className={cn(
-          "p-5 rounded-xl",
-          "bg-zinc-800/50",
-          "border border-zinc-700/50",
-        )}
-      >
+      <div className={cn("p-5 rounded-xl", "bg-muted", "border border-border")}>
         <div className="flex items-center gap-2 mb-2">
-          <Percent className="h-4 w-4 text-zinc-400" />
-          <span className="text-xs text-zinc-400 uppercase tracking-wide">
+          <Percent className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground uppercase tracking-wide">
             Taxa de Ocupação
           </span>
         </div>
-        <div className="text-2xl font-bold text-white">
+        <div className="text-2xl font-bold text-foreground">
           {occupancyRate}
-          <span className="text-lg ml-0.5 text-zinc-400">%</span>
+          <span className="text-lg ml-0.5 text-muted-foreground">%</span>
         </div>
       </div>
     </div>

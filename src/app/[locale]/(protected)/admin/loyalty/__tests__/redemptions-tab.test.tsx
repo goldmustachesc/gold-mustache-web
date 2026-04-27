@@ -226,15 +226,27 @@ describe("RedemptionsTab", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("should display recent redemptions table", () => {
+  it("should display recent redemptions (desktop table and mobile cards)", () => {
     renderWithProviders(<RedemptionsTab />);
 
-    expect(screen.getByText("John Doe")).toBeInTheDocument();
-    expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-    expect(screen.getByText("Bob Brown")).toBeInTheDocument();
-    expect(screen.getByText("ABC123")).toBeInTheDocument();
-    expect(screen.getByText("DEF456")).toBeInTheDocument();
-    expect(screen.getByText("GHJ789")).toBeInTheDocument();
+    expect(screen.getByTestId("redemption-card-red-1")).toHaveTextContent(
+      "John Doe",
+    );
+    expect(screen.getByTestId("redemption-card-red-2")).toHaveTextContent(
+      "Jane Smith",
+    );
+    expect(screen.getByTestId("redemption-card-red-3")).toHaveTextContent(
+      "Bob Brown",
+    );
+    expect(screen.getByTestId("redemption-card-red-1")).toHaveTextContent(
+      "ABC123",
+    );
+    expect(screen.getByTestId("redemption-card-red-2")).toHaveTextContent(
+      "DEF456",
+    );
+    expect(screen.getByTestId("redemption-card-red-3")).toHaveTextContent(
+      "GHJ789",
+    );
   });
 
   it("should show confirmation dialog when 'Marcar como Usado' is clicked", async () => {

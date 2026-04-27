@@ -10,10 +10,13 @@ import {
 
 describe("feature flag registry", () => {
   it("lista todas as chaves conhecidas", () => {
-    expect(FEATURE_FLAG_KEYS.length).toBe(3);
+    expect(FEATURE_FLAG_KEYS.length).toBe(6);
     expect(FEATURE_FLAG_KEYS).toContain("loyaltyProgram");
     expect(FEATURE_FLAG_KEYS).toContain("referralProgram");
     expect(FEATURE_FLAG_KEYS).toContain("eventsSection");
+    expect(FEATURE_FLAG_KEYS).toContain("transactionalEmails");
+    expect(FEATURE_FLAG_KEYS).toContain("appointmentReminders");
+    expect(FEATURE_FLAG_KEYS).toContain("appointmentRemindersWhatsapp");
   });
 
   it("cada entrada do registry referencia a propria chave", () => {
@@ -39,6 +42,15 @@ describe("feature flag env helpers", () => {
     );
     expect(featureFlagEnvVarName("eventsSection")).toBe(
       "FEATURE_FLAG_EVENTS_SECTION",
+    );
+    expect(featureFlagEnvVarName("transactionalEmails")).toBe(
+      "FEATURE_FLAG_TRANSACTIONAL_EMAILS",
+    );
+    expect(featureFlagEnvVarName("appointmentReminders")).toBe(
+      "FEATURE_FLAG_APPOINTMENT_REMINDERS",
+    );
+    expect(featureFlagEnvVarName("appointmentRemindersWhatsapp")).toBe(
+      "FEATURE_FLAG_APPOINTMENT_REMINDERS_WHATSAPP",
     );
   });
 

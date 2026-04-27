@@ -73,71 +73,81 @@ export interface BarbershopSettingsData {
 export const BARBERSHOP_SETTINGS_CACHE_TAG = "barbershop-settings";
 const BARBERSHOP_SETTINGS_CACHE_TTL_SECONDS = 300;
 
+function shouldReadDbSettings(): boolean {
+  return (
+    Boolean(process.env.DATABASE_URL) ||
+    process.env.NODE_ENV === "test" ||
+    process.env.VITEST === "true"
+  );
+}
+
 /**
  * Busca as configurações da barbearia do banco de dados.
  * Usa fallback para o config estático se não houver dados no DB.
  */
 async function getBarbershopSettingsUncached(): Promise<BarbershopSettingsData> {
-  try {
-    const dbSettings = await prisma.barbershopSettings.findUnique({
-      where: { id: "default" },
-    });
+  if (shouldReadDbSettings()) {
+    try {
+      const dbSettings = await prisma.barbershopSettings.findUnique({
+        where: { id: "default" },
+      });
 
-    if (dbSettings) {
-      const fullAddress = `${dbSettings.street}, ${dbSettings.number} - ${dbSettings.neighborhood}, ${dbSettings.city} - ${dbSettings.state}, ${dbSettings.zipCode}`;
+      if (dbSettings) {
+        const fullAddress = `${dbSettings.street}, ${dbSettings.number} - ${dbSettings.neighborhood}, ${dbSettings.city} - ${dbSettings.state}, ${dbSettings.zipCode}`;
 
-      return {
-        name: dbSettings.name,
-        shortName: dbSettings.shortName,
-        tagline: dbSettings.tagline,
-        description: dbSettings.description || barbershopConfig.description,
-        address: {
-          street: dbSettings.street,
-          number: dbSettings.number,
-          neighborhood: dbSettings.neighborhood,
-          city: dbSettings.city,
-          state: dbSettings.state,
-          zipCode: dbSettings.zipCode,
-          country: dbSettings.country,
-          full: fullAddress,
-          withName: `${fullAddress} - ${dbSettings.name}`,
-        },
-        coordinates: {
-          lat: Number(dbSettings.latitude),
-          lng: Number(dbSettings.longitude),
-        },
-        contact: {
-          phone: dbSettings.phone,
-          whatsapp: dbSettings.whatsapp,
-          email: dbSettings.email,
-        },
-        social: {
-          instagram: {
-            main: dbSettings.instagramMain,
-            mainUrl: `https://instagram.com/${dbSettings.instagramMain.replace("@", "")}`,
-            store: dbSettings.instagramStore,
-            storeUrl: dbSettings.instagramStore
-              ? `https://instagram.com/${dbSettings.instagramStore.replace("@", "")}`
-              : null,
+        return {
+          name: dbSettings.name,
+          shortName: dbSettings.shortName,
+          tagline: dbSettings.tagline,
+          description: dbSettings.description || barbershopConfig.description,
+          address: {
+            street: dbSettings.street,
+            number: dbSettings.number,
+            neighborhood: dbSettings.neighborhood,
+            city: dbSettings.city,
+            state: dbSettings.state,
+            zipCode: dbSettings.zipCode,
+            country: dbSettings.country,
+            full: fullAddress,
+            withName: `${fullAddress} - ${dbSettings.name}`,
           },
-          googleMaps:
-            dbSettings.googleMapsUrl || barbershopConfig.social.googleMaps,
-        },
-        bookingEnabled: dbSettings.bookingEnabled,
-        externalBookingUrl: dbSettings.externalBookingUrl,
-        featuredEnabled: dbSettings.featuredEnabled,
-        featuredBadge: dbSettings.featuredBadge,
-        featuredTitle: dbSettings.featuredTitle,
-        featuredDescription: dbSettings.featuredDescription,
-        featuredDuration: dbSettings.featuredDuration,
-        featuredOriginalPrice: Number(dbSettings.featuredOriginalPrice),
-        featuredDiscountedPrice: Number(dbSettings.featuredDiscountedPrice),
-        foundingYear: dbSettings.foundingYear,
-        updatedAt: dbSettings.updatedAt,
-      };
+          coordinates: {
+            lat: Number(dbSettings.latitude),
+            lng: Number(dbSettings.longitude),
+          },
+          contact: {
+            phone: dbSettings.phone,
+            whatsapp: dbSettings.whatsapp,
+            email: dbSettings.email,
+          },
+          social: {
+            instagram: {
+              main: dbSettings.instagramMain,
+              mainUrl: `https://instagram.com/${dbSettings.instagramMain.replace("@", "")}`,
+              store: dbSettings.instagramStore,
+              storeUrl: dbSettings.instagramStore
+                ? `https://instagram.com/${dbSettings.instagramStore.replace("@", "")}`
+                : null,
+            },
+            googleMaps:
+              dbSettings.googleMapsUrl || barbershopConfig.social.googleMaps,
+          },
+          bookingEnabled: dbSettings.bookingEnabled,
+          externalBookingUrl: dbSettings.externalBookingUrl,
+          featuredEnabled: dbSettings.featuredEnabled,
+          featuredBadge: dbSettings.featuredBadge,
+          featuredTitle: dbSettings.featuredTitle,
+          featuredDescription: dbSettings.featuredDescription,
+          featuredDuration: dbSettings.featuredDuration,
+          featuredOriginalPrice: Number(dbSettings.featuredOriginalPrice),
+          featuredDiscountedPrice: Number(dbSettings.featuredDiscountedPrice),
+          foundingYear: dbSettings.foundingYear,
+          updatedAt: dbSettings.updatedAt,
+        };
+      }
+    } catch (error) {
+      console.error("Error fetching barbershop settings from DB:", error);
     }
-  } catch (error) {
-    console.error("Error fetching barbershop settings from DB:", error);
   }
 
   // Fallback para config estático

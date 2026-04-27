@@ -5,6 +5,7 @@ import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { checkRateLimit, getUserRateLimitIdentifier } from "@/lib/rate-limit";
+import { normalizePhoneOrNull } from "@/lib/booking/phone";
 
 export async function GET() {
   try {
@@ -42,6 +43,7 @@ export async function GET() {
             user.user_metadata?.full_name ||
             user.email?.split("@")[0],
           phone: user.user_metadata?.phone || null,
+          phoneNormalized: normalizePhoneOrNull(user.user_metadata?.phone),
         },
       });
     }
@@ -121,11 +123,15 @@ export async function PUT(request: Request) {
     const validatedData = validationResult.data;
 
     // Sanitize input - trim strings and convert empty to undefined
-    const updateData: Record<string, string | undefined> = {};
+    const updateData: Record<string, null | string | undefined> = {};
     if (validatedData.fullName !== undefined)
       updateData.fullName = validatedData.fullName.trim() || undefined;
-    if (validatedData.phone !== undefined)
-      updateData.phone = validatedData.phone.trim() || undefined;
+    if (validatedData.phone !== undefined) {
+      const trimmedPhone = validatedData.phone.trim();
+      updateData.phone = trimmedPhone || undefined;
+      updateData.phoneNormalized =
+        normalizePhoneOrNull(trimmedPhone) ?? undefined;
+    }
     if (validatedData.street !== undefined)
       updateData.street = validatedData.street.trim() || undefined;
     if (validatedData.number !== undefined)

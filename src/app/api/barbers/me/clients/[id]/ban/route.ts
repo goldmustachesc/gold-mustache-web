@@ -40,6 +40,24 @@ export async function POST(
 
     const clientType = profile ? "registered" : "guest";
 
+    const hasRelationship = await prisma.appointment.findFirst({
+      where: {
+        barberId: auth.barberId,
+        ...(profile
+          ? { clientId: profile.id }
+          : { guestClientId: guestClient?.id }),
+      },
+      select: { id: true },
+    });
+
+    if (!hasRelationship) {
+      return apiError(
+        "FORBIDDEN",
+        "Sem permissão para banir este cliente",
+        403,
+      );
+    }
+
     const body = await request.json();
     const validation = banClientSchema.safeParse(body);
 
@@ -92,6 +110,7 @@ export async function DELETE(
     const ban = await prisma.bannedClient.findFirst({
       where: {
         OR: [{ profileId: clientId }, { guestClientId: clientId }],
+        bannedBy: auth.barberId,
       },
       select: { id: true },
     });

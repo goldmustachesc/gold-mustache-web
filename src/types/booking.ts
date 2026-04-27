@@ -1,4 +1,8 @@
-import type { AppointmentStatus, NotificationType } from "@prisma/client";
+import type {
+  AppointmentSource,
+  AppointmentStatus,
+  NotificationType,
+} from "@prisma/client";
 
 // ============================================
 // Time Slot Types
@@ -8,6 +12,17 @@ export interface TimeSlot {
   time: string; // "10:30"
   available: boolean;
   barberId?: string;
+}
+
+export interface AvailabilityWindow {
+  startTime: string;
+  endTime: string;
+}
+
+export interface BookingAvailability {
+  barberId: string;
+  serviceDuration: number;
+  windows: AvailabilityWindow[];
 }
 
 // ============================================
@@ -50,7 +65,12 @@ export interface AppointmentData {
   startTime: string;
   endTime: string;
   status: AppointmentStatus;
+  reminderSentAt?: string | null;
   cancelReason: string | null;
+  source?: AppointmentSource;
+  createdBy?: string | null;
+  cancelledBy?: string | null;
+  rescheduledBy?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,6 +161,23 @@ export interface BarberWorkingHoursDay {
 // Barber Absence Types
 // ============================================
 
+export type BarberAbsenceRecurrenceFrequency = "DAILY" | "WEEKLY" | "MONTHLY";
+
+export interface BarberAbsenceRecurrenceData {
+  id: string;
+  barberId: string;
+  startDate: string;
+  frequency: BarberAbsenceRecurrenceFrequency;
+  interval: number;
+  endsAt: string | null;
+  occurrenceCount: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BarberAbsenceData {
   id: string;
   barberId: string;
@@ -148,6 +185,8 @@ export interface BarberAbsenceData {
   startTime: string | null; // null => all day
   endTime: string | null; // null => all day
   reason: string | null;
+  recurrenceId?: string | null;
+  recurrence?: BarberAbsenceRecurrenceData | null;
   createdAt: string;
   updatedAt: string;
 }

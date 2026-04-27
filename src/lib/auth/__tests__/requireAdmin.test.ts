@@ -74,7 +74,7 @@ describe("requireAdmin", () => {
     }
   });
 
-  it("creates profile from metadata when no profile exists", async () => {
+  it("returns 403 when no profile exists (no side-effect creation)", async () => {
     mockGetUser.mockResolvedValue({
       data: {
         user: {
@@ -85,51 +85,13 @@ describe("requireAdmin", () => {
       },
     });
     mockFindUnique.mockResolvedValue(null);
-    mockCreate.mockResolvedValue({
-      id: "p-3",
-      userId: "u-3",
-      role: "ADMIN",
-      fullName: "João Silva",
-    });
 
     const result = await requireAdmin();
 
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        userId: "u-3",
-        fullName: "João Silva",
-        phone: "11999",
-      }),
-    });
-
-    if (result.ok) {
-      expect(result.profileId).toBe("p-3");
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.response.status).toBe(403);
     }
-  });
-
-  it("uses email prefix as fallback name when metadata has no name", async () => {
-    mockGetUser.mockResolvedValue({
-      data: {
-        user: {
-          id: "u-4",
-          email: "user@test.com",
-          user_metadata: {},
-        },
-      },
-    });
-    mockFindUnique.mockResolvedValue(null);
-    mockCreate.mockResolvedValue({
-      id: "p-4",
-      userId: "u-4",
-      role: "ADMIN",
-    });
-
-    await requireAdmin();
-
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        fullName: "user",
-      }),
-    });
   });
 });

@@ -18,5 +18,9 @@
     "system": "System",
     "light": "Light",
     "dark": "Dark"
-  }
+  },
+  "schedule": "Book",
+  "scheduleAtBarbershop": "Book an appointment at the barbershop",
+  "share": "Share",
+  "changeLanguage": "Change language"
 }

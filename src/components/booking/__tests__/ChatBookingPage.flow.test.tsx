@@ -1,8 +1,10 @@
-import { act, render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatBookingPage } from "../ChatBookingPage";
+
+const WAIT_FOR_CHAT_TIMEOUT = 5000;
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
@@ -33,7 +35,11 @@ const mocks = vi.hoisted(() => ({
     isLoading: false,
   },
   slotsState: {
-    data: [{ time: "09:00", available: true }],
+    data: {
+      barberId: "barber-1",
+      serviceDuration: 30,
+      windows: [{ startTime: "09:00", endTime: "11:00" }],
+    },
     isLoading: false,
   },
   createAppointment: {
@@ -115,7 +121,7 @@ vi.mock("../chat/ChatBarberSelector", () => ({
     barbers,
     onSelect,
   }: {
-    barbers: Array<{ id: string; name: string }>;
+    barbers: Array<{ id: string; name: string; avatarUrl: string | null }>;
     onSelect: (barber: {
       id: string;
       name: string;
@@ -181,17 +187,28 @@ vi.mock("../chat/ChatDatePicker", () => ({
 
 vi.mock("../chat/ChatTimeSlotSelector", () => ({
   ChatTimeSlotSelector: ({
-    slots,
+    availability,
     onSelect,
     onChooseAnotherDate,
   }: {
-    slots: Array<{ time: string; available: boolean }>;
+    availability: {
+      barberId: string;
+      windows: Array<{ startTime: string; endTime: string }>;
+    } | null;
     onSelect: (slot: { time: string; available: boolean }) => void;
     onChooseAnotherDate: () => void;
     isLoading: boolean;
   }) => (
     <div>
-      <button type="button" onClick={() => onSelect(slots[0])}>
+      <button
+        type="button"
+        onClick={() =>
+          onSelect({
+            time: availability?.windows[0]?.startTime ?? "09:00",
+            available: true,
+          })
+        }
+      >
         selecionar-horario
       </button>
       <button type="button" onClick={onChooseAnotherDate}>
@@ -263,12 +280,6 @@ vi.mock("../SignupIncentiveBanner", () => ({
   ),
 }));
 
-async function runChatTimers() {
-  await act(async () => {
-    await Promise.resolve();
-  });
-}
-
 describe("ChatBookingPage flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -283,14 +294,6 @@ describe("ChatBookingPage flows", () => {
     mocks.createGuestAppointment.mutateAsync.mockResolvedValue({
       appointment: { id: "apt-guest-1" },
     });
-    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      callback: TimerHandler,
-    ) => {
-      if (typeof callback === "function") {
-        callback();
-      }
-      return 0 as ReturnType<typeof setTimeout>;
-    }) as typeof setTimeout);
   });
 
   afterEach(() => {
@@ -301,34 +304,76 @@ describe("ChatBookingPage flows", () => {
     const user = userEvent.setup();
 
     render(<ChatBookingPage />);
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Carlos")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("Carlos"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Corte")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("Corte"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-data")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("selecionar-data"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-horario")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("selecionar-horario"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("enviar-dados-guest")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("enviar-dados-guest"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText("✅ Confirmar Agendamento"),
+        ).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("✅ Confirmar Agendamento"));
-    await runChatTimers();
 
-    expect(mocks.createGuestAppointment.mutateAsync).toHaveBeenCalledWith({
-      serviceId: "service-1",
-      barberId: "barber-1",
-      date: "2026-03-10",
-      startTime: "09:00",
-      clientName: "João Guest",
-      clientPhone: "11999999999",
-    });
+    await waitFor(
+      () => {
+        expect(mocks.createGuestAppointment.mutateAsync).toHaveBeenCalledWith({
+          serviceId: "service-1",
+          barberId: "barber-1",
+          date: "2026-03-10",
+          startTime: "09:00",
+          clientName: "João Guest",
+          clientPhone: "11999999999",
+        });
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
     expect(mocks.toastSuccess).toHaveBeenCalledWith(
       "Agendamento realizado com sucesso!",
     );
@@ -338,7 +383,7 @@ describe("ChatBookingPage flows", () => {
     await user.click(screen.getByText("ver-agendamentos"));
 
     expect(mocks.push).toHaveBeenCalledWith("/pt-BR/meus-agendamentos");
-  });
+  }, 15000);
 
   it("leva usuario autenticado com perfil incompleto para atualizar perfil antes de confirmar", async () => {
     const user = userEvent.setup();
@@ -346,41 +391,81 @@ describe("ChatBookingPage flows", () => {
     mocks.profileState.data = { fullName: "Leo", phone: "" };
 
     render(<ChatBookingPage onViewAppointments={mocks.onViewAppointments} />);
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Carlos")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("Carlos"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Corte")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("Corte"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-data")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("selecionar-data"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-horario")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("selecionar-horario"));
-    await runChatTimers();
 
-    expect(screen.getByText("atualizar-perfil")).toBeInTheDocument();
+    await waitFor(
+      () => {
+        expect(screen.getByText("atualizar-perfil")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("atualizar-perfil"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText("✅ Confirmar Agendamento"),
+        ).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("✅ Confirmar Agendamento"));
-    await runChatTimers();
 
-    expect(mocks.createAppointment.mutateAsync).toHaveBeenCalledWith({
-      serviceId: "service-1",
-      barberId: "barber-1",
-      date: "2026-03-10",
-      startTime: "09:00",
-    });
+    await waitFor(
+      () => {
+        expect(mocks.createAppointment.mutateAsync).toHaveBeenCalledWith({
+          serviceId: "service-1",
+          barberId: "barber-1",
+          date: "2026-03-10",
+          startTime: "09:00",
+        });
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
     expect(screen.getByText("confirmado:apt-user-1")).toBeInTheDocument();
     expect(screen.queryByText("signup-banner:pt-BR")).not.toBeInTheDocument();
 
     await user.click(screen.getByText("ver-agendamentos"));
 
     expect(mocks.onViewAppointments).toHaveBeenCalled();
-  });
+  }, 15000);
 
   it("retorna para escolha de horario quando o slot ja foi ocupado", async () => {
     const user = userEvent.setup();
@@ -389,32 +474,79 @@ describe("ChatBookingPage flows", () => {
     );
 
     render(<ChatBookingPage />);
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Carlos")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("Carlos"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Corte")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("Corte"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-data")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("selecionar-data"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-horario")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("selecionar-horario"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("enviar-dados-guest")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("enviar-dados-guest"));
-    await runChatTimers();
+
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText("✅ Confirmar Agendamento"),
+        ).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
 
     await user.click(screen.getByText("✅ Confirmar Agendamento"));
-    await runChatTimers();
 
-    expect(mocks.toastError).toHaveBeenCalledWith("Horário ocupado");
+    await waitFor(
+      () => {
+        expect(mocks.toastError).toHaveBeenCalledWith("Horário ocupado");
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
     expect(
       screen.getByText(
         "😔 Este horário já foi ocupado. Por favor, escolha outro horário.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("selecionar-horario")).toBeInTheDocument();
-  });
+    await waitFor(
+      () => {
+        expect(screen.getByText("selecionar-horario")).toBeInTheDocument();
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
+  }, 15000);
 });

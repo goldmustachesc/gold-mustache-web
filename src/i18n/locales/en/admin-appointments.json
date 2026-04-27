@@ -1,0 +1,42 @@
+{
+  "title": "Appointments",
+  "tabs": {
+    "list": "List",
+    "calendar": "Calendar"
+  },
+  "filters": {
+    "startDate": "Start date",
+    "endDate": "End date",
+    "barber": "Barber",
+    "status": "Status",
+    "search": "Search client...",
+    "all": "All"
+  },
+  "table": {
+    "date": "Date",
+    "time": "Time",
+    "client": "Client",
+    "service": "Service",
+    "barber": "Barber",
+    "status": "Status",
+    "actions": "Actions",
+    "empty": "No appointments found.",
+    "guest": "Guest",
+    "loading": "Loading..."
+  },
+  "status": {
+    "CONFIRMED": "Confirmed",
+    "CANCELLED_BY_CLIENT": "Cancelled by client",
+    "CANCELLED_BY_BARBER": "Cancelled by barber",
+    "COMPLETED": "Completed",
+    "NO_SHOW": "No-show"
+  },
+  "calendar": {
+    "comingSoon": "Calendar coming soon"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {total}"
+  }
+}

@@ -90,6 +90,7 @@ describe("services/banned-client", () => {
       expect(mockUpdateMany).toHaveBeenCalledWith({
         where: {
           clientId: "profile-1",
+          barberId: "barber-1",
           status: "CONFIRMED",
           date: { gte: todayMidnight },
         },
@@ -146,6 +147,7 @@ describe("services/banned-client", () => {
       expect(mockUpdateMany).toHaveBeenCalledWith({
         where: {
           guestClientId: "guest-1",
+          barberId: "barber-1",
           status: "CONFIRMED",
           date: { gte: todayMidnight },
         },

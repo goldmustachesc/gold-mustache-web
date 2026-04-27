@@ -1,6 +1,6 @@
-import { generateTimeSlots } from "@/utils/time-slots";
 import {
   isRangeWithin,
+  rangesOverlap,
   slotToRangeMinutes,
   toTimeRangeMinutes,
 } from "./time-ranges";
@@ -24,8 +24,7 @@ export type SlotBoundaryParams = {
  *
  * Mirrors the service behavior:
  * - If the range [startTime, startTime+duration) is outside working hours => BARBER_UNAVAILABLE
- * - If it is within working hours but not aligned to the generated slots grid (including break rules)
- *   => SLOT_UNAVAILABLE
+ * - If it is within working hours but overlaps the break window => SLOT_UNAVAILABLE
  */
 export function getWorkingHoursSlotError(
   params: SlotBoundaryParams,
@@ -46,16 +45,11 @@ export function getWorkingHoursSlotError(
     return "BARBER_UNAVAILABLE";
   }
 
-  const generated = generateTimeSlots({
-    startTime: workingStartTime,
-    endTime: workingEndTime,
-    duration: durationMinutes,
-    breakStart,
-    breakEnd,
-  });
-
-  if (!generated.some((s) => s.time === startTime)) {
-    return "SLOT_UNAVAILABLE";
+  if (breakStart && breakEnd) {
+    const breakRange = toTimeRangeMinutes(breakStart, breakEnd);
+    if (rangesOverlap(slotRange, breakRange)) {
+      return "SLOT_UNAVAILABLE";
+    }
   }
 
   return null;

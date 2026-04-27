@@ -36,11 +36,13 @@ export async function GET(request: Request) {
       getUnreadCount(user.id),
     ]);
 
-    return apiSuccess({
+    const response = apiSuccess({
       notifications,
       unreadCount,
       meta: paginationMeta(total, page, limit),
     });
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   } catch (error) {
     return handlePrismaError(error, "Erro ao buscar notificações");
   }

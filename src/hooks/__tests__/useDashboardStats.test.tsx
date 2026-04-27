@@ -73,4 +73,19 @@ describe("useDashboardStats", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it("can opt out of client stats for barber dashboard fetches", async () => {
+    stubFetch(MOCK_STATS);
+
+    renderHook(() => useDashboardStats(true, false), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/dashboard/stats?includeClientStats=false",
+        undefined,
+      );
+    });
+  });
 });

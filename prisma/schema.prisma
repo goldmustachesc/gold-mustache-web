@@ -16,6 +16,7 @@ model Profile {
   fullName      String?  @map("full_name")
   avatarUrl     String?  @map("avatar_url")
   phone         String?
+  phoneNormalized String? @map("phone_normalized")
   // Address fields
   street        String?
   number        String?
@@ -36,8 +37,10 @@ model Profile {
   loyaltyAccount LoyaltyAccount?
   bannedClient   BannedClient?
   claimedGuestClients GuestClient[] @relation("GuestClientClaimedByProfile")
+  adminAuditLogs AdminAuditLog[] @relation("AdminAuditActor")
 
   @@index([role])
+  @@index([phoneNormalized])
   @@map("profiles")
 }
 
@@ -120,6 +123,7 @@ model Barber {
   services      BarberService[]
   workingHours  WorkingHours[]
   absences      BarberAbsence[]
+  absenceRecurrences BarberAbsenceRecurrence[]
   feedbacks     Feedback[]
   bannedClients BannedClient[]
 
@@ -189,19 +193,49 @@ model ShopClosure {
 // Barber absences
 // ============================================
 
-model BarberAbsence {
-  id        String   @id @default(uuid())
-  barberId  String   @map("barber_id")
-  date      DateTime @db.Date
-  startTime String?  @map("start_time")
-  endTime   String?  @map("end_time")
-  reason    String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+enum AbsenceRecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
 
-  barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+model BarberAbsenceRecurrence {
+  id              String                     @id @default(uuid())
+  barberId        String                     @map("barber_id")
+  startDate       DateTime                   @map("start_date") @db.Date
+  frequency       AbsenceRecurrenceFrequency
+  interval        Int                        @default(1)
+  endsAt          DateTime?                  @map("ends_at") @db.Date
+  occurrenceCount Int?                       @map("occurrence_count")
+  startTime       String?                    @map("start_time")
+  endTime         String?                    @map("end_time")
+  reason          String?
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  updatedAt       DateTime                   @updatedAt @map("updated_at")
+
+  barber   Barber          @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  absences BarberAbsence[]
+
+  @@index([barberId, startDate])
+  @@map("barber_absence_recurrences")
+}
+
+model BarberAbsence {
+  id           String                   @id @default(uuid())
+  barberId     String                   @map("barber_id")
+  date         DateTime                 @db.Date
+  startTime    String?                  @map("start_time")
+  endTime      String?                  @map("end_time")
+  reason       String?
+  recurrenceId String?                  @map("recurrence_id")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @updatedAt @map("updated_at")
+
+  barber     Barber                  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  recurrence BarberAbsenceRecurrence? @relation(fields: [recurrenceId], references: [id], onDelete: Cascade)
 
   @@index([barberId, date])
+  @@index([recurrenceId, date])
   @@map("barber_absences")
 }
 
@@ -215,7 +249,12 @@ model Appointment {
   startTime     String            @map("start_time") // "10:30"
   endTime       String            @map("end_time") // "11:00"
   status        AppointmentStatus @default(CONFIRMED)
+  reminderSentAt DateTime?         @map("reminder_sent_at")
   cancelReason  String?           @map("cancel_reason")
+  source        AppointmentSource @default(CLIENT)
+  createdBy     String?           @map("created_by")
+  cancelledBy   String?           @map("cancelled_by")
+  rescheduledBy String?           @map("rescheduled_by")
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
@@ -233,9 +272,13 @@ model Appointment {
   @@index([barberId, date, startTime])
   @@index([barberId, date, status])
   @@index([date, status])
+  @@index([status, date, reminderSentAt])
   @@index([clientId])
+  @@index([clientId, date(sort: Desc)])
   @@index([guestClientId])
+  @@index([guestClientId, date(sort: Desc)])
   @@index([status])
+  @@index([source])
   @@map("appointments")
 }
 
@@ -245,6 +288,14 @@ enum AppointmentStatus {
   CANCELLED_BY_BARBER
   COMPLETED
   NO_SHOW
+}
+
+enum AppointmentSource {
+  CLIENT
+  BARBER
+  ADMIN
+  GUEST
+  IMPORT
 }
 
 model Notification {
@@ -346,6 +397,23 @@ model FeatureFlag {
   @@map("feature_flags")
 }
 
+model AdminAuditLog {
+  id             String   @id @default(uuid())
+  actorProfileId String   @map("actor_profile_id")
+  action         String
+  resourceType   String   @map("resource_type")
+  resourceId     String?  @map("resource_id")
+  metadata       Json?
+  ipAddress      String?  @map("ip_address")
+  createdAt      DateTime @default(now()) @map("created_at")
+  actorProfile   Profile  @relation("AdminAuditActor", fields: [actorProfileId], references: [id], onDelete: Restrict)
+
+  @@index([actorProfileId, createdAt(sort: Desc)])
+  @@index([resourceType, resourceId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("admin_audit_logs")
+}
+
 // ============================================
 // LGPD Compliance - Cookie Consent Tracking
 // ============================================
@@ -418,6 +486,7 @@ enum PointTransactionType {
   EARNED_APPOINTMENT // Ganhou por agendamento
   EARNED_REFERRAL // Ganhou por indicação
   EARNED_REVIEW // Ganhou por avaliação
+  EARNED_CHECKIN // Bônus por presença (check-in)
   EARNED_BIRTHDAY // Bônus aniversário
   EARNED_BONUS // Bônus promocional
   REDEEMED // Resgatou recompensa
@@ -462,6 +531,7 @@ model PointTransaction {
   @@index([loyaltyAccountId])
   @@index([loyaltyAccountId, createdAt])
   @@index([expiresAt])
+  @@unique([referenceId, type])
   @@index([referenceId])
   @@map("point_transactions")
 }

@@ -200,6 +200,35 @@ export async function createFeedback(
     },
   });
 
+  // Award review loyalty points for authenticated clients
+  try {
+    const { isFeatureEnabled } = await import("./feature-flags");
+    const loyaltyEnabled = await isFeatureEnabled("loyaltyProgram");
+
+    if (loyaltyEnabled) {
+      const { LoyaltyService } = await import("./loyalty/loyalty.service");
+      const { LOYALTY_CONFIG } = await import("@/config/loyalty.config");
+
+      const alreadyAwarded = await LoyaltyService.hasExistingTransaction(
+        feedback.id,
+        "EARNED_REVIEW",
+      );
+
+      if (!alreadyAwarded) {
+        const account = await LoyaltyService.getOrCreateAccount(clientId);
+        await LoyaltyService.creditPoints({
+          accountId: account.id,
+          type: "EARNED_REVIEW",
+          points: LOYALTY_CONFIG.REVIEW_BONUS,
+          description: "Bônus por avaliação",
+          referenceId: feedback.id,
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Falha ao registrar pontos de avaliação", error);
+  }
+
   return mapFeedbackToDetails(feedback);
 }
 

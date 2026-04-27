@@ -34,11 +34,20 @@ const mocks = vi.hoisted(() => {
         active: true,
       },
     ],
-    slots: [
-      { time: "09:00", available: true },
-      { time: "09:30", available: true },
-      { time: "10:00", available: false },
-    ],
+    slots: {
+      barberId: barber.id,
+      serviceDuration: 30,
+      windows: [
+        { startTime: "09:00", endTime: "10:00" },
+        { startTime: "10:30", endTime: "12:00" },
+      ],
+    } as
+      | {
+          barberId: string;
+          serviceDuration: number;
+          windows: { startTime: string; endTime: string }[];
+        }
+      | undefined,
     clients: {
       data: [
         {
@@ -47,6 +56,8 @@ const mocks = vi.hoisted(() => {
           phone: "11999887766",
           type: "registered" as const,
           appointmentCount: 5,
+          lastAppointment: null,
+          isBanned: false,
         },
       ],
       meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
@@ -56,6 +67,7 @@ const mocks = vi.hoisted(() => {
       barberLoading: false,
       servicesLoading: false,
       slotsLoading: false,
+      slotsError: false,
       clientsLoading: false,
       userData: user as typeof user | undefined,
       barberData: barber as typeof barber | null,
@@ -99,6 +111,7 @@ vi.mock("@/hooks/useBooking", () => ({
   useBarberSlots: () => ({
     data: mocks.slots,
     isLoading: mocks.state.slotsLoading,
+    isError: mocks.state.slotsError,
   }),
   useCreateAppointmentByBarber: () => ({
     mutateAsync: mocks.mutateAsync,
@@ -127,12 +140,21 @@ beforeEach(() => {
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  mocks.slots = {
+    barberId: mocks.barber.id,
+    serviceDuration: 30,
+    windows: [
+      { startTime: "09:00", endTime: "10:00" },
+      { startTime: "10:30", endTime: "12:00" },
+    ],
+  };
   mocks.state.userData = mocks.user;
   mocks.state.barberData = mocks.barber;
   mocks.state.userLoading = false;
   mocks.state.barberLoading = false;
   mocks.state.servicesLoading = false;
   mocks.state.slotsLoading = false;
+  mocks.state.slotsError = false;
   mocks.state.clientsLoading = false;
   mocks.mutateAsync.mockReset();
   mocks.push.mockReset();
@@ -326,15 +348,24 @@ describe("useBarberSchedulingForm", () => {
       expect(result.current.formState.selectedTime).toBe("09:30");
     });
 
-    it("filters to only available slots", () => {
+    it("rounds broken selected times up to the next 5-minute slot", () => {
       const { result } = renderHook(() => useBarberSchedulingForm(), {
         wrapper: createWrapper(),
       });
 
-      expect(result.current.computed.availableSlots).toHaveLength(2);
-      expect(
-        result.current.computed.availableSlots.every((s) => s.available),
-      ).toBe(true);
+      act(() => {
+        result.current.handlers.onTimeChange("09:53");
+      });
+
+      expect(result.current.formState.selectedTime).toBe("09:55");
+    });
+
+    it("exposes the continuous availability windows", () => {
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.computed.bookingAvailability).toEqual(mocks.slots);
     });
   });
 
@@ -366,6 +397,28 @@ describe("useBarberSchedulingForm", () => {
       expect(result.current.computed.canSubmit).toBe(true);
     });
 
+    it("computes canSubmit as false when selected time does not fit the availability windows", () => {
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handlers.onNameChange("João Silva");
+        result.current.handlers.onPhoneChange("11999887766");
+        result.current.handlers.onServiceChange("svc-1");
+        result.current.handlers.onDateChange("2025-12-15");
+      });
+
+      act(() => {
+        result.current.handlers.onTimeChange("10:05");
+      });
+
+      expect(result.current.computed.selectedTimeError).toBe(
+        "Escolha um horário dentro das janelas disponíveis.",
+      );
+      expect(result.current.computed.canSubmit).toBe(false);
+    });
+
     it("computes completedSteps correctly", () => {
       const { result } = renderHook(() => useBarberSchedulingForm(), {
         wrapper: createWrapper(),
@@ -379,6 +432,54 @@ describe("useBarberSchedulingForm", () => {
       });
 
       expect(result.current.computed.completedSteps).toBe(3);
+    });
+
+    it("does not count an invalid selected time as a completed step", () => {
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handlers.onNameChange("João Silva");
+        result.current.handlers.onPhoneChange("11999887766");
+        result.current.handlers.onServiceChange("svc-1");
+        result.current.handlers.onDateChange("2025-12-15");
+      });
+
+      act(() => {
+        result.current.handlers.onTimeChange("10:05");
+      });
+
+      expect(result.current.computed.selectedTimeError).toBe(
+        "Escolha um horário dentro das janelas disponíveis.",
+      );
+      expect(result.current.computed.completedSteps).toBe(4);
+    });
+
+    it("blocks submit when the availability query fails for a selected time", () => {
+      mocks.slots = undefined;
+      mocks.state.slotsError = true;
+
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handlers.onNameChange("João Silva");
+        result.current.handlers.onPhoneChange("11999887766");
+        result.current.handlers.onServiceChange("svc-1");
+        result.current.handlers.onDateChange("2025-12-15");
+      });
+
+      act(() => {
+        result.current.handlers.onTimeChange("09:30");
+      });
+
+      expect(result.current.computed.selectedTimeError).toBe(
+        "Não foi possível carregar as janelas disponíveis para este serviço.",
+      );
+      expect(result.current.computed.canSubmit).toBe(false);
+      expect(result.current.computed.completedSteps).toBe(4);
     });
   });
 
@@ -458,6 +559,32 @@ describe("useBarberSchedulingForm", () => {
       });
 
       expect(mocks.toastError).toHaveBeenCalled();
+      expect(mocks.mutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("blocks submit when the selected time is outside the availability windows", async () => {
+      const { result } = renderHook(() => useBarberSchedulingForm(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handlers.onNameChange("João Silva");
+        result.current.handlers.onPhoneChange("11999887766");
+        result.current.handlers.onServiceChange("svc-1");
+        result.current.handlers.onDateChange("2025-12-15");
+      });
+
+      act(() => {
+        result.current.handlers.onTimeChange("10:05");
+      });
+
+      await act(async () => {
+        await result.current.handlers.onSubmit();
+      });
+
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        "Escolha um horário dentro das janelas disponíveis.",
+      );
       expect(mocks.mutateAsync).not.toHaveBeenCalled();
     });
 

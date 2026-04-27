@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { AppointmentWithDetails } from "@/types/booking";
 import {
@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BarberChairIcon } from "./BarberChairIcon";
+import { getDashboardAppointmentStatusUi } from "@/components/barber/appointment-status-ui";
+import { AppointmentCancelSheet } from "./AppointmentCancelSheet";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -33,7 +35,10 @@ export interface AppointmentCardProps {
   onOpenDetail: (appointment: AppointmentWithDetails) => void;
   onSendReminder: (appointmentId: string) => void;
   sendingReminderId: string | null;
-  onCancelAppointment: (id: string, reason: string) => void;
+  onCancelAppointment: (
+    id: string,
+    reason: string,
+  ) => boolean | Promise<boolean>;
   isCancelling?: boolean;
   cancellingId?: string | null;
   onMarkNoShow?: (id: string) => void;
@@ -44,6 +49,8 @@ export interface AppointmentCardProps {
   markingCompleteId?: string | null;
   hideValues: boolean;
   maskedValue: string;
+  /** Relógio do cockpit; omite para usar o instante atual. */
+  operationalNow?: Date;
 }
 
 export const AppointmentCard = memo(function AppointmentCard({
@@ -62,16 +69,21 @@ export const AppointmentCard = memo(function AppointmentCard({
   markingCompleteId,
   hideValues,
   maskedValue,
+  operationalNow,
 }: AppointmentCardProps) {
+  const completedUi = getDashboardAppointmentStatusUi("COMPLETED");
+  const noShowUi = getDashboardAppointmentStatusUi("NO_SHOW");
   const minutesUntil = getMinutesUntilAppointment(
     appointment.date,
     appointment.startTime,
+    operationalNow,
   );
   const isConfirmed = appointment.status === "CONFIRMED";
   const isNoShow = appointment.status === "NO_SHOW";
   const isCancelled =
     appointment.status === "CANCELLED_BY_CLIENT" ||
     appointment.status === "CANCELLED_BY_BARBER";
+  const statusUi = getDashboardAppointmentStatusUi(appointment.status);
   const isPast = minutesUntil <= 0;
   const canCancel = isConfirmed && !isPast;
   const canMarkNoShow = isConfirmed && isPast && !!onMarkNoShow;
@@ -79,6 +91,12 @@ export const AppointmentCard = memo(function AppointmentCard({
   const canCallClient = isNoShow && !!appointment.guestClient?.phone;
   const hasActions =
     canCancel || canMarkNoShow || canMarkComplete || canCallClient;
+
+  const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
+  const clientLabel =
+    appointment.client?.fullName ||
+    appointment.guestClient?.fullName ||
+    "Cliente";
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: Cannot use button as it would nest buttons (inner action buttons)
@@ -97,10 +115,7 @@ export const AppointmentCard = memo(function AppointmentCard({
         "bg-card/80 cursor-pointer",
         "transition-all duration-200 hover:bg-card hover:scale-[1.01]",
         "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background",
-        isCancelled &&
-          "bg-destructive/10 border border-destructive/30 hover:bg-destructive/15",
-        isNoShow &&
-          "bg-warning/10 border border-warning/30 hover:bg-warning/15",
+        statusUi?.surfaceClassName,
       )}
       style={{
         backgroundImage: isCancelled
@@ -120,16 +135,15 @@ export const AppointmentCard = memo(function AppointmentCard({
             )`,
       }}
     >
-      {(isNoShow || isCancelled) && (
+      {statusUi && (
         <div className="px-4 pt-3 pb-0">
           <span
             className={cn(
-              "text-xs font-semibold px-2.5 py-1 rounded-md inline-block",
-              isNoShow && "bg-primary/20 text-primary",
-              isCancelled && "bg-destructive/20 text-destructive",
+              "text-xs font-semibold px-2.5 py-1 rounded-md inline-block border",
+              statusUi.badgeClassName,
             )}
           >
-            {isNoShow ? "Não compareceu" : "Cancelado"}
+            {statusUi.label}
           </span>
         </div>
       )}
@@ -137,12 +151,12 @@ export const AppointmentCard = memo(function AppointmentCard({
       <div
         className={cn(
           "flex items-center justify-between px-4 pb-2",
-          isNoShow || isCancelled ? "pt-2" : "pt-3",
+          statusUi ? "pt-2" : "pt-3",
         )}
       >
         <span
           className={cn(
-            "text-sm",
+            "font-mono tabular-nums text-sm",
             isCancelled
               ? "text-muted-foreground line-through"
               : "text-foreground",
@@ -191,10 +205,7 @@ export const AppointmentCard = memo(function AppointmentCard({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      const reason = prompt("Motivo do cancelamento:");
-                      if (reason) {
-                        onCancelAppointment(appointment.id, reason);
-                      }
+                      setCancelSheetOpen(true);
                     }}
                     disabled={isCancelling && cancellingId === appointment.id}
                     className="text-red-600 dark:text-destructive focus:text-red-600 dark:focus:text-destructive focus:bg-red-500/10"
@@ -212,7 +223,7 @@ export const AppointmentCard = memo(function AppointmentCard({
                     disabled={
                       isMarkingComplete && markingCompleteId === appointment.id
                     }
-                    className="text-emerald-600 dark:text-emerald-400 focus:text-emerald-600 dark:focus:text-emerald-400 focus:bg-emerald-500/10"
+                    className={completedUi?.actionClassName}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Concluir
@@ -227,7 +238,7 @@ export const AppointmentCard = memo(function AppointmentCard({
                     disabled={
                       isMarkingNoShow && markingNoShowId === appointment.id
                     }
-                    className="text-warning dark:text-primary focus:text-warning dark:focus:text-primary focus:bg-warning/10"
+                    className={noShowUi?.actionClassName}
                   >
                     Marcar não compareceu
                   </DropdownMenuItem>
@@ -265,7 +276,7 @@ export const AppointmentCard = memo(function AppointmentCard({
           <p
             className={cn(
               "text-sm uppercase tracking-wide",
-              isCancelled ? "text-muted-foreground" : "text-muted-foreground",
+              "text-muted-foreground",
             )}
           >
             {appointment.service.name}
@@ -284,6 +295,14 @@ export const AppointmentCard = memo(function AppointmentCard({
       </div>
 
       <BarberChairIcon className="absolute -right-4 -bottom-4 h-20 w-20 text-white/5" />
+
+      <AppointmentCancelSheet
+        open={cancelSheetOpen}
+        onOpenChange={setCancelSheetOpen}
+        contextLabel={clientLabel}
+        isPending={Boolean(isCancelling && cancellingId === appointment.id)}
+        onConfirm={(reason) => onCancelAppointment(appointment.id, reason)}
+      />
     </div>
   );
 });

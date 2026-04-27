@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AuthError } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -243,7 +244,7 @@ describe("useSignIn", () => {
     vi.spyOn(authService, "signIn").mockResolvedValueOnce({
       user: { id: "user-1" } as never,
       session: { access_token: "token-123" } as never,
-      error: Object.assign(new Error("Email not confirmed"), { code: "auth" }),
+      error: new AuthError("Email not confirmed", 400, "auth"),
     });
 
     const queryClient = createTestQueryClient();
@@ -269,7 +270,7 @@ describe("useSignIn", () => {
     vi.spyOn(authService, "signIn").mockResolvedValueOnce({
       user: null,
       session: null,
-      error: Object.assign(new Error("Email not confirmed"), { code: "auth" }),
+      error: new AuthError("Email not confirmed", 400, "auth"),
     });
 
     const queryClient = createTestQueryClient();
@@ -295,9 +296,7 @@ describe("useSignIn", () => {
     vi.spyOn(authService, "signIn").mockResolvedValueOnce({
       user: null,
       session: null,
-      error: Object.assign(new Error("Invalid login credentials"), {
-        code: "auth",
-      }),
+      error: new AuthError("Invalid login credentials", 400, "auth"),
     });
 
     const queryClient = createTestQueryClient();
@@ -365,6 +364,7 @@ describe("useSignUp", () => {
       await result.current.mutateAsync({
         email: "user@test.com",
         password: "senha123",
+        confirmPassword: "senha123",
         fullName: "User Test",
         phone: "11999999999",
       });
@@ -381,9 +381,7 @@ describe("useSignUp", () => {
     vi.spyOn(authService, "signUp").mockResolvedValueOnce({
       user: null,
       session: null,
-      error: Object.assign(new Error("User already registered"), {
-        code: "auth",
-      }),
+      error: new AuthError("User already registered", 400, "auth"),
     });
 
     const queryClient = createTestQueryClient();
@@ -397,6 +395,7 @@ describe("useSignUp", () => {
       await result.current.mutateAsync({
         email: "user@test.com",
         password: "senha123",
+        confirmPassword: "senha123",
         fullName: "User Test",
         phone: "11999999999",
       });

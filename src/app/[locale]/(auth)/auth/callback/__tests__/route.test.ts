@@ -20,11 +20,8 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import {
-  GET,
-  getSafeCallbackRedirectOrigin,
-  isOAuthProviderUser,
-} from "../route";
+import { GET } from "../route";
+import { getSafeCallbackRedirectOrigin, isOAuthProviderUser } from "../utils";
 
 describe("auth callback route", () => {
   beforeEach(() => {

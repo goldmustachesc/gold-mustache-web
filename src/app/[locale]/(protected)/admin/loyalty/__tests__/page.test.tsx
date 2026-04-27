@@ -2,8 +2,25 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const rewardCardPt: Record<string, string> = {
+  inactive: "Inativo",
+  active: "Ativo",
+  edit: "Editar",
+  delete: "Excluir",
+};
+
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations:
+    (ns?: string) => (key: string, values?: { count?: number }) => {
+      if (ns === "loyalty.admin.catalog.rewardCard") {
+        if (key === "pointsShort" && values?.count !== undefined) {
+          return `${values.count} pts`;
+        }
+        return rewardCardPt[key] ?? key;
+      }
+      return key;
+    },
+  useLocale: () => "pt-BR",
 }));
 
 vi.mock("next/navigation", () => ({
@@ -19,18 +36,48 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@/hooks/useAdminLoyalty", () => ({
-  useAdminLoyaltyAccounts: () => ({
-    data: [
-      {
-        id: "acc-1",
-        userId: "u-1",
-        fullName: "Test User",
-        email: "test@test.com",
-        points: 100,
-        tier: "BRONZE",
+  useAdminLoyaltyReports: () => ({
+    data: {
+      totalAccounts: 0,
+      tierDistribution: { BRONZE: 0, SILVER: 0, GOLD: 0, DIAMOND: 0 },
+      totalPointsInCirculation: 0,
+      totalPointsRedeemed: 0,
+      totalRedemptions: 0,
+      redemptionsByStatus: { PENDING: 0, USED: 0, EXPIRED: 0 },
+      topRewards: [],
+      recentActivity: {
+        pointsEarnedLast30Days: 0,
+        redemptionsLast30Days: 0,
+        newAccountsLast30Days: 0,
       },
-    ],
+    },
     isLoading: false,
+    isError: false,
+  }),
+  useAdminExpiringPoints: () => ({
+    data: [],
+    isLoading: false,
+    isError: false,
+  }),
+  useAdminLoyaltyAccounts: () => ({
+    data: {
+      accounts: [
+        {
+          id: "acc-1",
+          userId: "u-1",
+          fullName: "Test User",
+          email: "test@test.com",
+          points: 100,
+          tier: "BRONZE",
+          lifetimePoints: 200,
+          memberSince: "2024-01-01T00:00:00.000Z",
+          redemptionCount: 0,
+        },
+      ],
+      meta: { page: 1, limit: 50, total: 1, totalPages: 1 },
+    },
+    isLoading: false,
+    isError: false,
   }),
   useAdminAdjustPoints: () => ({
     mutateAsync: vi.fn(),
@@ -76,6 +123,10 @@ vi.mock("@/hooks/useAdminRewards", () => ({
       },
     ],
     isLoading: false,
+  }),
+  useAdminDeleteReward: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
   }),
 }));
 

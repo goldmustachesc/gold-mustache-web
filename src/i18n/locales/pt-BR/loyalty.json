@@ -70,9 +70,16 @@
     },
     "types": {
       "EARNED": "Ganho",
+      "EARNED_APPOINTMENT": "Ganho por agendamento",
+      "EARNED_REFERRAL": "Ganho por indicação",
+      "EARNED_REVIEW": "Ganho por avaliação",
+      "EARNED_CHECKIN": "Bônus por presença",
+      "EARNED_BIRTHDAY": "Bônus de aniversário",
+      "EARNED_BONUS": "Bônus promocional",
       "REDEEMED": "Resgatado",
       "EXPIRED": "Expirado",
-      "ADJUSTED": "Ajuste"
+      "ADJUSTED": "Ajuste",
+      "PENALTY_NO_SHOW": "Penalidade por não comparecimento"
     }
   },
   "referral": {
@@ -102,7 +109,7 @@
   "admin": {
     "title": "Gestão de Fidelidade",
     "users": "Contas",
-    "catalog": "Catálogo",
+    "catalogTab": "Catálogo",
     "adjustPoints": "Ajustar Pontos",
     "reason": "Motivo do Ajuste",
     "accountsCount": "contas cadastradas",
@@ -136,6 +143,13 @@
       "validateError": "Erro ao validar código",
       "useError": "Erro ao marcar resgate como usado"
     },
+    "quickStats": {
+      "totalAccounts": "Contas Cadastradas",
+      "pointsInCirculation": "Pontos em Circulação",
+      "pendingRedemptions": "Resgates Pendentes",
+      "expiringPoints": "Pontos Expirando",
+      "loadError": "Não foi possível carregar os indicadores."
+    },
     "reports": {
       "tab": "Relatórios",
       "totalAccounts": "Contas Cadastradas",
@@ -150,6 +164,128 @@
       "pointsEarned30d": "Pontos ganhos",
       "redemptions30d": "Resgates realizados",
       "newAccounts30d": "Novas contas"
+    },
+    "accounts": {
+      "filters": {
+        "searchAria": "Buscar contas",
+        "searchPlaceholder": "Buscar por nome...",
+        "tierLabel": "Nível",
+        "tierAll": "Todos",
+        "tier": {
+          "BRONZE": "Bronze",
+          "SILVER": "Prata",
+          "GOLD": "Ouro",
+          "DIAMOND": "Diamante"
+        },
+        "sortBy": "Ordenar por",
+        "sortOrder": "Ordem",
+        "toggleSortOrder": "Ordenação atual: {order}. Toque para inverter.",
+        "sortAsc": "Crescente",
+        "sortDesc": "Decrescente",
+        "sort": {
+          "currentPoints": "Saldo atual",
+          "lifetimePoints": "Pontos vitalícios",
+          "memberSince": "Cliente desde",
+          "createdAt": "Data de cadastro",
+          "tier": "Nível",
+          "fullName": "Nome"
+        }
+      },
+      "card": {
+        "memberSince": "Cliente desde",
+        "lifetimePoints": "Pontos vitalícios",
+        "redemptions": "Resgates",
+        "transactionsToggle": "Histórico de pontos"
+      },
+      "transactions": {
+        "empty": "Nenhuma movimentação encontrada.",
+        "loadError": "Não foi possível carregar o histórico.",
+        "loading": "Carregando..."
+      },
+      "expirationAlert": {
+        "title": "Pontos prestes a expirar",
+        "description": "{count, plural, one {Há # movimentação com pontos prestes a expirar.} other {Há # movimentações com pontos prestes a expirar.}}"
+      },
+      "table": {
+        "loadError": "Não foi possível carregar as contas.",
+        "empty": "Nenhuma conta encontrada.",
+        "sortByColumn": "Ordenar por {column}",
+        "columns": {
+          "client": "Cliente",
+          "tier": "Nível",
+          "currentPoints": "Pontos",
+          "lifetimePoints": "Vitalício",
+          "memberSince": "Cliente desde",
+          "redemptions": "Resgates",
+          "actions": "Ações"
+        },
+        "previous": "Anterior",
+        "next": "Próxima",
+        "pageStatus": "Página {page} de {totalPages} · {total, plural, one {# conta} other {# contas}}"
+      }
+    },
+    "catalog": {
+      "title": "Itens do Catálogo",
+      "newItem": "Novo Item",
+      "emptyState": "Nenhuma recompensa cadastrada. Clique em \"Novo Item\" para adicionar.",
+      "deleteTitle": "Excluir recompensa?",
+      "deleteDescription": "Tem certeza que deseja remover \"{name}\"? Esta ação não pode ser desfeita. Só é possível excluir itens sem resgates associados.",
+      "cancel": "Cancelar",
+      "deleting": "Excluindo...",
+      "delete": "Excluir",
+      "rewardCard": {
+        "pointsShort": "{count} pts",
+        "inactive": "Inativo",
+        "active": "Ativo",
+        "edit": "Editar",
+        "delete": "Excluir"
+      }
+    },
+    "rewardModal": {
+      "editTitle": "Editar Recompensa",
+      "createTitle": "Nova Recompensa",
+      "editDescription": "Atualize os dados da recompensa no catálogo de fidelidade.",
+      "createDescription": "Crie uma nova recompensa para o catálogo de fidelidade.",
+      "loading": "Carregando recompensa...",
+      "loadError": "Não foi possível carregar esta recompensa. Tente novamente ou feche o modal.",
+      "editSuccess": "Recompensa atualizada!",
+      "createSuccess": "Recompensa criada!",
+      "editSuccessDesc": "As alterações foram salvas com sucesso.",
+      "createSuccessDesc": "A nova recompensa foi adicionada ao catálogo com sucesso.",
+      "errorUpdateTitle": "Erro ao atualizar recompensa",
+      "errorCreateTitle": "Erro ao criar recompensa",
+      "errorGeneric": "Ocorreu um erro inesperado. Tente novamente."
+    },
+    "rewardForm": {
+      "nameLabel": "Nome da Recompensa *",
+      "namePlaceholder": "Ex: Corte de Cabelo Grátis",
+      "descriptionLabel": "Descrição",
+      "descriptionPlaceholder": "Descreva detalhes da recompensa...",
+      "pointsCostLabel": "Custo em Pontos *",
+      "typeLabel": "Tipo *",
+      "typePlaceholder": "Selecione o tipo",
+      "typeFreeService": "Serviço Grátis",
+      "typeDiscount": "Desconto",
+      "typeProduct": "Produto",
+      "discountValueLabel": "Valor do Desconto *",
+      "discountValueHint": "Valor percentual do desconto (ex: 20 para 20%)",
+      "imageUrlLabel": "URL da Imagem",
+      "imageUrlPlaceholder": "https://exemplo.com/imagem.jpg",
+      "imageUrlHint": "URL opcional para imagem da recompensa",
+      "stockLabel": "Estoque",
+      "stockPlaceholder": "Deixe em branco para ilimitado",
+      "stockHint": "Quantidade disponível. Deixe em branco para ilimitado.",
+      "activeLabel": "Ativo",
+      "activeHint": "Recompensa estará visível para os clientes",
+      "cancel": "Cancelar",
+      "saving": "Salvando...",
+      "saveChanges": "Salvar Alterações",
+      "createReward": "Criar Recompensa",
+      "validation": {
+        "nameRequired": "Nome é obrigatório",
+        "nameMaxLength": "Nome deve ter no máximo 100 caracteres",
+        "pointsCostPositive": "Custo em pontos deve ser positivo"
+      }
     }
   }
 }

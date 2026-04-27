@@ -25,12 +25,14 @@ export function ChatContainer({ children, className }: ChatContainerProps) {
     <div
       ref={scrollRef}
       className={cn(
-        "flex flex-col gap-4 overflow-y-auto scroll-smooth",
-        "min-h-[400px] max-h-[calc(100vh-180px)]",
+        "flex min-h-0 flex-col gap-4 overflow-y-auto scroll-smooth",
+        "max-h-[calc(100vh-180px)]",
         "py-4 px-1",
         className,
       )}
     >
+      {/* Limits upward drift so chat never floats above ~25% of the viewport. */}
+      <div className="shrink grow-[0.25] basis-0" aria-hidden />
       {children}
     </div>
   );

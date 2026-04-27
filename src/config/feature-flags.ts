@@ -3,7 +3,10 @@ export type FeatureFlagCategory = "infra" | "product" | "ops";
 export type FeatureFlagKey =
   | "loyaltyProgram"
   | "referralProgram"
-  | "eventsSection";
+  | "eventsSection"
+  | "transactionalEmails"
+  | "appointmentReminders"
+  | "appointmentRemindersWhatsapp";
 
 export interface FeatureFlagDefinition {
   key: FeatureFlagKey;
@@ -34,6 +37,27 @@ export const FEATURE_FLAG_REGISTRY = {
     defaultValue: false,
     clientSafe: true,
     category: "product",
+  },
+  transactionalEmails: {
+    key: "transactionalEmails",
+    description: "Envio de emails transacionais",
+    defaultValue: false,
+    clientSafe: false,
+    category: "ops",
+  },
+  appointmentReminders: {
+    key: "appointmentReminders",
+    description: "Lembretes automáticos de agendamentos (cron)",
+    defaultValue: false,
+    clientSafe: false,
+    category: "ops",
+  },
+  appointmentRemindersWhatsapp: {
+    key: "appointmentRemindersWhatsapp",
+    description: "Canal WhatsApp para lembretes automáticos",
+    defaultValue: false,
+    clientSafe: false,
+    category: "ops",
   },
 } as const satisfies Record<FeatureFlagKey, FeatureFlagDefinition>;
 

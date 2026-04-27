@@ -159,7 +159,7 @@ export function BookingReview({
       </Card>
 
       {/* Actions */}
-      <div className="space-y-3">
+      <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-4 -mx-4 mt-4 lg:static lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:p-0 lg:mx-0 lg:mt-6 space-y-3">
         <Button
           onClick={onConfirm}
           className="w-full"

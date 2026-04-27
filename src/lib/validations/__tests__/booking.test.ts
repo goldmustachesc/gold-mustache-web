@@ -8,6 +8,7 @@ import {
   barberWorkingHoursDaySchema,
   updateBarberWorkingHoursSchema,
   barberAbsenceSchema,
+  barberAbsenceCreateSchema,
   shopHoursDaySchema,
   updateShopHoursSchema,
   shopClosureSchema,
@@ -409,6 +410,17 @@ describe("lib/validations/booking", () => {
       expect(result.success).toBe(true);
     });
 
+    it("should accept autoCancelConflicts flag", () => {
+      const result = barberAbsenceSchema.safeParse({
+        date: "2026-03-15",
+        autoCancelConflicts: true,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.autoCancelConflicts).toBe(true);
+      }
+    });
+
     it("should accept null reason", () => {
       const result = barberAbsenceSchema.safeParse({
         date: "2026-03-15",
@@ -452,6 +464,92 @@ describe("lib/validations/booking", () => {
 
     it("should reject invalid date format", () => {
       const result = barberAbsenceSchema.safeParse({ date: "15/03/2026" });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("barberAbsenceCreateSchema", () => {
+    it("should accept recurring absence with end date", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "WEEKLY",
+          interval: 2,
+          endsAt: "2026-04-15",
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept recurring absence with occurrence count", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "DAILY",
+          interval: 1,
+          occurrenceCount: 5,
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject recurrence without end date or occurrence count", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "MONTHLY",
+          interval: 1,
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject recurrence with both end date and occurrence count", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "MONTHLY",
+          interval: 1,
+          endsAt: "2026-04-15",
+          occurrenceCount: 4,
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject recurrence ending before start date", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-03-15",
+        recurrence: {
+          frequency: "WEEKLY",
+          interval: 1,
+          endsAt: "2026-03-10",
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject daily recurrence with more than 365 occurrences by end date", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-01-01",
+        recurrence: {
+          frequency: "DAILY",
+          interval: 1,
+          endsAt: "2027-01-01",
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject recurrence ending beyond the supported horizon", () => {
+      const result = barberAbsenceCreateSchema.safeParse({
+        date: "2026-01-01",
+        recurrence: {
+          frequency: "DAILY",
+          interval: 1,
+          endsAt: "2027-02-01",
+        },
+      });
       expect(result.success).toBe(false);
     });
   });

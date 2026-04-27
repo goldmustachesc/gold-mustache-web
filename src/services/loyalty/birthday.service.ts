@@ -17,6 +17,23 @@ interface ProfileWithLoyalty {
   } | null;
 }
 
+function birthdayBonusWhere(
+  accountIds: string | string[],
+  year: number,
+): {
+  loyaltyAccountId: string | { in: string[] };
+  type: PointTransactionType;
+  referenceId: string;
+} {
+  return {
+    loyaltyAccountId: Array.isArray(accountIds)
+      ? { in: accountIds }
+      : accountIds,
+    type: PointTransactionType.EARNED_BIRTHDAY,
+    referenceId: `birthday-${year}`,
+  };
+}
+
 async function getTodayBirthdays(
   date: Date = new Date(),
 ): Promise<ProfileWithLoyalty[]> {
@@ -46,15 +63,30 @@ async function hasBirthdayBonusThisYear(
   accountId: string,
   year: number,
 ): Promise<boolean> {
-  const existing = await prisma.pointTransaction.findFirst({
-    where: {
-      loyaltyAccountId: accountId,
-      type: PointTransactionType.EARNED_BIRTHDAY,
-      referenceId: `birthday-${year}`,
+  const existingAccountIds = await getBirthdayBonusAccountIdsForYear(
+    [accountId],
+    year,
+  );
+
+  return existingAccountIds.has(accountId);
+}
+
+async function getBirthdayBonusAccountIdsForYear(
+  accountIds: string[],
+  year: number,
+): Promise<Set<string>> {
+  if (accountIds.length === 0) {
+    return new Set();
+  }
+
+  const existing = await prisma.pointTransaction.findMany({
+    where: birthdayBonusWhere(accountIds, year),
+    select: {
+      loyaltyAccountId: true,
     },
   });
 
-  return existing !== null;
+  return new Set(existing.map((item) => item.loyaltyAccountId));
 }
 
 async function creditBirthdayBonuses(
@@ -71,17 +103,20 @@ async function creditBirthdayBonuses(
   let totalPointsCredited = 0;
   let failedCount = 0;
 
+  const accountIds = birthdays
+    .map((profile) => profile.loyaltyAccount?.id)
+    .filter((id): id is string => Boolean(id));
+  const alreadyCreditedAccountIds = await getBirthdayBonusAccountIdsForYear(
+    accountIds,
+    year,
+  );
+
   const { LoyaltyNotificationService } = await import("./notification.service");
 
   for (const profile of birthdays) {
     if (!profile.loyaltyAccount) continue;
 
-    const alreadyCredited = await hasBirthdayBonusThisYear(
-      profile.loyaltyAccount.id,
-      year,
-    );
-
-    if (alreadyCredited) continue;
+    if (alreadyCreditedAccountIds.has(profile.loyaltyAccount.id)) continue;
 
     try {
       await LoyaltyService.creditPoints({
@@ -114,5 +149,6 @@ async function creditBirthdayBonuses(
 export const BirthdayService = {
   getTodayBirthdays,
   hasBirthdayBonusThisYear,
+  getBirthdayBonusAccountIdsForYear,
   creditBirthdayBonuses,
 };
