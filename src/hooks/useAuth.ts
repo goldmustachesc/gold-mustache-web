@@ -3,14 +3,15 @@
 import { authService } from "@/services/auth";
 import type { LoginInput, SignupInput } from "@/lib/validations/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   translateAuthError,
   isEmailNotConfirmedError,
   createAuthErrorTranslations,
 } from "@/utils/auth-errors";
+import { getSafeRedirectPath } from "@/utils/redirect";
 
 export function useUser() {
   return useQuery({
@@ -34,7 +35,13 @@ export function useSignIn() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const t = useTranslations("auth");
+  const errorTranslations = createAuthErrorTranslations(t);
+  const redirectPath = getSafeRedirectPath(
+    searchParams.get("redirect"),
+    `/${locale}/dashboard`,
+  );
 
   return useMutation({
     mutationFn: (data: LoginInput) =>
@@ -43,34 +50,26 @@ export function useSignIn() {
       if (response.error) {
         const errorMessage = response.error.message || "";
 
-        // If email not confirmed error, ignore it completely
-        // The user should still be able to proceed - if Supabase blocks,
-        // they need to disable email confirmation in Supabase Dashboard:
-        // Authentication > Providers > Email > Disable "Confirm email"
         if (isEmailNotConfirmedError(errorMessage)) {
-          // If we have a session, proceed normally
           if (response.session) {
             queryClient.invalidateQueries({ queryKey: ["user"] });
             queryClient.invalidateQueries({ queryKey: ["session"] });
             toast.success(t("toast.loginSuccess"));
-            router.push(`/${locale}/dashboard`);
+            router.push(redirectPath);
             router.refresh();
             return;
           }
-          // If no session, silently ignore - don't show error
-          // User needs to configure Supabase to disable email confirmation
+          toast.error(translateAuthError(errorMessage, errorTranslations));
           return;
         }
 
-        toast.error(
-          translateAuthError(errorMessage, createAuthErrorTranslations(t)),
-        );
+        toast.error(translateAuthError(errorMessage, errorTranslations));
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["user"] });
       queryClient.invalidateQueries({ queryKey: ["session"] });
       toast.success(t("toast.loginSuccess"));
-      router.push(`/${locale}/dashboard`);
+      router.push(redirectPath);
       router.refresh();
     },
     onError: () => {
@@ -84,6 +83,7 @@ export function useSignUp() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("auth");
+  const errorTranslations = createAuthErrorTranslations(t);
 
   return useMutation({
     mutationFn: (data: SignupInput) =>
@@ -91,9 +91,7 @@ export function useSignUp() {
     onSuccess: (response) => {
       if (response.error) {
         const errorMessage = response.error.message || "";
-        toast.error(
-          translateAuthError(errorMessage, createAuthErrorTranslations(t)),
-        );
+        toast.error(translateAuthError(errorMessage, errorTranslations));
         return;
       }
       // Atualiza os dados do usuário no cache
@@ -110,10 +108,11 @@ export function useSignUp() {
 }
 
 export function useSignInWithGoogle() {
+  const locale = useLocale();
   const t = useTranslations("auth");
 
   return useMutation({
-    mutationFn: () => authService.signInWithGoogle(),
+    mutationFn: () => authService.signInWithGoogle(locale),
     onError: () => {
       toast.error(t("toast.googleError"));
     },
@@ -143,10 +142,11 @@ export function useSignOut() {
 }
 
 export function useResetPassword() {
+  const locale = useLocale();
   const t = useTranslations("auth");
 
   return useMutation({
-    mutationFn: (email: string) => authService.resetPassword(email),
+    mutationFn: (email: string) => authService.resetPassword(email, locale),
     onSuccess: () => {
       toast.success(t("toast.resetSuccess"));
     },

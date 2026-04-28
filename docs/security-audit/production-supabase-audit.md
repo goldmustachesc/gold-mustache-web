@@ -60,8 +60,8 @@
 | Item | Status | Valor esperado | Valor atual | Observação |
 |------|--------|----------------|-------------|------------|
 | Site URL | [ ] | `https://www.goldmustachebarbearia.com.br` | | |
-| Redirect URLs | [ ] | Incluir `https://www.goldmustachebarbearia.com.br/auth/callback` | | |
-| Recovery redirect | [ ] | `/reset-password/update` | | |
+| Redirect URLs | [ ] | Incluir `https://www.goldmustachebarbearia.com.br/pt-BR/auth/callback` | | |
+| Recovery redirect | [ ] | `/pt-BR/reset-password/update` | | |
 
 ### 2.4 Authentication — Email Templates
 

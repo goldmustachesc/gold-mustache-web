@@ -44,23 +44,21 @@
 
 ## 4. URLs de Callback da Aplicação
 
-O frontend envia `redirectTo: ${window.location.origin}/auth/callback` em `src/services/auth.ts`.
-Por isso, as URLs públicas que precisam funcionar por ambiente são sem prefixo de locale.
-O App Router e o `proxy.ts` cuidam do roteamento interno para o handler localizado.
+O frontend envia `redirectTo: ${window.location.origin}/${locale}/auth/callback` em `src/services/auth.ts`, então as URLs públicas por ambiente precisam incluir o prefixo de locale. O App Router e o `proxy.ts` continuam cuidando do roteamento interno para o handler localizado.
 
 ### Desenvolvimento
 ```
-http://localhost:3001/auth/callback
+http://localhost:3001/pt-BR/auth/callback
 ```
 
 ### Staging
 ```
-https://staging.goldmustachebarbearia.com.br/auth/callback
+https://staging.goldmustachebarbearia.com.br/pt-BR/auth/callback
 ```
 
 ### Produção
 ```
-https://www.goldmustachebarbearia.com.br/auth/callback
+https://www.goldmustachebarbearia.com.br/pt-BR/auth/callback
 ```
 
 ## 5. Variáveis de Ambiente

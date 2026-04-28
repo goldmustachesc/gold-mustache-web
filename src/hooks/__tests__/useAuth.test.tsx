@@ -28,6 +28,10 @@ const routerMocks = vi.hoisted(() => ({
   refresh: vi.fn(),
 }));
 
+const searchParamsMocks = vi.hoisted(() => ({
+  get: vi.fn(),
+}));
+
 const toastMocks = vi.hoisted(() => ({
   success: vi.fn(),
   error: vi.fn(),
@@ -38,6 +42,9 @@ vi.mock("next/navigation", () => ({
     push: routerMocks.push,
     replace: routerMocks.replace,
     refresh: routerMocks.refresh,
+  }),
+  useSearchParams: () => ({
+    get: searchParamsMocks.get,
   }),
 }));
 
@@ -92,6 +99,7 @@ function SignOutHarness() {
 describe("useSignOut", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParamsMocks.get.mockReturnValue(null);
   });
 
   it("limpa cache de auth, remove queries antigas e redireciona no sucesso", async () => {
@@ -157,6 +165,7 @@ describe("useSignOut", () => {
 describe("useAuth queries", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParamsMocks.get.mockReturnValue(null);
   });
 
   it("carrega o usuario autenticado com useUser", async () => {
@@ -205,9 +214,11 @@ describe("useAuth queries", () => {
 describe("useSignIn", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParamsMocks.get.mockReturnValue(null);
   });
 
   it("invalida caches e redireciona quando o login funciona", async () => {
+    searchParamsMocks.get.mockReturnValue("/pt-BR/dashboard");
     vi.spyOn(authService, "signIn").mockResolvedValueOnce({
       user: { id: "user-1" } as never,
       session: { access_token: "token-123" } as never,
@@ -240,6 +251,31 @@ describe("useSignIn", () => {
     expect(routerMocks.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it("preserva redirect seguro da rota original no login", async () => {
+    searchParamsMocks.get.mockReturnValue("/pt-BR/admin/agendamentos");
+    vi.spyOn(authService, "signIn").mockResolvedValueOnce({
+      user: { id: "user-1" } as never,
+      session: { access_token: "token-123" } as never,
+      error: null,
+    });
+
+    const queryClient = createTestQueryClient();
+    const { result } = renderHook(() => useSignIn(), {
+      wrapper: ({ children }) => (
+        <TestWrapper queryClient={queryClient}>{children}</TestWrapper>
+      ),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "user@test.com",
+        password: "senha123",
+      });
+    });
+
+    expect(routerMocks.push).toHaveBeenCalledWith("/pt-BR/admin/agendamentos");
+  });
+
   it("continua o fluxo quando o erro e de email nao confirmado mas ja existe sessao", async () => {
     vi.spyOn(authService, "signIn").mockResolvedValueOnce({
       user: { id: "user-1" } as never,
@@ -266,7 +302,7 @@ describe("useSignIn", () => {
     expect(routerMocks.push).toHaveBeenCalledWith("/pt-BR/dashboard");
   });
 
-  it("silencia o erro de email nao confirmado quando nao ha sessao", async () => {
+  it("mostra erro quando o email nao esta confirmado e nao ha sessao", async () => {
     vi.spyOn(authService, "signIn").mockResolvedValueOnce({
       user: null,
       session: null,
@@ -288,8 +324,35 @@ describe("useSignIn", () => {
     });
 
     expect(toastMocks.success).not.toHaveBeenCalled();
-    expect(toastMocks.error).not.toHaveBeenCalled();
+    expect(toastMocks.error).toHaveBeenCalledWith(
+      "auth.errors.emailNotConfirmed",
+    );
     expect(routerMocks.push).not.toHaveBeenCalled();
+  });
+
+  it("faz fallback seguro quando o redirect da rota e invalido", async () => {
+    searchParamsMocks.get.mockReturnValue("https://evil.com");
+    vi.spyOn(authService, "signIn").mockResolvedValueOnce({
+      user: { id: "user-1" } as never,
+      session: { access_token: "token-123" } as never,
+      error: null,
+    });
+
+    const queryClient = createTestQueryClient();
+    const { result } = renderHook(() => useSignIn(), {
+      wrapper: ({ children }) => (
+        <TestWrapper queryClient={queryClient}>{children}</TestWrapper>
+      ),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "user@test.com",
+        password: "senha123",
+      });
+    });
+
+    expect(routerMocks.push).toHaveBeenCalledWith("/pt-BR/dashboard");
   });
 
   it("mostra o erro traduzido quando o servico retorna falha de login", async () => {
@@ -446,6 +509,10 @@ describe("other auth mutations", () => {
       await result.current.mutateAsync("user@test.com");
     });
 
+    expect(authService.resetPassword).toHaveBeenCalledWith(
+      "user@test.com",
+      "pt-BR",
+    );
     expect(toastMocks.success).toHaveBeenCalledWith("auth.toast.resetSuccess");
   });
 
@@ -511,5 +578,22 @@ describe("other auth mutations", () => {
     expect(toastMocks.error).toHaveBeenCalledWith(
       "auth.toast.updatePasswordError",
     );
+  });
+
+  it("envia locale ao iniciar login com Google", async () => {
+    vi.spyOn(authService, "signInWithGoogle").mockResolvedValueOnce(undefined);
+
+    const queryClient = createTestQueryClient();
+    const { result } = renderHook(() => useSignInWithGoogle(), {
+      wrapper: ({ children }) => (
+        <TestWrapper queryClient={queryClient}>{children}</TestWrapper>
+      ),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+
+    expect(authService.signInWithGoogle).toHaveBeenCalledWith("pt-BR");
   });
 });

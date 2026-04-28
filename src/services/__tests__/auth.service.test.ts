@@ -95,23 +95,29 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
 
   it("signInWithGoogle uses redirectTo based on window.location.origin and throws on error", async () => {
     supabaseAuthMock.signInWithOAuth.mockResolvedValue({ error: null });
-    await expect(authService.signInWithGoogle()).resolves.toBeUndefined();
+    await expect(
+      authService.signInWithGoogle("pt-BR"),
+    ).resolves.toBeUndefined();
     expect(supabaseAuthMock.signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:3001/auth/callback",
+        redirectTo: "http://localhost:3001/pt-BR/auth/callback",
       },
     });
 
     supabaseAuthMock.signInWithOAuth.mockResolvedValue({
       error: { message: "oauth" } as unknown as AuthError,
     });
-    await expect(authService.signInWithGoogle()).rejects.toThrow("oauth");
+    await expect(authService.signInWithGoogle("pt-BR")).rejects.toThrow(
+      "oauth",
+    );
   });
 
   it("signInWithGoogle handles null supabase client", async () => {
     vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
-    await expect(authService.signInWithGoogle()).resolves.toBeUndefined();
+    await expect(
+      authService.signInWithGoogle("pt-BR"),
+    ).resolves.toBeUndefined();
   });
 
   it("signOut throws when supabase returns error", async () => {
@@ -131,16 +137,20 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
 
   it("resetPassword uses redirectTo based on window.location.origin", async () => {
     supabaseAuthMock.resetPasswordForEmail.mockResolvedValue({ error: null });
-    await expect(authService.resetPassword("a@b.com")).resolves.toBeUndefined();
+    await expect(
+      authService.resetPassword("a@b.com", "pt-BR"),
+    ).resolves.toBeUndefined();
     expect(supabaseAuthMock.resetPasswordForEmail).toHaveBeenCalledWith(
       "a@b.com",
-      { redirectTo: "http://localhost:3001/reset-password/update" },
+      { redirectTo: "http://localhost:3001/pt-BR/reset-password/update" },
     );
   });
 
   it("resetPassword handles null supabase client", async () => {
     vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
-    await expect(authService.resetPassword("a@b.com")).resolves.toBeUndefined();
+    await expect(
+      authService.resetPassword("a@b.com", "pt-BR"),
+    ).resolves.toBeUndefined();
   });
 
   it("updatePassword throws when supabase returns error", async () => {

@@ -58,8 +58,8 @@
 | Item | Status | Valor esperado | Valor atual | Observação |
 |------|--------|----------------|-------------|------------|
 | Site URL | [ ] | `https://staging.goldmustachebarbearia.com.br` | | |
-| Redirect URLs | [ ] | Incluir `https://staging.goldmustachebarbearia.com.br/auth/callback` | | |
-| Recovery redirect | [ ] | `/reset-password/update` | | Verificar path correto |
+| Redirect URLs | [ ] | Incluir `https://staging.goldmustachebarbearia.com.br/pt-BR/auth/callback` | | |
+| Recovery redirect | [ ] | `/pt-BR/reset-password/update` | | Verificar path correto |
 
 ### 2.4 Authentication — Email Templates
 

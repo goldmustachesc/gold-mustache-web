@@ -24,8 +24,8 @@ describe("utils/auth-errors", () => {
       );
     });
 
-    it("should return 'userNotFound' for exact 'User not found' error", () => {
-      expect(getAuthErrorKey("User not found")).toBe("userNotFound");
+    it("should return 'invalidCredentials' for exact 'User not found' error", () => {
+      expect(getAuthErrorKey("User not found")).toBe("invalidCredentials");
     });
 
     it("should return 'emailAlreadyExists' for exact 'User already registered' error", () => {
@@ -62,7 +62,7 @@ describe("utils/auth-errors", () => {
         "invalidCredentials",
       );
       expect(getAuthErrorKey("USER NOT FOUND in database")).toBe(
-        "userNotFound",
+        "invalidCredentials",
       );
     });
 
@@ -77,7 +77,6 @@ describe("utils/auth-errors", () => {
     const mockTranslations = {
       emailNotConfirmed: "Please confirm your email",
       invalidCredentials: "Wrong email or password",
-      userNotFound: "User not found",
       emailAlreadyExists: "Email already exists",
       weakPassword: "Password too weak",
       tooManyRequests: "Too many requests",
@@ -92,7 +91,7 @@ describe("utils/auth-errors", () => {
         translateAuthError("Invalid login credentials", mockTranslations),
       ).toBe("Wrong email or password");
       expect(translateAuthError("User not found", mockTranslations)).toBe(
-        "User not found",
+        "Wrong email or password",
       );
     });
 
@@ -104,7 +103,7 @@ describe("utils/auth-errors", () => {
         "Email ou senha incorretos",
       );
       expect(translateAuthError("User not found")).toBe(
-        "Usuário não encontrado",
+        "Email ou senha incorretos",
       );
     });
 
@@ -164,7 +163,6 @@ describe("utils/auth-errors", () => {
       expect(translations.invalidCredentials).toBe(
         "translated:errors.invalidCredentials",
       );
-      expect(translations.userNotFound).toBe("translated:errors.userNotFound");
       expect(translations.emailAlreadyExists).toBe(
         "translated:errors.emailAlreadyExists",
       );
@@ -182,7 +180,6 @@ describe("utils/auth-errors", () => {
       const expectedKeys = [
         "emailNotConfirmed",
         "invalidCredentials",
-        "userNotFound",
         "emailAlreadyExists",
         "weakPassword",
         "tooManyRequests",
@@ -197,7 +194,7 @@ describe("utils/auth-errors", () => {
         const map: Record<string, string> = {
           "errors.invalidCredentials": "Credenciais inválidas",
           "errors.emailNotConfirmed": "Email não confirmado",
-          "errors.userNotFound": "Usuário não encontrado",
+          "errors.userNotFound": "Credenciais inválidas",
           "errors.emailAlreadyExists": "Email já existe",
           "errors.weakPassword": "Senha fraca",
           "errors.tooManyRequests": "Muitas tentativas",

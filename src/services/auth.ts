@@ -60,13 +60,13 @@ export const authService = {
     };
   },
 
-  async signInWithGoogle(): Promise<void> {
+  async signInWithGoogle(locale: string): Promise<void> {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/${locale}/auth/callback`,
       },
     });
     if (error) throw error;
@@ -79,11 +79,11 @@ export const authService = {
     if (error) throw error;
   },
 
-  async resetPassword(email: string): Promise<void> {
+  async resetPassword(email: string, locale: string): Promise<void> {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password/update`,
+      redirectTo: `${window.location.origin}/${locale}/reset-password/update`,
     });
     if (error) throw error;
   },
