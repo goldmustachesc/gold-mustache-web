@@ -111,7 +111,7 @@
     "title": "Alterar senha",
     "description": "Atualize sua senha de acesso.",
     "newPassword": "Nova senha",
-    "newPasswordPlaceholder": "Mínimo 6 caracteres",
+    "newPasswordPlaceholder": "Mínimo 8 caracteres",
     "confirmPassword": "Confirmar nova senha",
     "confirmPasswordPlaceholder": "Repita a nova senha",
     "button": "Alterar senha",
@@ -124,7 +124,9 @@
     "ariaHideConfirmPassword": "Ocultar confirmação de senha",
     "validation": {
       "required": "Nova senha é obrigatória",
-      "minLength": "Senha deve ter pelo menos 6 caracteres",
+      "minLength": "Senha deve ter pelo menos 8 caracteres",
+      "uppercase": "Use pelo menos uma letra maiúscula",
+      "number": "Use pelo menos um número",
       "mismatch": "As senhas não coincidem"
     }
   },

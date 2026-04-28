@@ -111,7 +111,7 @@
     "title": "Change password",
     "description": "Update your access password.",
     "newPassword": "New password",
-    "newPasswordPlaceholder": "Minimum 6 characters",
+    "newPasswordPlaceholder": "Minimum 8 characters",
     "confirmPassword": "Confirm new password",
     "confirmPasswordPlaceholder": "Repeat the new password",
     "button": "Change password",
@@ -124,7 +124,9 @@
     "ariaHideConfirmPassword": "Hide password confirmation",
     "validation": {
       "required": "New password is required",
-      "minLength": "Password must have at least 6 characters",
+      "minLength": "Password must have at least 8 characters",
+      "uppercase": "Use at least one uppercase letter",
+      "number": "Use at least one number",
       "mismatch": "Passwords do not match"
     }
   },

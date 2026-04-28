@@ -2,46 +2,45 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { AuthError } from "@supabase/supabase-js";
 import * as supabaseClient from "@/lib/supabase/client";
 
-const supabaseAuthMock = vi.hoisted(() => ({
-  signUp: vi.fn(),
-  signInWithPassword: vi.fn(),
-  signInWithOAuth: vi.fn(),
-  signOut: vi.fn(),
-  resetPasswordForEmail: vi.fn(),
-  updateUser: vi.fn(),
-  getUser: vi.fn(),
-  getSession: vi.fn(),
-  resend: vi.fn(),
-}));
+const fetchMock = vi.hoisted(() => vi.fn());
+vi.stubGlobal("fetch", fetchMock);
 
 vi.mock("@/lib/supabase/client", () => {
   return {
     createClient: () => ({
-      auth: supabaseAuthMock,
+      auth: {},
     }),
   };
 });
 
 import { authService } from "../auth";
 
-describe("services/auth (Supabase-mocked unit tests)", () => {
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+describe("services/auth", () => {
   beforeEach(() => {
-    // happy-dom provides window; ensure origin exists
     Object.defineProperty(window, "location", {
       value: { origin: "http://localhost:3001" },
       writable: true,
     });
+    fetchMock.mockReset();
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("signUp maps data.user/session + error", async () => {
-    supabaseAuthMock.signUp.mockResolvedValue({
-      data: { user: { id: "u-1" }, session: { access_token: "t" } },
-      error: null,
-    });
+  it("signUp posts payload and maps user/session", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: { user: { id: "u-1" }, session: { access_token: "t" } },
+      }),
+    );
 
     const result = await authService.signUp(
       "a@b.com",
@@ -49,16 +48,20 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
       "João Silva",
       "11999999999",
     );
-    expect(supabaseAuthMock.signUp).toHaveBeenCalledWith({
-      email: "a@b.com",
-      password: "pw",
-      options: {
-        data: {
-          full_name: "João Silva",
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/sign-up",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          email: "a@b.com",
+          password: "pw",
+          fullName: "João Silva",
           phone: "11999999999",
-        },
-      },
-    });
+        }),
+      }),
+    );
     expect(result.user).toEqual({ id: "u-1" });
     expect(result.session).toEqual({ access_token: "t" });
   });
@@ -68,19 +71,26 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     const result = await authService.signUp("a", "b", "c", "d");
     expect(result.error).toBeDefined();
     expect(result.error?.message).toBe("Supabase not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("signIn maps data.user/session + error", async () => {
-    supabaseAuthMock.signInWithPassword.mockResolvedValue({
-      data: { user: { id: "u-1" }, session: { access_token: "t" } },
-      error: null,
-    });
+  it("signIn posts payload and maps user/session", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: { user: { id: "u-1" }, session: { access_token: "t" } },
+      }),
+    );
 
     const result = await authService.signIn("a@b.com", "pw");
-    expect(supabaseAuthMock.signInWithPassword).toHaveBeenCalledWith({
-      email: "a@b.com",
-      password: "pw",
-    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/sign-in",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ email: "a@b.com", password: "pw" }),
+      }),
+    );
     expect(result.user).toEqual({ id: "u-1" });
     expect(result.session).toEqual({ access_token: "t" });
     expect(result.error).toBeNull();
@@ -91,21 +101,26 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     const result = await authService.signIn("a", "b");
     expect(result.error).toBeDefined();
     expect(result.error?.message).toBe("Supabase not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("signInWithGoogle uses redirectTo based on window.location.origin and throws on error", async () => {
-    supabaseAuthMock.signInWithOAuth.mockResolvedValue({ error: null });
+    const auth = {
+      signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
+    };
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue({ auth } as never);
+
     await expect(
       authService.signInWithGoogle("pt-BR"),
     ).resolves.toBeUndefined();
-    expect(supabaseAuthMock.signInWithOAuth).toHaveBeenCalledWith({
+    expect(auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
       options: {
         redirectTo: "http://localhost:3001/pt-BR/auth/callback",
       },
     });
 
-    supabaseAuthMock.signInWithOAuth.mockResolvedValue({
+    auth.signInWithOAuth.mockResolvedValue({
       error: { message: "oauth" } as unknown as AuthError,
     });
     await expect(authService.signInWithGoogle("pt-BR")).rejects.toThrow(
@@ -121,10 +136,14 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("signOut throws when supabase returns error", async () => {
-    supabaseAuthMock.signOut.mockResolvedValue({ error: null });
+    const auth = {
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+    };
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue({ auth } as never);
+
     await expect(authService.signOut()).resolves.toBeUndefined();
 
-    supabaseAuthMock.signOut.mockResolvedValue({
+    auth.signOut.mockResolvedValue({
       error: { message: "x" } as unknown as AuthError,
     });
     await expect(authService.signOut()).rejects.toThrow("x");
@@ -135,14 +154,18 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.signOut()).resolves.toBeUndefined();
   });
 
-  it("resetPassword uses redirectTo based on window.location.origin", async () => {
-    supabaseAuthMock.resetPasswordForEmail.mockResolvedValue({ error: null });
+  it("resetPassword posts payload", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { success: true } }));
+
     await expect(
       authService.resetPassword("a@b.com", "pt-BR"),
     ).resolves.toBeUndefined();
-    expect(supabaseAuthMock.resetPasswordForEmail).toHaveBeenCalledWith(
-      "a@b.com",
-      { redirectTo: "http://localhost:3001/pt-BR/reset-password/update" },
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/reset-password",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ email: "a@b.com", locale: "pt-BR" }),
+      }),
     );
   });
 
@@ -151,27 +174,33 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(
       authService.resetPassword("a@b.com", "pt-BR"),
     ).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("updatePassword throws when supabase returns error", async () => {
-    supabaseAuthMock.updateUser.mockResolvedValue({ error: null });
-    await expect(authService.updatePassword("pw")).resolves.toBeUndefined();
+  it("updatePassword posts payload", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { success: true } }));
 
-    supabaseAuthMock.updateUser.mockResolvedValue({
-      error: { message: "x" } as unknown as AuthError,
-    });
-    await expect(authService.updatePassword("pw")).rejects.toThrow("x");
+    await expect(authService.updatePassword("pw")).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/update-password",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ password: "pw" }),
+      }),
+    );
   });
 
   it("updatePassword handles null supabase client", async () => {
     vi.spyOn(supabaseClient, "createClient").mockReturnValue(null as never);
     await expect(authService.updatePassword("pw")).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("getUser returns data.user", async () => {
-    supabaseAuthMock.getUser.mockResolvedValue({
-      data: { user: { id: "u-1" } },
-    });
+    const auth = {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "u-1" } } }),
+    };
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue({ auth } as never);
     await expect(authService.getUser()).resolves.toEqual({ id: "u-1" });
   });
 
@@ -181,9 +210,12 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
   });
 
   it("getSession returns data.session", async () => {
-    supabaseAuthMock.getSession.mockResolvedValue({
-      data: { session: { access_token: "t" } },
-    });
+    const auth = {
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: "t" } } }),
+    };
+    vi.spyOn(supabaseClient, "createClient").mockReturnValue({ auth } as never);
     await expect(authService.getSession()).resolves.toEqual({
       access_token: "t",
     });
@@ -194,22 +226,19 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(authService.getSession()).resolves.toBeNull();
   });
 
-  it("resendConfirmationEmail throws when supabase returns error", async () => {
-    supabaseAuthMock.resend.mockResolvedValue({ error: null });
+  it("resendConfirmationEmail posts payload", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { success: true } }));
+
     await expect(
       authService.resendConfirmationEmail("a@b.com"),
     ).resolves.toBeUndefined();
-    expect(supabaseAuthMock.resend).toHaveBeenCalledWith({
-      type: "signup",
-      email: "a@b.com",
-    });
-
-    supabaseAuthMock.resend.mockResolvedValue({
-      error: { message: "x" } as unknown as AuthError,
-    });
-    await expect(
-      authService.resendConfirmationEmail("a@b.com"),
-    ).rejects.toThrow("x");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/resend-confirmation-email",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ email: "a@b.com" }),
+      }),
+    );
   });
 
   it("resendConfirmationEmail handles null supabase client", async () => {
@@ -217,5 +246,6 @@ describe("services/auth (Supabase-mocked unit tests)", () => {
     await expect(
       authService.resendConfirmationEmail("a@b.com"),
     ).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

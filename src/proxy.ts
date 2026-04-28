@@ -57,16 +57,16 @@ export async function proxy(request: NextRequest) {
 
   const { supabaseResponse, user } = await updateSession(request);
 
+  if (isAuthRoute && user) {
+    const locale = pathname.split("/")[1] || defaultLocale;
+    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+  }
+
   if (isProtectedRoute && !user) {
     const locale = pathname.split("/")[1] || defaultLocale;
     const loginUrl = new URL(`/${locale}/login`, request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
-  }
-
-  if (isAuthRoute && user) {
-    const locale = pathname.split("/")[1] || defaultLocale;
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
   const intlResponse = intlMiddleware(request);

@@ -111,7 +111,7 @@
     "title": "Cambiar contraseña",
     "description": "Actualiza tu contraseña de acceso.",
     "newPassword": "Nueva contraseña",
-    "newPasswordPlaceholder": "Mínimo 6 caracteres",
+    "newPasswordPlaceholder": "Mínimo 8 caracteres",
     "confirmPassword": "Confirmar nueva contraseña",
     "confirmPasswordPlaceholder": "Repite la nueva contraseña",
     "button": "Cambiar contraseña",
@@ -124,7 +124,9 @@
     "ariaHideConfirmPassword": "Ocultar confirmación de contraseña",
     "validation": {
       "required": "La nueva contraseña es obligatoria",
-      "minLength": "La contraseña debe tener al menos 6 caracteres",
+      "minLength": "La contraseña debe tener al menos 8 caracteres",
+      "uppercase": "Usa al menos una letra mayúscula",
+      "number": "Usa al menos un número",
       "mismatch": "Las contraseñas no coinciden"
     }
   },

@@ -33,7 +33,7 @@ export function NewPasswordForm() {
           id="password"
           label="Nova senha"
           type="password"
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
           error={errors.password}
           {...register("password")}
         />

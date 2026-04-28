@@ -47,7 +47,7 @@ describe("PasswordChangeCard", () => {
     expect(mockUpdatePassword).not.toHaveBeenCalled();
   });
 
-  it("shows validation error for password shorter than 6 chars", async () => {
+  it("shows validation error for password shorter than 8 chars", async () => {
     const user = userEvent.setup();
     render(<PasswordChangeCard />);
 
@@ -74,12 +74,12 @@ describe("PasswordChangeCard", () => {
     const user = userEvent.setup();
     render(<PasswordChangeCard />);
 
-    await user.type(screen.getByLabelText(/newPassword$/), "newpass123");
-    await user.type(screen.getByLabelText(/confirmPassword/), "newpass123");
+    await user.type(screen.getByLabelText(/newPassword$/), "Newpass123");
+    await user.type(screen.getByLabelText(/confirmPassword/), "Newpass123");
     await user.click(screen.getByRole("button", { name: /button/i }));
 
     await waitFor(() => {
-      expect(mockUpdatePassword).toHaveBeenCalledWith("newpass123");
+      expect(mockUpdatePassword).toHaveBeenCalledWith("Newpass123");
     });
     expect(toastMocks.success).toHaveBeenCalledWith("success");
   });
@@ -89,8 +89,8 @@ describe("PasswordChangeCard", () => {
     const user = userEvent.setup();
     render(<PasswordChangeCard />);
 
-    await user.type(screen.getByLabelText(/newPassword$/), "newpass123");
-    await user.type(screen.getByLabelText(/confirmPassword/), "newpass123");
+    await user.type(screen.getByLabelText(/newPassword$/), "Newpass123");
+    await user.type(screen.getByLabelText(/confirmPassword/), "Newpass123");
     await user.click(screen.getByRole("button", { name: /button/i }));
 
     await waitFor(() => {
@@ -104,8 +104,8 @@ describe("PasswordChangeCard", () => {
     const user = userEvent.setup();
     render(<PasswordChangeCard />);
 
-    await user.type(screen.getByLabelText(/newPassword$/), "newpass123");
-    await user.type(screen.getByLabelText(/confirmPassword/), "newpass123");
+    await user.type(screen.getByLabelText(/newPassword$/), "Newpass123");
+    await user.type(screen.getByLabelText(/confirmPassword/), "Newpass123");
     await user.click(screen.getByRole("button", { name: /button/i }));
 
     await waitFor(() => {

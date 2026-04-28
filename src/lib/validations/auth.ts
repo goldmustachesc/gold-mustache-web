@@ -23,7 +23,11 @@ export const signupSchema = z
         { message: "Telefone deve ter 10 ou 11 dígitos" },
       ),
     email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
-    password: z.string().min(6, "Mínimo 6 caracteres"),
+    password: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Use pelo menos uma letra maiúscula")
+      .regex(/\d/, "Use pelo menos um número"),
     confirmPassword: z.string().min(1, "Confirmação é obrigatória"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -37,7 +41,11 @@ export const resetSchema = z.object({
 
 export const newPasswordSchema = z
   .object({
-    password: z.string().min(6, "Mínimo 6 caracteres"),
+    password: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Use pelo menos uma letra maiúscula")
+      .regex(/\d/, "Use pelo menos um número"),
     confirmPassword: z.string().min(1, "Confirmação é obrigatória"),
   })
   .refine((data) => data.password === data.confirmPassword, {
