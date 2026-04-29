@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
+import { buildTimeSelectionFeedback } from "@/lib/booking/time-selection-feedback";
 import { cn } from "@/lib/utils";
+import { TimeSelectionFeedbackPanel } from "@/components/booking/TimeSelectionFeedbackPanel";
 import { Clock } from "lucide-react";
 import type { BookingAvailability, TimeSlot } from "@/types/booking";
 import {
@@ -30,23 +31,20 @@ export function TimeSlotGrid({
     selectedSlot?.time ?? availability?.windows[0]?.startTime ?? "",
   );
 
-  const selectedTimeError = useMemo(() => {
+  const feedback = useMemo(() => {
     if (!availability || !selectedTime) {
       return null;
     }
 
-    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
+    return buildTimeSelectionFeedback({
       windows: availability.windows,
-      startTime: selectedTime,
-      durationMinutes: availability.serviceDuration,
+      selectedStartTime: selectedTime,
+      serviceDurationMinutes: availability.serviceDuration,
     });
-
-    if (fitsAvailability) {
-      return null;
-    }
-
-    return "Escolha um horário dentro das janelas disponíveis.";
   }, [availability, selectedTime]);
+
+  const selectedTimeError =
+    feedback && feedback.status !== "valid" ? feedback.message : null;
 
   useEffect(() => {
     setSelectedTime(
@@ -122,15 +120,21 @@ export function TimeSlotGrid({
             Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro
             das janelas acima.
           </p>
-          {selectedTimeError && (
-            <p className="text-sm text-destructive">{selectedTimeError}</p>
-          )}
         </div>
+
+        {feedback && (
+          <TimeSelectionFeedbackPanel
+            feedback={feedback}
+            selectedTime={selectedTime}
+            onSelectTime={setSelectedTime}
+            className="rounded-md"
+          />
+        )}
 
         <Button
           type="button"
           className="w-full"
-          disabled={!selectedTime || selectedTimeError !== null}
+          disabled={!selectedTime || feedback?.status !== "valid"}
           onClick={() =>
             onSelect({
               time: selectedTime,
@@ -139,7 +143,9 @@ export function TimeSlotGrid({
             })
           }
         >
-          Confirmar horário
+          {feedback?.status === "valid" && feedback.selectedEndTime
+            ? `Confirmar ${selectedTime} - ${feedback.selectedEndTime}`
+            : "Confirmar horário"}
         </Button>
       </div>
     </div>

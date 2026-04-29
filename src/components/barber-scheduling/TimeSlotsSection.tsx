@@ -4,6 +4,11 @@ import type { BookingAvailability } from "@/types/booking";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  buildTimeSelectionFeedback,
+  type TimeSelectionFeedback,
+} from "@/lib/booking/time-selection-feedback";
+import { TimeSelectionFeedbackPanel } from "@/components/booking/TimeSelectionFeedbackPanel";
+import {
   BOOKING_START_TIME_STEP_MINUTES,
   roundTimeUpToSlotBoundary,
 } from "@/utils/time-slots";
@@ -16,6 +21,7 @@ interface TimeSlotsSectionProps {
   serviceDuration: number | null;
   onSelect: (time: string) => void;
   selectedTimeError?: string | null;
+  selectedTimeFeedback?: TimeSelectionFeedback | null;
 }
 
 export function TimeSlotsSection({
@@ -26,8 +32,22 @@ export function TimeSlotsSection({
   serviceDuration,
   onSelect,
   selectedTimeError = null,
+  selectedTimeFeedback = null,
 }: TimeSlotsSectionProps) {
   const windows = availability?.windows ?? [];
+  const feedback =
+    selectedTimeFeedback ??
+    (availability && selectedTime && serviceDuration
+      ? buildTimeSelectionFeedback({
+          windows: availability.windows,
+          selectedStartTime: selectedTime,
+          serviceDurationMinutes: serviceDuration,
+        })
+      : null);
+  const computedError =
+    feedback && feedback.status !== "valid"
+      ? feedback.message
+      : selectedTimeError;
 
   return (
     <div className="bg-muted/50 rounded-2xl p-6 border border-border">
@@ -93,7 +113,7 @@ export function TimeSlotsSection({
               }
               className={cn(
                 "min-w-0 max-w-full appearance-none",
-                selectedTimeError &&
+                computedError &&
                   "border-destructive focus-visible:ring-destructive/30",
               )}
             />
@@ -101,8 +121,13 @@ export function TimeSlotsSection({
               Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro
               das janelas acima.
             </p>
-            {selectedTimeError && (
-              <p className="text-sm text-destructive">{selectedTimeError}</p>
+            {feedback && (
+              <TimeSelectionFeedbackPanel
+                feedback={feedback}
+                selectedTime={selectedTime}
+                onSelectTime={onSelect}
+                className="rounded-xl"
+              />
             )}
           </div>
         </div>

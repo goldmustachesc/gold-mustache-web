@@ -57,7 +57,7 @@ describe("ChatTimeSlotSelector", () => {
       target: { value: "09:17" },
     });
     await userEvent.click(
-      screen.getByRole("button", { name: "Confirmar horário" }),
+      screen.getByRole("button", { name: "Confirmar 09:20 - 09:50" }),
     );
     expect(onSelect).toHaveBeenCalledWith({
       time: "09:20",
@@ -75,8 +75,12 @@ describe("ChatTimeSlotSelector", () => {
       target: { value: "09:45" },
     });
 
+    expect(screen.getByText("Esse serviço dura 30 min.")).toBeInTheDocument();
     expect(
-      screen.getByText("Escolha um horário dentro das janelas disponíveis."),
+      screen.getByText("Último início possível: 09:30."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Usar 09:30" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Confirmar horário" }),

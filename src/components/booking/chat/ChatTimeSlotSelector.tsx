@@ -7,7 +7,8 @@ import { Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
+import { buildTimeSelectionFeedback } from "@/lib/booking/time-selection-feedback";
+import { TimeSelectionFeedbackPanel } from "@/components/booking/TimeSelectionFeedbackPanel";
 import {
   BOOKING_START_TIME_STEP_MINUTES,
   roundTimeUpToSlotBoundary,
@@ -35,24 +36,17 @@ export function ChatTimeSlotSelector({
 
   const windows = availability?.windows ?? [];
   const hasNoSlots = !isLoading && windows.length === 0;
-  const selectedTimeError = useMemo(() => {
+  const feedback = useMemo(() => {
     if (!availability || !selectedTime) {
       return null;
     }
 
-    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
+    return buildTimeSelectionFeedback({
       windows: availability.windows,
-      startTime: selectedTime,
-      durationMinutes: availability.serviceDuration,
+      selectedStartTime: selectedTime,
+      serviceDurationMinutes: availability.serviceDuration,
     });
-
-    if (fitsAvailability) {
-      return null;
-    }
-
-    return "Escolha um horário dentro das janelas disponíveis.";
   }, [availability, selectedTime]);
-
   useEffect(() => {
     setSelectedTime(availability?.windows[0]?.startTime ?? "");
   }, [availability]);
@@ -158,7 +152,8 @@ export function ChatTimeSlotSelector({
           className={cn(
             "mt-2 min-w-0 max-w-full appearance-none text-lg font-semibold tabular-nums",
             "bg-white/80 border-zinc-300/60 dark:bg-zinc-900/60 dark:border-zinc-700/60",
-            selectedTimeError &&
+            feedback &&
+              feedback.status !== "valid" &&
               "border-destructive focus-visible:ring-destructive/30",
           )}
         />
@@ -166,8 +161,13 @@ export function ChatTimeSlotSelector({
           Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro das
           janelas acima.
         </p>
-        {selectedTimeError && (
-          <p className="mt-1 text-sm text-destructive">{selectedTimeError}</p>
+        {feedback && (
+          <TimeSelectionFeedbackPanel
+            feedback={feedback}
+            selectedTime={selectedTime}
+            onSelectTime={setSelectedTime}
+            className="mt-3 rounded-lg"
+          />
         )}
       </div>
 
@@ -175,7 +175,7 @@ export function ChatTimeSlotSelector({
         <Button
           type="button"
           className="w-full"
-          disabled={!selectedTime || selectedTimeError !== null}
+          disabled={!selectedTime || feedback?.status !== "valid"}
           onClick={() =>
             onSelect({
               time: selectedTime,
@@ -184,7 +184,9 @@ export function ChatTimeSlotSelector({
             })
           }
         >
-          Confirmar horário
+          {feedback?.status === "valid" && feedback.selectedEndTime
+            ? `Confirmar ${selectedTime} - ${feedback.selectedEndTime}`
+            : "Confirmar horário"}
         </Button>
       </div>
     </div>
