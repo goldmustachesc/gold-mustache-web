@@ -75,6 +75,11 @@ async function getBookingPolicyError(params: {
 
   const dayOfWeek = appointmentDateLocal.getDay();
 
+  const barber = await prisma.barber.findUnique({
+    where: { id: barberId },
+    select: { active: true },
+  });
+
   const shopHoursSelect = {
     isOpen: true,
     startTime: true,
@@ -108,6 +113,10 @@ async function getBookingPolicyError(params: {
     }),
   ]);
 
+  if (!barber || !barber.active) {
+    return "BARBER_UNAVAILABLE";
+  }
+
   if (
     !shopHours ||
     !shopHours.isOpen ||
@@ -117,25 +126,15 @@ async function getBookingPolicyError(params: {
     return "SHOP_CLOSED";
   }
 
-  const effectiveHours = workingHours
-    ? {
-        startTime: workingHours.startTime,
-        endTime: workingHours.endTime,
-        breakStart: workingHours.breakStart,
-        breakEnd: workingHours.breakEnd,
-      }
-    : {
-        startTime: shopHours.startTime,
-        endTime: shopHours.endTime,
-        breakStart: shopHours.breakStart,
-        breakEnd: shopHours.breakEnd,
-      };
+  if (!workingHours) {
+    return "BARBER_UNAVAILABLE";
+  }
 
   const workingHoursError = getWorkingHoursSlotError({
-    workingStartTime: effectiveHours.startTime,
-    workingEndTime: effectiveHours.endTime,
-    breakStart: effectiveHours.breakStart,
-    breakEnd: effectiveHours.breakEnd,
+    workingStartTime: workingHours.startTime,
+    workingEndTime: workingHours.endTime,
+    breakStart: workingHours.breakStart,
+    breakEnd: workingHours.breakEnd,
     startTime,
     durationMinutes: serviceDuration,
   });
@@ -389,7 +388,7 @@ export async function getServices(barberId?: string): Promise<ServiceData[]> {
 /**
  * Get available time slots for a specific date, barber and service.
  * Slots are generated based on the service duration to ensure perfect scheduling.
- * Falls back to shop hours if the barber hasn't configured their own working hours.
+ * Uses only the barber's configured working hours for the day.
  */
 export interface GetAvailableSlotsOptions {
   applyLeadTime?: boolean;
@@ -398,6 +397,9 @@ export interface GetAvailableSlotsOptions {
 type BookingAvailabilityContext = {
   dateStr: string;
   businessDate: Date;
+  barber: {
+    active: boolean;
+  } | null;
   service: {
     duration: number;
     active?: boolean;
@@ -436,6 +438,7 @@ async function loadBookingAvailabilityContext(
   const dateForDb = parseDateStringToUTC(dateStr);
 
   const [
+    barber,
     service,
     shopHours,
     shopClosures,
@@ -443,6 +446,10 @@ async function loadBookingAvailabilityContext(
     workingHours,
     existingAppointments,
   ] = await Promise.all([
+    prisma.barber.findUnique({
+      where: { id: barberId },
+      select: { active: true },
+    }),
     prisma.service.findUnique({
       where: { id: serviceId },
       select: {
@@ -491,6 +498,7 @@ async function loadBookingAvailabilityContext(
   return {
     dateStr,
     businessDate,
+    barber,
     service,
     shopHours,
     shopClosures,
@@ -521,6 +529,7 @@ export async function getBookingAvailability(
   const {
     dateStr,
     service,
+    barber,
     shopHours,
     shopClosures,
     absences,
@@ -528,7 +537,11 @@ export async function getBookingAvailability(
     existingAppointments,
   } = await loadBookingAvailabilityContext(date, barberId, serviceId);
 
-  if (!isServiceAvailableForBarber(service, barberId)) {
+  if (
+    !barber ||
+    !barber.active ||
+    !isServiceAvailableForBarber(service, barberId)
+  ) {
     return getEmptyBookingAvailability(barberId);
   }
 
@@ -541,19 +554,9 @@ export async function getBookingAvailability(
     return getEmptyBookingAvailability(barberId, service.duration);
   }
 
-  const effectiveHours = workingHours
-    ? {
-        startTime: workingHours.startTime,
-        endTime: workingHours.endTime,
-        breakStart: workingHours.breakStart,
-        breakEnd: workingHours.breakEnd,
-      }
-    : {
-        startTime: shopHours.startTime,
-        endTime: shopHours.endTime,
-        breakStart: shopHours.breakStart,
-        breakEnd: shopHours.breakEnd,
-      };
+  if (!workingHours) {
+    return getEmptyBookingAvailability(barberId, service.duration);
+  }
 
   const minimumStartMinutes =
     dateStr === getBrazilDateString()
@@ -569,10 +572,10 @@ export async function getBookingAvailability(
     barberId,
     serviceDuration: service.duration,
     windows: buildAvailabilityWindows({
-      workingStartTime: effectiveHours.startTime,
-      workingEndTime: effectiveHours.endTime,
-      breakStart: effectiveHours.breakStart,
-      breakEnd: effectiveHours.breakEnd,
+      workingStartTime: workingHours.startTime,
+      workingEndTime: workingHours.endTime,
+      breakStart: workingHours.breakStart,
+      breakEnd: workingHours.breakEnd,
       serviceDurationMinutes: service.duration,
       closures: shopClosures,
       absences,
@@ -596,6 +599,7 @@ export async function getAvailableSlots(
     dateStr,
     businessDate,
     service,
+    barber,
     shopHours,
     shopClosures,
     absences,
@@ -603,7 +607,13 @@ export async function getAvailableSlots(
     existingAppointments,
   } = await loadBookingAvailabilityContext(date, barberId, serviceId);
 
-  if (!isServiceAvailableForBarber(service, barberId)) return [];
+  if (
+    !barber ||
+    !barber.active ||
+    !isServiceAvailableForBarber(service, barberId)
+  ) {
+    return [];
+  }
 
   if (
     !shopHours ||
@@ -617,27 +627,17 @@ export async function getAvailableSlots(
   if (shopClosures.some((c) => !c.startTime || !c.endTime)) return [];
   if (absences.some((a) => !a.startTime || !a.endTime)) return [];
 
-  const effectiveHours = workingHours
-    ? {
-        startTime: workingHours.startTime,
-        endTime: workingHours.endTime,
-        breakStart: workingHours.breakStart,
-        breakEnd: workingHours.breakEnd,
-      }
-    : {
-        startTime: shopHours.startTime,
-        endTime: shopHours.endTime,
-        breakStart: shopHours.breakStart,
-        breakEnd: shopHours.breakEnd,
-      };
+  if (!workingHours) {
+    return [];
+  }
 
   // Generate slots based on service duration
   const allSlots = generateTimeSlots({
-    startTime: effectiveHours.startTime,
-    endTime: effectiveHours.endTime,
+    startTime: workingHours.startTime,
+    endTime: workingHours.endTime,
     duration: service.duration,
-    breakStart: effectiveHours.breakStart,
-    breakEnd: effectiveHours.breakEnd,
+    breakStart: workingHours.breakStart,
+    breakEnd: workingHours.breakEnd,
   });
 
   const policySlots = allSlots.filter((slot) => {
