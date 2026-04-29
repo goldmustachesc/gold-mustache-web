@@ -17,7 +17,7 @@ function readVercelConfig(): VercelConfig {
 }
 
 describe("vercel.json", () => {
-  it("does not schedule appointment reminders on Vercel Cron", () => {
+  it("keeps only daily cron jobs on Vercel Hobby", () => {
     const config = readVercelConfig();
 
     expect(config.crons).toEqual([
@@ -28,12 +28,5 @@ describe("vercel.json", () => {
         schedule: "0 9 * * *",
       },
     ]);
-    expect(config.crons).toEqual(
-      expect.not.arrayContaining([
-        expect.objectContaining({
-          path: "/api/cron/appointment-reminders",
-        }),
-      ]),
-    );
   });
 });

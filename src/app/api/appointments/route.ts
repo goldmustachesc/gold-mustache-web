@@ -192,6 +192,8 @@ export async function POST(request: Request) {
       barberName: appointment.barber.name,
       date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
       time: appointment.startTime,
+      recipientName: profile.fullName?.split(" ")[0] ?? "Cliente",
+      appointmentId: appointment.id,
     });
 
     return apiSuccess(appointment, 201);

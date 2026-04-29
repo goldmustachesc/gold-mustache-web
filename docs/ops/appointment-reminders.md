@@ -2,8 +2,11 @@
 
 ## Overview
 
-`/api/cron/appointment-reminders` is still the business endpoint that sends reminders.
-The scheduler is no longer Vercel Cron on Hobby because the `*/15 * * * *` schedule blocks deployment.
+`POST /api/cron/appointment-reminders` continua sendo o endpoint de negócio que processa lembretes.
+
+Na stack inicial gratuita, o scheduler oficial desse endpoint é o GitHub Actions.
+Motivo: Vercel Hobby só aceita cron diário; lembretes precisam rodar a cada 15 minutos.
+Os outros jobs diários continuam no `vercel.json` porque são compatíveis com Hobby.
 
 ## Scheduling
 
@@ -19,7 +22,7 @@ The scheduler is no longer Vercel Cron on Hobby because the `*/15 * * * *` sched
 | `CRON_SECRET` | GitHub Actions + app runtime | Shared authorization token for the endpoint |
 | `APPOINTMENT_REMINDERS_URL` | GitHub Actions | Production URL called by the scheduler |
 
-Example values:
+Exemplo:
 
 ```bash
 CRON_SECRET=...
@@ -37,12 +40,13 @@ curl -X POST https://staging.goldmustachebarbearia.com.br/api/cron/appointment-r
   -H "Authorization: Bearer $CRON_SECRET"
 ```
 
-The endpoint should return:
-- `401` without `Authorization`
-- `200` with the shared secret
+O endpoint deve retornar:
+- `401` sem `Authorization`
+- `200` com o secret compartilhado
 
 ## Operational Notes
 
-- The GitHub Actions job fails if the endpoint does not return `2xx`.
-- Keep staging manual so the production scheduler is the only recurring automation.
-- If the scheduler needs to be changed later, update only `.github/workflows/appointment-reminders.yml` and the `APPOINTMENT_REMINDERS_URL` secret.
+- O workflow já usa `curl --retry 3 --retry-all-errors`, então falhas transitórias de rede nao exigem mudança no endpoint.
+- Manter staging manual evita disparo recorrente acidental fora da produção.
+- Se o scheduler mudar no futuro, atualizar apenas `.github/workflows/appointment-reminders.yml` e o secret `APPOINTMENT_REMINDERS_URL`.
+- Melhoria recomendada pós-launch: usar 1 `Cron Monitor` do Sentry Free para detectar falha silenciosa do workflow sem custo adicional.

@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import {
   canCancelBeforeStart,
   canClientCancelOutsideWindow,
@@ -1684,7 +1685,7 @@ export async function markAppointmentAsNoShow(
         });
       }
     } catch (error) {
-      console.error("Falha ao aplicar penalidade de pontos", error);
+      logger.error({ err: error }, "Falha ao aplicar penalidade de pontos");
     }
   }
 
@@ -1859,7 +1860,7 @@ export async function markAppointmentAsCompleted(
         }
       }
     } catch (error) {
-      console.error("Falha ao registrar pontos de fidelidade", error);
+      logger.error({ err: error }, "Falha ao registrar pontos de fidelidade");
     }
   }
 

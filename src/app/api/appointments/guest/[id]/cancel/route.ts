@@ -1,5 +1,6 @@
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { cancelAppointmentByGuestToken } from "@/services/booking";
+import { logger } from "@/lib/logger";
 import { notifyBarberOfAppointmentCancelledByClient } from "@/services/notification";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
@@ -38,7 +39,14 @@ export async function PATCH(
 
     const appointment = await cancelAppointmentByGuestToken(id, accessToken);
 
-    await notifyBarberOfAppointmentCancelledByClient(appointment);
+    await notifyBarberOfAppointmentCancelledByClient(appointment).catch(
+      (error) => {
+        logger.warn(
+          { error, appointmentId: appointment.id },
+          "Falha ao notificar barbeiro sobre cancelamento guest",
+        );
+      },
+    );
 
     return apiSuccess(appointment);
   } catch (error) {

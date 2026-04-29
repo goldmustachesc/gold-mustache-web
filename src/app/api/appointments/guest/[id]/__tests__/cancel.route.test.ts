@@ -38,6 +38,7 @@ describe("PATCH /api/appointments/guest/[id]/cancel", () => {
     vi.clearAllMocks();
     mockGetClientIdentifier.mockReturnValue("client-ip");
     mockCheckRateLimit.mockResolvedValue({ success: true, remaining: 9 });
+    mockNotifyBarberOfCancelledByClient.mockResolvedValue(undefined);
   });
 
   it("returns 429 when rate limited", async () => {
@@ -64,6 +65,9 @@ describe("PATCH /api/appointments/guest/[id]/cancel", () => {
 
   it("cancels appointment and notifies barber on success", async () => {
     mockCancelAppointmentByGuestToken.mockResolvedValue({ id: "apt-1" });
+    mockNotifyBarberOfCancelledByClient.mockRejectedValueOnce(
+      new Error("network_error"),
+    );
 
     const response = await PATCH(createRequest("token-1"), routeParams);
     const body = await response.json();

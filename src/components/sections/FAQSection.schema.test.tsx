@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { FAQSection } from "./FAQSection";
+import { FAQSectionSchema } from "./FAQSectionSchema";
 
-// Mock next-intl
-vi.mock("next-intl", () => ({
-  useTranslations: () => {
+vi.mock("next-intl/server", () => ({
+  getTranslations: async () => {
     type Translator = ((key: string) => string) & {
       raw: (key: string) => unknown;
     };
@@ -58,8 +57,8 @@ describe("FAQ Schema Markup", () => {
     return JSON.parse(schemaContent as string);
   }
 
-  it("generates valid FAQPage JSON-LD schema", () => {
-    const { container } = render(<FAQSection />);
+  it("generates valid FAQPage JSON-LD schema", async () => {
+    const { container } = render(await FAQSectionSchema());
     const schema = getSchema(container);
 
     // Verify schema structure
@@ -69,8 +68,8 @@ describe("FAQ Schema Markup", () => {
     expect(Array.isArray(schema.mainEntity)).toBe(true);
   });
 
-  it("includes all FAQ items in the schema", () => {
-    const { container } = render(<FAQSection />);
+  it("includes all FAQ items in the schema", async () => {
+    const { container } = render(await FAQSectionSchema());
     const schema = getSchema(container);
 
     // Should have at least the FAQ items we defined in the mock
@@ -85,8 +84,8 @@ describe("FAQ Schema Markup", () => {
     expect(questions).toContain("What is your cancellation policy?");
   });
 
-  it("includes complete question and answer data in schema", () => {
-    const { container } = render(<FAQSection />);
+  it("includes complete question and answer data in schema", async () => {
+    const { container } = render(await FAQSectionSchema());
     const schema = getSchema(container);
 
     // Verify first FAQ item structure
@@ -100,8 +99,8 @@ describe("FAQ Schema Markup", () => {
     );
   });
 
-  it("validates all FAQ items have required schema properties", () => {
-    const { container } = render(<FAQSection />);
+  it("validates all FAQ items have required schema properties", async () => {
+    const { container } = render(await FAQSectionSchema());
     const schema = getSchema(container);
 
     // Verify each item has the required structure
@@ -122,8 +121,8 @@ describe("FAQ Schema Markup", () => {
     );
   });
 
-  it("schema is valid JSON that can be parsed by search engines", () => {
-    const { container } = render(<FAQSection />);
+  it("schema is valid JSON that can be parsed by search engines", async () => {
+    const { container } = render(await FAQSectionSchema());
     const schemaScript = container.querySelector(
       'script[type="application/ld+json"]',
     );

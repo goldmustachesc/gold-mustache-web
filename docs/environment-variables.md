@@ -140,7 +140,29 @@ Token de autenticação do Upstash Redis.
 2. Crie um novo banco Redis
 3. Copie o `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` das configurações
 
-**Nota:** Se não configurado, o rate limiting será desabilitado (útil para desenvolvimento local).
+**Nota:** Se não configurado, o projeto cai em fallback local em memória. Serve para desenvolvimento e instância única, mas não é suficiente para produção multi-instância.
+
+---
+
+## Email transacional (Resend)
+
+### `RESEND_API_KEY`
+
+Token da API do Resend usado pelos emails de confirmação, cancelamento e lembrete.
+
+### `EMAIL_FROM`
+
+Remetente usado nos emails transacionais.
+
+```bash
+EMAIL_FROM="Gold Mustache <noreply@seudominio.com>"
+```
+
+### `EMAIL_REPLY_TO`
+
+Endereço opcional de resposta.
+
+**Plano sugerido para launch:** Resend Free (`3.000 emails/mês`, limite de `100/dia`).
 
 ---
 
@@ -166,7 +188,55 @@ URL do endpoint de produção chamado pelo workflow de GitHub Actions para envia
 APPOINTMENT_REMINDERS_URL=https://www.goldmustachebarbearia.com.br/api/cron/appointment-reminders
 ```
 
-**Observação:** esse valor é usado apenas na automação de lembretes; não é lido pela aplicação em runtime.
+**Observação:** esse valor é usado apenas na automação de lembretes; não é lido pela aplicação em runtime. A escolha por GitHub Actions existe porque a Vercel Hobby só permite cron diário.
+
+---
+
+## Observabilidade
+
+### `NEXT_PUBLIC_SENTRY_DSN`
+
+DSN público do Sentry para captura client-side.
+
+### `SENTRY_DSN`
+
+DSN server-side do Sentry.
+
+### `SENTRY_ORG`
+
+Slug da organização no Sentry. Necessário para sourcemaps no build.
+
+### `SENTRY_PROJECT`
+
+Slug do projeto no Sentry. Necessário para sourcemaps no build.
+
+### `SENTRY_AUTH_TOKEN`
+
+Token do Sentry usado pelo build para upload de sourcemaps.
+
+### `LOG_LEVEL`
+
+Nível do `pino` (`debug`, `info`, `warn`, `error`).
+
+**Plano sugerido para launch:** Sentry Developer Free (`5k errors/mês`, `5GB logs`, `5M spans`, `1 cron monitor`, retenção de `30 dias`).
+
+---
+
+## Feature Flags operacionais
+
+### `FEATURE_FLAG_TRANSACTIONAL_EMAILS`
+
+Liga o envio de emails transacionais.
+
+### `FEATURE_FLAG_APPOINTMENT_REMINDERS`
+
+Liga o processamento automático do cron de lembretes.
+
+### `FEATURE_FLAG_APPOINTMENT_REMINDERS_WHATSAPP`
+
+Liga o canal WhatsApp no fluxo de lembretes.
+
+**Recomendação de rollout:** manter `false` até validar secrets, staging e operação manual do barbeiro.
 
 ---
 

@@ -19,24 +19,42 @@ function getPathnameWithoutLocale(pathname: string): string {
   return pathname.replace(localePattern, "") || "/";
 }
 
+function withRequestId(response: NextResponse, requestId: string) {
+  response.headers.set("x-request-id", requestId);
+  return response;
+}
+
+function applySessionCookies(
+  response: NextResponse,
+  sessionResponse: NextResponse,
+): NextResponse {
+  for (const cookie of sessionResponse.cookies.getAll()) {
+    response.cookies.set(cookie.name, cookie.value, cookie);
+  }
+
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+  request.headers.set("x-request-id", requestId);
 
   if (pathname.startsWith("/_next") || pathname.startsWith("/_vercel")) {
-    return NextResponse.next({ request });
+    return withRequestId(NextResponse.next({ request }), requestId);
   }
 
   if (!pathname.startsWith("/api") && /\.[^/]+$/.test(pathname)) {
-    return NextResponse.next({ request });
+    return withRequestId(NextResponse.next({ request }), requestId);
   }
 
   if (pathname.startsWith("/api") && isPublicApiRoute(pathname)) {
-    return NextResponse.next({ request });
+    return withRequestId(NextResponse.next({ request }), requestId);
   }
 
   if (pathname.startsWith("/api")) {
     const { supabaseResponse } = await updateSession(request);
-    return supabaseResponse;
+    return withRequestId(supabaseResponse, requestId);
   }
 
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
@@ -52,30 +70,41 @@ export async function proxy(request: NextRequest) {
   const needsSession = isProtectedRoute || isAuthRoute;
 
   if (!needsSession) {
-    return intlMiddleware(request);
+    return withRequestId(intlMiddleware(request), requestId);
   }
 
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, user, authError } = await updateSession(request);
+
+  if (authError) {
+    const intlResponse = applySessionCookies(
+      intlMiddleware(request),
+      supabaseResponse,
+    );
+    intlResponse.headers.set("x-auth-refresh-error", "1");
+    return withRequestId(intlResponse, requestId);
+  }
 
   if (isAuthRoute && user) {
     const locale = pathname.split("/")[1] || defaultLocale;
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    return withRequestId(
+      NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url)),
+      requestId,
+    );
   }
 
   if (isProtectedRoute && !user) {
     const locale = pathname.split("/")[1] || defaultLocale;
     const loginUrl = new URL(`/${locale}/login`, request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    return withRequestId(NextResponse.redirect(loginUrl), requestId);
   }
 
-  const intlResponse = intlMiddleware(request);
+  const intlResponse = applySessionCookies(
+    intlMiddleware(request),
+    supabaseResponse,
+  );
 
-  for (const cookie of supabaseResponse.cookies.getAll()) {
-    intlResponse.cookies.set(cookie.name, cookie.value, cookie);
-  }
-
-  return intlResponse;
+  return withRequestId(intlResponse, requestId);
 }
 
 export const config = {

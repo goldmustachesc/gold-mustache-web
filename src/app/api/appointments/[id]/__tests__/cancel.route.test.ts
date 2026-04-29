@@ -84,6 +84,8 @@ describe("PATCH /api/appointments/[id]/cancel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireValidOrigin.mockReturnValue(null);
+    mockNotifyCancelledByBarber.mockResolvedValue(undefined);
+    mockNotifyBarberOfCancelledByClient.mockResolvedValue(undefined);
   });
 
   it("returns 400 when request body is not valid JSON", async () => {
@@ -153,6 +155,9 @@ describe("PATCH /api/appointments/[id]/cancel", () => {
       startTime: "09:00",
     });
     mockProfileFindUnique.mockResolvedValue({ userId: "user-2" });
+    mockNotifyCancelledByBarber.mockRejectedValueOnce(
+      new Error("network_error"),
+    );
 
     const response = await PATCH(
       createRequest({ reason: "Indisponível" }),
@@ -174,6 +179,9 @@ describe("PATCH /api/appointments/[id]/cancel", () => {
     mockBarberFindUnique.mockResolvedValue(null);
     mockProfileFindUnique.mockResolvedValue({ id: "profile-1" });
     mockCancelAppointmentByClient.mockResolvedValue({ id: "apt-1" });
+    mockNotifyBarberOfCancelledByClient.mockRejectedValueOnce(
+      new Error("network_error"),
+    );
 
     const response = await PATCH(createRequest(), routeParams);
 

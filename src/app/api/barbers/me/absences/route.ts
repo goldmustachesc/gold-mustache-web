@@ -476,6 +476,9 @@ export async function POST(request: Request) {
               date: formatDateDdMmYyyyFromIsoDateLike(date),
               time: conflict.startTime,
               reason: "Ausência do barbeiro",
+              recipientName:
+                conflict.client?.fullName?.split(" ")[0] ?? "Cliente",
+              appointmentId: conflict.id,
             }),
           ];
         },

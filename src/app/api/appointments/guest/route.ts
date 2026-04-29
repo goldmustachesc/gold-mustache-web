@@ -1,5 +1,6 @@
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { createGuestAppointment } from "@/services/booking";
+import { prisma } from "@/lib/prisma";
 import { createGuestAppointmentSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -7,6 +8,8 @@ import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { getBarbershopSettings } from "@/services/barbershop-settings";
 import { resolveBookingMode } from "@/lib/booking-mode";
 import { requireValidOrigin } from "@/lib/api/verify-origin";
+import { logger } from "@/lib/logger";
+import { notifyGuestAppointmentConfirmed } from "@/services/notification";
 
 export async function POST(request: Request) {
   try {
@@ -57,6 +60,36 @@ export async function POST(request: Request) {
     const { appointment, accessToken } = await createGuestAppointment(
       validation.data,
     );
+
+    if (appointment.guestClient) {
+      const barber = await prisma.barber.findUnique({
+        where: { id: appointment.barberId },
+        select: { userId: true },
+      });
+
+      if (barber) {
+        await notifyGuestAppointmentConfirmed(
+          appointment.guestClient.phone,
+          appointment.guestClient.fullName,
+          barber.userId,
+          {
+            serviceName: appointment.service.name,
+            barberName: appointment.barber.name,
+            date: appointment.date,
+            time: appointment.startTime,
+          },
+        ).catch((error) => {
+          logger.warn(
+            {
+              error,
+              appointmentId: appointment.id,
+              barberUserId: barber.userId,
+            },
+            "Falha ao criar notificação de confirmação para guest",
+          );
+        });
+      }
+    }
 
     // Return both the appointment and the access token for localStorage
     return apiSuccess({ appointment, accessToken }, 201);
