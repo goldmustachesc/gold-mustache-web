@@ -22,7 +22,7 @@ import {
   getBrazilDateString,
   roundTimeUpToSlotBoundary,
 } from "@/utils/time-slots";
-import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
+import { buildTimeSelectionFeedback } from "@/lib/booking/time-selection-feedback";
 import {
   isValidDateParam,
   isValidTimeParam,
@@ -181,6 +181,35 @@ export function useBarberSchedulingForm() {
   const selectedService =
     services?.find((s) => s.id === selectedServiceId) ?? null;
   const dateOptions = useMemo(() => buildDateOptions(DATE_OPTIONS_COUNT), []);
+  const selectedTimeFeedback = useMemo(() => {
+    if (!selectedTime || !selectedService) {
+      return null;
+    }
+
+    if (slotsLoading) {
+      return null;
+    }
+
+    if (slotsError || !bookingAvailability) {
+      return null;
+    }
+
+    if (bookingAvailability.windows.length === 0) {
+      return null;
+    }
+
+    return buildTimeSelectionFeedback({
+      windows: bookingAvailability.windows,
+      selectedStartTime: selectedTime,
+      serviceDurationMinutes: selectedService.duration,
+    });
+  }, [
+    selectedTime,
+    selectedService,
+    bookingAvailability,
+    slotsLoading,
+    slotsError,
+  ]);
   const selectedTimeError = useMemo(() => {
     if (!selectedTime || !selectedService) {
       return null;
@@ -198,23 +227,20 @@ export function useBarberSchedulingForm() {
       return "Nenhuma janela disponível para este serviço nesta data.";
     }
 
-    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
-      windows: bookingAvailability.windows,
-      startTime: selectedTime,
-      durationMinutes: selectedService.duration,
-    });
-
-    if (fitsAvailability) {
+    if (!selectedTimeFeedback || selectedTimeFeedback.status === "valid") {
       return null;
     }
 
-    return "Escolha um horário dentro das janelas disponíveis.";
+    return selectedTimeFeedback.message
+      ? `${selectedTimeFeedback.title} ${selectedTimeFeedback.message}`
+      : selectedTimeFeedback.title;
   }, [
     selectedTime,
     selectedService,
     bookingAvailability,
     slotsLoading,
     slotsError,
+    selectedTimeFeedback,
   ]);
   const completedSteps = useMemo(
     () =>
@@ -319,6 +345,7 @@ export function useBarberSchedulingForm() {
       services: services ?? [],
       selectedService,
       bookingAvailability: bookingAvailability ?? null,
+      selectedTimeFeedback,
       selectedTimeError,
       dateOptions,
       canSubmit,

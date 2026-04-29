@@ -110,6 +110,7 @@ export default function BarberAgendarPage() {
                   serviceDuration={computed.selectedService?.duration ?? null}
                   onSelect={handlers.onTimeChange}
                   selectedTimeError={computed.selectedTimeError}
+                  selectedTimeFeedback={computed.selectedTimeFeedback}
                 />
               </div>
 
