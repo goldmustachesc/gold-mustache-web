@@ -1,3 +1,5 @@
+> **Legado** — Templates canônicos em `.kiro/settings/templates/specs/`. Tier model em `.kiro/TIERS.md`.
+
 # Implementation Plan
 
 - [ ] 1. Database schema and models setup

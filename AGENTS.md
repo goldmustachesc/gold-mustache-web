@@ -6,9 +6,9 @@ Diretrizes globais para agentes e IA neste repositório. Detalhes por contexto f
 
 ## AI workflow
 
-- **SDD obrigatório**: usar `Subagent-Driven Development (SDD)` em toda tarefa deste projeto.
-- Sempre avaliar primeiro como aplicar `SDD`, incluindo decomposição do trabalho, uso de agentes especializados, paralelização, validação e checkpoints.
-- Mesmo em tarefas simples, aplicar a mentalidade de `SDD`; quando não houver delegação útil, seguir execução direta sem abandonar esse método.
+- **SDD escalado por complexidade**: usar `Subagent-Driven Development (SDD)` com cerimônia proporcional ao tier da tarefa (ver `.kiro/TIERS.md`).
+- Sempre avaliar o tier antes de executar: Trivial → execução direta, Light → requirements, Full → brainstorm + spec completa.
+- Mentalidade SDD sempre ativa (decomposição, delegação, paralelização, checkpoints); cerimônia apenas quando agrega valor.
 - `SDD` complementa `TDD`, testes, validação final e as demais regras do projeto. Nunca usar `SDD` para pular verificação, revisão de impacto ou controles de qualidade.
 
 ## Repository structure
@@ -59,11 +59,12 @@ Antes de mudanças visuais, consulte `docs/Brand_Book_Gold_Mustache.md`, tokens 
 
 ## Specs and complex features
 
-Para features complexas, use `.kiro/specs/[feature]/` com `requirements.md`, `design.md`, `tasks.md`.
+Use Kiro proporcional ao tier (ver `.kiro/TIERS.md`):
+- **Trivial**: execução direta, sem spec
+- **Light**: `.kiro/specs/[feature]/` com `requirements.md` apenas
+- **Full**: `.kiro/specs/[feature]/` com `brainstorm.md` + `requirements.md` + `design.md` + `tasks.md`
 
-Quando o fluxo for executado pelos comandos `/kiro/spec-*`, a fonte canônica dos templates é `.kiro/settings/templates/specs/`.
-
-Os arquivos `.kiro/SPECIFICATION_TEMPLATE.md`, `.kiro/DESIGN_TEMPLATE.md` e `.kiro/TASKS_TEMPLATE.md` ficam como referência legada/compatibilidade e não devem divergir da configuração ativa do Kiro.
+A fonte canônica dos templates é `.kiro/settings/templates/specs/`. Os arquivos `.kiro/SPECIFICATION_TEMPLATE.md`, `.kiro/DESIGN_TEMPLATE.md` e `.kiro/TASKS_TEMPLATE.md` são referência legada e não devem divergir dos templates ativos.
 
 ## MCP (ferramentas externas)
 
@@ -100,17 +101,28 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 ## Development Guidelines
 - Think in English, generate responses in Portuguese. All Markdown content written to project files (e.g., requirements.md, design.md, tasks.md, research.md, validation reports) MUST be written in the target language configured for this specification (see spec.json.language).
 
-## Minimal Workflow
-- Phase 0 (optional): `/kiro/steering`, `/kiro/steering-custom`
-- Phase 1 (Specification):
-  - `/kiro/spec-init "description"`
+## Workflows por tier
+
+### Tier Trivial
+- Execução direta, sem spec
+
+### Tier Light
+- `/kiro/spec-init "descrição"`
+- `/kiro/spec-requirements {feature}`
+- Implementação direta (sem design.md, sem tasks.md)
+
+### Tier Full
+- Phase 0 — Brainstorm (obrigatório): `/kiro/spec-brainstorm "tema"` → gera `brainstorm.md`
+- Phase 0b (opcional): `/kiro/steering`, `/kiro/steering-custom`
+- Phase 1 — Specification:
+  - `/kiro/spec-init "descrição"`
   - `/kiro/spec-requirements {feature}`
-  - `/kiro/validate-gap {feature}` (optional: for existing codebase)
+  - `/kiro/validate-gap {feature}` (opcional: gap analysis)
   - `/kiro/spec-design {feature} [-y]`
-  - `/kiro/validate-design {feature}` (optional: design review)
+  - `/kiro/validate-design {feature}` (opcional: design review)
   - `/kiro/spec-tasks {feature} [-y]`
-- Phase 2 (Implementation): `/kiro/spec-impl {feature} [tasks]`
-  - `/kiro/validate-impl {feature}` (optional: after implementation)
+- Phase 2 — Implementation: `/kiro/spec-impl {feature} [tasks]`
+  - `/kiro/validate-impl {feature}` (opcional: verificação final)
 - Progress check: `/kiro/spec-status {feature}` (use anytime)
 
 ## Development Rules
