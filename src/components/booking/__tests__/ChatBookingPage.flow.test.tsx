@@ -724,7 +724,16 @@ describe("ChatBookingPage flows", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText("Confirmar agendamento")).toBeInTheDocument();
+        expect(
+          screen.getAllByText("Confirmar agendamento").length,
+        ).toBeGreaterThan(0);
+      },
+      { timeout: WAIT_FOR_CHAT_TIMEOUT },
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Editar dados")).toBeInTheDocument();
       },
       { timeout: WAIT_FOR_CHAT_TIMEOUT },
     );
