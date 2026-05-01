@@ -7,6 +7,7 @@ vi.mock("@/lib/prisma", () => {
     profile: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
       count: vi.fn(),
     },
     barber: {
@@ -173,7 +174,7 @@ describe("services/dashboard", () => {
         },
       };
       asMock(createClient).mockResolvedValue(mockSupabase);
-      asMock(prisma.profile.findUnique).mockResolvedValue(mockProfile);
+      asMock(prisma.profile.upsert).mockResolvedValue(mockProfile);
       asMock(prisma.barber.findUnique).mockResolvedValue(null);
 
       const result = await getDashboardIdentity();
@@ -197,8 +198,7 @@ describe("services/dashboard", () => {
         },
       };
       asMock(createClient).mockResolvedValue(mockSupabase);
-      asMock(prisma.profile.findUnique).mockResolvedValue(null);
-      asMock(prisma.profile.create).mockResolvedValue({
+      asMock(prisma.profile.upsert).mockResolvedValue({
         ...mockProfile,
         fullName: "New User",
       });
@@ -206,12 +206,14 @@ describe("services/dashboard", () => {
 
       const result = await getDashboardIdentity();
 
-      expect(prisma.profile.create).toHaveBeenCalledWith(
+      expect(prisma.profile.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          where: { userId: "user-1" },
+          create: expect.objectContaining({
             userId: "user-1",
             fullName: "New User",
           }),
+          update: {},
         }),
       );
       expect(result?.profile.fullName).toBe("New User");
@@ -236,7 +238,7 @@ describe("services/dashboard", () => {
         active: true,
       };
       asMock(createClient).mockResolvedValue(mockSupabase);
-      asMock(prisma.profile.findUnique).mockResolvedValue({
+      asMock(prisma.profile.upsert).mockResolvedValue({
         ...mockProfile,
         role: "BARBER" as const,
       });
@@ -263,7 +265,7 @@ describe("services/dashboard", () => {
         },
       };
       asMock(createClient).mockResolvedValue(mockSupabase);
-      asMock(prisma.profile.findUnique).mockResolvedValue(mockProfile);
+      asMock(prisma.profile.upsert).mockResolvedValue(mockProfile);
       asMock(prisma.barber.findUnique).mockResolvedValue({
         id: "barber-1",
         userId: "user-1",
@@ -289,8 +291,7 @@ describe("services/dashboard", () => {
         },
       };
       asMock(createClient).mockResolvedValue(mockSupabase);
-      asMock(prisma.profile.findUnique).mockResolvedValue(null);
-      asMock(prisma.profile.create).mockResolvedValue({
+      asMock(prisma.profile.upsert).mockResolvedValue({
         ...mockProfile,
         fullName: "johndoe",
       });
@@ -298,9 +299,10 @@ describe("services/dashboard", () => {
 
       await getDashboardIdentity();
 
-      expect(prisma.profile.create).toHaveBeenCalledWith(
+      expect(prisma.profile.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ fullName: "johndoe" }),
+          create: expect.objectContaining({ fullName: "johndoe" }),
+          update: {},
         }),
       );
     });
