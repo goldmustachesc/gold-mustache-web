@@ -18,7 +18,8 @@ export function ChatContainer({ children, className }: ChatContainerProps) {
     const prev = prevScrollHeightRef.current;
     const grew = el.scrollHeight > prev;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    const wasNearBottom = distanceFromBottom < 120;
+    // 600px covers large selectors (calendar ~406px) without hijacking intentional up-scrolls
+    const wasNearBottom = distanceFromBottom < 600;
     prevScrollHeightRef.current = el.scrollHeight;
     if (grew && wasNearBottom) {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
@@ -30,7 +31,7 @@ export function ChatContainer({ children, className }: ChatContainerProps) {
       ref={scrollRef}
       className={cn(
         "flex min-h-0 flex-col gap-4 overflow-y-auto scroll-smooth",
-        "max-h-[calc(100vh-180px)]",
+        "max-h-[calc(100dvh-180px)]",
         "py-4 px-1",
         "[scrollbar-width:thin] [scrollbar-color:transparent_transparent]",
         "hover:[scrollbar-color:hsl(var(--foreground)/0.25)_transparent]",

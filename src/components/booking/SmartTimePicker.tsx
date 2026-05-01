@@ -46,7 +46,7 @@ function TimeOptionButton({
       type="button"
       variant={isSelected ? "default" : "outline"}
       className={cn(
-        "h-11 min-w-20 px-4 text-base font-semibold tabular-nums",
+        "h-12 w-full px-2 text-sm font-semibold tabular-nums",
         option.quality === "poor" && !isSelected && "text-muted-foreground",
       )}
       onClick={() => onSelect(option.startTime)}
@@ -73,7 +73,7 @@ function TimeGroupSection({
       >
         {group.label}
       </h4>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-3">
         {group.options.map((option) => (
           <TimeOptionButton
             key={option.startTime}
