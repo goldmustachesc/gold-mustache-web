@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { TimeSlotsSection } from "../TimeSlotsSection";
-import { buildTimeSelectionFeedback } from "@/lib/booking/time-selection-feedback";
 import type { BookingAvailability } from "@/types/booking";
 
 const AVAILABILITY: BookingAvailability = {
@@ -26,6 +25,20 @@ describe("TimeSlotsSection", () => {
       />,
     );
     expect(screen.getByText("Horário")).toBeInTheDocument();
+  });
+
+  it("shows duration subtitle when service is selected", () => {
+    render(
+      <TimeSlotsSection
+        availability={AVAILABILITY}
+        selectedTime=""
+        loading={false}
+        serviceSelected={true}
+        onSelect={vi.fn()}
+        serviceDuration={30}
+      />,
+    );
+    expect(screen.getByText("Duração: 30 min")).toBeInTheDocument();
   });
 
   it("shows empty state when no service selected", () => {
@@ -58,7 +71,7 @@ describe("TimeSlotsSection", () => {
     expect(container.querySelector(".animate-spin")).toBeInTheDocument();
   });
 
-  it("shows no slots message when empty", () => {
+  it("shows empty state when no slots available", () => {
     render(
       <TimeSlotsSection
         availability={{
@@ -73,10 +86,10 @@ describe("TimeSlotsSection", () => {
         serviceDuration={30}
       />,
     );
-    expect(screen.getByText("Nenhuma janela disponível")).toBeInTheDocument();
+    expect(screen.getByText("Nenhum horário disponível")).toBeInTheDocument();
   });
 
-  it("renders the real availability windows", () => {
+  it("renders recommended time buttons from availability windows", () => {
     render(
       <TimeSlotsSection
         availability={AVAILABILITY}
@@ -87,11 +100,13 @@ describe("TimeSlotsSection", () => {
         serviceDuration={30}
       />,
     );
-    expect(screen.getByText("09:00 - 10:00")).toBeInTheDocument();
-    expect(screen.getByText("10:30 - 12:00")).toBeInTheDocument();
+    expect(screen.getByText("Melhores horários")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:30" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "10:30" })).toBeInTheDocument();
   });
 
-  it("rounds broken exact time input changes", async () => {
+  it("calls onSelect when a time button is clicked", () => {
     const onSelect = vi.fn();
     render(
       <TimeSlotsSection
@@ -103,14 +118,11 @@ describe("TimeSlotsSection", () => {
         serviceDuration={30}
       />,
     );
-
-    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
-      target: { value: "09:43" },
-    });
-    expect(onSelect).toHaveBeenLastCalledWith("09:45");
+    fireEvent.click(screen.getByRole("button", { name: "09:00" }));
+    expect(onSelect).toHaveBeenCalledWith("09:00");
   });
 
-  it("shows duration in subtitle when service is selected", () => {
+  it("shows selected time confirmation when a time is selected", () => {
     render(
       <TimeSlotsSection
         availability={AVAILABILITY}
@@ -119,47 +131,8 @@ describe("TimeSlotsSection", () => {
         serviceSelected={true}
         onSelect={vi.fn()}
         serviceDuration={30}
-        selectedTimeFeedback={buildTimeSelectionFeedback({
-          windows: AVAILABILITY.windows,
-          selectedStartTime: "09:00",
-          serviceDurationMinutes: 30,
-        })}
       />,
     );
-    expect(screen.getByText("Duração: 30 min")).toBeInTheDocument();
-    expect(screen.getByText("Horário disponível.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Atendimento previsto: 09:00 - 09:30."),
-    ).toBeInTheDocument();
-  });
-
-  it("shows validation error when selected time is outside availability windows", () => {
-    const feedback = buildTimeSelectionFeedback({
-      windows: AVAILABILITY.windows,
-      selectedStartTime: "10:10",
-      serviceDurationMinutes: 30,
-    });
-
-    render(
-      <TimeSlotsSection
-        availability={AVAILABILITY}
-        selectedTime="10:10"
-        loading={false}
-        serviceSelected={true}
-        onSelect={vi.fn()}
-        serviceDuration={30}
-        selectedTimeFeedback={feedback}
-      />,
-    );
-
-    expect(
-      screen.getByText("Esse início não está dentro de uma janela livre."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Próximo início disponível: 10:30."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Usar 10:30" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Atendimento: 09:00 - 09:30")).toBeInTheDocument();
   });
 });

@@ -5,54 +5,28 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useBrazilToday } from "@/hooks/useBrazilToday";
+import {
+  addDays,
+  nextWeekday,
+  getDaysInMonth,
+  MONTHS,
+  WEEKDAYS,
+} from "@/utils/calendar";
 
 interface ChatDatePickerProps {
   onSelect: (date: Date) => void;
   disabledDates?: Date[];
   maxDays?: number;
-}
-
-const WEEKDAYS = [
-  { key: "dom", label: "D" },
-  { key: "seg", label: "S" },
-  { key: "ter", label: "T" },
-  { key: "qua", label: "Q" },
-  { key: "qui", label: "Q" },
-  { key: "sex", label: "S" },
-  { key: "sab", label: "S" },
-];
-const MONTHS = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function nextWeekday(date: Date, weekday: number): Date {
-  const next = new Date(date);
-  const offset = (weekday - next.getDay() + 7) % 7;
-  next.setDate(next.getDate() + offset);
-  return next;
+  selectedDate?: Date | null;
+  className?: string;
 }
 
 export function ChatDatePicker({
   onSelect,
   disabledDates = [],
   maxDays = 30,
+  selectedDate = null,
+  className,
 }: ChatDatePickerProps) {
   const today = useBrazilToday();
 
@@ -131,27 +105,6 @@ export function ChatDatePicker({
     return disabledDates.some((d) => d.toDateString() === date.toDateString());
   };
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-
-    const days: (Date | null)[] = [];
-
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-
-    return days;
-  };
-
   const days = getDaysInMonth(currentMonth);
 
   const canGoPrev =
@@ -177,7 +130,12 @@ export function ChatDatePicker({
   };
 
   return (
-    <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 pb-2 shadow-sm">
+    <div
+      className={cn(
+        "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 pb-2 shadow-sm",
+        className,
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button
@@ -225,6 +183,9 @@ export function ChatDatePicker({
 
           const isDisabled = isDateDisabled(date);
           const isToday = date.toDateString() === today.toDateString();
+          const isSelected =
+            selectedDate != null &&
+            date.toDateString() === selectedDate.toDateString();
 
           return (
             <button
@@ -239,6 +200,7 @@ export function ChatDatePicker({
                 !isDisabled &&
                   "text-zinc-700 dark:text-zinc-200 hover:bg-primary hover:text-primary-foreground cursor-pointer active:scale-90",
                 isToday && !isDisabled && "ring-2 ring-primary font-bold",
+                isSelected && "bg-primary text-primary-foreground font-bold",
               )}
             >
               {date.getDate()}

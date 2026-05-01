@@ -16,6 +16,7 @@ interface SmartTimePickerProps {
   onSelectTime: (startTime: string) => void;
   onConfirm: (startTime: string) => void;
   onChooseAnotherDate?: () => void;
+  showConfirmButton?: boolean;
   className?: string;
 }
 
@@ -93,6 +94,7 @@ export function SmartTimePicker({
   onSelectTime,
   onConfirm,
   onChooseAnotherDate,
+  showConfirmButton = true,
   className,
 }: SmartTimePickerProps) {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
@@ -198,20 +200,22 @@ export function SmartTimePicker({
         </output>
       )}
 
-      <Button
-        type="button"
-        className="w-full"
-        disabled={!selectedOption}
-        onClick={() => {
-          if (selectedOption) {
-            onConfirm(selectedOption.startTime);
-          }
-        }}
-      >
-        {selectedOption
-          ? `Confirmar ${selectedOption.startTime}`
-          : "Confirmar horário"}
-      </Button>
+      {showConfirmButton && (
+        <Button
+          type="button"
+          className="w-full"
+          disabled={!selectedOption}
+          onClick={() => {
+            if (selectedOption) {
+              onConfirm(selectedOption.startTime);
+            }
+          }}
+        >
+          {selectedOption
+            ? `Confirmar ${selectedOption.startTime}`
+            : "Confirmar horário"}
+        </Button>
+      )}
     </div>
   );
 }
