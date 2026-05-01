@@ -1,6 +1,6 @@
-import { getBookingAvailability } from "@/services/booking";
+import { getDateAvailabilityRange } from "@/services/booking";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
-import { getSlotsQuerySchema } from "@/lib/validations/booking";
+import { getDateAvailabilityRangeQuerySchema } from "@/lib/validations/booking";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
@@ -28,15 +28,16 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
     const barberId = searchParams.get("barberId");
     const serviceId = searchParams.get("serviceId");
 
-    // Validate query params
-    const validation = getSlotsQuerySchema.safeParse({
-      date,
+    const validation = getDateAvailabilityRangeQuerySchema.safeParse({
+      from,
+      to,
       barberId,
-      serviceId,
+      serviceId: serviceId ?? undefined,
     });
 
     if (!validation.success) {
@@ -67,25 +68,23 @@ export async function GET(request: Request) {
         : null;
     }
 
-    const availability = await getBookingAvailability(
-      parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.date),
+    const result = await getDateAvailabilityRange(
+      parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.from),
+      parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.to),
       validation.data.barberId,
-      validation.data.serviceId,
-      {
-        applyLeadTime: true,
-        clientId: profile?.id,
-      },
+      validation.data.serviceId ?? null,
+      { clientId: profile?.id },
     );
 
-    const response = apiSuccess(availability);
+    const response = apiSuccess(result);
     response.headers.set(
       "Cache-Control",
       profile
         ? "private, no-store"
-        : "public, s-maxage=30, stale-while-revalidate=60",
+        : "public, s-maxage=60, stale-while-revalidate=120",
     );
     return response;
   } catch (error) {
-    return handlePrismaError(error, "Erro ao buscar horários");
+    return handlePrismaError(error, "Erro ao buscar disponibilidade");
   }
 }

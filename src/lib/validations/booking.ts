@@ -367,6 +367,40 @@ export const getSlotsQuerySchema = z.object({
 
 export type GetSlotsQuery = z.infer<typeof getSlotsQuerySchema>;
 
+export const MAX_AVAILABILITY_RANGE_DAYS = 60;
+
+export const getDateAvailabilityRangeQuerySchema = z
+  .object({
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
+    barberId: z.string().uuid("ID do barbeiro inválido"),
+    serviceId: z.string().uuid("ID do serviço inválido").optional(),
+  })
+  .refine((d) => d.from <= d.to, {
+    message: "'from' deve ser anterior ou igual a 'to'",
+    path: ["to"],
+  })
+  .refine(
+    (d) => {
+      const fromMs = Date.parse(`${d.from}T00:00:00Z`);
+      const toMs = Date.parse(`${d.to}T00:00:00Z`);
+      const diffDays = Math.round((toMs - fromMs) / 86_400_000);
+      return diffDays <= MAX_AVAILABILITY_RANGE_DAYS;
+    },
+    {
+      message: `Intervalo máximo é ${MAX_AVAILABILITY_RANGE_DAYS} dias`,
+      path: ["to"],
+    },
+  );
+
+export type GetDateAvailabilityRangeQuery = z.infer<
+  typeof getDateAvailabilityRangeQuerySchema
+>;
+
 const dateRangeFields = {
   startDate: z
     .string()

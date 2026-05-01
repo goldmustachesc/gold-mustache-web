@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockGetBookingAvailability = vi.fn();
 const mockCheckRateLimit = vi.fn();
 const mockGetClientIdentifier = vi.fn();
+const mockCookieList: Array<{ name: string; value: string }> = [];
 
 vi.mock("@/services/booking", () => ({
   getBookingAvailability: (...args: unknown[]) =>
@@ -12,6 +13,29 @@ vi.mock("@/services/booking", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
   getClientIdentifier: (...args: unknown[]) => mockGetClientIdentifier(...args),
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: () =>
+    Promise.resolve({
+      getAll: () => mockCookieList,
+    }),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: () => ({
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null } }),
+    },
+  }),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    profile: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+  },
 }));
 
 import { GET } from "../route";
