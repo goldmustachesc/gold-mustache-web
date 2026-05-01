@@ -26,15 +26,59 @@ export function BookingProgressSummary({
   className,
   variant = "default",
 }: BookingProgressSummaryProps) {
+  if (variant === "horizontal-sticky") {
+    return (
+      <section
+        className={cn(
+          "flex gap-2 overflow-x-auto pb-0.5",
+          "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          className,
+        )}
+        aria-label={title}
+      >
+        {items.map((item) => {
+          const hasValue = Boolean(item.value);
+          return (
+            <div
+              key={item.id}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs",
+                "border transition-colors duration-200",
+                hasValue
+                  ? "border-primary/30 bg-primary/10 text-foreground"
+                  : "border-zinc-300/50 bg-background/60 text-muted-foreground dark:border-zinc-700/50",
+              )}
+            >
+              <span className="font-medium uppercase tracking-wide text-[10px] opacity-60">
+                {item.label}
+              </span>
+              <span className="font-semibold truncate max-w-[80px]">
+                {item.value ?? "—"}
+              </span>
+              {item.onEdit && hasValue && (
+                <button
+                  type="button"
+                  aria-label={item.editLabel ?? `Editar ${item.label}`}
+                  onClick={item.onEdit}
+                  className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  <PencilLine className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </section>
+    );
+  }
+
   return (
     <section className={cn("space-y-3", className)} aria-label={title}>
-      {variant === "default" && (
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {title}
-          </h3>
-        </div>
-      )}
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          {title}
+        </h3>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         {items.map((item) => {
