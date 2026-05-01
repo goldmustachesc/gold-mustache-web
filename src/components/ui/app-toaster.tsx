@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Toaster } from "sonner";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 export function AppToaster() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     setMounted(true);
@@ -16,7 +18,7 @@ export function AppToaster() {
 
   return (
     <Toaster
-      position="bottom-center"
+      position={isMobile ? "top-center" : "bottom-right"}
       theme={toasterTheme}
       closeButton
       toastOptions={{
