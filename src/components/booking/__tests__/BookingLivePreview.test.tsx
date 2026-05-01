@@ -30,10 +30,12 @@ vi.mock("@/lib/booking/time", () => ({
 const mockBarber = { id: "barber-1", name: "Carlos", avatarUrl: null };
 const mockService = {
   id: "service-1",
+  slug: "corte",
   name: "Corte",
   price: 50,
   duration: 30,
   description: null,
+  active: true,
 };
 const mockDate = new Date("2026-05-01T15:00:00.000Z");
 const mockSlot = { time: "09:00", available: true };
