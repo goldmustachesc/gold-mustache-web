@@ -15,8 +15,19 @@ import {
   Star,
   CheckCircle,
 } from "lucide-react";
-import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
+import {
+  formatLocalizedDateFromIsoDateLike,
+  getRelativeDateLabel,
+} from "@/utils/datetime";
+import { formatPrice } from "@/utils/format";
 import { cn } from "@/lib/utils";
+
+function formatShortDate(isoDate: string): string {
+  return formatLocalizedDateFromIsoDateLike(isoDate, "pt-BR", {
+    day: "2-digit",
+    month: "long",
+  });
+}
 
 const AppointmentStatus = {
   CONFIRMED: "CONFIRMED",
@@ -156,8 +167,8 @@ export function AppointmentCard({
                   {appointment.service.duration} min
                 </span>
                 <span className="text-muted-foreground/50">·</span>
-                <span className="text-sm font-medium font-mono text-primary">
-                  R$ {appointment.service.price.toFixed(2).replace(".", ",")}
+                <span className="text-sm font-medium text-primary">
+                  {formatPrice(appointment.service.price)}
                 </span>
               </div>
             </div>
@@ -176,10 +187,20 @@ export function AppointmentCard({
 
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-sm text-foreground">
-              {formatDateDdMmYyyyFromIsoDateLike(appointment.date)}
-            </span>
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-sm text-foreground capitalize">
+                {formatShortDate(appointment.date)}
+              </span>
+              {(() => {
+                const label = getRelativeDateLabel(appointment.date);
+                return label ? (
+                  <span className="text-[10px] font-semibold text-primary bg-primary/10 rounded px-1.5 py-0.5 shrink-0">
+                    {label}
+                  </span>
+                ) : null;
+              })()}
+            </div>
           </div>
           <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50">
             <Clock className="h-3.5 w-3.5 text-muted-foreground" />

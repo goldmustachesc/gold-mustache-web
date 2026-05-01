@@ -89,6 +89,8 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/utils/datetime", () => ({
   formatDateDdMmYyyyFromIsoDateLike: vi.fn().mockReturnValue("10/03/2026"),
+  formatLocalizedDateFromIsoDateLike: vi.fn().mockReturnValue("10 de março"),
+  getRelativeDateLabel: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock("@/utils/time-slots", () => ({

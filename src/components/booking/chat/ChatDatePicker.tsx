@@ -65,6 +65,42 @@ export function ChatDatePicker({
     setCurrentMonth((prev) => (prev < minMonth ? minMonth : prev));
   }, [today]);
 
+  // Auto-advance to first month that has at least one selectable date.
+  // Loops internally so a single setCurrentMonth call replaces the old cascade.
+  useEffect(() => {
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + maxDays);
+
+    let candidate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1,
+    );
+    while (candidate <= maxDate) {
+      const year = candidate.getFullYear();
+      const month = candidate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const hasAvailable = Array.from(
+        { length: daysInMonth },
+        (_, i) => new Date(year, month, i + 1),
+      ).some((d) => {
+        if (d < today || d > maxDate) return false;
+        return !disabledDates.some(
+          (dd) => dd.toDateString() === d.toDateString(),
+        );
+      });
+      if (hasAvailable) break;
+      candidate = new Date(year, month + 1, 1);
+    }
+
+    if (
+      candidate.getFullYear() !== currentMonth.getFullYear() ||
+      candidate.getMonth() !== currentMonth.getMonth()
+    ) {
+      setCurrentMonth(candidate);
+    }
+  }, [currentMonth, today, maxDays, disabledDates]);
+
   const maxDate = useMemo(() => {
     const d = new Date(today);
     d.setDate(d.getDate() + maxDays);
@@ -141,7 +177,7 @@ export function ChatDatePicker({
   };
 
   return (
-    <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 shadow-sm">
+    <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 pb-2 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button
@@ -165,26 +201,6 @@ export function ChatDatePicker({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        {quickDates.map((shortcut) => {
-          const disabled = isDateDisabled(shortcut.date);
-
-          return (
-            <Button
-              key={shortcut.id}
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-full border-zinc-300 bg-zinc-50/80 text-zinc-700 hover:bg-zinc-200/80 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              disabled={disabled}
-              onClick={() => onSelect(shortcut.date)}
-            >
-              {shortcut.label}
-            </Button>
-          );
-        })}
       </div>
 
       {/* Weekday headers */}
@@ -227,6 +243,27 @@ export function ChatDatePicker({
             >
               {date.getDate()}
             </button>
+          );
+        })}
+      </div>
+
+      {/* Quick shortcuts — after grid so auto-scroll reveals grid + shortcuts together */}
+      <div className="mt-3 flex gap-2 overflow-x-auto border-t border-zinc-200/60 pt-3 dark:border-zinc-700/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {quickDates.map((shortcut) => {
+          const disabled = isDateDisabled(shortcut.date);
+
+          return (
+            <Button
+              key={shortcut.id}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 rounded-full border-zinc-300 bg-zinc-50/80 text-zinc-700 hover:bg-zinc-200/80 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              disabled={disabled}
+              onClick={() => onSelect(shortcut.date)}
+            >
+              {shortcut.label}
+            </Button>
           );
         })}
       </div>

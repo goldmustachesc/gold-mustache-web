@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { BookingProgressSummary } from "./BookingProgressSummary";
 import {
   BotMessage,
@@ -197,6 +198,7 @@ export function ChatBookingPage({
 
   const messageIdRef = useRef(0);
   const processedStepsRef = useRef<Set<BookingStep>>(new Set());
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const addMessage = useCallback((data: MessageData) => {
     setMessages((prev) => [
@@ -750,6 +752,17 @@ export function ChatBookingPage({
     }
   }, [step, showTypingThenMessage]);
 
+  useEffect(() => {
+    if (showSelector === "review") {
+      setTimeout(() => {
+        confirmButtonRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 400);
+    }
+  }, [showSelector]);
+
   // Confirmation screen
   if (step === "confirmation" && confirmedAppointment) {
     return (
@@ -773,7 +786,7 @@ export function ChatBookingPage({
     switch (showSelector) {
       case "barber":
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <ChatBarberSelector
               barbers={barbers}
               onSelect={handleBarberSelect}
@@ -783,7 +796,7 @@ export function ChatBookingPage({
         );
       case "service":
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Button
               type="button"
               variant="ghost"
@@ -803,7 +816,7 @@ export function ChatBookingPage({
         );
       case "date":
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Button
               type="button"
               variant="ghost"
@@ -835,7 +848,7 @@ export function ChatBookingPage({
         );
       case "time":
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Button
               type="button"
               variant="ghost"
@@ -856,7 +869,7 @@ export function ChatBookingPage({
         );
       case "info":
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Button
               type="button"
               variant="ghost"
@@ -878,7 +891,7 @@ export function ChatBookingPage({
         );
       case "profile-update":
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Button
               type="button"
               variant="ghost"
@@ -908,7 +921,7 @@ export function ChatBookingPage({
           return null;
 
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300 lg:hidden">
+          <div className="self-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300 lg:hidden">
             <div className="space-y-4 rounded-xl border border-zinc-300/50 bg-zinc-100/80 p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-800/80">
               <BookingProgressSummary
                 title="Revisar agendamento"
@@ -970,6 +983,7 @@ export function ChatBookingPage({
 
               <div className="flex flex-col gap-2 pt-2 border-t border-zinc-300/50 dark:border-zinc-700/50">
                 <Button
+                  ref={confirmButtonRef}
                   onClick={handleConfirmBooking}
                   disabled={
                     createAppointment.isPending ||
@@ -1053,7 +1067,7 @@ export function ChatBookingPage({
   }));
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-120px)]">
+    <div className="flex flex-col h-[calc(100dvh-5rem)]">
       {/* Header */}
       <div className="flex items-center justify-between py-3 px-1 border-b border-zinc-300/50 dark:border-zinc-800/50">
         <div className="flex items-center gap-2.5">
@@ -1079,9 +1093,9 @@ export function ChatBookingPage({
 
       {/* Chat + live preview */}
       <div className="mt-3 flex flex-1 gap-4 overflow-hidden lg:gap-6">
-        <div className="flex flex-1 flex-col min-h-0 lg:flex-[1.2]">
+        <div className="flex flex-1 flex-col min-h-0 min-w-0 overflow-x-hidden lg:flex-[1.2]">
           {step !== "greeting" && step !== "confirming" && (
-            <div className="rounded-2xl border border-zinc-300/50 dark:border-zinc-700/50 bg-background/95 backdrop-blur-sm p-3 shadow-sm shrink-0 mb-3 lg:hidden">
+            <div className="rounded-2xl border border-zinc-300/50 dark:border-zinc-700/50 bg-background/95 backdrop-blur-sm px-3 py-2 shadow-sm shrink-0 mb-3 lg:hidden overflow-hidden min-w-0">
               <BookingProgressSummary
                 items={progressItems}
                 variant="horizontal-sticky"
@@ -1153,6 +1167,41 @@ export function ChatBookingPage({
             }
           />
         </aside>
+      </div>
+
+      {/* Mobile floating confirm bar — slides up when review step is active */}
+      <div
+        className={cn(
+          "lg:hidden shrink-0 overflow-hidden transition-all duration-300 ease-out",
+          step === "review"
+            ? "max-h-24 opacity-100 pt-2"
+            : "max-h-0 opacity-0 pointer-events-none",
+        )}
+      >
+        <div className="flex gap-2 pb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBackFromReview}
+            disabled={
+              createAppointment.isPending || createGuestAppointment.isPending
+            }
+            className="border-zinc-300 dark:border-zinc-700"
+          >
+            Editar
+          </Button>
+          <Button
+            onClick={handleConfirmBooking}
+            disabled={
+              createAppointment.isPending || createGuestAppointment.isPending
+            }
+            className="flex-1 shadow-md"
+          >
+            {createAppointment.isPending || createGuestAppointment.isPending
+              ? "Confirmando..."
+              : "Confirmar agendamento"}
+          </Button>
+        </div>
       </div>
     </div>
   );
