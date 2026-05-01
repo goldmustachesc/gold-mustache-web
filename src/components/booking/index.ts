@@ -1,9 +1,12 @@
 export { BarberSelector } from "./BarberSelector";
 export { ServiceSelector } from "./ServiceSelector";
 export { DatePicker } from "./DatePicker";
+export { SmartTimePicker } from "./SmartTimePicker";
 export { TimeSlotGrid } from "./TimeSlotGrid";
 export { BookingConfirmation } from "./BookingConfirmation";
 export { BookingReview } from "./BookingReview";
+export { BookingProgressSummary } from "./BookingProgressSummary";
+export { BookingLivePreview } from "./BookingLivePreview";
 export { BookingPage } from "./BookingPage";
 export { ChatBookingPage } from "./ChatBookingPage";
 export { AppointmentCard } from "./AppointmentCard";

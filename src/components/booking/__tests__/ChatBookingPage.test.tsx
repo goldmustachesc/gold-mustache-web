@@ -21,10 +21,25 @@ vi.mock("@/hooks/useProfileMe", () => ({
 vi.mock("@/utils/datetime", () => ({
   formatDateDdMmYyyyInSaoPaulo: vi.fn().mockReturnValue("10/03/2026"),
   formatDateDdMmYyyyFromIsoDateLike: vi.fn().mockReturnValue("10/03/2026"),
+  formatIsoDateYyyyMmDdInSaoPaulo: vi.fn().mockReturnValue("2026-03-10"),
+  parseIsoDateYyyyMmDdAsSaoPauloDate: vi.fn(
+    (iso: string) => new Date(`${iso}T00:00:00`),
+  ),
 }));
 
 vi.mock("@/utils/time-slots", () => ({
   formatDateToString: vi.fn().mockReturnValue("2026-03-10"),
+  getBrazilDateString: vi.fn().mockReturnValue("2026-03-10"),
+  parseDateString: vi.fn((dateStr: string) => new Date(`${dateStr}T00:00:00`)),
+  addMinutesToTime: vi
+    .fn()
+    .mockImplementation((time: string, duration: number) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      const endMinutes = hours * 60 + minutes + duration;
+      const endHours = Math.floor(endMinutes / 60);
+      const endMins = endMinutes % 60;
+      return `${String(endHours).padStart(2, "0")}:${String(endMins).padStart(2, "0")}`;
+    }),
 }));
 
 vi.mock("sonner", () => ({

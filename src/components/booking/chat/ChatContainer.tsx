@@ -10,14 +10,18 @@ interface ChatContainerProps {
 
 export function ChatContainer({ children, className }: ChatContainerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeightRef = useRef(0);
 
-  // Auto-scroll to bottom when content changes
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+    const el = scrollRef.current;
+    if (!el) return;
+    const prev = prevScrollHeightRef.current;
+    const grew = el.scrollHeight > prev;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const wasNearBottom = distanceFromBottom < 120;
+    prevScrollHeightRef.current = el.scrollHeight;
+    if (grew && wasNearBottom) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
   });
 
@@ -28,6 +32,13 @@ export function ChatContainer({ children, className }: ChatContainerProps) {
         "flex min-h-0 flex-col gap-4 overflow-y-auto scroll-smooth",
         "max-h-[calc(100vh-180px)]",
         "py-4 px-1",
+        "[scrollbar-width:thin] [scrollbar-color:transparent_transparent]",
+        "hover:[scrollbar-color:hsl(var(--foreground)/0.25)_transparent]",
+        "[&::-webkit-scrollbar]:w-1.5",
+        "[&::-webkit-scrollbar-track]:bg-transparent",
+        "[&::-webkit-scrollbar-thumb]:rounded-full",
+        "[&::-webkit-scrollbar-thumb]:bg-transparent",
+        "hover:[&::-webkit-scrollbar-thumb]:bg-foreground/20",
         className,
       )}
     >

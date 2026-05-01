@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import { fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ChatTimeSlotSelector } from "../ChatTimeSlotSelector";
@@ -7,10 +6,10 @@ import type { BookingAvailability } from "@/types/booking";
 
 const availability: BookingAvailability = {
   barberId: "barber-1",
-  serviceDuration: 30,
+  serviceDuration: 60,
   windows: [
-    { startTime: "09:00", endTime: "10:00" },
-    { startTime: "10:30", endTime: "12:00" },
+    { startTime: "09:00", endTime: "12:00" },
+    { startTime: "14:00", endTime: "15:00" },
   ],
 };
 
@@ -33,58 +32,50 @@ describe("ChatTimeSlotSelector", () => {
         onSelect={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Nenhuma janela disponível/)).toBeInTheDocument();
+    expect(screen.getByText("Nenhum horário disponível")).toBeInTheDocument();
   });
 
-  it("renders windows and exact-time input", () => {
+  it("renders ready-to-pick times without exposing the manual exact-time input", () => {
     render(
       <ChatTimeSlotSelector availability={availability} onSelect={vi.fn()} />,
     );
-    expect(screen.getByText("09:00 - 10:00")).toBeInTheDocument();
-    expect(screen.getByText("10:30 - 12:00")).toBeInTheDocument();
-    expect(screen.getByLabelText("Escolha o início exato")).toHaveValue(
-      "09:00",
-    );
+
+    expect(screen.getByText("Escolha um horário")).toBeInTheDocument();
+    expect(screen.getByText("Melhores horários")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:00" })).toBeInTheDocument();
+    expect(screen.queryByText("Janelas livres")).toBeNull();
+    expect(screen.queryByLabelText("Escolha o início exato")).toBeNull();
   });
 
-  it("rounds and confirms a broken exact time", async () => {
+  it("confirms a selected smart time", async () => {
+    const user = userEvent.setup();
     const onSelect = vi.fn();
     render(
       <ChatTimeSlotSelector availability={availability} onSelect={onSelect} />,
     );
 
-    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
-      target: { value: "09:17" },
-    });
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirmar 09:20 - 09:50" }),
-    );
+    await user.click(screen.getByRole("button", { name: "09:00" }));
+
+    expect(screen.getByText("Atendimento: 09:00 - 10:00")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Confirmar 09:00" }));
     expect(onSelect).toHaveBeenCalledWith({
-      time: "09:20",
+      time: "09:00",
       available: true,
       barberId: "barber-1",
     });
   });
 
-  it("shows validation error when the exact time does not fit", () => {
+  it("shows more available times on demand", async () => {
+    const user = userEvent.setup();
     render(
       <ChatTimeSlotSelector availability={availability} onSelect={vi.fn()} />,
     );
 
-    fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
-      target: { value: "09:45" },
-    });
+    expect(screen.queryByRole("button", { name: "10:00" })).toBeNull();
 
-    expect(screen.getByText("Esse serviço dura 30 min.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Último início possível: 09:30."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Usar 09:30" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Confirmar horário" }),
-    ).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: /Ver mais horários/ }));
+
+    expect(screen.getByRole("button", { name: "10:00" })).toBeInTheDocument();
   });
 
   it("shows choose another date button when empty and onChooseAnotherDate provided", () => {

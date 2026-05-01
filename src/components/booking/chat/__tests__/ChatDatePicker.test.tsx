@@ -117,4 +117,17 @@ describe("ChatDatePicker", () => {
     const beyondRange = screen.getByText("15");
     expect(beyondRange.closest("button")).toBeDisabled();
   });
+
+  it("offers quick date shortcuts", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+
+    render(<ChatDatePicker onSelect={onSelect} />);
+
+    await user.click(screen.getByRole("button", { name: "Hoje" }));
+
+    expect(onSelect).toHaveBeenCalledOnce();
+    const selected = onSelect.mock.calls[0][0] as Date;
+    expect(selected.getDate()).toBe(5);
+  });
 });

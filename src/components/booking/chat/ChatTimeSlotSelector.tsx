@@ -1,18 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
 import type { BookingAvailability, TimeSlot } from "@/types/booking";
 import { Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { buildTimeSelectionFeedback } from "@/lib/booking/time-selection-feedback";
-import { TimeSelectionFeedbackPanel } from "@/components/booking/TimeSelectionFeedbackPanel";
-import {
-  BOOKING_START_TIME_STEP_MINUTES,
-  roundTimeUpToSlotBoundary,
-} from "@/utils/time-slots";
+import { SmartTimePicker } from "@/components/booking/SmartTimePicker";
+import { buildSmartTimePickerModel } from "@/lib/booking/smart-time-picker";
 
 interface ChatTimeSlotSelectorProps {
   availability: BookingAvailability | null;
@@ -28,27 +21,21 @@ export function ChatTimeSlotSelector({
   isLoading,
 }: ChatTimeSlotSelectorProps) {
   const [countdown, setCountdown] = useState(5);
-  const [selectedTime, setSelectedTime] = useState(
-    availability?.windows[0]?.startTime ?? "",
-  );
+  const [selectedTime, setSelectedTime] = useState("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const windows = availability?.windows ?? [];
   const hasNoSlots = !isLoading && windows.length === 0;
-  const feedback = useMemo(() => {
-    if (!availability || !selectedTime) {
+  const pickerModel = useMemo(() => {
+    if (!availability) {
       return null;
     }
 
-    return buildTimeSelectionFeedback({
+    return buildSmartTimePickerModel({
       windows: availability.windows,
-      selectedStartTime: selectedTime,
       serviceDurationMinutes: availability.serviceDuration,
     });
-  }, [availability, selectedTime]);
-  useEffect(() => {
-    setSelectedTime(availability?.windows[0]?.startTime ?? "");
   }, [availability]);
 
   // Auto-redirect countdown when no slots
@@ -94,6 +81,18 @@ export function ChatTimeSlotSelector({
   }
 
   if (windows.length === 0) {
+    if (pickerModel) {
+      return (
+        <SmartTimePicker
+          model={pickerModel}
+          selectedStartTime={selectedTime}
+          onSelectTime={setSelectedTime}
+          onConfirm={() => undefined}
+          onChooseAnotherDate={onChooseAnotherDate}
+        />
+      );
+    }
+
     return (
       <div className="space-y-3">
         <div className="text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-xl p-4 flex items-center gap-2">
@@ -115,80 +114,23 @@ export function ChatTimeSlotSelector({
     );
   }
 
+  if (!pickerModel || !availability) {
+    return null;
+  }
+
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Janelas livres
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {windows.map((window) => (
-            <span
-              key={`${window.startTime}-${window.endTime}`}
-              className="rounded-full border border-zinc-300/60 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-900 dark:border-zinc-700/60 dark:bg-zinc-800/80 dark:text-zinc-100"
-            >
-              {window.startTime} - {window.endTime}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-zinc-300/50 bg-zinc-100/40 p-3 dark:border-zinc-700/50 dark:bg-zinc-800/40">
-        <Label
-          htmlFor="chat-exact-time"
-          className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-        >
-          Escolha o início exato
-        </Label>
-        <Input
-          id="chat-exact-time"
-          aria-label="Escolha o início exato"
-          type="time"
-          step={BOOKING_START_TIME_STEP_MINUTES * 60}
-          value={selectedTime}
-          onChange={(event) =>
-            setSelectedTime(roundTimeUpToSlotBoundary(event.target.value) ?? "")
-          }
-          className={cn(
-            "mt-2 min-w-0 max-w-full appearance-none text-lg font-semibold tabular-nums",
-            "bg-white/80 border-zinc-300/60 dark:bg-zinc-900/60 dark:border-zinc-700/60",
-            feedback &&
-              feedback.status !== "valid" &&
-              "border-destructive focus-visible:ring-destructive/30",
-          )}
-        />
-        <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-          Use intervalos de {BOOKING_START_TIME_STEP_MINUTES} minutos dentro das
-          janelas acima.
-        </p>
-        {feedback && (
-          <TimeSelectionFeedbackPanel
-            feedback={feedback}
-            selectedTime={selectedTime}
-            onSelectTime={setSelectedTime}
-            className="mt-3 rounded-lg"
-          />
-        )}
-      </div>
-
-      <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-4 -mx-4 mt-4 lg:static lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:p-0 lg:mx-0 lg:mt-6">
-        <Button
-          type="button"
-          className="w-full"
-          disabled={!selectedTime || feedback?.status !== "valid"}
-          onClick={() =>
-            onSelect({
-              time: selectedTime,
-              available: true,
-              barberId: availability?.barberId,
-            })
-          }
-        >
-          {feedback?.status === "valid" && feedback.selectedEndTime
-            ? `Confirmar ${selectedTime} - ${feedback.selectedEndTime}`
-            : "Confirmar horário"}
-        </Button>
-      </div>
-    </div>
+    <SmartTimePicker
+      model={pickerModel}
+      selectedStartTime={selectedTime}
+      onSelectTime={setSelectedTime}
+      onChooseAnotherDate={onChooseAnotherDate}
+      onConfirm={(time) =>
+        onSelect({
+          time,
+          available: true,
+          barberId: availability.barberId,
+        })
+      }
+    />
   );
 }

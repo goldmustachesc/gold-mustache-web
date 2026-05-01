@@ -36,6 +36,19 @@ const MONTHS = [
   "Dezembro",
 ];
 
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function nextWeekday(date: Date, weekday: number): Date {
+  const next = new Date(date);
+  const offset = (weekday - next.getDay() + 7) % 7;
+  next.setDate(next.getDate() + offset);
+  return next;
+}
+
 export function ChatDatePicker({
   onSelect,
   disabledDates = [],
@@ -57,6 +70,24 @@ export function ChatDatePicker({
     d.setDate(d.getDate() + maxDays);
     return d;
   }, [today, maxDays]);
+
+  const quickDates = useMemo(
+    () => [
+      { id: "today", label: "Hoje", date: new Date(today) },
+      { id: "tomorrow", label: "Amanhã", date: addDays(today, 1) },
+      {
+        id: "saturday",
+        label: "Próximo sábado",
+        date: nextWeekday(today, 6),
+      },
+      {
+        id: "week",
+        label: "Próxima semana",
+        date: addDays(today, 7),
+      },
+    ],
+    [today],
+  );
 
   const isDateDisabled = (date: Date) => {
     if (date < today) return true;
@@ -134,6 +165,26 @@ export function ChatDatePicker({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {quickDates.map((shortcut) => {
+          const disabled = isDateDisabled(shortcut.date);
+
+          return (
+            <Button
+              key={shortcut.id}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full border-zinc-300 bg-zinc-50/80 text-zinc-700 hover:bg-zinc-200/80 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              disabled={disabled}
+              onClick={() => onSelect(shortcut.date)}
+            >
+              {shortcut.label}
+            </Button>
+          );
+        })}
       </div>
 
       {/* Weekday headers */}

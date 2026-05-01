@@ -4,12 +4,14 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { BookingProgressSummary } from "./BookingProgressSummary";
 import {
   BotMessage,
   UserMessage,
@@ -23,16 +25,20 @@ import { ChatTimeSlotSelector } from "./chat/ChatTimeSlotSelector";
 import { ChatGuestInfoForm } from "./chat/ChatGuestInfoForm";
 import { ChatProfileUpdateForm } from "./chat/ChatProfileUpdateForm";
 import { BookingConfirmation } from "./BookingConfirmation";
+import { BookingLivePreview } from "./BookingLivePreview";
 import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
 import { useProfileMe } from "@/hooks/useProfileMe";
 import {
   useBarbers,
   useServices,
   useSlots,
+  useDateAvailability,
   useCreateAppointment,
   useCreateGuestAppointment,
 } from "@/hooks/useBooking";
+import { useBrazilToday } from "@/hooks/useBrazilToday";
 import { useUser } from "@/hooks/useAuth";
+import { calculateEndTime } from "@/lib/booking/time";
 import type {
   ServiceData,
   TimeSlot,
@@ -40,8 +46,18 @@ import type {
   BarberData,
 } from "@/types/booking";
 import { formatDateToString } from "@/utils/time-slots";
-import { formatDateDdMmYyyyInSaoPaulo } from "@/utils/datetime";
-import { ArrowLeft, Calendar, RotateCcw } from "lucide-react";
+import {
+  formatDateDdMmYyyyInSaoPaulo,
+  formatIsoDateYyyyMmDdInSaoPaulo,
+  parseIsoDateYyyyMmDdAsSaoPauloDate,
+} from "@/utils/datetime";
+import {
+  ArrowLeft,
+  Calendar,
+  Loader2,
+  PencilLine,
+  RotateCcw,
+} from "lucide-react";
 
 type BookingStep =
   | "greeting"
@@ -125,6 +141,8 @@ export function ChatBookingPage({
   } | null>(null);
   const [showSelector, setShowSelector] = useState<BookingStep | null>(null);
 
+  const today = useBrazilToday();
+
   const { data: barbers = [], isLoading: barbersLoading } = useBarbers();
   const { data: services = [], isLoading: servicesLoading } = useServices(
     selectedBarber?.id,
@@ -132,6 +150,47 @@ export function ChatBookingPage({
   const dateStr = selectedDate ? formatDateToString(selectedDate) : null;
   const { data: bookingAvailability = null, isLoading: slotsLoading } =
     useSlots(dateStr, selectedBarber?.id ?? null, selectedService?.id ?? null);
+
+  // Date availability range for disabling dates without any slots
+  const { calendarFromIso, calendarToIso } = useMemo(() => {
+    if (!selectedBarber) {
+      return { calendarFromIso: null, calendarToIso: null };
+    }
+    const fromIso = formatIsoDateYyyyMmDdInSaoPaulo(today);
+    const toDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 30,
+    );
+    return {
+      calendarFromIso: fromIso,
+      calendarToIso: formatIsoDateYyyyMmDdInSaoPaulo(toDate),
+    };
+  }, [selectedBarber, today]);
+
+  const {
+    data: dateAvailabilityData,
+    isLoading: dateAvailabilityLoading,
+    isFetching: dateAvailabilityFetching,
+  } = useDateAvailability(
+    calendarFromIso,
+    calendarToIso,
+    selectedBarber?.id ?? null,
+    selectedService?.id ?? null,
+  );
+
+  const calendarReady =
+    !!dateAvailabilityData &&
+    !dateAvailabilityLoading &&
+    !dateAvailabilityFetching;
+
+  const disabledDates = useMemo(
+    () =>
+      (dateAvailabilityData?.unavailableDates ?? []).map((iso) =>
+        parseIsoDateYyyyMmDdAsSaoPauloDate(iso),
+      ),
+    [dateAvailabilityData],
+  );
 
   const createAppointment = useCreateAppointment();
   const createGuestAppointment = useCreateGuestAppointment();
@@ -218,6 +277,7 @@ export function ChatBookingPage({
       "time",
       "profile-update",
       "info",
+      "review",
     ];
     const startIndex = flowSteps.indexOf(targetStep);
     if (startIndex === -1) return;
@@ -226,36 +286,33 @@ export function ChatBookingPage({
     }
   }, []);
 
-  const handleBack = useCallback(
-    (fromStep: BookingStep) => {
-      const targetStep = getPreviousStep(fromStep);
-      if (!targetStep) return;
-
+  const navigateToStep = useCallback(
+    (targetStep: BookingStep) => {
       setShowSelector(null);
-
-      // Remove messages related to the attempt so the transcript doesn't become inconsistent
       pruneMessagesForBackNavigation(targetStep);
 
-      // Reset dependent selections
-      switch (fromStep) {
-        case "service":
+      switch (targetStep) {
+        case "barber":
           setSelectedBarber(null);
           setSelectedService(null);
           setSelectedDate(null);
           setSelectedSlot(null);
           break;
-        case "date":
+        case "service":
           setSelectedService(null);
           setSelectedDate(null);
           setSelectedSlot(null);
           break;
-        case "time":
+        case "date":
           setSelectedDate(null);
           setSelectedSlot(null);
           break;
-        case "info":
-        case "profile-update":
+        case "time":
           setSelectedSlot(null);
+          break;
+        case "info":
+          break;
+        case "profile-update":
           break;
         default:
           break;
@@ -265,7 +322,16 @@ export function ChatBookingPage({
       setStep(targetStep);
       setTimeout(() => setShowSelector(targetStep), 150);
     },
-    [clearProcessedStepsFrom, getPreviousStep, pruneMessagesForBackNavigation],
+    [clearProcessedStepsFrom, pruneMessagesForBackNavigation],
+  );
+
+  const handleBack = useCallback(
+    (fromStep: BookingStep) => {
+      const targetStep = getPreviousStep(fromStep);
+      if (!targetStep) return;
+      navigateToStep(targetStep);
+    },
+    [getPreviousStep, navigateToStep],
   );
 
   // Handlers
@@ -330,16 +396,14 @@ export function ChatBookingPage({
       addMessage({ type: "user", text: slot.time });
 
       if (isGuest) {
-        setTimeout(() => setStep("info"), 50);
-      } else if (!profileReady) {
-        setTimeout(() => setStep("profile-update"), 50);
-      } else if (!hasCompleteProfile) {
+        setTimeout(() => setStep(guestInfo ? "review" : "info"), 50);
+      } else if (!profileReady || !hasCompleteProfile) {
         setTimeout(() => setStep("profile-update"), 50);
       } else {
         setTimeout(() => setStep("review"), 50);
       }
     },
-    [addMessage, isGuest, hasCompleteProfile, profileReady],
+    [addMessage, guestInfo, isGuest, hasCompleteProfile, profileReady],
   );
 
   const handleGuestSubmit = useCallback(
@@ -456,13 +520,31 @@ export function ChatBookingPage({
     setShowSelector(null);
     processedStepsRef.current.delete("review");
     if (isGuest) {
-      setStep("info");
-      setTimeout(() => setShowSelector("info"), 150);
+      navigateToStep(guestInfo ? "info" : "time");
     } else {
-      setStep("time");
-      setTimeout(() => setShowSelector("time"), 150);
+      navigateToStep("time");
     }
-  }, [isGuest]);
+  }, [guestInfo, isGuest, navigateToStep]);
+
+  const handleEditBarber = useCallback(() => {
+    navigateToStep("barber");
+  }, [navigateToStep]);
+
+  const handleEditService = useCallback(() => {
+    navigateToStep("service");
+  }, [navigateToStep]);
+
+  const handleEditDate = useCallback(() => {
+    navigateToStep("date");
+  }, [navigateToStep]);
+
+  const handleEditTime = useCallback(() => {
+    navigateToStep("time");
+  }, [navigateToStep]);
+
+  const handleEditCustomerData = useCallback(() => {
+    navigateToStep(isGuest ? "info" : "profile-update");
+  }, [isGuest, navigateToStep]);
 
   const handleViewGuestAppointments = useCallback(() => {
     // Token is already saved in localStorage, just redirect
@@ -732,7 +814,23 @@ export function ChatBookingPage({
               <ArrowLeft className="h-4 w-4 mr-1" />
               Voltar
             </Button>
-            <ChatDatePicker onSelect={handleDateSelect} />
+            {calendarReady ? (
+              <ChatDatePicker
+                onSelect={handleDateSelect}
+                disabledDates={disabledDates}
+              />
+            ) : (
+              <output
+                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-300/50 bg-zinc-100/80 p-10 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-800/80"
+                aria-live="polite"
+                aria-label="Carregando datas disponíveis"
+              >
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  Carregando datas disponíveis…
+                </span>
+              </output>
+            )}
           </div>
         );
       case "time":
@@ -770,9 +868,11 @@ export function ChatBookingPage({
               Voltar
             </Button>
             <ChatGuestInfoForm
+              key={`${guestInfo?.clientName ?? ""}|${guestInfo?.clientPhone ?? ""}`}
               onSubmit={handleGuestSubmit}
               isLoading={false}
-              submitLabel="Revisar Agendamento"
+              currentName={guestInfo?.clientName}
+              currentPhone={guestInfo?.clientPhone}
             />
           </div>
         );
@@ -794,6 +894,7 @@ export function ChatBookingPage({
               currentPhone={profile?.phone}
               onSuccess={handleProfileUpdateSuccess}
               isLoading={profileLoading}
+              allowAutoProceedWhenComplete={!hasCompleteProfile}
             />
           </div>
         );
@@ -806,62 +907,67 @@ export function ChatBookingPage({
         )
           return null;
 
-        // Calculate end time
-        const [hours, minutes] = selectedSlot.time.split(":").map(Number);
-        const endMinutes = hours * 60 + minutes + selectedService.duration;
-        const endHours = Math.floor(endMinutes / 60);
-        const endMins = endMinutes % 60;
-        const endTime = `${String(endHours).padStart(2, "0")}:${String(endMins).padStart(2, "0")}`;
-
         return (
-          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 space-y-4 shadow-sm">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    👤 Barbeiro:
-                  </span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {selectedBarber.name}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    ✂️ Serviço:
-                  </span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {selectedService.name} • R${" "}
-                    {selectedService.price.toFixed(2).replace(".", ",")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    📅 Data:
-                  </span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {formatDateDdMmYyyyInSaoPaulo(selectedDate)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    🕐 Horário:
-                  </span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {selectedSlot.time} - {endTime}
-                  </span>
-                </div>
-                {guestInfo && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-zinc-500 dark:text-zinc-400">
-                      📱 Cliente:
-                    </span>
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {guestInfo.clientName} •{" "}
-                      {formatPhoneDisplay(guestInfo.clientPhone)}
-                    </span>
+          <div className="self-start w-full max-w-[95%] animate-in fade-in slide-in-from-bottom-2 duration-300 lg:hidden">
+            <div className="space-y-4 rounded-xl border border-zinc-300/50 bg-zinc-100/80 p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-800/80">
+              <BookingProgressSummary
+                title="Revisar agendamento"
+                items={reviewProgressItems}
+              />
+
+              {isGuest && guestInfo && (
+                <div className="rounded-xl bg-background/60 px-3 py-2.5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Cliente
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-foreground">
+                        {guestInfo.clientName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatPhoneDisplay(guestInfo.clientPhone)}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-2"
+                      onClick={handleEditCustomerData}
+                    >
+                      <PencilLine className="h-4 w-4" />
+                      Editar dados
+                    </Button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {!isGuest && (
+                <div className="rounded-xl bg-background/60 px-3 py-2.5 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Cadastro
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-foreground">
+                        Seu cadastro está pronto para confirmar.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-2"
+                      onClick={handleEditCustomerData}
+                    >
+                      <PencilLine className="h-4 w-4" />
+                      Editar dados
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col gap-2 pt-2 border-t border-zinc-300/50 dark:border-zinc-700/50">
                 <Button
                   onClick={handleConfirmBooking}
@@ -874,7 +980,7 @@ export function ChatBookingPage({
                   {createAppointment.isPending ||
                   createGuestAppointment.isPending
                     ? "Confirmando..."
-                    : "✅ Confirmar Agendamento"}
+                    : "Confirmar agendamento"}
                 </Button>
                 <Button
                   variant="outline"
@@ -885,7 +991,7 @@ export function ChatBookingPage({
                   }
                   className="w-full border-zinc-300 hover:bg-zinc-200/50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
-                  Voltar e Editar
+                  Voltar e editar
                 </Button>
               </div>
             </div>
@@ -896,6 +1002,55 @@ export function ChatBookingPage({
         return null;
     }
   };
+
+  const selectedTimeRange =
+    selectedSlot && selectedService
+      ? `${selectedSlot.time} - ${calculateEndTime(
+          selectedSlot.time,
+          selectedService.duration,
+        )}`
+      : null;
+
+  const progressItems = [
+    {
+      id: "barber",
+      label: "Barbeiro",
+      value: selectedBarber?.name ?? null,
+      placeholder: "Escolha o barbeiro",
+      onEdit: selectedBarber ? handleEditBarber : undefined,
+      editLabel: "Editar barbeiro",
+    },
+    {
+      id: "service",
+      label: "Serviço",
+      value: selectedService?.name ?? null,
+      placeholder: "Escolha o serviço",
+      onEdit: selectedService ? handleEditService : undefined,
+      editLabel: "Editar serviço",
+    },
+    {
+      id: "date",
+      label: "Data",
+      value: selectedDate ? formatDateDdMmYyyyInSaoPaulo(selectedDate) : null,
+      placeholder: "Escolha a data",
+      onEdit: selectedDate ? handleEditDate : undefined,
+      editLabel: "Editar data",
+    },
+    {
+      id: "time",
+      label: "Horário",
+      value: selectedTimeRange,
+      placeholder: "Escolha o horário",
+      onEdit: selectedSlot ? handleEditTime : undefined,
+      editLabel: "Editar horário",
+    },
+  ];
+
+  const reviewProgressItems = progressItems.map((item) => ({
+    ...item,
+    onEdit: undefined,
+    editLabel: undefined,
+  }));
 
   return (
     <div className="flex flex-col h-[calc(100dvh-120px)]">
@@ -922,50 +1077,83 @@ export function ChatBookingPage({
         )}
       </div>
 
-      {/* Chat area */}
-      <ChatContainer className="flex-1 mt-3">
-        {messages.map((msg) => {
-          const { data } = msg;
+      {/* Chat + live preview */}
+      <div className="mt-3 flex flex-1 gap-4 overflow-hidden lg:gap-6">
+        <div className="flex flex-1 flex-col min-h-0 lg:flex-[1.2]">
+          {step !== "greeting" && step !== "confirming" && (
+            <div className="rounded-2xl border border-zinc-300/50 dark:border-zinc-700/50 bg-background/95 backdrop-blur-sm p-3 shadow-sm shrink-0 mb-3 lg:hidden">
+              <BookingProgressSummary
+                items={progressItems}
+                variant="horizontal-sticky"
+              />
+            </div>
+          )}
+          <ChatContainer className="flex-1 min-h-0">
+            {messages.map((msg) => {
+              const { data } = msg;
 
-          if (data.type === "bot") {
-            return (
-              <BotMessage key={msg.id} animate>
-                {data.text}
-              </BotMessage>
-            );
-          }
+              if (data.type === "bot") {
+                return (
+                  <BotMessage key={msg.id} animate>
+                    {data.text}
+                  </BotMessage>
+                );
+              }
 
-          if (data.type === "bot-jsx") {
-            return (
-              <BotMessage key={msg.id} animate>
-                {data.content}
-              </BotMessage>
-            );
-          }
+              if (data.type === "bot-jsx") {
+                return (
+                  <BotMessage key={msg.id} animate>
+                    {data.content}
+                  </BotMessage>
+                );
+              }
 
-          if (data.type === "user") {
-            return (
-              <UserMessage key={msg.id} animate>
-                {data.text}
-              </UserMessage>
-            );
-          }
+              if (data.type === "user") {
+                return (
+                  <UserMessage key={msg.id} animate>
+                    {data.text}
+                  </UserMessage>
+                );
+              }
 
-          if (data.type === "user-jsx") {
-            return (
-              <UserMessage key={msg.id} animate>
-                {data.content}
-              </UserMessage>
-            );
-          }
+              if (data.type === "user-jsx") {
+                return (
+                  <UserMessage key={msg.id} animate>
+                    {data.content}
+                  </UserMessage>
+                );
+              }
 
-          return null;
-        })}
+              return null;
+            })}
 
-        {isTyping && <TypingIndicator />}
+            {isTyping && <TypingIndicator />}
 
-        {renderSelector()}
-      </ChatContainer>
+            {renderSelector()}
+          </ChatContainer>
+        </div>
+
+        <aside
+          className="hidden lg:flex lg:flex-[1] lg:flex-col lg:self-start lg:h-[calc(100dvh-184px)] lg:max-h-[460px]"
+          aria-label="Prévia do agendamento"
+        >
+          <BookingLivePreview
+            barber={selectedBarber}
+            service={selectedService}
+            date={selectedDate}
+            slot={selectedSlot}
+            guestInfo={guestInfo}
+            isGuest={isGuest}
+            step={step}
+            onConfirm={handleConfirmBooking}
+            onBackFromReview={handleBackFromReview}
+            onEditCustomerData={handleEditCustomerData}
+            isConfirming={
+              createAppointment.isPending || createGuestAppointment.isPending
+            }
+          />
+        </aside>
+      </div>
     </div>
   );
 }

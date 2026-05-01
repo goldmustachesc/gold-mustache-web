@@ -47,7 +47,7 @@ export function AgendarPageClient() {
 
       {/* Main content */}
       <div className="relative z-10 flex min-h-screen flex-col items-center px-3 pt-14 pb-4">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-5xl xl:max-w-6xl">
           <ChatBookingPage
             onViewAppointments={handleViewAppointments}
             preSelectedBarberId={preSelectedBarberId}
