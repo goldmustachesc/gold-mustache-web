@@ -117,6 +117,10 @@ vi.mock("@/hooks/useBooking", () => ({
     mutateAsync: mocks.mutateAsync,
     isPending: false,
   }),
+  useDateAvailability: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }));
 
 vi.mock("@/hooks/useBarberClients", () => ({
