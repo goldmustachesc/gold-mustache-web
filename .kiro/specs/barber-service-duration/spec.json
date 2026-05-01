@@ -1,0 +1,12 @@
+{
+  "name": "barber-service-duration",
+  "title": "Duração de serviço por barbeiro (override)",
+  "tier": "full",
+  "language": "pt-BR",
+  "phase": "implementation",
+  "status": "done",
+  "created_at": "2026-04-30",
+  "updated_at": "2026-04-30",
+  "owner": "Leonardo",
+  "summary": "Permitir que cada barbeiro configure quanto tempo leva em cada serviço, sobrescrevendo a duração padrão definida no catálogo de serviços."
+}

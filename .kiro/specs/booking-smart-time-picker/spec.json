@@ -1,0 +1,31 @@
+{
+  "feature_name": "booking-smart-time-picker",
+  "created_at": "2026-04-30T00:00:00-03:00",
+  "updated_at": "2026-04-30T00:00:00-03:00",
+  "language": "pt",
+  "phase": "tasks",
+  "priority": "P1",
+  "area": "booking",
+  "source": "user-request-2026-04-30",
+  "related_specs": [
+    "booking-system",
+    "booking-polish",
+    "booking-time-selection-ux"
+  ],
+  "summary": "Substituir a etapa de escolha de horario por um seletor inteligente que mostra primeiro horarios recomendados, exibe apenas opcoes realmente agendaveis e ordena os horarios para reduzir lacunas improdutivas na agenda dos barbeiros.",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": false
+    },
+    "design": {
+      "generated": true,
+      "approved": false
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}

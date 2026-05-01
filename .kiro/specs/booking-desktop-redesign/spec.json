@@ -1,0 +1,31 @@
+{
+  "feature_name": "booking-desktop-redesign",
+  "created_at": "2026-04-30T00:00:00-03:00",
+  "updated_at": "2026-04-30T00:00:00-03:00",
+  "language": "pt",
+  "phase": "tasks",
+  "priority": "P1",
+  "area": "booking",
+  "source": "user-request-2026-04-30",
+  "related_specs": [
+    "booking-smart-time-picker",
+    "booking-system",
+    "booking-polish"
+  ],
+  "summary": "Redesenhar a experiencia desktop do agendamento com layout split (chat + live preview), resumo sticky persistente e selectors maiores para reduzir esforco visual e aumentar conversao em telas largas.",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": false
+    },
+    "design": {
+      "generated": true,
+      "approved": false
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}
