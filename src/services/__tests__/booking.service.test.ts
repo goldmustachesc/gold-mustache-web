@@ -1035,7 +1035,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("SLOT_UNAVAILABLE");
   });
 
-  it("createGuestAppointment rotates token without clearing claim history", async () => {
+  it("createGuestAppointment preserves existing token on rebook (no IDOR)", async () => {
     asMock(prisma.service.findUnique).mockResolvedValue({ duration: 30 });
     asMock(prisma.workingHours.findUnique).mockResolvedValue({
       startTime: "09:00",
@@ -1115,8 +1115,6 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       where: { phone: "11999998888" },
       update: {
         fullName: "X",
-        accessToken: expect.any(String),
-        accessTokenConsumedAt: null,
       },
       create: {
         fullName: "X",
