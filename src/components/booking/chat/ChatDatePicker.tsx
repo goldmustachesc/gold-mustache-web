@@ -132,7 +132,7 @@ export function ChatDatePicker({
   return (
     <div
       className={cn(
-        "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 pb-2 shadow-sm",
+        "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-3 pb-2 shadow-sm",
         className,
       )}
     >
@@ -162,7 +162,7 @@ export function ChatDatePicker({
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-0.5 mb-2">
         {WEEKDAYS.map((day) => (
           <div
             key={day.key}
@@ -174,11 +174,11 @@ export function ChatDatePicker({
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0">
         {days.map((date, index) => {
           if (!date) {
             // biome-ignore lint/suspicious/noArrayIndexKey: empty slots have stable positions in the calendar grid
-            return <div key={`empty-${index}`} className="aspect-square" />;
+            return <div key={`empty-${index}`} className="min-h-[44px]" />;
           }
 
           const isDisabled = isDateDisabled(date);
@@ -194,7 +194,7 @@ export function ChatDatePicker({
               onClick={() => !isDisabled && onSelect(date)}
               disabled={isDisabled}
               className={cn(
-                "aspect-square flex items-center justify-center rounded-lg text-sm transition-all",
+                "min-h-[44px] min-w-0 w-full flex items-center justify-center rounded-lg text-sm transition-all",
                 isDisabled &&
                   "text-zinc-400 dark:text-zinc-600 cursor-not-allowed",
                 !isDisabled &&

@@ -56,7 +56,7 @@ export function AgendarPageClient() {
 
       <Toaster
         position="top-center"
-        theme="dark"
+        theme="system"
         closeButton
         toastOptions={{
           className:

@@ -19,7 +19,7 @@ import {
   TypingIndicator,
   ChatContainer,
 } from "./chat";
-import { ChatBarberSelector } from "./chat/ChatBarberSelector";
+import { ChatBarberSelector, ANY_BARBER_ID } from "./chat/ChatBarberSelector";
 import { ChatServiceSelector } from "./chat/ChatServiceSelector";
 import { ChatDatePicker } from "./chat/ChatDatePicker";
 import { ChatTimeSlotSelector } from "./chat/ChatTimeSlotSelector";
@@ -90,6 +90,14 @@ interface ChatBookingPageProps {
   preSelectedBarberId?: string;
 }
 
+function maskPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "");
+  if (d.length === 11)
+    return `(${d.slice(0, 2)}) ${d.slice(2, 3)}****-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ****-${d.slice(6)}`;
+  return "***";
+}
+
 function formatPhoneDisplay(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.length === 11) {
@@ -145,12 +153,15 @@ export function ChatBookingPage({
   const today = useBrazilToday();
 
   const { data: barbers = [], isLoading: barbersLoading } = useBarbers();
-  const { data: services = [], isLoading: servicesLoading } = useServices(
-    selectedBarber?.id,
-  );
+  const barberId =
+    selectedBarber?.id === ANY_BARBER_ID ? undefined : selectedBarber?.id;
+  const barberIdOrNull =
+    selectedBarber?.id === ANY_BARBER_ID ? null : (selectedBarber?.id ?? null);
+  const { data: services = [], isLoading: servicesLoading } =
+    useServices(barberId);
   const dateStr = selectedDate ? formatDateToString(selectedDate) : null;
   const { data: bookingAvailability = null, isLoading: slotsLoading } =
-    useSlots(dateStr, selectedBarber?.id ?? null, selectedService?.id ?? null);
+    useSlots(dateStr, barberIdOrNull, selectedService?.id ?? null);
 
   // Date availability range for disabling dates without any slots
   const { calendarFromIso, calendarToIso } = useMemo(() => {
@@ -176,7 +187,7 @@ export function ChatBookingPage({
   } = useDateAvailability(
     calendarFromIso,
     calendarToIso,
-    selectedBarber?.id ?? null,
+    barberIdOrNull,
     selectedService?.id ?? null,
   );
 
@@ -344,7 +355,10 @@ export function ChatBookingPage({
       setSelectedService(null);
       setSelectedDate(null);
       setSelectedSlot(null);
-      addMessage({ type: "user", text: barber.name });
+      addMessage({
+        type: "user",
+        text: barber.id === ANY_BARBER_ID ? "Qualquer barbeiro ✂️" : barber.name,
+      });
       setTimeout(() => setStep("service"), 50);
     },
     [addMessage],
@@ -964,7 +978,12 @@ export function ChatBookingPage({
                         Cadastro
                       </p>
                       <p className="mt-1 text-sm font-medium text-foreground">
-                        Seu cadastro está pronto para confirmar.
+                        {profile?.fullName ?? user?.email ?? "—"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {profile?.phone
+                          ? maskPhone(profile.phone)
+                          : "Sem telefone cadastrado"}
                       </p>
                     </div>
                     <Button
@@ -981,33 +1000,9 @@ export function ChatBookingPage({
                 </div>
               )}
 
-              <div className="flex flex-col gap-2 pt-2 border-t border-zinc-300/50 dark:border-zinc-700/50">
-                <Button
-                  ref={confirmButtonRef}
-                  onClick={handleConfirmBooking}
-                  disabled={
-                    createAppointment.isPending ||
-                    createGuestAppointment.isPending
-                  }
-                  className="w-full shadow-md"
-                >
-                  {createAppointment.isPending ||
-                  createGuestAppointment.isPending
-                    ? "Confirmando..."
-                    : "Confirmar agendamento"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleBackFromReview}
-                  disabled={
-                    createAppointment.isPending ||
-                    createGuestAppointment.isPending
-                  }
-                  className="w-full border-zinc-300 hover:bg-zinc-200/50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Voltar e editar
-                </Button>
-              </div>
+              <p className="text-xs text-center text-muted-foreground pt-1">
+                Confirme ou edite abaixo ↓
+              </p>
             </div>
           </div>
         );
@@ -1188,7 +1183,7 @@ export function ChatBookingPage({
             }
             className="border-zinc-300 dark:border-zinc-700"
           >
-            Editar
+            Voltar e editar
           </Button>
           <Button
             onClick={handleConfirmBooking}

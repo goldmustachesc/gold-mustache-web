@@ -52,7 +52,7 @@ export function BookingProgressSummary({
               <span className="font-medium uppercase tracking-wide text-[10px] opacity-60">
                 {item.label}
               </span>
-              <span className="font-semibold truncate max-w-[80px]">
+              <span className="font-semibold truncate max-w-[min(120px,30vw)]">
                 {item.value ?? "—"}
               </span>
               {item.onEdit && hasValue && (

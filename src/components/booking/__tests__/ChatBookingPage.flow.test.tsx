@@ -133,6 +133,7 @@ vi.mock("../chat", () => ({
 }));
 
 vi.mock("../chat/ChatBarberSelector", () => ({
+  ANY_BARBER_ID: "any",
   ChatBarberSelector: ({
     barbers,
     onSelect,

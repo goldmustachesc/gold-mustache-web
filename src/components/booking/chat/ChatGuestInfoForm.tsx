@@ -93,7 +93,11 @@ export function ChatGuestInfoForm({
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 space-y-3 shadow-sm">
         <div>
+          <label htmlFor="guest-name" className="sr-only">
+            Nome
+          </label>
           <Input
+            id="guest-name"
             type="text"
             placeholder="Nome para o agendamento"
             value={name}
@@ -112,7 +116,11 @@ export function ChatGuestInfoForm({
         </div>
 
         <div>
+          <label htmlFor="guest-phone" className="sr-only">
+            Telefone (WhatsApp)
+          </label>
           <Input
+            id="guest-phone"
             type="tel"
             placeholder="WhatsApp"
             value={phone}
