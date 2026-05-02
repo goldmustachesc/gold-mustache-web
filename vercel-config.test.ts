@@ -17,16 +17,15 @@ function readVercelConfig(): VercelConfig {
 }
 
 describe("vercel.json", () => {
-  it("keeps only daily cron jobs on Vercel Hobby", () => {
+  it("keeps only scheduled cron jobs", () => {
     const config = readVercelConfig();
 
     expect(config.crons).toEqual([
       { path: "/api/cron/sync-instagram", schedule: "0 10 * * *" },
       { path: "/api/cron/loyalty/expire-points", schedule: "30 3 * * *" },
-      {
-        path: "/api/cron/loyalty/birthday-bonuses",
-        schedule: "0 9 * * *",
-      },
+      { path: "/api/cron/loyalty/birthday-bonuses", schedule: "0 9 * * *" },
+      { path: "/api/cron/appointment-reminders", schedule: "0 8 * * *" },
+      { path: "/api/cron/cleanup-guests", schedule: "0 2 * * 0" },
     ]);
   });
 });
