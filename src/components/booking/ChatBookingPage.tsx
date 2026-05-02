@@ -19,7 +19,7 @@ import {
   TypingIndicator,
   ChatContainer,
 } from "./chat";
-import { ChatBarberSelector, ANY_BARBER_ID } from "./chat/ChatBarberSelector";
+import { ChatBarberSelector } from "./chat/ChatBarberSelector";
 import { ChatServiceSelector } from "./chat/ChatServiceSelector";
 import { ChatDatePicker } from "./chat/ChatDatePicker";
 import { ChatTimeSlotSelector } from "./chat/ChatTimeSlotSelector";
@@ -153,10 +153,8 @@ export function ChatBookingPage({
   const today = useBrazilToday();
 
   const { data: barbers = [], isLoading: barbersLoading } = useBarbers();
-  const barberId =
-    selectedBarber?.id === ANY_BARBER_ID ? undefined : selectedBarber?.id;
-  const barberIdOrNull =
-    selectedBarber?.id === ANY_BARBER_ID ? null : (selectedBarber?.id ?? null);
+  const barberId = selectedBarber?.id;
+  const barberIdOrNull = selectedBarber?.id ?? null;
   const { data: services = [], isLoading: servicesLoading } =
     useServices(barberId);
   const dateStr = selectedDate ? formatDateToString(selectedDate) : null;
@@ -355,10 +353,7 @@ export function ChatBookingPage({
       setSelectedService(null);
       setSelectedDate(null);
       setSelectedSlot(null);
-      addMessage({
-        type: "user",
-        text: barber.id === ANY_BARBER_ID ? "Qualquer barbeiro ✂️" : barber.name,
-      });
+      addMessage({ type: "user", text: barber.name });
       setTimeout(() => setStep("service"), 50);
     },
     [addMessage],

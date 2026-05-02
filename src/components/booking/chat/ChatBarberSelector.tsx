@@ -3,15 +3,11 @@
 import { cn } from "@/lib/utils";
 import type { BarberData } from "@/types/booking";
 import Image from "next/image";
-import { Shuffle } from "lucide-react";
-
-export const ANY_BARBER_ID = "any";
 
 interface ChatBarberSelectorProps {
   barbers: BarberData[];
   onSelect: (barber: BarberData) => void;
   isLoading?: boolean;
-  showAnyBarber?: boolean;
 }
 
 /** Initials for avatar fallback: first letter of first two words, or first two letters of a single name. */
@@ -39,7 +35,6 @@ export function ChatBarberSelector({
   barbers,
   onSelect,
   isLoading,
-  showAnyBarber = true,
 }: ChatBarberSelectorProps) {
   if (isLoading) {
     return (
@@ -64,37 +59,6 @@ export function ChatBarberSelector({
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      {showAnyBarber !== false && (
-        <button
-          type="button"
-          onClick={() =>
-            onSelect({
-              id: ANY_BARBER_ID,
-              name: "Qualquer barbeiro",
-              avatarUrl: null,
-            })
-          }
-          className={cn(
-            "flex w-full cursor-pointer flex-col items-center gap-2 px-2 py-4 text-center rounded-xl",
-            "bg-zinc-100/80 border border-dashed border-zinc-400/60 dark:bg-zinc-800/80 dark:border-zinc-500/50",
-            "hover:border-primary/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800",
-            "transition-all duration-200",
-            "active:scale-[0.97]",
-            "shadow-sm",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900",
-          )}
-        >
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 ring-2 ring-zinc-300 dark:ring-zinc-600"
-            aria-hidden
-          >
-            <Shuffle className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
-          </div>
-          <span className="w-full font-medium text-sm text-zinc-600 dark:text-zinc-300 leading-tight">
-            Qualquer barbeiro
-          </span>
-        </button>
-      )}
       {barbers.map((barber) => (
         <button
           key={barber.id}
