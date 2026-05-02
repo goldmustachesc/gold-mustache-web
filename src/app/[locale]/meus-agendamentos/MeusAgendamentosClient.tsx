@@ -1,5 +1,6 @@
 "use client";
 
+import { CancelAppointmentDialog } from "@/components/booking/CancelAppointmentDialog";
 import { GuestAppointmentsLookup } from "@/components/booking/GuestAppointmentsLookup";
 import { FeedbackModal } from "@/components/feedback";
 import { usePrivateHeader } from "@/components/private/PrivateHeaderContext";
@@ -60,7 +61,10 @@ function MeusAgendamentosContent() {
 
   const {
     cancellingId,
-    handleCancel,
+    pendingCancelId,
+    requestCancel,
+    confirmCancel,
+    dismissCancel,
     feedbackModalOpen,
     setFeedbackModalOpen,
     feedbackAppointment,
@@ -178,7 +182,7 @@ function MeusAgendamentosContent() {
                 <UpcomingAppointments
                   appointments={upcoming}
                   cancellingId={cancellingId}
-                  onCancel={handleCancel}
+                  onCancel={requestCancel}
                   getCancellationStatus={getCancellationStatus}
                 />
               )}
@@ -209,6 +213,13 @@ function MeusAgendamentosContent() {
         barberName={feedbackAppointment?.barber.name}
         serviceName={feedbackAppointment?.service.name}
         appointmentDate={feedbackAppointment?.date}
+      />
+
+      <CancelAppointmentDialog
+        open={pendingCancelId !== null}
+        isLoading={cancellingId !== null}
+        onConfirm={confirmCancel}
+        onDismiss={dismissCancel}
       />
     </div>
   );

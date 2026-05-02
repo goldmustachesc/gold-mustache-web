@@ -1015,9 +1015,6 @@ export async function createGuestAppointment(
       where: { phone: normalizedPhone },
       update: {
         fullName: clientName,
-        // Update access token on each booking to link this device
-        accessToken,
-        accessTokenConsumedAt: null,
       },
       create: {
         fullName: clientName,

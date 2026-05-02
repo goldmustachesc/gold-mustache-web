@@ -194,7 +194,7 @@ export async function POST(request: Request) {
       time: appointment.startTime,
       recipientName: profile.fullName?.split(" ")[0] ?? "Cliente",
       appointmentId: appointment.id,
-    });
+    }).catch(() => {});
 
     return apiSuccess(appointment, 201);
   } catch (error) {

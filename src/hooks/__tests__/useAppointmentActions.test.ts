@@ -68,16 +68,31 @@ describe("useAppointmentActions", () => {
   });
 
   describe("cancellation", () => {
-    it("initializes with cancellingId as null", () => {
+    it("initializes with cancellingId and pendingCancelId as null", () => {
       const { result } = renderHook(() =>
         useAppointmentActions({
           cancelMutateAsync: mockCancelMutateAsync,
         }),
       );
       expect(result.current.cancellingId).toBeNull();
+      expect(result.current.pendingCancelId).toBeNull();
     });
 
-    it("sets cancellingId during cancellation", async () => {
+    it("requestCancel sets pendingCancelId and dismissCancel clears it", () => {
+      const { result } = renderHook(() =>
+        useAppointmentActions({
+          cancelMutateAsync: mockCancelMutateAsync,
+        }),
+      );
+
+      act(() => result.current.requestCancel("apt-1"));
+      expect(result.current.pendingCancelId).toBe("apt-1");
+
+      act(() => result.current.dismissCancel());
+      expect(result.current.pendingCancelId).toBeNull();
+    });
+
+    it("sets cancellingId during confirmCancel", async () => {
       let resolveCancel: () => void;
       mockCancelMutateAsync.mockReturnValue(
         new Promise<void>((resolve) => {
@@ -91,9 +106,11 @@ describe("useAppointmentActions", () => {
         }),
       );
 
+      act(() => result.current.requestCancel("apt-1"));
+
       let cancelPromise: Promise<void> = Promise.resolve();
       act(() => {
-        cancelPromise = result.current.handleCancel("apt-1");
+        cancelPromise = result.current.confirmCancel();
       });
 
       expect(result.current.cancellingId).toBe("apt-1");
@@ -113,8 +130,9 @@ describe("useAppointmentActions", () => {
         }),
       );
 
+      act(() => result.current.requestCancel("apt-1"));
       await act(async () => {
-        await result.current.handleCancel("apt-1");
+        await result.current.confirmCancel();
       });
 
       expect(mockCancelMutateAsync).toHaveBeenCalledWith({
@@ -136,8 +154,9 @@ describe("useAppointmentActions", () => {
         }),
       );
 
+      act(() => result.current.requestCancel("apt-1"));
       await act(async () => {
-        await result.current.handleCancel("apt-1");
+        await result.current.confirmCancel();
       });
 
       expect(mockToast.error).toHaveBeenCalledWith(
@@ -154,8 +173,9 @@ describe("useAppointmentActions", () => {
         }),
       );
 
+      act(() => result.current.requestCancel("apt-1"));
       await act(async () => {
-        await result.current.handleCancel("apt-1");
+        await result.current.confirmCancel();
       });
 
       expect(mockToast.error).toHaveBeenCalledWith("Network error");
@@ -170,11 +190,26 @@ describe("useAppointmentActions", () => {
         }),
       );
 
+      act(() => result.current.requestCancel("apt-1"));
       await act(async () => {
-        await result.current.handleCancel("apt-1");
+        await result.current.confirmCancel();
       });
 
       expect(result.current.cancellingId).toBeNull();
+    });
+
+    it("confirmCancel does nothing when pendingCancelId is null", async () => {
+      const { result } = renderHook(() =>
+        useAppointmentActions({
+          cancelMutateAsync: mockCancelMutateAsync,
+        }),
+      );
+
+      await act(async () => {
+        await result.current.confirmCancel();
+      });
+
+      expect(mockCancelMutateAsync).not.toHaveBeenCalled();
     });
   });
 

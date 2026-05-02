@@ -8,6 +8,7 @@ import {
   useCancelGuestAppointment,
 } from "@/hooks/useBooking";
 import { AppointmentCard } from "./AppointmentCard";
+import { CancelAppointmentDialog } from "./CancelAppointmentDialog";
 import { SignupIncentiveBanner } from "./SignupIncentiveBanner";
 import { useAppointmentActions } from "@/hooks/useAppointmentActions";
 import { filterAppointments } from "@/lib/booking/appointment-filters";
@@ -33,7 +34,13 @@ export function GuestAppointmentsLookup({
   const { data: appointments, isLoading, error } = useGuestAppointments();
   const cancelMutation = useCancelGuestAppointment();
 
-  const { cancellingId, handleCancel } = useAppointmentActions({
+  const {
+    cancellingId,
+    pendingCancelId,
+    requestCancel,
+    confirmCancel,
+    dismissCancel,
+  } = useAppointmentActions({
     cancelMutateAsync: cancelMutation.mutateAsync,
   });
 
@@ -141,7 +148,7 @@ export function GuestAppointmentsLookup({
                   <AppointmentCard
                     key={appointment.id}
                     appointment={appointment}
-                    onCancel={() => handleCancel(appointment.id)}
+                    onCancel={() => requestCancel(appointment.id)}
                     isCancelling={cancellingId === appointment.id}
                     canCancel={getCancellationStatus(appointment).canCancel}
                     isCancellationBlocked={
@@ -182,6 +189,13 @@ export function GuestAppointmentsLookup({
           )}
         </div>
       )}
+
+      <CancelAppointmentDialog
+        open={pendingCancelId !== null}
+        isLoading={cancellingId !== null}
+        onConfirm={confirmCancel}
+        onDismiss={dismissCancel}
+      />
     </div>
   );
 }
