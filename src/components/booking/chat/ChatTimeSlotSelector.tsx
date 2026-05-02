@@ -21,6 +21,7 @@ export function ChatTimeSlotSelector({
   isLoading,
 }: ChatTimeSlotSelectorProps) {
   const [countdown, setCountdown] = useState(5);
+  const [cancelled, setCancelled] = useState(false);
   const [selectedTime, setSelectedTime] = useState("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,8 +39,15 @@ export function ChatTimeSlotSelector({
     });
   }, [availability]);
 
+  // Reset cancelled state when availability changes (new date selected)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: availability prop reference change signals a new date was picked
+  useEffect(() => {
+    setCancelled(false);
+  }, [availability]);
+
   // Auto-redirect countdown when no slots
   useEffect(() => {
+    if (cancelled) return;
     if (hasNoSlots && onChooseAnotherDate) {
       // Reset countdown
       setCountdown(5);
@@ -65,7 +73,7 @@ export function ChatTimeSlotSelector({
       if (timerRef.current) clearTimeout(timerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [hasNoSlots, onChooseAnotherDate]);
+  }, [hasNoSlots, onChooseAnotherDate, cancelled]);
 
   if (isLoading) {
     return (
@@ -100,15 +108,32 @@ export function ChatTimeSlotSelector({
           Nenhuma janela disponível para esta data.
         </div>
         {onChooseAnotherDate && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onChooseAnotherDate}
-            className="w-full gap-2 border-zinc-300 hover:bg-zinc-200/50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            <Calendar className="h-4 w-4" />
-            Escolher outra data {countdown > 0 && `(${countdown}s)`}
-          </Button>
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onChooseAnotherDate}
+              className="flex-1 gap-2 border-zinc-300 hover:bg-zinc-200/50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            >
+              <Calendar className="h-4 w-4" />
+              Escolher outra data{" "}
+              {!cancelled && countdown > 0 && `(${countdown}s)`}
+            </Button>
+            {!cancelled && countdown > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setCancelled(true);
+                  if (timerRef.current) clearTimeout(timerRef.current);
+                  if (countdownRef.current) clearInterval(countdownRef.current);
+                }}
+                className="shrink-0 text-muted-foreground"
+              >
+                Cancelar
+              </Button>
+            )}
+          </div>
         )}
       </div>
     );
