@@ -23,7 +23,7 @@ Next.js 15 App Router + Prisma + Supabase + Tailwind. Barbearia com agendamento,
 ## Principles
 
 - TypeScript obrigatório; proibido `any`
-- `SDD` obrigatório: usar `Subagent-Driven Development` em toda tarefa, ajustando a profundidade à complexidade do trabalho
+- `SDD` tiered: usar `Subagent-Driven Development` com cerimônia proporcional ao tier (ver `.kiro/TIERS.md`)
 - TDD: RED → GREEN → REFACTOR
 - `SDD` complementa `TDD`, testes, validação final e as demais regras do projeto
 - Clean Code, SOLID, KISS, YAGNI
@@ -36,7 +36,7 @@ Tokens em `src/app/globals.css`. Light/Dark mode obrigatório.
 
 ## Specs
 
-Features complexas: `.kiro/specs/[feature]/` com `requirements.md`, `design.md`, `tasks.md`.
+Specs escaladas por tier (`.kiro/TIERS.md`): Trivial=direto, Light=`requirements.md`, Full=`brainstorm.md`+spec completa.
 
 ## Security
 

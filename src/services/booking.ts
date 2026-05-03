@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import {
   canCancelBeforeStart,
   canClientCancelOutsideWindow,
@@ -11,6 +12,7 @@ import {
   normalizePhoneOrNull,
 } from "@/lib/booking/phone";
 import { calculateEndTime } from "@/lib/booking/time";
+import { getEffectiveDuration } from "@/lib/booking/effective-duration";
 import { getWorkingHoursSlotError } from "@/lib/booking/slots-policy";
 import {
   getAbsenceSlotError,
@@ -74,6 +76,11 @@ async function getBookingPolicyError(params: {
 
   const dayOfWeek = appointmentDateLocal.getDay();
 
+  const barber = await prisma.barber.findUnique({
+    where: { id: barberId },
+    select: { active: true },
+  });
+
   const shopHoursSelect = {
     isOpen: true,
     startTime: true,
@@ -107,6 +114,10 @@ async function getBookingPolicyError(params: {
     }),
   ]);
 
+  if (!barber || !barber.active) {
+    return "BARBER_UNAVAILABLE";
+  }
+
   if (
     !shopHours ||
     !shopHours.isOpen ||
@@ -116,25 +127,15 @@ async function getBookingPolicyError(params: {
     return "SHOP_CLOSED";
   }
 
-  const effectiveHours = workingHours
-    ? {
-        startTime: workingHours.startTime,
-        endTime: workingHours.endTime,
-        breakStart: workingHours.breakStart,
-        breakEnd: workingHours.breakEnd,
-      }
-    : {
-        startTime: shopHours.startTime,
-        endTime: shopHours.endTime,
-        breakStart: shopHours.breakStart,
-        breakEnd: shopHours.breakEnd,
-      };
+  if (!workingHours) {
+    return "BARBER_UNAVAILABLE";
+  }
 
   const workingHoursError = getWorkingHoursSlotError({
-    workingStartTime: effectiveHours.startTime,
-    workingEndTime: effectiveHours.endTime,
-    breakStart: effectiveHours.breakStart,
-    breakEnd: effectiveHours.breakEnd,
+    workingStartTime: workingHours.startTime,
+    workingEndTime: workingHours.endTime,
+    breakStart: workingHours.breakStart,
+    breakEnd: workingHours.breakEnd,
     startTime,
     durationMinutes: serviceDuration,
   });
@@ -345,19 +346,40 @@ async function hasOverlappingAppointmentForClient(
  * Get all active services, optionally filtered by barber
  */
 export async function getServices(barberId?: string): Promise<ServiceData[]> {
-  const where = barberId
-    ? {
+  if (barberId) {
+    const services = await prisma.service.findMany({
+      where: { active: true, barbers: { some: { barberId } } },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        duration: true,
+        price: true,
         active: true,
         barbers: {
-          some: {
-            barberId,
-          },
+          where: { barberId },
+          select: { durationOverride: true },
         },
-      }
-    : { active: true };
+      },
+    });
+    return services.map((service) => ({
+      id: service.id,
+      slug: service.slug,
+      name: service.name,
+      description: service.description,
+      duration: getEffectiveDuration(
+        service.barbers[0]?.durationOverride,
+        service.duration,
+      ),
+      price: Number(service.price),
+      active: service.active,
+    }));
+  }
 
   const services = await prisma.service.findMany({
-    where,
+    where: { active: true },
     orderBy: { name: "asc" },
     select: {
       id: true,
@@ -388,20 +410,26 @@ export async function getServices(barberId?: string): Promise<ServiceData[]> {
 /**
  * Get available time slots for a specific date, barber and service.
  * Slots are generated based on the service duration to ensure perfect scheduling.
- * Falls back to shop hours if the barber hasn't configured their own working hours.
+ * Uses only the barber's configured working hours for the day.
  */
 export interface GetAvailableSlotsOptions {
   applyLeadTime?: boolean;
+  clientId?: string;
+  guestClientId?: string;
 }
 
 type BookingAvailabilityContext = {
   dateStr: string;
   businessDate: Date;
+  barber: {
+    active: boolean;
+  } | null;
   service: {
     duration: number;
     active?: boolean;
-    barbers?: Array<{ barberId: string }>;
+    barbers?: Array<{ barberId: string; durationOverride: number | null }>;
   } | null;
+  effectiveDuration: number;
   shopHours: {
     isOpen: boolean;
     startTime: string | null;
@@ -428,6 +456,7 @@ async function loadBookingAvailabilityContext(
   date: Date,
   barberId: string,
   serviceId: string,
+  clientFilter?: { clientId?: string; guestClientId?: string },
 ): Promise<BookingAvailabilityContext> {
   const dateStr = formatDateToString(date);
   const businessDate = parseIsoDateYyyyMmDdAsSaoPauloDate(dateStr);
@@ -435,6 +464,7 @@ async function loadBookingAvailabilityContext(
   const dateForDb = parseDateStringToUTC(dateStr);
 
   const [
+    barber,
     service,
     shopHours,
     shopClosures,
@@ -442,12 +472,19 @@ async function loadBookingAvailabilityContext(
     workingHours,
     existingAppointments,
   ] = await Promise.all([
+    prisma.barber.findUnique({
+      where: { id: barberId },
+      select: { active: true },
+    }),
     prisma.service.findUnique({
       where: { id: serviceId },
       select: {
         duration: true,
         active: true,
-        barbers: { select: { barberId: true } },
+        barbers: {
+          where: { barberId },
+          select: { barberId: true, durationOverride: true },
+        },
       },
     }),
     prisma.shopHours.findUnique({
@@ -479,9 +516,17 @@ async function loadBookingAvailabilityContext(
     }),
     prisma.appointment.findMany({
       where: {
-        barberId,
         date: dateForDb,
         status: AppointmentStatus.CONFIRMED,
+        OR: [
+          { barberId },
+          ...(clientFilter?.clientId
+            ? [{ clientId: clientFilter.clientId }]
+            : []),
+          ...(clientFilter?.guestClientId
+            ? [{ guestClientId: clientFilter.guestClientId }]
+            : []),
+        ],
       },
       select: { startTime: true, endTime: true, status: true },
     }),
@@ -490,7 +535,12 @@ async function loadBookingAvailabilityContext(
   return {
     dateStr,
     businessDate,
+    barber,
     service,
+    effectiveDuration: getEffectiveDuration(
+      service?.barbers?.[0]?.durationOverride,
+      service?.duration ?? 0,
+    ),
     shopHours,
     shopClosures,
     absences,
@@ -516,18 +566,27 @@ export async function getBookingAvailability(
   serviceId: string,
   options: GetAvailableSlotsOptions = {},
 ): Promise<BookingAvailability> {
-  const { applyLeadTime = false } = options;
+  const { applyLeadTime = false, clientId, guestClientId } = options;
   const {
     dateStr,
     service,
+    effectiveDuration,
+    barber,
     shopHours,
     shopClosures,
     absences,
     workingHours,
     existingAppointments,
-  } = await loadBookingAvailabilityContext(date, barberId, serviceId);
+  } = await loadBookingAvailabilityContext(date, barberId, serviceId, {
+    clientId,
+    guestClientId,
+  });
 
-  if (!isServiceAvailableForBarber(service, barberId)) {
+  if (
+    !barber ||
+    !barber.active ||
+    !isServiceAvailableForBarber(service, barberId)
+  ) {
     return getEmptyBookingAvailability(barberId);
   }
 
@@ -537,22 +596,12 @@ export async function getBookingAvailability(
     !shopHours.startTime ||
     !shopHours.endTime
   ) {
-    return getEmptyBookingAvailability(barberId, service.duration);
+    return getEmptyBookingAvailability(barberId, effectiveDuration);
   }
 
-  const effectiveHours = workingHours
-    ? {
-        startTime: workingHours.startTime,
-        endTime: workingHours.endTime,
-        breakStart: workingHours.breakStart,
-        breakEnd: workingHours.breakEnd,
-      }
-    : {
-        startTime: shopHours.startTime,
-        endTime: shopHours.endTime,
-        breakStart: shopHours.breakStart,
-        breakEnd: shopHours.breakEnd,
-      };
+  if (!workingHours) {
+    return getEmptyBookingAvailability(barberId, effectiveDuration);
+  }
 
   const minimumStartMinutes =
     dateStr === getBrazilDateString()
@@ -561,18 +610,18 @@ export async function getBookingAvailability(
       : null;
 
   if (minimumStartMinutes !== null && minimumStartMinutes >= 24 * 60) {
-    return getEmptyBookingAvailability(barberId, service.duration);
+    return getEmptyBookingAvailability(barberId, effectiveDuration);
   }
 
   return {
     barberId,
-    serviceDuration: service.duration,
+    serviceDuration: effectiveDuration,
     windows: buildAvailabilityWindows({
-      workingStartTime: effectiveHours.startTime,
-      workingEndTime: effectiveHours.endTime,
-      breakStart: effectiveHours.breakStart,
-      breakEnd: effectiveHours.breakEnd,
-      serviceDurationMinutes: service.duration,
+      workingStartTime: workingHours.startTime,
+      workingEndTime: workingHours.endTime,
+      breakStart: workingHours.breakStart,
+      breakEnd: workingHours.breakEnd,
+      serviceDurationMinutes: effectiveDuration,
       closures: shopClosures,
       absences,
       appointments: existingAppointments,
@@ -590,19 +639,30 @@ export async function getAvailableSlots(
   serviceId: string,
   options: GetAvailableSlotsOptions = {},
 ): Promise<TimeSlot[]> {
-  const { applyLeadTime = false } = options;
+  const { applyLeadTime = false, clientId, guestClientId } = options;
   const {
     dateStr,
     businessDate,
     service,
+    effectiveDuration,
+    barber,
     shopHours,
     shopClosures,
     absences,
     workingHours,
     existingAppointments,
-  } = await loadBookingAvailabilityContext(date, barberId, serviceId);
+  } = await loadBookingAvailabilityContext(date, barberId, serviceId, {
+    clientId,
+    guestClientId,
+  });
 
-  if (!isServiceAvailableForBarber(service, barberId)) return [];
+  if (
+    !barber ||
+    !barber.active ||
+    !isServiceAvailableForBarber(service, barberId)
+  ) {
+    return [];
+  }
 
   if (
     !shopHours ||
@@ -616,33 +676,22 @@ export async function getAvailableSlots(
   if (shopClosures.some((c) => !c.startTime || !c.endTime)) return [];
   if (absences.some((a) => !a.startTime || !a.endTime)) return [];
 
-  const effectiveHours = workingHours
-    ? {
-        startTime: workingHours.startTime,
-        endTime: workingHours.endTime,
-        breakStart: workingHours.breakStart,
-        breakEnd: workingHours.breakEnd,
-      }
-    : {
-        startTime: shopHours.startTime,
-        endTime: shopHours.endTime,
-        breakStart: shopHours.breakStart,
-        breakEnd: shopHours.breakEnd,
-      };
+  if (!workingHours) {
+    return [];
+  }
 
-  // Generate slots based on service duration
   const allSlots = generateTimeSlots({
-    startTime: effectiveHours.startTime,
-    endTime: effectiveHours.endTime,
-    duration: service.duration,
-    breakStart: effectiveHours.breakStart,
-    breakEnd: effectiveHours.breakEnd,
+    startTime: workingHours.startTime,
+    endTime: workingHours.endTime,
+    duration: effectiveDuration,
+    breakStart: workingHours.breakStart,
+    breakEnd: workingHours.breakEnd,
   });
 
   const policySlots = allSlots.filter((slot) => {
     const shopError = getShopSlotError({
       slotStartTime: slot.time,
-      durationMinutes: service.duration,
+      durationMinutes: effectiveDuration,
       shopHours,
       closures: shopClosures,
     });
@@ -650,7 +699,7 @@ export async function getAvailableSlots(
 
     const absenceError = getAbsenceSlotError({
       slotStartTime: slot.time,
-      durationMinutes: service.duration,
+      durationMinutes: effectiveDuration,
       absences,
     });
     if (absenceError) return false;
@@ -666,7 +715,7 @@ export async function getAvailableSlots(
       endTime: apt.endTime,
       status: apt.status,
     })),
-    service.duration,
+    effectiveDuration,
   );
 
   // Filter out slots that have already passed (for today)
@@ -712,9 +761,14 @@ export async function createAppointment(
     select: {
       duration: true,
       active: true,
-      barbers: { select: { barberId: true } },
+      barbers: {
+        where: { barberId },
+        select: { barberId: true, durationOverride: true },
+      },
     },
   });
+
+  const barberDurationOverride = service?.barbers?.[0]?.durationOverride;
 
   if (!isServiceAvailableForBarber(service, barberId)) {
     throw new Error("SLOT_UNAVAILABLE");
@@ -724,7 +778,11 @@ export async function createAppointment(
     throw new Error("CLIENT_BANNED");
   }
 
-  const endTime = calculateEndTime(startTime, service.duration);
+  const effectiveDuration = getEffectiveDuration(
+    barberDurationOverride,
+    service.duration,
+  );
+  const endTime = calculateEndTime(startTime, effectiveDuration);
 
   const appointmentDateLocal = parseDateString(date);
   const appointmentDateDb = parseDateStringToUTC(date);
@@ -742,7 +800,7 @@ export async function createAppointment(
     appointmentDateLocal,
     appointmentDateDb,
     startTime,
-    serviceDuration: service.duration,
+    serviceDuration: effectiveDuration,
   });
 
   if (policyError) {
@@ -872,9 +930,14 @@ export async function createGuestAppointment(
     select: {
       duration: true,
       active: true,
-      barbers: { select: { barberId: true } },
+      barbers: {
+        where: { barberId },
+        select: { barberId: true, durationOverride: true },
+      },
     },
   });
+
+  const barberDurationOverride = service?.barbers?.[0]?.durationOverride;
 
   if (!isServiceAvailableForBarber(service, barberId)) {
     throw new Error("SLOT_UNAVAILABLE");
@@ -896,7 +959,11 @@ export async function createGuestAppointment(
     throw new Error("CLIENT_BANNED");
   }
 
-  const endTime = calculateEndTime(startTime, service.duration);
+  const effectiveDuration = getEffectiveDuration(
+    barberDurationOverride,
+    service.duration,
+  );
+  const endTime = calculateEndTime(startTime, effectiveDuration);
 
   const appointmentDateLocal = parseDateString(date);
   const appointmentDateDb = parseDateStringToUTC(date);
@@ -914,7 +981,7 @@ export async function createGuestAppointment(
     appointmentDateLocal,
     appointmentDateDb,
     startTime,
-    serviceDuration: service.duration,
+    serviceDuration: effectiveDuration,
   });
 
   if (policyError) {
@@ -948,9 +1015,6 @@ export async function createGuestAppointment(
       where: { phone: normalizedPhone },
       update: {
         fullName: clientName,
-        // Update access token on each booking to link this device
-        accessToken,
-        accessTokenConsumedAt: null,
       },
       create: {
         fullName: clientName,
@@ -1064,9 +1128,14 @@ export async function createAppointmentByBarber(
     select: {
       duration: true,
       active: true,
-      barbers: { select: { barberId: true } },
+      barbers: {
+        where: { barberId },
+        select: { barberId: true, durationOverride: true },
+      },
     },
   });
+
+  const barberDurationOverride = service?.barbers?.[0]?.durationOverride;
 
   if (!isServiceAvailableForBarber(service, barberId)) {
     throw new Error("SLOT_UNAVAILABLE");
@@ -1088,7 +1157,11 @@ export async function createAppointmentByBarber(
     throw new Error("CLIENT_BANNED");
   }
 
-  const endTime = calculateEndTime(startTime, service.duration);
+  const effectiveDuration = getEffectiveDuration(
+    barberDurationOverride,
+    service.duration,
+  );
+  const endTime = calculateEndTime(startTime, effectiveDuration);
 
   const appointmentDateLocal = parseDateString(date);
   const appointmentDateDb = parseDateStringToUTC(date);
@@ -1102,7 +1175,7 @@ export async function createAppointmentByBarber(
     appointmentDateLocal,
     appointmentDateDb,
     startTime,
-    serviceDuration: service.duration,
+    serviceDuration: effectiveDuration,
   });
 
   if (policyError) {
@@ -1684,7 +1757,7 @@ export async function markAppointmentAsNoShow(
         });
       }
     } catch (error) {
-      console.error("Falha ao aplicar penalidade de pontos", error);
+      logger.error({ err: error }, "Falha ao aplicar penalidade de pontos");
     }
   }
 
@@ -1859,7 +1932,7 @@ export async function markAppointmentAsCompleted(
         }
       }
     } catch (error) {
-      console.error("Falha ao registrar pontos de fidelidade", error);
+      logger.error({ err: error }, "Falha ao registrar pontos de fidelidade");
     }
   }
 
@@ -2281,6 +2354,92 @@ export async function cancelAppointmentByGuest(
       price: Number(updated.service.price),
     },
   };
+}
+
+// ============================================
+// Date Range Availability
+// ============================================
+
+export interface GetDateAvailabilityRangeOptions {
+  clientId?: string;
+}
+
+export interface DateAvailabilityRange {
+  unavailableDates: string[];
+}
+
+const AVAILABILITY_RANGE_CONCURRENCY = 8;
+
+function enumerateDays(from: Date, to: Date): Date[] {
+  const days: Date[] = [];
+  const cursor = new Date(from);
+  while (cursor <= to) {
+    days.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+}
+
+/**
+ * Returns ISO yyyy-MM-dd strings (São Paulo) for dates that have zero bookable slots
+ * within the given range. When serviceId is null, uses the shortest active service
+ * for the barber as a probe. Range size is enforced upstream by the zod schema.
+ */
+export async function getDateAvailabilityRange(
+  from: Date,
+  to: Date,
+  barberId: string,
+  serviceId: string | null,
+  opts: GetDateAvailabilityRangeOptions = {},
+): Promise<DateAvailabilityRange> {
+  let probeServiceId: string;
+
+  if (serviceId) {
+    probeServiceId = serviceId;
+  } else {
+    const shortestService = await prisma.service.findFirst({
+      where: {
+        active: true,
+        barbers: { some: { barberId } },
+      },
+      orderBy: { duration: "asc" },
+      select: { id: true },
+    });
+
+    if (!shortestService) {
+      return {
+        unavailableDates: enumerateDays(from, to).map(formatDateToString),
+      };
+    }
+
+    probeServiceId = shortestService.id;
+  }
+
+  const days = enumerateDays(from, to);
+  const unavailableDates: string[] = [];
+
+  for (let i = 0; i < days.length; i += AVAILABILITY_RANGE_CONCURRENCY) {
+    const chunk = days.slice(i, i + AVAILABILITY_RANGE_CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map((day) =>
+        getBookingAvailability(day, barberId, probeServiceId, {
+          applyLeadTime: true,
+          clientId: opts.clientId,
+        }).then((availability) => ({
+          day,
+          hasBookableSlots: availability.windows.length > 0,
+        })),
+      ),
+    );
+
+    for (const { day, hasBookableSlots } of results) {
+      if (!hasBookableSlots) {
+        unavailableDates.push(formatDateToString(day));
+      }
+    }
+  }
+
+  return { unavailableDates };
 }
 
 export const getPublicServicesWithCache = unstable_cache(

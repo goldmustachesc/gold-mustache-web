@@ -94,16 +94,9 @@ function mapProfile(profile: ProfileRecord): ProfileMeData {
 async function getOrCreateProfileForUser(
   user: AuthenticatedUser,
 ): Promise<ProfileRecord> {
-  const existingProfile = await prisma.profile.findUnique({
+  return prisma.profile.upsert({
     where: { userId: user.id },
-  });
-
-  if (existingProfile) {
-    return existingProfile;
-  }
-
-  return prisma.profile.create({
-    data: {
+    create: {
       userId: user.id,
       fullName:
         user.user_metadata?.name ||
@@ -113,6 +106,7 @@ async function getOrCreateProfileForUser(
       phone: user.user_metadata?.phone || null,
       phoneNormalized: normalizePhoneOrNull(user.user_metadata?.phone),
     },
+    update: {},
   });
 }
 

@@ -11,6 +11,7 @@ const hydrationStates = vi.hoisted<Array<DehydratedState | undefined>>(
 const prismaMocks = vi.hoisted(() => ({
   profileFindUnique: vi.fn(),
   profileCreate: vi.fn(),
+  profileUpsert: vi.fn(),
   barberFindUnique: vi.fn(),
   appointmentFindMany: vi.fn(),
   workingHoursFindMany: vi.fn(),
@@ -71,6 +72,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: (...args: unknown[]) =>
         prismaMocks.profileFindUnique(...args),
       create: (...args: unknown[]) => prismaMocks.profileCreate(...args),
+      upsert: (...args: unknown[]) => prismaMocks.profileUpsert(...args),
       count: (...args: unknown[]) => prismaMocks.profileCount(...args),
     },
     barber: {
@@ -142,7 +144,7 @@ describe("DashboardPage", () => {
         }),
       },
     });
-    prismaMocks.profileFindUnique.mockResolvedValue({
+    const defaultClientProfile = {
       id: "profile-1",
       userId: "user-1",
       fullName: "João Silva",
@@ -159,7 +161,9 @@ describe("DashboardPage", () => {
       role: "CLIENT",
       createdAt: new Date("2026-03-01T00:00:00.000Z"),
       updatedAt: new Date("2026-03-01T00:00:00.000Z"),
-    });
+    };
+    prismaMocks.profileFindUnique.mockResolvedValue(defaultClientProfile);
+    prismaMocks.profileUpsert.mockResolvedValue(defaultClientProfile);
     prismaMocks.profileCreate.mockResolvedValue(null);
     prismaMocks.barberFindUnique.mockResolvedValue(null);
     prismaMocks.appointmentFindMany.mockResolvedValue([]);
@@ -189,7 +193,7 @@ describe("DashboardPage", () => {
   });
 
   it("renders BarberDashboard and hydrates barber queries on the server", async () => {
-    prismaMocks.profileFindUnique.mockResolvedValue({
+    const barberProfile = {
       id: "profile-1",
       userId: "user-1",
       fullName: "Carlos Silva",
@@ -206,7 +210,9 @@ describe("DashboardPage", () => {
       role: "BARBER",
       createdAt: new Date("2026-03-01T00:00:00.000Z"),
       updatedAt: new Date("2026-03-01T00:00:00.000Z"),
-    });
+    };
+    prismaMocks.profileFindUnique.mockResolvedValue(barberProfile);
+    prismaMocks.profileUpsert.mockResolvedValue(barberProfile);
     prismaMocks.barberFindUnique.mockResolvedValue({
       id: "barber-1",
       userId: "user-1",

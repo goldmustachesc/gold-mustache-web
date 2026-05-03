@@ -9,6 +9,8 @@ vi.mock("../feature-flags", () => ({
 }));
 
 import {
+  buildAppointmentConfirmationEmailContent,
+  buildAppointmentCancellationEmailContent,
   buildAppointmentReminderEmailContent,
   sendTransactionalEmail,
 } from "../transactional-email";
@@ -47,6 +49,37 @@ describe("services/transactional-email", () => {
     expect(content.text).toContain("Corte");
     expect(content.html).toContain("Carlos");
     expect(content.html).toContain("https://example.com/meus-agendamentos");
+  });
+
+  it("escapa HTML nos templates de confirmação e cancelamento", () => {
+    const confirmation = buildAppointmentConfirmationEmailContent({
+      recipientName: "João <script>",
+      serviceName: "Corte & Barba",
+      barberName: "Carlos >",
+      date: "22/04/2026",
+      time: "10:30",
+      manageUrl: "https://example.com/meus-agendamentos?x=1&y=2",
+    });
+
+    expect(confirmation.html).toContain("João &lt;script&gt;");
+    expect(confirmation.html).toContain("Corte &amp; Barba");
+    expect(confirmation.html).toContain("Carlos &gt;");
+    expect(confirmation.html).toContain("x=1&amp;y=2");
+
+    const cancellation = buildAppointmentCancellationEmailContent({
+      recipientName: "Maria & Ana",
+      serviceName: "Corte <Especial>",
+      barberName: "Pedro",
+      date: "22/04/2026",
+      time: "10:30",
+      reason: "Mudança > imprevisto",
+      bookUrl: "https://example.com/agendar?promo=a&b=2",
+    });
+
+    expect(cancellation.html).toContain("Maria &amp; Ana");
+    expect(cancellation.html).toContain("Corte &lt;Especial&gt;");
+    expect(cancellation.html).toContain("Mudança &gt; imprevisto");
+    expect(cancellation.html).toContain("promo=a&amp;b=2");
   });
 
   it("retorna skipped quando flag transactionalEmails está desabilitada", async () => {

@@ -12,6 +12,14 @@
     {
       "path": "/api/cron/loyalty/birthday-bonuses",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/appointment-reminders",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-guests",
+      "schedule": "0 2 * * 0"
     }
   ],
   "buildCommand": "pnpm install && pnpm build",

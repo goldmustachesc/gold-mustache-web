@@ -4,6 +4,12 @@ const mockRequireBarber = vi.fn();
 const mockCreateAppointmentByBarber = vi.fn();
 const mockCheckRateLimit = vi.fn();
 const mockGetUserRateLimitIdentifier = vi.fn();
+const mockNotifyGuestAppointmentConfirmed = vi.fn();
+
+vi.mock("@/services/notification", () => ({
+  notifyGuestAppointmentConfirmed: (...args: unknown[]) =>
+    mockNotifyGuestAppointmentConfirmed(...args),
+}));
 
 vi.mock("@/lib/auth/requireBarber", () => ({
   requireBarber: (...args: unknown[]) => mockRequireBarber(...args),
@@ -49,6 +55,7 @@ describe("POST /api/barbers/me/appointments", () => {
     mockGetUserRateLimitIdentifier.mockImplementation((userId: unknown) => {
       return `auth:${String(userId)}`;
     });
+    mockNotifyGuestAppointmentConfirmed.mockResolvedValue(undefined);
   });
 
   it("returns 429 when rate limited", async () => {
@@ -152,5 +159,34 @@ describe("POST /api/barbers/me/appointments", () => {
     const response = await POST(createRequest(validBody));
 
     expect(response.status).toBe(400);
+  });
+
+  it("creates appointment even when guest notification fails", async () => {
+    mockRequireBarber.mockResolvedValue({
+      ok: true,
+      userId: "user-1",
+      barberId: "barber-1",
+      barberName: "Carlos",
+    });
+    mockCreateAppointmentByBarber.mockResolvedValue({
+      id: "apt-guest-1",
+      status: "CONFIRMED",
+      service: { name: "Corte" },
+      barber: { name: "Carlos" },
+      date: "2026-03-10",
+      startTime: "09:00",
+      guestClient: {
+        phone: "47988888888",
+        fullName: "Convidado",
+      },
+    });
+    mockNotifyGuestAppointmentConfirmed.mockRejectedValueOnce(
+      new Error("network_error"),
+    );
+
+    const response = await POST(createRequest(validBody));
+
+    expect(response.status).toBe(201);
+    expect(mockNotifyGuestAppointmentConfirmed).toHaveBeenCalled();
   });
 });

@@ -2,15 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    profile: { findMany: vi.fn() },
+    profile: { findMany: vi.fn(), findUnique: vi.fn() },
+    barber: { findUnique: vi.fn() },
     guestClient: { findMany: vi.fn() },
+    shopHours: { findUnique: vi.fn() },
+    shopClosure: { findMany: vi.fn() },
+    workingHours: { findUnique: vi.fn() },
+    barberAbsence: { findMany: vi.fn() },
     appointment: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       count: vi.fn(),
       update: vi.fn(),
     },
-    barberAbsence: { findMany: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -22,6 +27,13 @@ vi.mock("@/utils/time-slots", () => ({
   parseTimeToMinutes: vi.fn((time: string) => {
     const [h, m] = time.split(":").map(Number);
     return h * 60 + m;
+  }),
+  minutesToTime: vi.fn((minutes: number) => {
+    const hh = Math.floor(minutes / 60)
+      .toString()
+      .padStart(2, "0");
+    const mm = (minutes % 60).toString().padStart(2, "0");
+    return `${hh}:${mm}`;
   }),
   roundMinutesUpToSlotBoundary: vi.fn((minutes: number) => minutes),
   roundTimeUpToSlotBoundary: vi.fn((time: string) => time),
@@ -48,6 +60,57 @@ const mockCreateAppointmentByBarber = vi.fn();
 const mockCancelAppointmentInternal = vi.fn();
 const mockGetActiveBarbers = vi.fn();
 const mockGetBookingAvailability = vi.fn();
+const mockNotifyAppointmentCancelledByBarber = vi.fn();
+const mockNotifyGuestAppointmentCancelledByBarber = vi.fn();
+const mockNotifyGuestAppointmentConfirmed = vi.fn();
+
+function createTransactionMock() {
+  return {
+    $executeRaw: vi.fn().mockResolvedValue(undefined),
+    barber: {
+      findUnique: vi.fn().mockResolvedValue({ active: true }),
+    },
+    shopHours: {
+      findUnique: vi.fn().mockResolvedValue({
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "18:00",
+        breakStart: null,
+        breakEnd: null,
+      }),
+    },
+    shopClosure: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    barberAbsence: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    workingHours: {
+      findUnique: vi.fn().mockResolvedValue({
+        startTime: "09:00",
+        endTime: "18:00",
+        breakStart: null,
+        breakEnd: null,
+      }),
+    },
+    appointment: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue({} as never),
+      update: vi.fn().mockResolvedValue({} as never),
+    },
+  };
+}
+
+let transaction = createTransactionMock();
+
+vi.mock("@/services/notification", () => ({
+  notifyAppointmentCancelledByBarber: (...args: unknown[]) =>
+    mockNotifyAppointmentCancelledByBarber(...args),
+  notifyGuestAppointmentCancelledByBarber: (...args: unknown[]) =>
+    mockNotifyGuestAppointmentCancelledByBarber(...args),
+  notifyGuestAppointmentConfirmed: (...args: unknown[]) =>
+    mockNotifyGuestAppointmentConfirmed(...args),
+}));
 
 vi.mock("@/services/booking", () => ({
   createAppointment: (...args: unknown[]) => mockCreateAppointment(...args),
@@ -104,8 +167,31 @@ const mockAppointmentWithDetails = {
   guestClient: null,
 };
 
+const mockTransactionAppointment = {
+  id: "apt-1",
+  clientId: "profile-1",
+  guestClientId: null,
+  barberId: "barber-1",
+  serviceId: "svc-1",
+  date: new Date("2026-04-17T00:00:00Z"),
+  startTime: "10:00",
+  endTime: "10:30",
+  status: "CONFIRMED" as const,
+  cancelReason: null,
+  createdAt: new Date("2026-04-01T10:00:00Z"),
+  updatedAt: new Date("2026-04-01T10:00:00Z"),
+  barber: { id: "barber-1", name: "João" },
+  service: { id: "svc-1", name: "Corte", price: 50, duration: 30 },
+  client: { id: "profile-1", fullName: "Fulano", phone: "47999999999" },
+  guestClient: null,
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
+  transaction = createTransactionMock();
+  vi.mocked(prisma.$transaction).mockImplementation(async (cb) =>
+    cb(transaction as never),
+  );
   vi.mocked(prisma.appointment.findMany).mockResolvedValue([
     mockAppointment,
   ] as never);
@@ -119,8 +205,35 @@ beforeEach(() => {
   vi.mocked(prisma.appointment.count).mockResolvedValue(1);
   vi.mocked(prisma.appointment.update).mockResolvedValue({} as never);
   vi.mocked(prisma.profile.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+    userId: "client-user-1",
+    fullName: "Fulano",
+  } as never);
+  vi.mocked(prisma.barber.findUnique).mockResolvedValue({
+    userId: "barber-user-1",
+  } as never);
   vi.mocked(prisma.guestClient.findMany).mockResolvedValue([]);
   vi.mocked(prisma.barberAbsence.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.shopHours.findUnique).mockResolvedValue({
+    isOpen: true,
+    startTime: "09:00",
+    endTime: "18:00",
+    breakStart: null,
+    breakEnd: null,
+  } as never);
+  vi.mocked(prisma.shopClosure.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.workingHours.findUnique).mockResolvedValue({
+    startTime: "09:00",
+    endTime: "18:00",
+    breakStart: null,
+    breakEnd: null,
+  } as never);
+  transaction.appointment.findUnique.mockResolvedValue(
+    mockTransactionAppointment as never,
+  );
+  transaction.appointment.update.mockResolvedValue(
+    mockTransactionAppointment as never,
+  );
   mockGetBookingAvailability.mockResolvedValue({
     windows: [{ startTime: "10:30", endTime: "11:30" }],
   });
@@ -138,6 +251,9 @@ beforeEach(() => {
     status: "CANCELLED_BY_BARBER" as const,
     cancelReason: "[ADMIN] Motivo",
   });
+  mockNotifyAppointmentCancelledByBarber.mockResolvedValue({} as never);
+  mockNotifyGuestAppointmentCancelledByBarber.mockResolvedValue(undefined);
+  mockNotifyGuestAppointmentConfirmed.mockResolvedValue(undefined);
 });
 
 describe("listAppointmentsForAdmin", () => {
@@ -280,6 +396,26 @@ describe("createAppointmentAsAdmin", () => {
     expect(result.guestClient?.fullName).toBe("Convidado");
   });
 
+  it("does not fail guest creation if notification dispatch fails", async () => {
+    mockNotifyGuestAppointmentConfirmed.mockRejectedValueOnce(
+      new Error("network_error"),
+    );
+
+    const result = await createAppointmentAsAdmin(
+      {
+        barberId: "barber-1",
+        serviceId: "svc-1",
+        date: "2026-04-17",
+        startTime: "10:00",
+        guest: { name: "Convidado", phone: "47988888888" },
+      },
+      "admin-1",
+    );
+
+    expect(result.guestClient?.fullName).toBe("Convidado");
+    expect(mockNotifyGuestAppointmentConfirmed).toHaveBeenCalled();
+  });
+
   it("updates audit fields after creation", async () => {
     await createAppointmentAsAdmin(
       {
@@ -338,6 +474,41 @@ describe("cancelAppointmentAsAdmin", () => {
     expect(result.status).toBe("CANCELLED_BY_BARBER");
   });
 
+  it("notifies the client with resolved userId and appointment metadata", async () => {
+    await cancelAppointmentAsAdmin("apt-1", "Motivo", "admin-1");
+
+    expect(mockNotifyAppointmentCancelledByBarber).toHaveBeenCalledWith(
+      "client-user-1",
+      expect.objectContaining({
+        appointmentId: "apt-1",
+        recipientName: "Fulano",
+      }),
+    );
+  });
+
+  it("does not fail guest cancellation if notification dispatch fails", async () => {
+    mockCancelAppointmentInternal.mockResolvedValue({
+      ...mockAppointmentWithDetails,
+      status: "CANCELLED_BY_BARBER" as const,
+      cancelReason: "[ADMIN] Motivo",
+      clientId: null,
+      client: null,
+      guestClient: {
+        id: "guest-1",
+        fullName: "Convidado",
+        phone: "47988888888",
+      },
+    });
+    mockNotifyGuestAppointmentCancelledByBarber.mockRejectedValueOnce(
+      new Error("network_error"),
+    );
+
+    const result = await cancelAppointmentAsAdmin("apt-1", "Motivo", "admin-1");
+
+    expect(result.status).toBe("CANCELLED_BY_BARBER");
+    expect(mockNotifyGuestAppointmentCancelledByBarber).toHaveBeenCalled();
+  });
+
   it("updates audit fields after cancellation", async () => {
     await cancelAppointmentAsAdmin("apt-1", "Motivo", "admin-1");
 
@@ -383,6 +554,10 @@ describe("rescheduleAppointmentAsAdmin", () => {
       serviceId: "svc-1",
       barberId: "barber-1",
     } as never);
+    transaction.appointment.findUnique.mockResolvedValue({
+      ...mockTransactionAppointment,
+      status: "CANCELLED_BY_BARBER",
+    } as never);
 
     await expect(
       rescheduleAppointmentAsAdmin(
@@ -394,9 +569,15 @@ describe("rescheduleAppointmentAsAdmin", () => {
   });
 
   it("throws when slot is unavailable", async () => {
-    mockGetBookingAvailability.mockResolvedValue({
-      windows: [{ startTime: "11:00", endTime: "11:30" }],
+    transaction.workingHours.findUnique.mockResolvedValue({
+      startTime: "11:00",
+      endTime: "11:30",
+      breakStart: null,
+      breakEnd: null,
     });
+    transaction.appointment.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
 
     await expect(
       rescheduleAppointmentAsAdmin(
@@ -418,9 +599,11 @@ describe("rescheduleAppointmentAsAdmin", () => {
   });
 
   it("throws when client has overlap on target slot", async () => {
-    vi.mocked(prisma.appointment.findMany).mockResolvedValue([
-      { startTime: "10:30", endTime: "11:00" },
-    ] as never);
+    transaction.appointment.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { startTime: "10:30", endTime: "11:00" } as never,
+      ]);
 
     await expect(
       rescheduleAppointmentAsAdmin(
@@ -432,8 +615,10 @@ describe("rescheduleAppointmentAsAdmin", () => {
   });
 
   it("updates appointment date/time and audit field on success", async () => {
-    vi.mocked(prisma.appointment.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.appointment.update).mockResolvedValue({
+    transaction.appointment.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    transaction.appointment.update.mockResolvedValue({
       ...mockAppointment,
       date: new Date("2026-04-25T00:00:00.000Z"),
       startTime: "10:30",
@@ -450,7 +635,8 @@ describe("rescheduleAppointmentAsAdmin", () => {
     expect(result.date).toBe("2026-04-25");
     expect(result.startTime).toBe("10:30");
     expect(result.endTime).toBe("11:00");
-    expect(prisma.appointment.update).toHaveBeenCalledWith(
+    expect(transaction.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(transaction.appointment.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "apt-1" },
         data: expect.objectContaining({

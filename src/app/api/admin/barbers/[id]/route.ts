@@ -5,16 +5,35 @@ import { requireValidOrigin } from "@/lib/api/verify-origin";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
 import { z } from "zod";
 
-const updateBarberSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Nome deve ter pelo menos 2 caracteres")
-    .max(100)
-    .optional(),
-  avatarUrl: z.string().url().nullable().optional(),
-  active: z.boolean().optional(),
-  serviceIds: z.array(z.string().uuid()).optional(),
+const serviceEntrySchema = z.object({
+  serviceId: z.string().uuid(),
+  durationOverride: z
+    .number()
+    .int()
+    .min(5, "Duração mínima é 5 minutos")
+    .max(240, "Duração máxima é 240 minutos")
+    .refine((v) => v % 5 === 0, { message: "Duração deve ser múltiplo de 5" })
+    .nullable()
+    .optional()
+    .default(null),
 });
+
+const updateBarberSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, "Nome deve ter pelo menos 2 caracteres")
+      .max(100)
+      .optional(),
+    avatarUrl: z.string().url().nullable().optional(),
+    active: z.boolean().optional(),
+    services: z.array(serviceEntrySchema).optional(),
+    serviceIds: z.array(z.string().uuid()).optional(),
+  })
+  .refine((d) => !(d.services !== undefined && d.serviceIds !== undefined), {
+    message: "Use 'services' (com durationOverride) ou 'serviceIds', não ambos",
+    path: ["services"],
+  });
 
 export type UpdateBarberInput = z.infer<typeof updateBarberSchema>;
 
@@ -38,6 +57,7 @@ export async function GET(
         services: {
           select: {
             serviceId: true,
+            durationOverride: true,
             service: {
               select: {
                 id: true,
@@ -104,10 +124,29 @@ export async function PUT(
       return apiError("NOT_FOUND", "Barbeiro não encontrado", 404);
     }
 
-    const { serviceIds, ...barberData } = parsed.data;
+    const { services: servicesInput, serviceIds, ...barberData } = parsed.data;
 
-    if (serviceIds !== undefined) {
-      const uniqueServiceIds = Array.from(new Set(serviceIds));
+    const effectiveServices =
+      servicesInput ??
+      serviceIds?.map((serviceId) => ({
+        serviceId,
+        durationOverride: null as null,
+      }));
+
+    if (effectiveServices !== undefined) {
+      const seen = new Map<
+        string,
+        { serviceId: string; durationOverride: number | null }
+      >();
+      for (const entry of effectiveServices) {
+        seen.set(entry.serviceId, {
+          serviceId: entry.serviceId,
+          durationOverride: entry.durationOverride ?? null,
+        });
+      }
+      const uniqueServices = Array.from(seen.values());
+      const uniqueServiceIds = uniqueServices.map((s) => s.serviceId);
+
       const existingServices = await prisma.service.findMany({
         where: { id: { in: uniqueServiceIds } },
         select: { id: true },
@@ -133,11 +172,12 @@ export async function PUT(
           where: { barberId: id },
         });
 
-        if (uniqueServiceIds.length > 0) {
+        if (uniqueServices.length > 0) {
           await tx.barberService.createMany({
-            data: uniqueServiceIds.map((serviceId) => ({
+            data: uniqueServices.map(({ serviceId, durationOverride }) => ({
               barberId: id,
               serviceId,
+              durationOverride,
             })),
           });
         }
@@ -149,6 +189,7 @@ export async function PUT(
           services: {
             select: {
               serviceId: true,
+              durationOverride: true,
               service: {
                 select: {
                   id: true,

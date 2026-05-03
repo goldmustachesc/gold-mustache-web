@@ -65,6 +65,28 @@ describe("ChatProfileUpdateForm", () => {
     });
   });
 
+  it("stays open in edit mode when profile is already complete", async () => {
+    const onSuccess = vi.fn();
+    render(
+      <ChatProfileUpdateForm
+        onSuccess={onSuccess}
+        currentName="João Silva"
+        currentPhone="11999999999"
+        allowAutoProceedWhenComplete={false}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    expect(
+      screen.getByPlaceholderText("Seu nome completo"),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("(11) 99999-9999")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+  });
+
   it("shows validation error for short name", async () => {
     const user = userEvent.setup();
     render(
@@ -73,7 +95,7 @@ describe("ChatProfileUpdateForm", () => {
     );
 
     await user.type(screen.getByPlaceholderText("Seu nome completo"), "A");
-    await user.click(screen.getByText("Salvar e Continuar"));
+    await user.click(screen.getByText("Salvar e continuar"));
 
     expect(screen.getByText("Nome muito curto")).toBeInTheDocument();
   });
@@ -95,7 +117,7 @@ describe("ChatProfileUpdateForm", () => {
       screen.getByPlaceholderText("(11) 99999-9999"),
       "11999999999",
     );
-    await user.click(screen.getByText("Salvar e Continuar"));
+    await user.click(screen.getByText("Salvar e continuar"));
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();

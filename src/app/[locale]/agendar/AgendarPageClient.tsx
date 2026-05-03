@@ -30,24 +30,23 @@ export function AgendarPageClient() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent dark:from-primary/10 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-primary/10 to-transparent blur-3xl dark:from-primary/5 pointer-events-none" />
 
-      {/* Home button */}
-      <div className="absolute top-4 left-4 z-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/50"
-        >
-          <Link href={`/${locale}`} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Home</span>
-          </Link>
-        </Button>
-      </div>
-
       {/* Main content */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-3 pt-14 pb-4">
-        <div className="w-full max-w-lg">
+      <div className="relative z-10 flex min-h-dvh flex-col items-center px-3 pt-2 pb-4">
+        {/* Home button — inline so it doesn't overlap chat header */}
+        <div className="w-full max-w-5xl xl:max-w-6xl mb-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/50 -ml-2"
+          >
+            <Link href={`/${locale}`} className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Home</span>
+            </Link>
+          </Button>
+        </div>
+        <div className="w-full max-w-5xl xl:max-w-6xl flex-1">
           <ChatBookingPage
             onViewAppointments={handleViewAppointments}
             preSelectedBarberId={preSelectedBarberId}
@@ -56,8 +55,8 @@ export function AgendarPageClient() {
       </div>
 
       <Toaster
-        position="bottom-center"
-        theme="dark"
+        position="top-center"
+        theme="system"
         closeButton
         toastOptions={{
           className:

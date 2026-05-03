@@ -24,14 +24,6 @@ export async function GET(request: Request) {
         user.app_metadata as Record<string, unknown> | undefined,
       );
 
-      console.info("[Auth Callback]", {
-        type,
-        userId: user.id,
-        provider: user.app_metadata?.provider,
-        isOAuth: isOAuthUser,
-        timestamp: new Date().toISOString(),
-      });
-
       // Mark email as verified if:
       // 1. This is an email verification callback (signup or email_change link clicked)
       // 2. User signed in via OAuth provider (Google, etc.) - they verify emails

@@ -63,8 +63,8 @@ describe("lib/validations/auth", () => {
       fullName: "João Silva",
       phone: "(11) 99999-9999",
       email: "test@example.com",
-      password: "123456",
-      confirmPassword: "123456",
+      password: "Senha123",
+      confirmPassword: "Senha123",
     };
 
     it("should validate valid signup data", () => {
@@ -202,17 +202,49 @@ describe("lib/validations/auth", () => {
     });
 
     describe("password validation", () => {
-      it("should reject password shorter than 6 characters", () => {
+      it("should reject password shorter than 8 characters", () => {
         const invalidData = {
           ...validSignupData,
-          password: "12345",
-          confirmPassword: "12345",
+          password: "Ab1",
+          confirmPassword: "Ab1",
         };
 
         const result = signupSchema.safeParse(invalidData);
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.error.issues[0].message).toBe("Mínimo 6 caracteres");
+          expect(result.error.issues[0].message).toBe("Mínimo 8 caracteres");
+        }
+      });
+
+      it("should reject password without uppercase letter", () => {
+        const invalidData = {
+          ...validSignupData,
+          password: "senha123",
+          confirmPassword: "senha123",
+        };
+
+        const result = signupSchema.safeParse(invalidData);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues[0].message).toBe(
+            "Use pelo menos uma letra maiúscula",
+          );
+        }
+      });
+
+      it("should reject password without number", () => {
+        const invalidData = {
+          ...validSignupData,
+          password: "SenhaABC",
+          confirmPassword: "SenhaABC",
+        };
+
+        const result = signupSchema.safeParse(invalidData);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues[0].message).toBe(
+            "Use pelo menos um número",
+          );
         }
       });
     });
@@ -233,8 +265,8 @@ describe("lib/validations/auth", () => {
       it("should reject when passwords do not match", () => {
         const invalidData = {
           ...validSignupData,
-          password: "123456",
-          confirmPassword: "654321",
+          password: "Senha123",
+          confirmPassword: "Senha456",
         };
 
         const result = signupSchema.safeParse(invalidData);
@@ -281,30 +313,30 @@ describe("lib/validations/auth", () => {
   describe("newPasswordSchema", () => {
     it("should validate valid new password data", () => {
       const validData = {
-        password: "123456",
-        confirmPassword: "123456",
+        password: "Senha123",
+        confirmPassword: "Senha123",
       };
 
       const result = newPasswordSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
-    it("should reject password shorter than 6 characters", () => {
+    it("should reject password shorter than 8 characters", () => {
       const invalidData = {
-        password: "12345",
-        confirmPassword: "12345",
+        password: "Ab1",
+        confirmPassword: "Ab1",
       };
 
       const result = newPasswordSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Mínimo 6 caracteres");
+        expect(result.error.issues[0].message).toBe("Mínimo 8 caracteres");
       }
     });
 
     it("should reject empty confirmPassword", () => {
       const invalidData = {
-        password: "123456",
+        password: "Senha123",
         confirmPassword: "",
       };
 
@@ -319,8 +351,8 @@ describe("lib/validations/auth", () => {
 
     it("should reject when passwords do not match", () => {
       const invalidData = {
-        password: "123456",
-        confirmPassword: "654321",
+        password: "Senha123",
+        confirmPassword: "Senha456",
       };
 
       const result = newPasswordSchema.safeParse(invalidData);

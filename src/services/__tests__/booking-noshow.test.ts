@@ -144,7 +144,6 @@ describe("services/booking/noshow-penalty", () => {
 
   it("does not break no-show flow if loyalty service fails", async () => {
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 23, 0, 0, 0)));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     asMock(prisma.appointment.findFirst).mockResolvedValue({
       id: "apt-err",
@@ -174,12 +173,8 @@ describe("services/booking/noshow-penalty", () => {
     mockIsFeatureEnabled.mockResolvedValue(true);
 
     const result = await markAppointmentAsNoShow("apt-err", "barber-1");
+    // Flow must complete and mark as NO_SHOW even when loyalty service throws
     expect(result.status).toBe(AppointmentStatus.NO_SHOW);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "Falha ao aplicar penalidade de pontos",
-      expect.any(Error),
-    );
-    consoleSpy.mockRestore();
   });
 
   it("does not penalize when loyalty feature flag is disabled", async () => {

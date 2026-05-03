@@ -44,6 +44,7 @@ describe("proxy", () => {
     mockUpdateSession.mockResolvedValue({
       supabaseResponse,
       user: null,
+      authError: false,
     });
 
     const req = requestTo("http://localhost:3000/api/admin/x");
@@ -58,6 +59,7 @@ describe("proxy", () => {
     mockUpdateSession.mockResolvedValue({
       supabaseResponse: NextResponse.next(),
       user: null,
+      authError: false,
     });
 
     const req = requestTo("http://localhost:3000/pt-BR/dashboard");
@@ -73,6 +75,7 @@ describe("proxy", () => {
     mockUpdateSession.mockResolvedValue({
       supabaseResponse: NextResponse.next(),
       user: { id: "user-1" },
+      authError: false,
     });
 
     const req = requestTo("http://localhost:3000/pt-BR/login");
@@ -89,6 +92,7 @@ describe("proxy", () => {
     mockUpdateSession.mockResolvedValue({
       supabaseResponse,
       user: null,
+      authError: false,
     });
 
     const intlResponse = NextResponse.next();
@@ -112,5 +116,26 @@ describe("proxy", () => {
 
     expect(mockUpdateSession).not.toHaveBeenCalled();
     expect(res).toBe(intlResponse);
+  });
+
+  it("não trata falha transitória de auth como logout em rota protegida", async () => {
+    const supabaseResponse = NextResponse.next();
+    supabaseResponse.cookies.set("sb-test", "cookie-value", { path: "/" });
+    const intlResponse = NextResponse.next();
+    mockUpdateSession.mockResolvedValue({
+      supabaseResponse,
+      user: null,
+      authError: true,
+    });
+    intlHandler.mockReturnValueOnce(intlResponse);
+
+    const req = requestTo("http://localhost:3000/pt-BR/dashboard");
+
+    const res = await proxy(req);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-auth-refresh-error")).toBe("1");
+    expect(res.cookies.get("sb-test")?.value).toBe("cookie-value");
   });
 });

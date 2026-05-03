@@ -11,11 +11,11 @@ Este documento define o checklist mínimo para considerar o que está em `stagin
 
 ## Status atual
 
-**Decisão atual: NAO APROVADO PARA PROD** *(requer validar o scheduler de lembretes fora da Vercel e concluir os checks operacionais restantes)*
+**Decisão atual: NAO APROVADO PARA PROD** *(stack free-tier já definida; falta validar os checks operacionais restantes e evidência de execução)*
 
 > Última atualização: 2026-04-23 — auditoria operacional dos agendamentos do site
 >
-> O fluxo público continua funcional, mas o staging/produção ainda dependem de validação operacional final. O cron de lembretes saiu da Vercel Hobby e agora precisa ser confirmado no GitHub Actions antes do go-live.
+> O fluxo público continua funcional, mas o staging/produção ainda dependem de validação operacional final. O cron de lembretes agora roda via GitHub Actions na stack free-tier e precisa de confirmação de execução antes do go-live.
 
 ### Itens resolvidos
 

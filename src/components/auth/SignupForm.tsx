@@ -212,7 +212,7 @@ export function SignupForm({ locale }: SignupFormProps) {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   className="w-full rounded-lg border border-zinc-300 bg-zinc-100/50 px-4 py-3 pr-12 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                   {...register("password")}
                 />

@@ -5,41 +5,28 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useBrazilToday } from "@/hooks/useBrazilToday";
+import {
+  addDays,
+  nextWeekday,
+  getDaysInMonth,
+  MONTHS,
+  WEEKDAYS,
+} from "@/utils/calendar";
 
 interface ChatDatePickerProps {
   onSelect: (date: Date) => void;
   disabledDates?: Date[];
   maxDays?: number;
+  selectedDate?: Date | null;
+  className?: string;
 }
-
-const WEEKDAYS = [
-  { key: "dom", label: "D" },
-  { key: "seg", label: "S" },
-  { key: "ter", label: "T" },
-  { key: "qua", label: "Q" },
-  { key: "qui", label: "Q" },
-  { key: "sex", label: "S" },
-  { key: "sab", label: "S" },
-];
-const MONTHS = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
 
 export function ChatDatePicker({
   onSelect,
   disabledDates = [],
   maxDays = 30,
+  selectedDate = null,
+  className,
 }: ChatDatePickerProps) {
   const today = useBrazilToday();
 
@@ -52,37 +39,70 @@ export function ChatDatePicker({
     setCurrentMonth((prev) => (prev < minMonth ? minMonth : prev));
   }, [today]);
 
+  // Auto-advance to first month that has at least one selectable date.
+  // Loops internally so a single setCurrentMonth call replaces the old cascade.
+  useEffect(() => {
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + maxDays);
+
+    let candidate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1,
+    );
+    while (candidate <= maxDate) {
+      const year = candidate.getFullYear();
+      const month = candidate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const hasAvailable = Array.from(
+        { length: daysInMonth },
+        (_, i) => new Date(year, month, i + 1),
+      ).some((d) => {
+        if (d < today || d > maxDate) return false;
+        return !disabledDates.some(
+          (dd) => dd.toDateString() === d.toDateString(),
+        );
+      });
+      if (hasAvailable) break;
+      candidate = new Date(year, month + 1, 1);
+    }
+
+    if (
+      candidate.getFullYear() !== currentMonth.getFullYear() ||
+      candidate.getMonth() !== currentMonth.getMonth()
+    ) {
+      setCurrentMonth(candidate);
+    }
+  }, [currentMonth, today, maxDays, disabledDates]);
+
   const maxDate = useMemo(() => {
     const d = new Date(today);
     d.setDate(d.getDate() + maxDays);
     return d;
   }, [today, maxDays]);
 
+  const quickDates = useMemo(
+    () => [
+      { id: "today", label: "Hoje", date: new Date(today) },
+      { id: "tomorrow", label: "Amanhã", date: addDays(today, 1) },
+      {
+        id: "saturday",
+        label: "Próximo sábado",
+        date: nextWeekday(today, 6),
+      },
+      {
+        id: "week",
+        label: "Próxima semana",
+        date: addDays(today, 7),
+      },
+    ],
+    [today],
+  );
+
   const isDateDisabled = (date: Date) => {
     if (date < today) return true;
     if (date > maxDate) return true;
     return disabledDates.some((d) => d.toDateString() === date.toDateString());
-  };
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-
-    const days: (Date | null)[] = [];
-
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-
-    return days;
   };
 
   const days = getDaysInMonth(currentMonth);
@@ -110,7 +130,12 @@ export function ChatDatePicker({
   };
 
   return (
-    <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 shadow-sm">
+    <div
+      className={cn(
+        "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-3 pb-2 shadow-sm",
+        className,
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button
@@ -137,7 +162,7 @@ export function ChatDatePicker({
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-0.5 mb-2">
         {WEEKDAYS.map((day) => (
           <div
             key={day.key}
@@ -149,15 +174,18 @@ export function ChatDatePicker({
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0">
         {days.map((date, index) => {
           if (!date) {
             // biome-ignore lint/suspicious/noArrayIndexKey: empty slots have stable positions in the calendar grid
-            return <div key={`empty-${index}`} className="aspect-square" />;
+            return <div key={`empty-${index}`} className="min-h-[44px]" />;
           }
 
           const isDisabled = isDateDisabled(date);
           const isToday = date.toDateString() === today.toDateString();
+          const isSelected =
+            selectedDate != null &&
+            date.toDateString() === selectedDate.toDateString();
 
           return (
             <button
@@ -166,16 +194,38 @@ export function ChatDatePicker({
               onClick={() => !isDisabled && onSelect(date)}
               disabled={isDisabled}
               className={cn(
-                "aspect-square flex items-center justify-center rounded-lg text-sm transition-all",
+                "min-h-[44px] min-w-0 w-full flex items-center justify-center rounded-lg text-sm transition-all",
                 isDisabled &&
                   "text-zinc-400 dark:text-zinc-600 cursor-not-allowed",
                 !isDisabled &&
                   "text-zinc-700 dark:text-zinc-200 hover:bg-primary hover:text-primary-foreground cursor-pointer active:scale-90",
                 isToday && !isDisabled && "ring-2 ring-primary font-bold",
+                isSelected && "bg-primary text-primary-foreground font-bold",
               )}
             >
               {date.getDate()}
             </button>
+          );
+        })}
+      </div>
+
+      {/* Quick shortcuts — after grid so auto-scroll reveals grid + shortcuts together */}
+      <div className="mt-3 flex gap-2 overflow-x-auto border-t border-zinc-200/60 pt-3 dark:border-zinc-700/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {quickDates.map((shortcut) => {
+          const disabled = isDateDisabled(shortcut.date);
+
+          return (
+            <Button
+              key={shortcut.id}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 rounded-full border-zinc-300 bg-zinc-50/80 text-zinc-700 hover:bg-zinc-200/80 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              disabled={disabled}
+              onClick={() => onSelect(shortcut.date)}
+            >
+              {shortcut.label}
+            </Button>
           );
         })}
       </div>

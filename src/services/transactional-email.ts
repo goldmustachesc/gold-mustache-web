@@ -51,6 +51,15 @@ function trimOrNull(value: string | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 export async function sendTransactionalEmail(
   input: SendTransactionalEmailInput,
 ): Promise<SendTransactionalEmailResult> {
@@ -116,6 +125,95 @@ export async function sendTransactionalEmail(
   }
 }
 
+export interface AppointmentEmailPayload {
+  recipientName: string;
+  serviceName: string;
+  barberName: string;
+  date: string;
+  time: string;
+  manageUrl: string;
+}
+
+export interface AppointmentCancellationEmailPayload {
+  recipientName: string;
+  serviceName: string;
+  barberName: string;
+  date: string;
+  time: string;
+  reason?: string;
+  bookUrl: string;
+}
+
+export function buildAppointmentConfirmationEmailContent(
+  payload: AppointmentEmailPayload,
+): TransactionalEmailContent {
+  const recipientName = escapeHtml(payload.recipientName);
+  const serviceName = escapeHtml(payload.serviceName);
+  const barberName = escapeHtml(payload.barberName);
+  const date = escapeHtml(payload.date);
+  const time = escapeHtml(payload.time);
+  const manageUrl = escapeHtml(payload.manageUrl);
+
+  const subject = `Agendamento confirmado: ${payload.serviceName} em ${payload.date}`;
+  const text =
+    `Olá ${payload.recipientName},\n\n` +
+    `Seu agendamento na Gold Mustache foi confirmado!\n` +
+    `Serviço: ${payload.serviceName}\n` +
+    `Barbeiro: ${payload.barberName}\n` +
+    `Data: ${payload.date}\n` +
+    `Horário: ${payload.time}\n\n` +
+    `Gerenciar agendamento: ${payload.manageUrl}\n`;
+
+  const html =
+    `<p>Olá <strong>${recipientName}</strong>,</p>` +
+    "<p>Seu agendamento na Gold Mustache foi <strong>confirmado</strong>!</p>" +
+    `<ul><li>Serviço: ${serviceName}</li>` +
+    `<li>Barbeiro: ${barberName}</li>` +
+    `<li>Data: ${date}</li>` +
+    `<li>Horário: ${time}</li></ul>` +
+    `<p><a href="${manageUrl}">Ver meu agendamento</a></p>`;
+
+  return { subject, text, html };
+}
+
+export function buildAppointmentCancellationEmailContent(
+  payload: AppointmentCancellationEmailPayload,
+): TransactionalEmailContent {
+  const recipientName = escapeHtml(payload.recipientName);
+  const serviceName = escapeHtml(payload.serviceName);
+  const barberName = escapeHtml(payload.barberName);
+  const date = escapeHtml(payload.date);
+  const time = escapeHtml(payload.time);
+  const reason = payload.reason ? escapeHtml(payload.reason) : null;
+  const bookUrl = escapeHtml(payload.bookUrl);
+
+  const subject = `Agendamento cancelado: ${payload.serviceName} em ${payload.date}`;
+  const reasonLine = payload.reason ? `Motivo: ${payload.reason}\n` : "";
+  const reasonHtml = reason ? `<p>Motivo: ${reason}</p>` : "";
+
+  const text =
+    `Olá ${payload.recipientName},\n\n` +
+    `Seu agendamento na Gold Mustache foi cancelado.\n` +
+    `Serviço: ${payload.serviceName}\n` +
+    `Barbeiro: ${payload.barberName}\n` +
+    `Data: ${payload.date}\n` +
+    `Horário: ${payload.time}\n` +
+    reasonLine +
+    `\nAgendar novamente: ${payload.bookUrl}\n`;
+
+  const html =
+    `<p>Olá <strong>${recipientName}</strong>,</p>` +
+    "<p>Seu agendamento na Gold Mustache foi cancelado.</p>" +
+    `<ul><li>Serviço: ${serviceName}</li>` +
+    `<li>Barbeiro: ${barberName}</li>` +
+    `<li>Data: ${date}</li>` +
+    `<li>Horário: ${time}</li></ul>` +
+    reasonHtml +
+    `<p><a href="${bookUrl}">Agendar novamente</a></p>`;
+
+  return { subject, text, html };
+}
+
 export interface AppointmentReminderEmailPayload {
   recipientName: string;
   serviceName: string;
@@ -128,6 +226,13 @@ export interface AppointmentReminderEmailPayload {
 export function buildAppointmentReminderEmailContent(
   payload: AppointmentReminderEmailPayload,
 ): TransactionalEmailContent {
+  const recipientName = escapeHtml(payload.recipientName);
+  const serviceName = escapeHtml(payload.serviceName);
+  const barberName = escapeHtml(payload.barberName);
+  const date = escapeHtml(payload.date);
+  const time = escapeHtml(payload.time);
+  const manageUrl = escapeHtml(payload.manageUrl);
+
   const subject = `Lembrete: seu agendamento amanhã às ${payload.time}`;
   const text =
     `Olá ${payload.recipientName},\n\n` +
@@ -139,13 +244,13 @@ export function buildAppointmentReminderEmailContent(
     `Gerenciar agendamento: ${payload.manageUrl}\n`;
 
   const html =
-    `<p>Olá <strong>${payload.recipientName}</strong>,</p>` +
+    `<p>Olá <strong>${recipientName}</strong>,</p>` +
     "<p>Este é um lembrete do seu agendamento na Gold Mustache.</p>" +
-    `<ul><li>Serviço: ${payload.serviceName}</li>` +
-    `<li>Barbeiro: ${payload.barberName}</li>` +
-    `<li>Data: ${payload.date}</li>` +
-    `<li>Horário: ${payload.time}</li></ul>` +
-    `<p><a href="${payload.manageUrl}">Gerenciar agendamento</a></p>`;
+    `<ul><li>Serviço: ${serviceName}</li>` +
+    `<li>Barbeiro: ${barberName}</li>` +
+    `<li>Data: ${date}</li>` +
+    `<li>Horário: ${time}</li></ul>` +
+    `<p><a href="${manageUrl}">Gerenciar agendamento</a></p>`;
 
   return { subject, text, html };
 }

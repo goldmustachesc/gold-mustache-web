@@ -1,12 +1,12 @@
 ---
-description: Método SDD obrigatório para todo trabalho de IA no projeto
+description: Método SDD escalado por complexidade para todo trabalho de IA no projeto
 alwaysApply: true
 ---
 
-# SDD Obrigatório
+# SDD — Escalado por Complexidade
 
-- `Subagent-Driven Development (SDD)` é obrigatório em toda tarefa deste projeto.
-- Antes de executar, sempre avaliar como aplicar `SDD`, incluindo decomposição, delegação, paralelização, validação e checkpoints.
-- Mesmo em tarefas simples, manter a mentalidade de `SDD`; quando não houver delegação útil, seguir com execução direta sem abandonar o método.
+- `Subagent-Driven Development (SDD)` é aplicado com cerimônia proporcional ao tier da tarefa (ver `.kiro/TIERS.md`).
+- Antes de executar, classificar o tier: **Trivial** → execução direta, **Light** → só requirements, **Full** → brainstorm + spec completa.
+- Mentalidade SDD sempre ativa (decomposição, delegação, paralelização, checkpoints); cerimônia apenas quando agrega valor.
 - `SDD` complementa `TDD`, testes, validação final e as demais regras do projeto.
 - Nunca usar `SDD` como justificativa para pular testes, revisão de impacto, confirmação de causa raiz ou validações necessárias.

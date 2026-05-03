@@ -14,6 +14,7 @@ interface ChatProfileUpdateFormProps {
   currentPhone?: string | null;
   onSuccess: () => void;
   isLoading?: boolean;
+  allowAutoProceedWhenComplete?: boolean;
 }
 
 function formatPhone(value: string): string {
@@ -41,6 +42,7 @@ export function ChatProfileUpdateForm({
   currentPhone,
   onSuccess,
   isLoading: externalLoading,
+  allowAutoProceedWhenComplete = true,
 }: ChatProfileUpdateFormProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(currentName || "");
@@ -49,20 +51,47 @@ export function ChatProfileUpdateForm({
   );
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const showAllFields = !allowAutoProceedWhenComplete;
 
-  const needsName = !currentName || currentName.trim().length < 2;
-  const needsPhone = !currentPhone || getPhoneDigits(currentPhone).length < 10;
+  const needsName =
+    showAllFields || !currentName || currentName.trim().length < 2;
+  const needsPhone =
+    showAllFields || !currentPhone || getPhoneDigits(currentPhone).length < 10;
   const hasAutoProceededRef = useRef(false);
+
+  // Prefill when props arrive late (profile was still loading on mount).
+  // Skip the sync once the user has typed anything to avoid clobbering edits.
+  useEffect(() => {
+    setName((current) =>
+      current === "" && currentName ? currentName : current,
+    );
+  }, [currentName]);
+
+  useEffect(() => {
+    setPhone((current) =>
+      current === "" && currentPhone ? formatPhone(currentPhone) : current,
+    );
+  }, [currentPhone]);
 
   // If profile is already complete (e.g., was loading when redirected here), auto-proceed
   useEffect(() => {
     const profileAlreadyComplete =
       !needsName && !needsPhone && !externalLoading;
-    if (profileAlreadyComplete && !hasAutoProceededRef.current) {
+    if (
+      allowAutoProceedWhenComplete &&
+      profileAlreadyComplete &&
+      !hasAutoProceededRef.current
+    ) {
       hasAutoProceededRef.current = true;
       onSuccess();
     }
-  }, [needsName, needsPhone, externalLoading, onSuccess]);
+  }, [
+    allowAutoProceedWhenComplete,
+    needsName,
+    needsPhone,
+    externalLoading,
+    onSuccess,
+  ]);
 
   const handlePhoneChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,10 +136,10 @@ export function ChatProfileUpdateForm({
     try {
       const updateData: { fullName?: string; phone?: string } = {};
 
-      if (needsName) {
+      if (showAllFields || needsName) {
         updateData.fullName = name.trim();
       }
-      if (needsPhone) {
+      if (showAllFields || needsPhone) {
         // Send only digits to maintain consistency in database
         updateData.phone = getPhoneDigits(phone);
       }
@@ -216,7 +245,7 @@ export function ChatProfileUpdateForm({
             Salvando...
           </>
         ) : (
-          "Salvar e Continuar"
+          "Salvar e continuar"
         )}
       </Button>
     </form>

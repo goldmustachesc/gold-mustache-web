@@ -67,14 +67,20 @@ export function useServices(barberId?: string) {
         barberId ? `/api/services?barberId=${barberId}` : "/api/services",
       ),
     staleTime: 5 * 60 * 1000,
-    placeholderData: () => {
-      if (!barberId) return undefined;
+    placeholderData: (previousData) => {
+      // Reuse the previous data for this query if it's a real services list.
+      if (previousData?.length && previousData[0]?.price !== undefined) {
+        return previousData;
+      }
+      // Otherwise fall back to the global services cache (when shape matches).
       const cached = queryClient.getQueryData<ServiceData[]>([
         "services",
         undefined,
       ]);
-      if (!cached?.length || cached[0]?.price === undefined) return undefined;
-      return cached;
+      if (cached?.length && cached[0]?.price !== undefined) {
+        return cached;
+      }
+      return undefined;
     },
   });
 }
@@ -106,6 +112,30 @@ export function useBarberSlots(
         `/api/barbers/me/slots?date=${date}&barberId=${barberId}&serviceId=${serviceId}`,
       ),
     enabled: !!date && !!barberId && !!serviceId,
+  });
+}
+
+export function useDateAvailability(
+  from: string | null,
+  to: string | null,
+  barberId: string | null,
+  serviceId: string | null,
+) {
+  return useQuery({
+    queryKey: ["dateAvailability", from, to, barberId, serviceId],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        from: from as string,
+        to: to as string,
+        barberId: barberId as string,
+      });
+      if (serviceId) params.set("serviceId", serviceId);
+      return apiGet<{ unavailableDates: string[] }>(
+        `/api/slots/availability?${params.toString()}`,
+      );
+    },
+    enabled: !!from && !!to && !!barberId,
+    staleTime: 60_000,
   });
 }
 

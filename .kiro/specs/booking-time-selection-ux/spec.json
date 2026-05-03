@@ -1,0 +1,27 @@
+{
+  "feature_name": "booking-time-selection-ux",
+  "created_at": "2026-04-29T21:17:18Z",
+  "updated_at": "2026-04-29T21:34:00Z",
+  "language": "pt",
+  "phase": "implementation",
+  "priority": "P1",
+  "area": "booking",
+  "source": "user-request-2026-04-29",
+  "related_specs": ["booking-system", "booking-polish"],
+  "summary": "Melhorar a UX do seletor de inicio exato dentro das janelas livres, mostrando duracao do servico, termino previsto, horarios validos e mensagens de erro que expliquem quando o servico nao cabe na janela disponivel.",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

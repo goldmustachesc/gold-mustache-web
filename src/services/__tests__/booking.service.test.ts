@@ -5,7 +5,8 @@ import { AppointmentStatus } from "@prisma/client";
 // Mock Prisma client used by the service module
 vi.mock("@/lib/prisma", () => {
   const prisma = {
-    service: { findUnique: vi.fn(), findMany: vi.fn() },
+    barber: { findUnique: vi.fn() },
+    service: { findUnique: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
     profile: { findFirst: vi.fn(), findMany: vi.fn() },
     shopHours: { findUnique: vi.fn() },
     shopClosure: { findMany: vi.fn() },
@@ -75,6 +76,23 @@ function asMock(fn: unknown): MockInstance {
 describe("services/booking (Prisma-mocked unit tests)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    asMock(prisma.barber.findUnique).mockResolvedValue({ active: true });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+    asMock(prisma.appointment.findMany).mockResolvedValue([]);
     asMock(prisma.profile.findFirst).mockResolvedValue(null);
     asMock(prisma.profile.findMany).mockResolvedValue([]);
   });
@@ -142,6 +160,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
         duration: 30,
         price: 20,
         active: true,
+        barbers: [{ durationOverride: 40 }],
       },
     ]);
 
@@ -149,16 +168,19 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     expect(prisma.service.findMany).toHaveBeenCalledWith({
       where: {
         active: true,
-        barbers: {
-          some: {
-            barberId: "barber-1",
-          },
-        },
+        barbers: { some: { barberId: "barber-1" } },
       },
       orderBy: { name: "asc" },
-      select: serviceSelect,
+      select: {
+        ...serviceSelect,
+        barbers: {
+          where: { barberId: "barber-1" },
+          select: { durationOverride: true },
+        },
+      },
     });
     expect(filtered[0]?.id).toBe("s-2");
+    expect(filtered[0]?.duration).toBe(40);
   });
 
   it("getAvailableSlots returns [] when shop is closed", async () => {
@@ -222,7 +244,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     expect(slots).toEqual([]);
   });
 
-  it("getAvailableSlots falls back to shop hours when barber has no working hours", async () => {
+  it("getAvailableSlots returns [] when barber has no working hours", async () => {
     // Freeze time to 2025-01-02 00:00 BRT => 03:00Z
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 3, 0, 0, 0)));
 
@@ -244,9 +266,44 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       "barber-1",
       "service-1",
     );
-    // Should use shop hours as fallback and return slots
-    expect(slots.length).toBeGreaterThan(0);
-    expect(slots[0].time).toBe("09:00");
+    expect(slots).toEqual([]);
+  });
+
+  it("getBookingAvailability returns [] when barber is inactive", async () => {
+    asMock(prisma.barber.findUnique).mockResolvedValue({ active: false });
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      duration: 30,
+      active: true,
+      barbers: [{ barberId: "barber-1" }],
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.appointment.findMany).mockResolvedValue([]);
+
+    const availability = await getBookingAvailability(
+      new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)),
+      "barber-1",
+      "service-1",
+    );
+
+    expect(availability).toEqual({
+      barberId: "barber-1",
+      serviceDuration: 0,
+      windows: [],
+    });
   });
 
   it("getAvailableSlots filters slots that overlap confirmed appointments", async () => {
@@ -553,6 +610,42 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("SLOT_UNAVAILABLE");
   });
 
+  it("createAppointment rejects when barber is inactive", async () => {
+    asMock(prisma.barber.findUnique).mockResolvedValue({ active: false });
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      duration: 30,
+      active: true,
+      barbers: [{ barberId: "barber-1" }],
+    });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+
+    await expect(
+      createAppointment(
+        {
+          serviceId: "service-1",
+          barberId: "barber-1",
+          date: "2099-01-01",
+          startTime: "09:00",
+        },
+        "client-1",
+      ),
+    ).rejects.toThrow("BARBER_UNAVAILABLE");
+  });
+
   it("createAppointment rejects when slot is in the past", async () => {
     // Brazil date is 2025-01-02; appointment is previous day
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 2, 12, 0, 0, 0)));
@@ -722,7 +815,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       duration: 30,
       price: 10,
     });
-    // Shop is open but barber working hours and fallback hours don't cover requested time
+    // Shop is open but the barber has no working hours on the date
     asMock(prisma.shopHours.findUnique).mockResolvedValue({
       isOpen: true,
       startTime: "14:00",
@@ -942,7 +1035,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     ).rejects.toThrow("SLOT_UNAVAILABLE");
   });
 
-  it("createGuestAppointment rotates token without clearing claim history", async () => {
+  it("createGuestAppointment preserves existing token on rebook (no IDOR)", async () => {
     asMock(prisma.service.findUnique).mockResolvedValue({ duration: 30 });
     asMock(prisma.workingHours.findUnique).mockResolvedValue({
       startTime: "09:00",
@@ -1022,8 +1115,6 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       where: { phone: "11999998888" },
       update: {
         fullName: "X",
-        accessToken: expect.any(String),
-        accessTokenConsumedAt: null,
       },
       create: {
         fullName: "X",
@@ -2660,7 +2751,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
     });
   });
 
-  it("createAppointment rejects when slot overlaps shop closure", async () => {
+  it("createAppointment rejects when barber has no working hours even if shop has a closure", async () => {
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
 
     asMock(prisma.service.findUnique).mockResolvedValue({
@@ -2690,7 +2781,7 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
         },
         "client-1",
       ),
-    ).rejects.toThrow("SHOP_CLOSED");
+    ).rejects.toThrow("BARBER_UNAVAILABLE");
   });
 
   it("createAppointment rejects when barber is unavailable", async () => {
@@ -3047,5 +3138,149 @@ describe("services/booking (Prisma-mocked unit tests)", () => {
       expect(result.service.price).toBe(50.5);
       expect(result.client?.id).toBe("client-1");
     });
+  });
+});
+
+// ============================================
+// getDateAvailabilityRange tests
+// ============================================
+
+import { getDateAvailabilityRange } from "../booking";
+
+describe("getDateAvailabilityRange", () => {
+  beforeEach(() => {
+    // Freeze to 2025-06-10 12:00 UTC (well in the future - no lead-time cutoff issues)
+    vi.setSystemTime(new Date(Date.UTC(2025, 5, 10, 12, 0, 0, 0)));
+
+    asMock(prisma.barber.findUnique).mockResolvedValue({ active: true });
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: true,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.workingHours.findUnique).mockResolvedValue({
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: null,
+      breakEnd: null,
+    });
+    asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
+    asMock(prisma.appointment.findMany).mockResolvedValue([]);
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      duration: 30,
+      active: true,
+      barbers: [{ barberId: "barber-1", durationOverride: null }],
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.resetAllMocks();
+  });
+
+  it("returns empty unavailableDates when all dates have available slots", async () => {
+    // Shop is open, barber is working, no appointments — all dates available
+    const from = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0)); // 2025-06-11
+    const to = new Date(Date.UTC(2025, 5, 12, 12, 0, 0, 0)); // 2025-06-12
+    const result = await getDateAvailabilityRange(
+      from,
+      to,
+      "barber-1",
+      "service-1",
+    );
+    expect(result.unavailableDates).toHaveLength(0);
+  });
+
+  it("returns date as unavailable when shop is closed", async () => {
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: false,
+      startTime: null,
+      endTime: null,
+      breakStart: null,
+      breakEnd: null,
+    });
+    const from = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0));
+    const to = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0));
+    const result = await getDateAvailabilityRange(
+      from,
+      to,
+      "barber-1",
+      "service-1",
+    );
+    expect(result.unavailableDates).toContain("2025-06-11");
+  });
+
+  it("returns date as unavailable when barber is absent all day", async () => {
+    asMock(prisma.barberAbsence.findMany).mockResolvedValue([
+      { startTime: null, endTime: null },
+    ]);
+    const from = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0));
+    const to = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0));
+    const result = await getDateAvailabilityRange(
+      from,
+      to,
+      "barber-1",
+      "service-1",
+    );
+    expect(result.unavailableDates).toContain("2025-06-11");
+  });
+
+  it("handles serviceId null by using shortest active service as probe", async () => {
+    asMock(prisma.service.findFirst).mockResolvedValue({
+      id: "service-shortest",
+    });
+    asMock(prisma.service.findUnique).mockResolvedValue({
+      duration: 30,
+      active: true,
+      barbers: [{ barberId: "barber-1", durationOverride: null }],
+    });
+
+    const from = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0));
+    const to = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0));
+    const result = await getDateAvailabilityRange(from, to, "barber-1", null);
+    // Should have called findFirst to resolve probe service
+    expect(prisma.service.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          active: true,
+          barbers: { some: { barberId: "barber-1" } },
+        }),
+        orderBy: { duration: "asc" },
+      }),
+    );
+    // Date should be available (working hours, no appointments)
+    expect(result.unavailableDates).toHaveLength(0);
+  });
+
+  it("returns all dates unavailable when barber has no services and serviceId is null", async () => {
+    asMock(prisma.service.findFirst).mockResolvedValue(null);
+    const from = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0)); // 2025-06-11
+    const to = new Date(Date.UTC(2025, 5, 12, 12, 0, 0, 0)); // 2025-06-12
+    const result = await getDateAvailabilityRange(from, to, "barber-1", null);
+    // Both days should be unavailable
+    expect(result.unavailableDates).toContain("2025-06-11");
+    expect(result.unavailableDates).toContain("2025-06-12");
+  });
+
+  it("processes the entire requested range (cap is enforced by zod upstream)", async () => {
+    const from = new Date(Date.UTC(2025, 5, 11, 12, 0, 0, 0)); // 2025-06-11
+    const to = new Date(Date.UTC(2025, 6, 10, 12, 0, 0, 0)); // 2025-07-10 (30 days)
+    asMock(prisma.shopHours.findUnique).mockResolvedValue({
+      isOpen: false,
+      startTime: null,
+      endTime: null,
+      breakStart: null,
+      breakEnd: null,
+    });
+    const result = await getDateAvailabilityRange(
+      from,
+      to,
+      "barber-1",
+      "service-1",
+    );
+    expect(result.unavailableDates.length).toBe(30);
   });
 });

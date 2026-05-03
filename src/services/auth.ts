@@ -18,6 +18,40 @@ class NotConfiguredError extends AuthError {
 
 const NOT_CONFIGURED_ERROR = new NotConfiguredError();
 
+async function requestAuthRoute<T>(
+  path: string,
+  body: Record<string, string>,
+): Promise<{ ok: true; data: T } | { ok: false; error: AuthError }> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json()) as
+    | { data?: T }
+    | { error?: string; message?: string; details?: unknown };
+
+  if (response.ok && payload && "data" in payload && payload.data) {
+    return { ok: true, data: payload.data };
+  }
+
+  const message =
+    payload && "message" in payload && payload.message
+      ? payload.message
+      : "Erro na autenticação";
+  const errorCode =
+    payload && "error" in payload && payload.error ? payload.error : "auth";
+
+  return {
+    ok: false,
+    error: new AuthError(message, response.status, errorCode),
+  };
+}
+
 export const authService = {
   async signUp(
     email: string,
@@ -25,48 +59,52 @@ export const authService = {
     fullName: string,
     phone: string,
   ): Promise<AuthResponse> {
-    const supabase = createClient();
-    if (!supabase)
+    if (!createClient())
       return { user: null, session: null, error: NOT_CONFIGURED_ERROR };
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          phone,
-        },
-      },
-    });
+
+    const result = await requestAuthRoute<{
+      user: User | null;
+      session: Session | null;
+    }>("/api/auth/sign-up", { email, password, fullName, phone });
+
+    if (!result.ok) {
+      return { user: null, session: null, error: result.error };
+    }
+
     return {
-      user: data.user,
-      session: data.session,
-      error,
+      user: result.data.user,
+      session: result.data.session,
+      error: null,
     };
   },
 
   async signIn(email: string, password: string): Promise<AuthResponse> {
-    const supabase = createClient();
-    if (!supabase)
+    if (!createClient())
       return { user: null, session: null, error: NOT_CONFIGURED_ERROR };
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+
+    const result = await requestAuthRoute<{
+      user: User | null;
+      session: Session | null;
+    }>("/api/auth/sign-in", { email, password });
+
+    if (!result.ok) {
+      return { user: null, session: null, error: result.error };
+    }
+
     return {
-      user: data.user,
-      session: data.session,
-      error,
+      user: result.data.user,
+      session: result.data.session,
+      error: null,
     };
   },
 
-  async signInWithGoogle(): Promise<void> {
+  async signInWithGoogle(locale: string): Promise<void> {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/${locale}/auth/callback`,
       },
     });
     if (error) throw error;
@@ -79,20 +117,22 @@ export const authService = {
     if (error) throw error;
   },
 
-  async resetPassword(email: string): Promise<void> {
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password/update`,
-    });
-    if (error) throw error;
+  async resetPassword(email: string, locale: string): Promise<void> {
+    if (!createClient()) return;
+    const result = await requestAuthRoute<{ success: true }>(
+      "/api/auth/reset-password",
+      { email, locale },
+    );
+    if (!result.ok) throw result.error;
   },
 
   async updatePassword(password: string): Promise<void> {
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) throw error;
+    if (!createClient()) return;
+    const result = await requestAuthRoute<{ success: true }>(
+      "/api/auth/update-password",
+      { password },
+    );
+    if (!result.ok) throw result.error;
   },
 
   async getUser(): Promise<User | null> {
@@ -110,12 +150,11 @@ export const authService = {
   },
 
   async resendConfirmationEmail(email: string): Promise<void> {
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-    });
-    if (error) throw error;
+    if (!createClient()) return;
+    const result = await requestAuthRoute<{ success: true }>(
+      "/api/auth/resend-confirmation-email",
+      { email },
+    );
+    if (!result.ok) throw result.error;
   },
 };

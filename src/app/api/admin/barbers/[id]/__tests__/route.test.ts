@@ -195,6 +195,109 @@ describe("GET /api/admin/barbers/[id]", () => {
     });
   });
 
+  it("saves durationOverride when services array is provided", async () => {
+    adminAuthenticated();
+    const createManyMock = vi.fn();
+    vi.mocked(prisma.barber.findUnique)
+      .mockResolvedValueOnce(BARBER_FIXTURE as never)
+      .mockResolvedValueOnce({
+        ...BARBER_FIXTURE,
+        services: [
+          {
+            serviceId: SERVICE_ID_1,
+            durationOverride: 50,
+            service: {
+              id: SERVICE_ID_1,
+              name: "Corte",
+              duration: 30,
+              price: "50",
+              active: true,
+            },
+          },
+        ],
+      } as never);
+    vi.mocked(prisma.service.findMany).mockResolvedValue([
+      { id: SERVICE_ID_1 },
+    ] as never);
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      if (typeof callback === "function") {
+        return callback({
+          barber: { update: vi.fn() },
+          barberService: { deleteMany: vi.fn(), createMany: createManyMock },
+        } as never);
+      }
+      return [] as never;
+    });
+
+    const response = await PUT(
+      createPutRequest({
+        services: [{ serviceId: SERVICE_ID_1, durationOverride: 50 }],
+      }),
+      routeParams("barber-1"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(createManyMock).toHaveBeenCalledWith({
+      data: [
+        { barberId: "barber-1", serviceId: SERVICE_ID_1, durationOverride: 50 },
+      ],
+    });
+  });
+
+  it("returns 400 for durationOverride not multiple of 5", async () => {
+    adminAuthenticated();
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue(
+      BARBER_FIXTURE as never,
+    );
+
+    const response = await PUT(
+      createPutRequest({
+        services: [{ serviceId: SERVICE_ID_1, durationOverride: 33 }],
+      }),
+      routeParams("barber-1"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json.error).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 for durationOverride below minimum", async () => {
+    adminAuthenticated();
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue(
+      BARBER_FIXTURE as never,
+    );
+
+    const response = await PUT(
+      createPutRequest({
+        services: [{ serviceId: SERVICE_ID_1, durationOverride: 0 }],
+      }),
+      routeParams("barber-1"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json.error).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 for durationOverride above maximum", async () => {
+    adminAuthenticated();
+    vi.mocked(prisma.barber.findUnique).mockResolvedValue(
+      BARBER_FIXTURE as never,
+    );
+
+    const response = await PUT(
+      createPutRequest({
+        services: [{ serviceId: SERVICE_ID_1, durationOverride: 245 }],
+      }),
+      routeParams("barber-1"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json.error).toBe("VALIDATION_ERROR");
+  });
+
   it("returns 400 when one of provided serviceIds does not exist", async () => {
     adminAuthenticated();
     vi.mocked(prisma.barber.findUnique).mockResolvedValue(

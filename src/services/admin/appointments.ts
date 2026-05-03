@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { AppointmentStatus, type Prisma } from "@prisma/client";
 import {
   getBrazilDateString,
@@ -15,12 +16,18 @@ import {
   createAppointment,
   createAppointmentByBarber,
   getActiveBarbers,
-  getBookingAvailability,
 } from "@/services/booking";
-import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
+import {
+  buildAvailabilityWindows,
+  isStartTimeWithinAvailabilityWindows,
+} from "@/lib/booking/availability-windows";
 import type { AppointmentWithDetails } from "@/types/booking";
 import type { AdminCreateAppointmentInput } from "@/lib/validations/admin-appointments";
-import { notifyAppointmentCancelledByBarber } from "@/services/notification";
+import {
+  notifyAppointmentCancelledByBarber,
+  notifyGuestAppointmentCancelledByBarber,
+  notifyGuestAppointmentConfirmed,
+} from "@/services/notification";
 import type { AdminRescheduleAppointmentInput } from "@/lib/validations/admin-appointments";
 import { calculateEndTime } from "@/lib/booking/time";
 
@@ -228,6 +235,180 @@ function toAdminItem(
   };
 }
 
+type RescheduleAvailabilityResult = {
+  error: null | "SHOP_CLOSED" | "BARBER_UNAVAILABLE";
+  windows: Array<{ startTime: string; endTime: string }>;
+};
+
+async function loadRescheduleAvailability(
+  tx: Prisma.TransactionClient,
+  params: {
+    barberId: string;
+    appointmentDateDb: Date;
+    appointmentDateLocal: Date;
+    excludeAppointmentId: string;
+    serviceDuration: number;
+  },
+): Promise<RescheduleAvailabilityResult> {
+  const dayOfWeek = params.appointmentDateLocal.getDay();
+
+  const [
+    barber,
+    shopHours,
+    shopClosures,
+    absences,
+    workingHours,
+    appointments,
+  ] = await Promise.all([
+    tx.barber.findUnique({
+      where: { id: params.barberId },
+      select: { active: true },
+    }),
+    tx.shopHours.findUnique({
+      where: { dayOfWeek },
+      select: {
+        isOpen: true,
+        startTime: true,
+        endTime: true,
+        breakStart: true,
+        breakEnd: true,
+      },
+    }),
+    tx.shopClosure.findMany({
+      where: { date: params.appointmentDateDb },
+      select: { startTime: true, endTime: true },
+    }),
+    tx.barberAbsence.findMany({
+      where: { barberId: params.barberId, date: params.appointmentDateDb },
+      select: { startTime: true, endTime: true },
+    }),
+    tx.workingHours.findUnique({
+      where: {
+        barberId_dayOfWeek: {
+          barberId: params.barberId,
+          dayOfWeek,
+        },
+      },
+      select: {
+        startTime: true,
+        endTime: true,
+        breakStart: true,
+        breakEnd: true,
+      },
+    }),
+    tx.appointment.findMany({
+      where: {
+        barberId: params.barberId,
+        date: params.appointmentDateDb,
+        status: AppointmentStatus.CONFIRMED,
+        id: { not: params.excludeAppointmentId },
+      },
+      select: { startTime: true, endTime: true, status: true },
+    }),
+  ]);
+
+  if (!barber || !barber.active) {
+    return { error: "BARBER_UNAVAILABLE", windows: [] };
+  }
+
+  if (
+    !shopHours ||
+    !shopHours.isOpen ||
+    !shopHours.startTime ||
+    !shopHours.endTime
+  ) {
+    return { error: "SHOP_CLOSED", windows: [] };
+  }
+
+  if (!workingHours) {
+    return { error: "BARBER_UNAVAILABLE", windows: [] };
+  }
+
+  return {
+    error: null,
+    windows: buildAvailabilityWindows({
+      workingStartTime: workingHours.startTime,
+      workingEndTime: workingHours.endTime,
+      breakStart: workingHours.breakStart,
+      breakEnd: workingHours.breakEnd,
+      serviceDurationMinutes: params.serviceDuration,
+      closures: shopClosures,
+      absences,
+      appointments,
+    }),
+  };
+}
+
+async function lockBarberDateForBooking(
+  tx: Pick<Prisma.TransactionClient, "$executeRaw">,
+  barberId: string,
+  appointmentDateDb: Date,
+): Promise<void> {
+  const dateKey = formatPrismaDateToString(appointmentDateDb);
+  await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(hashtext(${barberId}), hashtext(${dateKey}))
+  `;
+}
+
+async function lockClientDateForBooking(
+  tx: Pick<Prisma.TransactionClient, "$executeRaw">,
+  clientLockKey: string,
+  appointmentDateDb: Date,
+): Promise<void> {
+  const dateKey = formatPrismaDateToString(appointmentDateDb);
+  await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(hashtext(${clientLockKey}), hashtext(${dateKey}))
+  `;
+}
+
+async function hasOverlappingAppointmentForClientInTx(
+  tx: Pick<Prisma.TransactionClient, "appointment">,
+  appointmentDate: Date,
+  newStartTime: string,
+  newEndTime: string,
+  identifiers: {
+    clientId?: string | null;
+    guestClientId?: string | null;
+  },
+  excludeAppointmentId: string,
+): Promise<boolean> {
+  const clientFilters: Prisma.AppointmentWhereInput[] = [];
+
+  if (identifiers.clientId) {
+    clientFilters.push({ clientId: identifiers.clientId });
+  }
+
+  if (identifiers.guestClientId) {
+    clientFilters.push({ guestClientId: identifiers.guestClientId });
+  }
+
+  if (clientFilters.length === 0) {
+    return false;
+  }
+
+  const existingAppointments = await tx.appointment.findMany({
+    where: {
+      date: appointmentDate,
+      status: AppointmentStatus.CONFIRMED,
+      id: { not: excludeAppointmentId },
+      OR: clientFilters,
+    },
+    select: {
+      startTime: true,
+      endTime: true,
+    },
+  });
+
+  const newStartMinutes = parseTimeToMinutes(newStartTime);
+  const newEndMinutes = parseTimeToMinutes(newEndTime);
+
+  return existingAppointments.some((apt) => {
+    const aptStartMinutes = parseTimeToMinutes(apt.startTime);
+    const aptEndMinutes = parseTimeToMinutes(apt.endTime);
+    return newStartMinutes < aptEndMinutes && aptStartMinutes < newEndMinutes;
+  });
+}
+
 export async function createAppointmentAsAdmin(
   input: AdminCreateAppointmentInput,
   adminProfileId: string,
@@ -259,12 +440,47 @@ export async function createAppointmentAsAdmin(
     throw new Error("VALIDATION_ERROR");
   }
 
+  if (input.guest && appointment.guestClient) {
+    const barber = await prisma.barber.findUnique({
+      where: { id: appointment.barberId },
+      select: { userId: true },
+    });
+
+    if (barber) {
+      await notifyGuestAppointmentConfirmed(
+        appointment.guestClient.phone,
+        appointment.guestClient.fullName,
+        barber.userId,
+        {
+          serviceName: appointment.service.name,
+          barberName: appointment.barber.name,
+          date: appointment.date,
+          time: appointment.startTime,
+        },
+      ).catch((error) => {
+        logger.warn(
+          {
+            error,
+            appointmentId: appointment.id,
+            barberUserId: barber.userId,
+          },
+          "Falha ao criar notificação de confirmação para guest",
+        );
+      });
+    }
+  }
+
   await prisma.appointment
     .update({
       where: { id: appointment.id },
       data: { source: "ADMIN", createdBy: adminProfileId },
     })
-    .catch((e) => console.error("Admin audit write failed:", e));
+    .catch((error) => {
+      logger.warn(
+        { error, appointmentId: appointment.id },
+        "Admin audit write failed",
+      );
+    });
 
   return toAdminItem(appointment);
 }
@@ -285,16 +501,64 @@ export async function cancelAppointmentAsAdmin(
       where: { id: appointmentId },
       data: { cancelledBy: adminProfileId, source: "ADMIN" },
     })
-    .catch((e) => console.error("Admin audit write failed:", e));
+    .catch((error) => {
+      logger.warn({ error, appointmentId }, "Admin audit write failed");
+    });
 
   if (result.clientId && result.service && result.barber) {
-    notifyAppointmentCancelledByBarber(result.clientId, {
-      serviceName: result.service.name,
-      barberName: result.barber.name,
-      date: result.date,
-      time: result.startTime,
-      reason,
-    }).catch(() => {});
+    const clientProfile = await prisma.profile.findUnique({
+      where: { id: result.clientId },
+      select: { userId: true, fullName: true },
+    });
+
+    if (clientProfile) {
+      await notifyAppointmentCancelledByBarber(clientProfile.userId, {
+        serviceName: result.service.name,
+        barberName: result.barber.name,
+        date: result.date,
+        time: result.startTime,
+        reason,
+        recipientName: clientProfile.fullName?.split(" ")[0] ?? "Cliente",
+        appointmentId: result.id,
+      }).catch((error) => {
+        logger.warn(
+          {
+            error,
+            appointmentId: result.id,
+            clientUserId: clientProfile.userId,
+          },
+          "Falha ao criar notificação de cancelamento para cliente",
+        );
+      });
+    }
+  } else if (result.guestClient && result.service && result.barber) {
+    const barber = await prisma.barber.findUnique({
+      where: { id: result.barber.id },
+      select: { userId: true },
+    });
+
+    if (barber) {
+      await notifyGuestAppointmentCancelledByBarber(
+        result.guestClient.phone,
+        result.guestClient.fullName,
+        barber.userId,
+        {
+          serviceName: result.service.name,
+          date: result.date,
+          time: result.startTime,
+          reason,
+        },
+      ).catch((error) => {
+        logger.warn(
+          {
+            error,
+            appointmentId: result.id,
+            barberUserId: barber.userId,
+          },
+          "Falha ao criar notificação de cancelamento para guest",
+        );
+      });
+    }
   }
 
   return toAdminItem(result);
@@ -325,10 +589,6 @@ export async function rescheduleAppointmentAsAdmin(
     throw new Error("APPOINTMENT_NOT_FOUND");
   }
 
-  if (appointment.status !== AppointmentStatus.CONFIRMED) {
-    throw new Error("APPOINTMENT_NOT_RESCHEDULABLE");
-  }
-
   const currentDate = formatPrismaDateToString(appointment.date);
   if (currentDate === input.date && appointment.startTime === startTime) {
     return mapPrismaToAdminItem(appointment);
@@ -341,82 +601,115 @@ export async function rescheduleAppointmentAsAdmin(
 
   const requestedDateDb = parseDateStringToUTC(input.date);
 
-  const availability = await getBookingAvailability(
-    requestedDateLocal,
-    appointment.barberId,
-    appointment.serviceId,
-    { applyLeadTime: false },
-  );
-
-  const fitsAvailability = isStartTimeWithinAvailabilityWindows({
-    windows: availability.windows,
-    startTime,
-    durationMinutes: appointment.service.duration,
-  });
-
-  if (!fitsAvailability) {
-    throw new Error("SLOT_UNAVAILABLE");
-  }
-
-  const newEndTime = calculateEndTime(startTime, appointment.service.duration);
-  const newStartMinutes = parseTimeToMinutes(startTime);
-  const newEndMinutes = parseTimeToMinutes(newEndTime);
-
-  if (appointment.clientId || appointment.guestClientId) {
-    const identityFilters: Prisma.AppointmentWhereInput[] = [];
+  return prisma.$transaction(async (tx) => {
+    await lockBarberDateForBooking(tx, appointment.barberId, requestedDateDb);
 
     if (appointment.clientId) {
-      identityFilters.push({ clientId: appointment.clientId });
+      await lockClientDateForBooking(
+        tx,
+        `client:${appointment.clientId}`,
+        requestedDateDb,
+      );
+    } else if (appointment.guestClient?.phone) {
+      await lockClientDateForBooking(
+        tx,
+        `guest-phone:${appointment.guestClient.phone}`,
+        requestedDateDb,
+      );
     }
 
-    if (appointment.guestClientId) {
-      identityFilters.push({ guestClientId: appointment.guestClientId });
-    }
-
-    const clientAppointments = await prisma.appointment.findMany({
-      where: {
-        date: requestedDateDb,
-        status: AppointmentStatus.CONFIRMED,
-        id: { not: appointment.id },
-        OR: identityFilters,
-      },
-      select: {
-        startTime: true,
-        endTime: true,
+    const freshAppointment = await tx.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        barber: { select: { id: true, name: true } },
+        service: {
+          select: { id: true, name: true, price: true, duration: true },
+        },
+        client: { select: { id: true, fullName: true, phone: true } },
+        guestClient: { select: { id: true, fullName: true, phone: true } },
       },
     });
 
-    const hasClientOverlap = clientAppointments.some((existing) => {
-      const existingStart = parseTimeToMinutes(existing.startTime);
-      const existingEnd = parseTimeToMinutes(existing.endTime);
-      return newStartMinutes < existingEnd && existingStart < newEndMinutes;
+    if (!freshAppointment) {
+      throw new Error("APPOINTMENT_NOT_FOUND");
+    }
+
+    if (freshAppointment.status !== AppointmentStatus.CONFIRMED) {
+      throw new Error("APPOINTMENT_NOT_RESCHEDULABLE");
+    }
+
+    const freshCurrentDate = formatPrismaDateToString(freshAppointment.date);
+    if (
+      freshCurrentDate === input.date &&
+      freshAppointment.startTime === startTime
+    ) {
+      return mapPrismaToAdminItem(freshAppointment);
+    }
+
+    const availability = await loadRescheduleAvailability(tx, {
+      barberId: freshAppointment.barberId,
+      appointmentDateDb: requestedDateDb,
+      appointmentDateLocal: requestedDateLocal,
+      excludeAppointmentId: freshAppointment.id,
+      serviceDuration: freshAppointment.service.duration,
     });
+
+    if (availability.error) {
+      throw new Error(availability.error);
+    }
+
+    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
+      windows: availability.windows,
+      startTime,
+      durationMinutes: freshAppointment.service.duration,
+    });
+
+    if (!fitsAvailability) {
+      throw new Error("SLOT_UNAVAILABLE");
+    }
+
+    const newEndTime = calculateEndTime(
+      startTime,
+      freshAppointment.service.duration,
+    );
+
+    const hasClientOverlap = await hasOverlappingAppointmentForClientInTx(
+      tx,
+      requestedDateDb,
+      startTime,
+      newEndTime,
+      {
+        clientId: freshAppointment.clientId,
+        guestClientId: freshAppointment.guestClientId,
+      },
+      freshAppointment.id,
+    );
 
     if (hasClientOverlap) {
       throw new Error("CLIENT_OVERLAPPING_APPOINTMENT");
     }
-  }
 
-  const updated = await prisma.appointment.update({
-    where: { id: appointment.id },
-    data: {
-      date: requestedDateDb,
-      startTime,
-      endTime: newEndTime,
-      source: "ADMIN",
-      rescheduledBy: adminProfileId,
-    },
-    include: {
-      barber: { select: { id: true, name: true } },
-      service: {
-        select: { id: true, name: true, price: true, duration: true },
+    const updated = await tx.appointment.update({
+      where: { id: freshAppointment.id },
+      data: {
+        date: requestedDateDb,
+        startTime,
+        endTime: newEndTime,
+        source: "ADMIN",
+        rescheduledBy: adminProfileId,
       },
-      client: { select: { id: true, fullName: true, phone: true } },
-      guestClient: { select: { id: true, fullName: true, phone: true } },
-    },
-  });
+      include: {
+        barber: { select: { id: true, name: true } },
+        service: {
+          select: { id: true, name: true, price: true, duration: true },
+        },
+        client: { select: { id: true, fullName: true, phone: true } },
+        guestClient: { select: { id: true, fullName: true, phone: true } },
+      },
+    });
 
-  return mapPrismaToAdminItem(updated);
+    return mapPrismaToAdminItem(updated);
+  });
 }
 
 export interface CalendarSlot {

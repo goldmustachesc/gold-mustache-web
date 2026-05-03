@@ -5,6 +5,8 @@ import type { AppointmentWithDetails } from "@/types/booking";
 
 vi.mock("@/utils/datetime", () => ({
   formatDateDdMmYyyyFromIsoDateLike: vi.fn().mockReturnValue("10/03/2026"),
+  formatLocalizedDateFromIsoDateLike: vi.fn().mockReturnValue("10 de março"),
+  getRelativeDateLabel: vi.fn().mockReturnValue(null),
 }));
 
 function buildAppointment(
@@ -71,7 +73,7 @@ describe("UpcomingAppointments", () => {
     expect(screen.getByText("Confirmado")).toBeInTheDocument();
   });
 
-  it("renders the golden timeline connector", () => {
+  it("renders date group header for multiple appointments", () => {
     render(
       <UpcomingAppointments
         {...baseProps}
@@ -81,7 +83,7 @@ describe("UpcomingAppointments", () => {
         ]}
       />,
     );
-    expect(screen.getByTestId("timeline-connector")).toBeInTheDocument();
+    expect(screen.getAllByText("10 de março").length).toBeGreaterThan(0);
   });
 
   it("passes cancellation props to cards", () => {

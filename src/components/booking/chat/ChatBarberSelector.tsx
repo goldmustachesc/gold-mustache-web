@@ -65,7 +65,7 @@ export function ChatBarberSelector({
           type="button"
           onClick={() => onSelect(barber)}
           className={cn(
-            "flex w-full cursor-pointer items-center gap-2 px-3 py-3 text-left rounded-xl",
+            "flex w-full cursor-pointer flex-col items-center gap-2 px-2 py-4 text-center rounded-xl",
             "bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50",
             "hover:border-primary/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800",
             "transition-all duration-200",
@@ -78,21 +78,21 @@ export function ChatBarberSelector({
             <Image
               src={barber.avatarUrl}
               alt={barber.name}
-              width={40}
-              height={40}
-              className="w-10 h-10 shrink-0 rounded-full object-cover ring-2 ring-zinc-300 dark:ring-zinc-700"
+              width={48}
+              height={48}
+              className="w-12 h-12 shrink-0 rounded-full object-cover ring-2 ring-zinc-300 dark:ring-zinc-700"
             />
           ) : (
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-2 ring-zinc-300 dark:ring-zinc-700"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-2 ring-zinc-300 dark:ring-zinc-700"
               aria-hidden
             >
-              <span className="text-xs font-bold text-primary">
+              <span className="text-sm font-bold text-primary">
                 {barberNameInitials(barber.name)}
               </span>
             </div>
           )}
-          <span className="min-w-0 flex-1 truncate font-medium text-sm text-zinc-900 dark:text-zinc-100">
+          <span className="w-full font-medium text-sm text-zinc-900 dark:text-zinc-100 leading-tight line-clamp-2">
             {barber.name}
           </span>
         </button>

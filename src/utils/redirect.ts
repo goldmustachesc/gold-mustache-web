@@ -5,9 +5,10 @@
  * backslash-based bypasses (/\evil.com), header injection
  * via control characters (%0d%0a), and double-encoded payloads.
  */
-export function getSafeRedirectPath(next: string | null): string {
-  const defaultPath = "/dashboard";
-
+export function getSafeRedirectPath(
+  next: string | null,
+  defaultPath = "/dashboard",
+): string {
   if (!next) return defaultPath;
 
   // Decode percent-encoded characters so checks below can't be bypassed

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 interface LoginPageProps {
@@ -7,5 +8,9 @@ interface LoginPageProps {
 export default async function LoginPage({ params }: LoginPageProps) {
   const { locale } = await params;
 
-  return <LoginForm locale={locale} />;
+  return (
+    <Suspense>
+      <LoginForm locale={locale} />
+    </Suspense>
+  );
 }

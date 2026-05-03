@@ -6,8 +6,10 @@ import { ChatGuestInfoForm } from "../ChatGuestInfoForm";
 describe("ChatGuestInfoForm", () => {
   it("renders name and phone inputs", () => {
     render(<ChatGuestInfoForm onSubmit={vi.fn()} />);
-    expect(screen.getByPlaceholderText("Seu nome")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("(11) 99999-9999")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Nome para o agendamento"),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("WhatsApp")).toBeInTheDocument();
   });
 
   it("shows validation error for short name", async () => {
@@ -15,12 +17,12 @@ describe("ChatGuestInfoForm", () => {
     const onSubmit = vi.fn();
     render(<ChatGuestInfoForm onSubmit={onSubmit} />);
 
-    await user.type(screen.getByPlaceholderText("Seu nome"), "A");
     await user.type(
-      screen.getByPlaceholderText("(11) 99999-9999"),
-      "11999999999",
+      screen.getByPlaceholderText("Nome para o agendamento"),
+      "A",
     );
-    await user.click(screen.getByText("Confirmar Agendamento"));
+    await user.type(screen.getByPlaceholderText("WhatsApp"), "11999999999");
+    await user.click(screen.getByText("Continuar para revisão"));
 
     expect(screen.getByText("Nome muito curto")).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -30,9 +32,12 @@ describe("ChatGuestInfoForm", () => {
     const user = userEvent.setup();
     render(<ChatGuestInfoForm onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText("Seu nome"), "João Silva");
-    await user.type(screen.getByPlaceholderText("(11) 99999-9999"), "123");
-    await user.click(screen.getByText("Confirmar Agendamento"));
+    await user.type(
+      screen.getByPlaceholderText("Nome para o agendamento"),
+      "João Silva",
+    );
+    await user.type(screen.getByPlaceholderText("WhatsApp"), "123");
+    await user.click(screen.getByText("Continuar para revisão"));
 
     expect(screen.getByText("Telefone inválido")).toBeInTheDocument();
   });
@@ -41,7 +46,7 @@ describe("ChatGuestInfoForm", () => {
     const user = userEvent.setup();
     render(<ChatGuestInfoForm onSubmit={vi.fn()} />);
 
-    const phoneInput = screen.getByPlaceholderText("(11) 99999-9999");
+    const phoneInput = screen.getByPlaceholderText("WhatsApp");
     await user.type(phoneInput, "11999999999");
 
     expect(phoneInput).toHaveValue("(11) 99999-9999");
@@ -52,12 +57,12 @@ describe("ChatGuestInfoForm", () => {
     const onSubmit = vi.fn();
     render(<ChatGuestInfoForm onSubmit={onSubmit} />);
 
-    await user.type(screen.getByPlaceholderText("Seu nome"), "João Silva");
     await user.type(
-      screen.getByPlaceholderText("(11) 99999-9999"),
-      "11999999999",
+      screen.getByPlaceholderText("Nome para o agendamento"),
+      "João Silva",
     );
-    await user.click(screen.getByText("Confirmar Agendamento"));
+    await user.type(screen.getByPlaceholderText("WhatsApp"), "11999999999");
+    await user.click(screen.getByText("Continuar para revisão"));
 
     expect(onSubmit).toHaveBeenCalledWith({
       clientName: "João Silva",

@@ -21,10 +21,10 @@ describe("NewPasswordForm", () => {
     const user = userEvent.setup();
     render(<NewPasswordForm />);
 
-    await user.type(screen.getByLabelText("Nova senha"), "secret123");
-    await user.type(screen.getByLabelText("Confirmar senha"), "secret123");
+    await user.type(screen.getByLabelText("Nova senha"), "Secret123");
+    await user.type(screen.getByLabelText("Confirmar senha"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
 
-    expect(mockMutate).toHaveBeenCalledWith("secret123");
+    expect(mockMutate).toHaveBeenCalledWith("Secret123");
   });
 });

@@ -4,6 +4,10 @@ import { getSlotsQuerySchema } from "@/lib/validations/booking";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
+import { createClient } from "@/lib/supabase/server";
+import { hasSupabaseAuthCookieName } from "@/lib/supabase/cookie-presence";
+import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   try {
@@ -44,17 +48,41 @@ export async function GET(request: Request) {
       );
     }
 
+    const cookieStore = await cookies();
+    const hasAuthCookie = hasSupabaseAuthCookieName(
+      cookieStore.getAll().map((c) => c.name),
+    );
+
+    let profile: { id: string } | null = null;
+    if (hasAuthCookie) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      profile = user
+        ? await prisma.profile.findUnique({
+            where: { userId: user.id },
+            select: { id: true },
+          })
+        : null;
+    }
+
     const availability = await getBookingAvailability(
       parseIsoDateYyyyMmDdAsSaoPauloDate(validation.data.date),
       validation.data.barberId,
       validation.data.serviceId,
-      { applyLeadTime: true },
+      {
+        applyLeadTime: true,
+        clientId: profile?.id,
+      },
     );
 
     const response = apiSuccess(availability);
     response.headers.set(
       "Cache-Control",
-      "public, s-maxage=30, stale-while-revalidate=60",
+      profile
+        ? "private, no-store"
+        : "public, s-maxage=30, stale-while-revalidate=60",
     );
     return response;
   } catch (error) {

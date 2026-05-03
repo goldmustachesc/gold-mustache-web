@@ -10,8 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { AppointmentWithDetails } from "@/types/booking";
+import { formatLocalizedDateFromIsoDateLike } from "@/utils/datetime";
+import { formatPrice } from "@/utils/format";
 import { Calendar, CheckCircle, Clock, Scissors, User } from "lucide-react";
-import { formatDateDdMmYyyyFromIsoDateLike } from "@/utils/datetime";
+import Image from "next/image";
 
 interface BookingConfirmationProps {
   appointment: AppointmentWithDetails;
@@ -19,19 +21,24 @@ interface BookingConfirmationProps {
   onViewAppointments?: () => void;
 }
 
+function formatDate(dateStr: string): string {
+  return formatLocalizedDateFromIsoDateLike(dateStr, "pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function BookingConfirmation({
   appointment,
   onClose,
   onViewAppointments,
 }: BookingConfirmationProps) {
-  const formatDate = (dateStr: string) => {
-    return formatDateDdMmYyyyFromIsoDateLike(dateStr);
-  };
-
   return (
     <Card className="border-success/30 bg-success/10">
-      <CardHeader className="text-center pb-4">
-        <div className="mx-auto mb-4 p-3 bg-success/15 rounded-full w-16 h-16 flex items-center justify-center">
+      <CardHeader className="text-center pb-2">
+        <div className="mx-auto mb-2 p-3 bg-success/15 rounded-full w-16 h-16 flex items-center justify-center">
           <CheckCircle className="h-8 w-8 text-success" />
         </div>
         <CardTitle className="text-xl text-success">
@@ -45,50 +52,61 @@ export function BookingConfirmation({
       <CardContent className="space-y-4">
         <div className="bg-background rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-3">
-            <Scissors className="h-5 w-5 text-primary" />
+            <Scissors className="h-5 w-5 text-primary shrink-0" />
             <div>
-              <p className="text-sm text-muted-foreground">Serviço</p>
+              <p className="text-xs text-muted-foreground">Serviço</p>
               <p className="font-medium">{appointment.service.name}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <User className="h-5 w-5 text-primary" />
+            {appointment.barber.avatarUrl ? (
+              <Image
+                src={appointment.barber.avatarUrl}
+                alt={appointment.barber.name}
+                width={20}
+                height={20}
+                className="h-5 w-5 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <User className="h-5 w-5 text-primary shrink-0" />
+            )}
             <div>
-              <p className="text-sm text-muted-foreground">Barbeiro</p>
+              <p className="text-xs text-muted-foreground">Barbeiro</p>
               <p className="font-medium">{appointment.barber.name}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-primary" />
+            <Calendar className="h-5 w-5 text-primary shrink-0" />
             <div>
-              <p className="text-sm text-muted-foreground">Data</p>
-              <p className="font-medium">{formatDate(appointment.date)}</p>
+              <p className="text-xs text-muted-foreground">Data</p>
+              <p className="font-medium capitalize">
+                {formatDate(appointment.date)}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Clock className="h-5 w-5 text-primary" />
+            <Clock className="h-5 w-5 text-primary shrink-0" />
             <div>
-              <p className="text-sm text-muted-foreground">Horário</p>
-              <p className="font-medium font-mono">
-                {appointment.startTime} - {appointment.endTime}
+              <p className="text-xs text-muted-foreground">Horário</p>
+              <p className="font-medium">
+                {appointment.startTime} – {appointment.endTime}
               </p>
             </div>
           </div>
+
+          <div className="border-t border-border/60 pt-3 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Valor</p>
+            <p className="text-xl font-bold text-primary">
+              {formatPrice(appointment.service.price)}
+            </p>
+          </div>
         </div>
 
-        <div className="text-center p-3 bg-muted/50 rounded-lg">
-          <p className="text-sm text-muted-foreground">Valor</p>
-          <p className="text-2xl font-bold font-mono text-primary">
-            R$ {appointment.service.price.toFixed(2).replace(".", ",")}
-          </p>
-        </div>
-
-        <p className="text-xs text-center text-muted-foreground">
-          Você pode cancelar a qualquer momento antes do horário. Se faltar
-          menos de 2 horas, vamos apenas exibir um aviso.
+        <p className="text-xs text-center text-muted-foreground px-2">
+          Cancelamento permitido até 2 horas antes do horário agendado.
         </p>
       </CardContent>
 

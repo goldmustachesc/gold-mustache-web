@@ -18,10 +18,19 @@ export function useAppointmentActions({
   feedbackMutateAsync,
 }: UseAppointmentActionsOptions) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [feedbackAppointment, setFeedbackAppointment] =
     useState<AppointmentWithDetails | null>(null);
   const [feedbacksGiven, setFeedbacksGiven] = useState<Set<string>>(new Set());
+
+  const requestCancel = useCallback((appointmentId: string) => {
+    setPendingCancelId(appointmentId);
+  }, []);
+
+  const dismissCancel = useCallback(() => {
+    setPendingCancelId(null);
+  }, []);
 
   const handleCancel = useCallback(
     async (appointmentId: string) => {
@@ -45,6 +54,13 @@ export function useAppointmentActions({
     },
     [cancelMutateAsync],
   );
+
+  const confirmCancel = useCallback(async () => {
+    if (!pendingCancelId) return;
+    const id = pendingCancelId;
+    setPendingCancelId(null);
+    await handleCancel(id);
+  }, [pendingCancelId, handleCancel]);
 
   const handleOpenFeedback = useCallback(
     (appointment: AppointmentWithDetails) => {
@@ -72,7 +88,10 @@ export function useAppointmentActions({
 
   return {
     cancellingId,
-    handleCancel,
+    pendingCancelId,
+    requestCancel,
+    confirmCancel,
+    dismissCancel,
     feedbackModalOpen,
     setFeedbackModalOpen,
     feedbackAppointment,

@@ -35,8 +35,12 @@ export function PasswordChangeCard() {
 
     if (!formData.newPassword) {
       newErrors.newPassword = t("validation.required");
-    } else if (formData.newPassword.length < 6) {
+    } else if (formData.newPassword.length < 8) {
       newErrors.newPassword = t("validation.minLength");
+    } else if (!/[A-Z]/.test(formData.newPassword)) {
+      newErrors.newPassword = t("validation.uppercase");
+    } else if (!/\d/.test(formData.newPassword)) {
+      newErrors.newPassword = t("validation.number");
     }
 
     if (formData.newPassword !== formData.confirmPassword) {

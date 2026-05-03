@@ -23,6 +23,11 @@ vi.mock("@/utils/datetime", () => ({
 vi.mock("@/utils/time-slots", () => ({
   BOOKING_START_TIME_STEP_MINUTES: 5,
   formatDateToString: vi.fn().mockReturnValue("2026-03-10"),
+  minutesToTime: (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+  },
   parseTimeToMinutes: (time: string) => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
@@ -266,7 +271,9 @@ describe("BookingPage", () => {
     fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
       target: { value: "10:00" },
     });
-    await user.click(screen.getByRole("button", { name: "Confirmar horário" }));
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar 10:00 - 10:30" }),
+    );
 
     await waitFor(() => {
       expect(
@@ -342,7 +349,9 @@ describe("BookingPage", () => {
     fireEvent.change(screen.getByLabelText("Escolha o início exato"), {
       target: { value: "10:00" },
     });
-    await user.click(screen.getByRole("button", { name: "Confirmar horário" }));
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar 10:00 - 10:30" }),
+    );
 
     await waitFor(() => {
       expect(

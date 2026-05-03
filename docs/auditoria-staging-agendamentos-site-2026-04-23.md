@@ -11,7 +11,7 @@
 
 O fluxo público principal de agendamento está funcional em staging hoje, mas o ambiente **não é confiável como candidato de release** porque há drift simultâneo de **deploy** e **schema**:
 
-1. o deploy público de staging não expõe a rota `POST /api/cron/appointment-reminders`, embora ela exista no branch atual e em `vercel.json`;
+1. o deploy público de staging não expõe a rota `POST /api/cron/appointment-reminders`, embora ela exista no branch atual e seja chamada pelo scheduler externo;
 2. o banco de staging ainda não recebeu a migration `20260423100000_add_phone_normalized_and_history_indexes`, e a coluna `profiles.phone_normalized` segue ausente;
 3. o código atual já depende dessa coluna em fluxos de booking e criação/atualização de perfil.
 
@@ -45,7 +45,7 @@ Enquanto isso não for reconciliado, o staging atual não certifica o que de fat
 
 **Por que isso bloqueia**
 
-No código atual, a rota existe em [src/app/api/cron/appointment-reminders/route.ts](/Users/leonardobrizolla/Developer/GoldMustache/gold-mustache-web/src/app/api/cron/appointment-reminders/route.ts) e o cron está declarado em [vercel.json](/Users/leonardobrizolla/Developer/GoldMustache/gold-mustache-web/vercel.json). O branch atual também contém a implementação de lembretes em [src/services/appointment-reminders.ts](/Users/leonardobrizolla/Developer/GoldMustache/gold-mustache-web/src/services/appointment-reminders.ts).
+No código atual, a rota existe em [src/app/api/cron/appointment-reminders/route.ts](/Users/leonardobrizolla/Developer/GoldMustache/gold-mustache-web/src/app/api/cron/appointment-reminders/route.ts) e a execução em produção vem do GitHub Actions apontando para esse endpoint. O branch atual também contém a implementação de lembretes em [src/services/appointment-reminders.ts](/Users/leonardobrizolla/Developer/GoldMustache/gold-mustache-web/src/services/appointment-reminders.ts).
 
 Se staging responde `404` para essa rota, há duas leituras possíveis, ambas ruins para promoção:
 

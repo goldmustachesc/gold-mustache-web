@@ -1,49 +1,40 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DateSection } from "../DateSection";
-import type { DateOption } from "@/utils/scheduling";
 
-const DATE_OPTIONS: DateOption[] = [
-  {
-    value: "2025-12-15",
-    display: "15/12/2025",
-    weekday: "segunda-feira",
-    isToday: true,
-  },
-  {
-    value: "2025-12-16",
-    display: "16/12/2025",
-    weekday: "terça-feira",
-    isToday: false,
-  },
-  {
-    value: "2025-12-17",
-    display: "17/12/2025",
-    weekday: "quarta-feira",
-    isToday: false,
-  },
-];
+const DEFAULT_PROPS = {
+  selectedDate: "",
+  disabledDates: [] as Date[],
+  dateAvailabilityLoading: false,
+  calendarMaxDays: 30,
+  onSelect: vi.fn(),
+};
 
 describe("DateSection", () => {
   it("renders section title", () => {
-    render(
-      <DateSection
-        dates={DATE_OPTIONS}
-        selectedDate="2025-12-15"
-        onSelect={vi.fn()}
-      />,
-    );
+    render(<DateSection {...DEFAULT_PROPS} />);
     expect(screen.getByText("Data")).toBeInTheDocument();
   });
 
-  it("renders subtitle", () => {
-    render(
-      <DateSection
-        dates={DATE_OPTIONS}
-        selectedDate="2025-12-15"
-        onSelect={vi.fn()}
-      />,
-    );
+  it("shows selected date in subtitle when a date is selected", () => {
+    render(<DateSection {...DEFAULT_PROPS} selectedDate="2025-12-15" />);
+    expect(screen.getByText("15/12/2025")).toBeInTheDocument();
+  });
+
+  it("shows placeholder subtitle when no date selected", () => {
+    render(<DateSection {...DEFAULT_PROPS} selectedDate="" />);
     expect(screen.getByText("Escolha a data")).toBeInTheDocument();
+  });
+
+  it("shows loading text when availability is loading", () => {
+    render(<DateSection {...DEFAULT_PROPS} dateAvailabilityLoading={true} />);
+    expect(
+      screen.getByText("Carregando disponibilidade..."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the calendar grid", () => {
+    render(<DateSection {...DEFAULT_PROPS} />);
+    expect(screen.getByRole("button", { name: "1" })).toBeInTheDocument();
   });
 });

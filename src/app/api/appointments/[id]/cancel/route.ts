@@ -1,11 +1,13 @@
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import {
   cancelAppointmentByClient,
   cancelAppointmentByBarber,
 } from "@/services/booking";
 import {
   notifyAppointmentCancelledByBarber,
+  notifyGuestAppointmentCancelledByBarber,
   notifyBarberOfAppointmentCancelledByClient,
 } from "@/services/notification";
 import { cancelAppointmentByBarberSchema } from "@/lib/validations/booking";
@@ -109,7 +111,7 @@ export async function PATCH(
       if (appointment.clientId) {
         const clientProfile = await prisma.profile.findUnique({
           where: { id: appointment.clientId },
-          select: { userId: true },
+          select: { userId: true, fullName: true },
         });
 
         if (clientProfile) {
@@ -119,8 +121,40 @@ export async function PATCH(
             date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
             time: appointment.startTime,
             reason: validation.data.reason,
+            recipientName: clientProfile.fullName?.split(" ")[0] ?? "Cliente",
+            appointmentId: appointment.id,
+          }).catch((error) => {
+            logger.warn(
+              {
+                error,
+                appointmentId: appointment.id,
+                clientUserId: clientProfile.userId,
+              },
+              "Falha ao criar notificação de cancelamento para cliente",
+            );
           });
         }
+      } else if (appointment.guestClient) {
+        await notifyGuestAppointmentCancelledByBarber(
+          appointment.guestClient.phone,
+          appointment.guestClient.fullName,
+          barber.userId,
+          {
+            serviceName: appointment.service.name,
+            date: formatDateDdMmYyyyFromIsoDateLike(appointment.date),
+            time: appointment.startTime,
+            reason: validation.data.reason,
+          },
+        ).catch((error) => {
+          logger.warn(
+            {
+              error,
+              appointmentId: appointment.id,
+              barberUserId: barber.userId,
+            },
+            "Falha ao criar notificação de cancelamento para guest",
+          );
+        });
       }
 
       return apiSuccess(appointment);
@@ -140,7 +174,14 @@ export async function PATCH(
       profile.id,
     );
 
-    await notifyBarberOfAppointmentCancelledByClient(appointment);
+    await notifyBarberOfAppointmentCancelledByClient(appointment).catch(
+      (error) => {
+        logger.warn(
+          { error, appointmentId: appointment.id },
+          "Falha ao notificar barbeiro sobre cancelamento do cliente",
+        );
+      },
+    );
 
     return apiSuccess(appointment);
   } catch (error) {

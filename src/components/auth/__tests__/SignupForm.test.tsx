@@ -127,8 +127,8 @@ describe("SignupForm", () => {
         "11999999999",
       );
       await user.type(screen.getByLabelText("Email"), "joao@example.com");
-      await user.type(screen.getByLabelText("Senha"), "123456");
-      await user.type(screen.getByLabelText("Confirmar senha"), "123456");
+      await user.type(screen.getByLabelText("Senha"), "Senha123");
+      await user.type(screen.getByLabelText("Confirmar senha"), "Senha123");
 
       const submitButton = screen.getByRole("button", { name: "Criar conta" });
       expect(submitButton).not.toBeDisabled();
@@ -152,7 +152,7 @@ describe("SignupForm", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText("Mínimo 6 caracteres")).toBeInTheDocument();
+        expect(screen.getByText("Mínimo 8 caracteres")).toBeInTheDocument();
       });
     });
 
@@ -167,8 +167,8 @@ describe("SignupForm", () => {
         "11999999999",
       );
       await user.type(screen.getByLabelText("Email"), "joao@example.com");
-      await user.type(screen.getByLabelText("Senha"), "123456");
-      await user.type(screen.getByLabelText("Confirmar senha"), "654321");
+      await user.type(screen.getByLabelText("Senha"), "Senha123");
+      await user.type(screen.getByLabelText("Confirmar senha"), "Senha456");
 
       const submitButton = screen.getByRole("button", { name: "Criar conta" });
       await user.click(submitButton);
@@ -193,8 +193,8 @@ describe("SignupForm", () => {
       await user.type(fullNameInput, "João Silva");
       await user.type(phoneInput, "11999999999");
       await user.type(emailInput, "joao@example.com");
-      await user.type(passwordInput, "123456");
-      await user.type(confirmPasswordInput, "123456");
+      await user.type(passwordInput, "Senha123");
+      await user.type(confirmPasswordInput, "Senha123");
 
       const submitButton = screen.getByRole("button", { name: "Criar conta" });
       await user.click(submitButton);
@@ -204,8 +204,8 @@ describe("SignupForm", () => {
           fullName: "João Silva",
           phone: "(11) 99999-9999",
           email: "joao@example.com",
-          password: "123456",
-          confirmPassword: "123456",
+          password: "Senha123",
+          confirmPassword: "Senha123",
         });
       });
     });

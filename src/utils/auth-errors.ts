@@ -6,7 +6,7 @@ const SUPABASE_ERROR_MAP: Record<string, string> = {
   "Email not confirmed": "emailNotConfirmed",
   "Invalid login credentials": "invalidCredentials",
   "Invalid email or password": "invalidCredentials",
-  "User not found": "userNotFound",
+  "User not found": "invalidCredentials",
   "User already registered": "emailAlreadyExists",
   "Password should be at least 6 characters": "weakPassword",
   "For security purposes, you can only request this once every 60 seconds":
@@ -20,7 +20,6 @@ const SUPABASE_ERROR_MAP: Record<string, string> = {
 const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
   emailNotConfirmed: "Por favor, confirme seu email para continuar",
   invalidCredentials: "Email ou senha incorretos",
-  userNotFound: "Usuário não encontrado",
   emailAlreadyExists: "Este email já está cadastrado",
   weakPassword: "Senha muito fraca",
   tooManyRequests: "Muitas tentativas. Aguarde um momento",
@@ -78,7 +77,6 @@ export function isEmailNotConfirmedError(errorMessage: string): boolean {
 export type AuthErrorKey =
   | "emailNotConfirmed"
   | "invalidCredentials"
-  | "userNotFound"
   | "emailAlreadyExists"
   | "weakPassword"
   | "tooManyRequests"
@@ -94,7 +92,6 @@ export function createAuthErrorTranslations(
   return {
     emailNotConfirmed: t("errors.emailNotConfirmed"),
     invalidCredentials: t("errors.invalidCredentials"),
-    userNotFound: t("errors.userNotFound"),
     emailAlreadyExists: t("errors.emailAlreadyExists"),
     weakPassword: t("errors.weakPassword"),
     tooManyRequests: t("errors.tooManyRequests"),

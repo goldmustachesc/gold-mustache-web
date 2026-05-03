@@ -6,6 +6,12 @@ import type { AppointmentWithDetails } from "@/types/booking";
 
 vi.mock("@/utils/datetime", () => ({
   formatDateDdMmYyyyFromIsoDateLike: vi.fn().mockReturnValue("10/03/2026"),
+  formatLocalizedDateFromIsoDateLike: vi.fn().mockReturnValue("10 de março"),
+  getRelativeDateLabel: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock("@/utils/format", () => ({
+  formatPrice: vi.fn().mockReturnValue("R$ 50,00"),
 }));
 
 const appointment: AppointmentWithDetails = {
@@ -42,8 +48,8 @@ describe("BookingConfirmation", () => {
     render(<BookingConfirmation appointment={appointment} onClose={vi.fn()} />);
     expect(screen.getByText("Corte")).toBeInTheDocument();
     expect(screen.getByText("Carlos")).toBeInTheDocument();
-    expect(screen.getByText("10/03/2026")).toBeInTheDocument();
-    expect(screen.getByText("09:00 - 09:30")).toBeInTheDocument();
+    expect(screen.getByText("10 de março")).toBeInTheDocument();
+    expect(screen.getByText("09:00 – 09:30")).toBeInTheDocument();
     expect(screen.getByText("R$ 50,00")).toBeInTheDocument();
   });
 

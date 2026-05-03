@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { MockInstance } from "vitest";
 vi.mock("@/lib/prisma", () => {
   const prisma = {
+    barber: { findUnique: vi.fn() },
     service: { findUnique: vi.fn() },
     profile: { findFirst: vi.fn(), findMany: vi.fn() },
     shopHours: { findUnique: vi.fn() },
@@ -31,6 +32,7 @@ describe("booking + ban integration", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(Date.UTC(2025, 0, 1, 12, 0, 0, 0)));
+    asMock(prisma.barber.findUnique).mockResolvedValue({ active: true });
     asMock(prisma.profile.findFirst).mockResolvedValue(null);
     asMock(prisma.profile.findMany).mockResolvedValue([]);
   });
@@ -112,7 +114,12 @@ describe("booking + ban integration", () => {
         breakStart: null,
         breakEnd: null,
       });
-      asMock(prisma.workingHours.findUnique).mockResolvedValue(null);
+      asMock(prisma.workingHours.findUnique).mockResolvedValue({
+        startTime: "09:00",
+        endTime: "18:00",
+        breakStart: null,
+        breakEnd: null,
+      });
       asMock(prisma.shopClosure.findMany).mockResolvedValue([]);
       asMock(prisma.barberAbsence.findMany).mockResolvedValue([]);
 

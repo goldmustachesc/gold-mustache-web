@@ -16,13 +16,16 @@ import {
   useServices,
   useBarberSlots,
   useCreateAppointmentByBarber,
+  useDateAvailability,
 } from "@/hooks/useBooking";
 import { useBarberClients, type ClientData } from "@/hooks/useBarberClients";
 import {
   getBrazilDateString,
   roundTimeUpToSlotBoundary,
+  formatDateToString,
 } from "@/utils/time-slots";
-import { isStartTimeWithinAvailabilityWindows } from "@/lib/booking/availability-windows";
+import { buildTimeSelectionFeedback } from "@/lib/booking/time-selection-feedback";
+import { parseIsoDateYyyyMmDdAsSaoPauloDate } from "@/utils/datetime";
 import {
   isValidDateParam,
   isValidTimeParam,
@@ -30,10 +33,9 @@ import {
   isValidClientName,
   sanitizePhoneInput,
   canSubmitForm,
-  buildDateOptions,
 } from "@/utils/scheduling";
 
-const DATE_OPTIONS_COUNT = 30;
+const CALENDAR_DAYS = 30;
 const MIN_PHONE_SEARCH_LENGTH = 6;
 
 export function useBarberSchedulingForm() {
@@ -81,6 +83,30 @@ export function useBarberSchedulingForm() {
     selectedDate,
     barberProfile?.id || null,
     selectedServiceId || null,
+  );
+
+  const calendarRange = useMemo(() => {
+    const from = getBrazilDateString();
+    const toDate = new Date();
+    toDate.setDate(toDate.getDate() + CALENDAR_DAYS);
+    const to = formatDateToString(toDate);
+    return { from, to };
+  }, []);
+
+  const { data: dateAvailabilityData, isLoading: dateAvailabilityLoading } =
+    useDateAvailability(
+      calendarRange.from,
+      calendarRange.to,
+      barberProfile?.id ?? null,
+      selectedServiceId || null,
+    );
+
+  const disabledDates = useMemo(
+    () =>
+      (dateAvailabilityData?.unavailableDates ?? []).map(
+        parseIsoDateYyyyMmDdAsSaoPauloDate,
+      ),
+    [dateAvailabilityData],
   );
 
   const shouldSearch =
@@ -180,7 +206,35 @@ export function useBarberSchedulingForm() {
 
   const selectedService =
     services?.find((s) => s.id === selectedServiceId) ?? null;
-  const dateOptions = useMemo(() => buildDateOptions(DATE_OPTIONS_COUNT), []);
+  const selectedTimeFeedback = useMemo(() => {
+    if (!selectedTime || !selectedService) {
+      return null;
+    }
+
+    if (slotsLoading) {
+      return null;
+    }
+
+    if (slotsError || !bookingAvailability) {
+      return null;
+    }
+
+    if (bookingAvailability.windows.length === 0) {
+      return null;
+    }
+
+    return buildTimeSelectionFeedback({
+      windows: bookingAvailability.windows,
+      selectedStartTime: selectedTime,
+      serviceDurationMinutes: selectedService.duration,
+    });
+  }, [
+    selectedTime,
+    selectedService,
+    bookingAvailability,
+    slotsLoading,
+    slotsError,
+  ]);
   const selectedTimeError = useMemo(() => {
     if (!selectedTime || !selectedService) {
       return null;
@@ -198,23 +252,20 @@ export function useBarberSchedulingForm() {
       return "Nenhuma janela disponível para este serviço nesta data.";
     }
 
-    const fitsAvailability = isStartTimeWithinAvailabilityWindows({
-      windows: bookingAvailability.windows,
-      startTime: selectedTime,
-      durationMinutes: selectedService.duration,
-    });
-
-    if (fitsAvailability) {
+    if (!selectedTimeFeedback || selectedTimeFeedback.status === "valid") {
       return null;
     }
 
-    return "Escolha um horário dentro das janelas disponíveis.";
+    return selectedTimeFeedback.message
+      ? `${selectedTimeFeedback.title} ${selectedTimeFeedback.message}`
+      : selectedTimeFeedback.title;
   }, [
     selectedTime,
     selectedService,
     bookingAvailability,
     slotsLoading,
     slotsError,
+    selectedTimeFeedback,
   ]);
   const completedSteps = useMemo(
     () =>
@@ -319,8 +370,11 @@ export function useBarberSchedulingForm() {
       services: services ?? [],
       selectedService,
       bookingAvailability: bookingAvailability ?? null,
+      selectedTimeFeedback,
       selectedTimeError,
-      dateOptions,
+      disabledDates,
+      dateAvailabilityLoading,
+      calendarMaxDays: CALENDAR_DAYS,
       canSubmit,
       completedSteps,
       isPending: createAppointment.isPending,

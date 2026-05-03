@@ -1,6 +1,7 @@
 import { HeroSection } from "@/components/sections/HeroSection";
 import { ServicesSection } from "@/components/sections/ServicesSection";
 import { TeamSection } from "@/components/sections/TeamSection";
+import { FAQSectionSchema } from "@/components/sections/FAQSectionSchema";
 import { isFeatureEnabled } from "@/services/feature-flags";
 import dynamic from "next/dynamic";
 
@@ -79,6 +80,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col">
+      <FAQSectionSchema />
       <HeroSection />
       <ServicesSection />
       <TeamSection />

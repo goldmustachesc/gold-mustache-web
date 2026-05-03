@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import withBundleAnalyzer from "@next/bundle-analyzer";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withAnalyzer = withBundleAnalyzer({
@@ -79,7 +80,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self'",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.upstash.io https://viacep.com.br https://graph.instagram.com https://vercel.live",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.upstash.io https://viacep.com.br https://graph.instagram.com https://vercel.live https://*.ingest.sentry.io https://*.sentry.io",
               "frame-src https://www.youtube-nocookie.com https://www.google.com https://maps.google.com https://vercel.live",
               "frame-ancestors 'none'",
             ].join("; "),
@@ -168,4 +169,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withAnalyzer(withNextIntl(nextConfig));
+const sentryConfig = withSentryConfig(withAnalyzer(withNextIntl(nextConfig)), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: true,
+  sourcemaps: {
+    disable: process.env.NODE_ENV !== "production",
+  },
+});
+
+export default sentryConfig;

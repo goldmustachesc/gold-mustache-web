@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ interface ChatGuestInfoFormProps {
   onSubmit: (data: { clientName: string; clientPhone: string }) => void;
   isLoading?: boolean;
   submitLabel?: string;
+  currentName?: string;
+  currentPhone?: string;
 }
 
 function formatPhone(value: string): string {
@@ -31,10 +33,16 @@ function getPhoneDigits(value: string): string {
 export function ChatGuestInfoForm({
   onSubmit,
   isLoading,
-  submitLabel = "Confirmar Agendamento",
+  submitLabel = "Continuar para revisão",
+  currentName = "",
+  currentPhone = "",
 }: ChatGuestInfoFormProps) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  // Initial values come from props once. Parent must remount via `key` to
+  // re-prefill (avoids overwriting user edits on prop changes).
+  const [name, setName] = useState(currentName);
+  const [phone, setPhone] = useState(
+    currentPhone ? formatPhone(currentPhone) : "",
+  );
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
 
   const handlePhoneChange = useCallback(
@@ -85,9 +93,13 @@ export function ChatGuestInfoForm({
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="bg-zinc-100/80 border border-zinc-300/50 dark:bg-zinc-800/80 dark:border-zinc-700/50 rounded-xl p-4 space-y-3 shadow-sm">
         <div>
+          <label htmlFor="guest-name" className="sr-only">
+            Nome
+          </label>
           <Input
+            id="guest-name"
             type="text"
-            placeholder="Seu nome"
+            placeholder="Nome para o agendamento"
             value={name}
             onChange={handleNameChange}
             disabled={isLoading}
@@ -104,9 +116,13 @@ export function ChatGuestInfoForm({
         </div>
 
         <div>
+          <label htmlFor="guest-phone" className="sr-only">
+            Telefone (WhatsApp)
+          </label>
           <Input
+            id="guest-phone"
             type="tel"
-            placeholder="(11) 99999-9999"
+            placeholder="WhatsApp"
             value={phone}
             onChange={handlePhoneChange}
             disabled={isLoading}

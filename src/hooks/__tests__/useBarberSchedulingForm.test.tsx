@@ -117,6 +117,10 @@ vi.mock("@/hooks/useBooking", () => ({
     mutateAsync: mocks.mutateAsync,
     isPending: false,
   }),
+  useDateAvailability: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }));
 
 vi.mock("@/hooks/useBarberClients", () => ({
@@ -414,7 +418,7 @@ describe("useBarberSchedulingForm", () => {
       });
 
       expect(result.current.computed.selectedTimeError).toBe(
-        "Escolha um horário dentro das janelas disponíveis.",
+        "Esse início não está dentro de uma janela livre. Próximo início disponível: 10:30.",
       );
       expect(result.current.computed.canSubmit).toBe(false);
     });
@@ -451,7 +455,7 @@ describe("useBarberSchedulingForm", () => {
       });
 
       expect(result.current.computed.selectedTimeError).toBe(
-        "Escolha um horário dentro das janelas disponíveis.",
+        "Esse início não está dentro de uma janela livre. Próximo início disponível: 10:30.",
       );
       expect(result.current.computed.completedSteps).toBe(4);
     });
@@ -583,7 +587,7 @@ describe("useBarberSchedulingForm", () => {
       });
 
       expect(mocks.toastError).toHaveBeenCalledWith(
-        "Escolha um horário dentro das janelas disponíveis.",
+        "Esse início não está dentro de uma janela livre. Próximo início disponível: 10:30.",
       );
       expect(mocks.mutateAsync).not.toHaveBeenCalled();
     });

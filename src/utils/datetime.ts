@@ -148,6 +148,30 @@ export function formatDateShort(iso: string): string {
   });
 }
 
+export function getRelativeDateLabel(isoDate: string): string | null {
+  const dateOnly = isoDate.split("T")[0];
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SAO_PAULO_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const now = new Date();
+  const todayIso = fmt.format(now);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dateOnly === todayIso) return "Hoje";
+  if (dateOnly === fmt.format(tomorrow)) return "Amanhã";
+  const [y, m, d] = dateOnly.split("-").map(Number);
+  const [ty, tm, td] = todayIso.split("-").map(Number);
+  const diff = Math.round(
+    (new Date(y, m - 1, d).getTime() - new Date(ty, tm - 1, td).getTime()) /
+      86400000,
+  );
+  if (diff > 1 && diff <= 7) return `em ${diff} dias`;
+  return null;
+}
+
 export function formatLocalizedDateFromIsoDateLike(
   input: string,
   locale: string,

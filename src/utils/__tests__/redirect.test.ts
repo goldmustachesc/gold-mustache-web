@@ -62,5 +62,11 @@ describe("utils/redirect", () => {
     it("returns /dashboard for malformed percent-encoding", () => {
       expect(getSafeRedirectPath("/%ZZ")).toBe("/dashboard");
     });
+
+    it("supports a custom fallback path", () => {
+      expect(getSafeRedirectPath("https://evil.com", "/pt-BR/dashboard")).toBe(
+        "/pt-BR/dashboard",
+      );
+    });
   });
 });

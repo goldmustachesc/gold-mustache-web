@@ -1,5 +1,7 @@
 import { createAppointmentByBarber } from "@/services/booking";
 import { apiError, apiSuccess } from "@/lib/api/response";
+import { logger } from "@/lib/logger";
+import { notifyGuestAppointmentConfirmed } from "@/services/notification";
 import { createAppointmentByBarberSchema } from "@/lib/validations/booking";
 import { Prisma } from "@prisma/client";
 import { handlePrismaError } from "@/lib/api/prisma-error-handler";
@@ -44,6 +46,29 @@ export async function POST(request: Request) {
       validation.data,
       auth.barberId,
     );
+
+    if (appointment.guestClient) {
+      await notifyGuestAppointmentConfirmed(
+        appointment.guestClient.phone,
+        appointment.guestClient.fullName,
+        auth.userId,
+        {
+          serviceName: appointment.service.name,
+          barberName: appointment.barber.name,
+          date: appointment.date,
+          time: appointment.startTime,
+        },
+      ).catch((error) => {
+        logger.warn(
+          {
+            error,
+            appointmentId: appointment.id,
+            barberUserId: auth.userId,
+          },
+          "Falha ao criar notificação de confirmação para guest",
+        );
+      });
+    }
 
     return apiSuccess(appointment, 201);
   } catch (error) {

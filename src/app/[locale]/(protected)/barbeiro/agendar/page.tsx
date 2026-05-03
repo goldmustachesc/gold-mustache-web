@@ -51,8 +51,27 @@ export default function BarberAgendarPage() {
     },
   ];
 
+  const totalSteps = progressSteps.length;
+
   return (
     <div>
+      <div className="lg:hidden sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+          <span>Progresso</span>
+          <span className="font-semibold text-foreground">
+            {computed.completedSteps}/{totalSteps}
+          </span>
+        </div>
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-300 rounded-full"
+            style={{
+              width: `${(computed.completedSteps / totalSteps) * 100}%`,
+            }}
+          />
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
         <div className="hidden lg:block mb-8">
           <h2 className="text-2xl font-bold">Novo Agendamento para Cliente</h2>
@@ -97,8 +116,10 @@ export default function BarberAgendarPage() {
 
               <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
                 <DateSection
-                  dates={computed.dateOptions}
                   selectedDate={formState.selectedDate}
+                  disabledDates={computed.disabledDates}
+                  dateAvailabilityLoading={computed.dateAvailabilityLoading}
+                  calendarMaxDays={computed.calendarMaxDays}
                   onSelect={handlers.onDateChange}
                 />
 
@@ -109,7 +130,6 @@ export default function BarberAgendarPage() {
                   serviceSelected={!!formState.selectedServiceId}
                   serviceDuration={computed.selectedService?.duration ?? null}
                   onSelect={handlers.onTimeChange}
-                  selectedTimeError={computed.selectedTimeError}
                 />
               </div>
 
